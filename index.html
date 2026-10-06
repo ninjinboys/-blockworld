@@ -12,14 +12,28 @@
 <div id="crosshair"></div>
 <div id="hud">
   <div id="stats"><div id="coords">X 0 Y 0 Z 0</div><div id="biome">Plains</div><div id="clock">☀ 06:00</div><div id="weather">Clear</div></div>
-  <div id="hint">WASD 移動 / Space ジャンプ / 左クリック 採掘 / 右クリック 設置 / R 雨</div>
+  <div id="hint">WASD 移動 / Space ジャンプ / 左クリック 採掘 / 右クリック 設置 / C クラフト / R 雨</div>
   <div id="message"></div>
   <div id="hotbar"></div>
 </div>
 <div id="mobile">
   <div class="pad"><button class="up">▲</button><button class="left">◀</button><button class="down">▼</button><button class="right">▶</button></div>
   <button class="jump">JUMP</button>
-  <div id="tapbar"><button id="tapMine">採掘</button><button id="tapPlace">設置</button></div>
+  <div id="tapbar"><button id="tapMine">採掘</button><button id="tapPlace">設置</button><button id="tapCraft">CRAFT</button></div>
+</div>
+<div id="crafting" aria-hidden="true">
+  <div class="craft-panel">
+    <div class="craft-head">
+      <div>
+        <div class="craft-title">CRAFTING</div>
+        <div class="craft-sub">材料を集めてアイテムを作る</div>
+      </div>
+      <button id="craftClose" aria-label="閉じる">×</button>
+    </div>
+    <div id="craftInventory"></div>
+    <div id="recipeList"></div>
+    <div class="craft-help">Cキーで開閉 / 作業台を作ると上位レシピ解放</div>
+  </div>
 </div>
 <div id="startCover">
   <div class="panel">
