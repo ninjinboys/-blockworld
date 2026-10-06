@@ -33,6 +33,9 @@ const names={1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石�
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS];
 const inventory={[B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.IRON]:0,[B.GOLD]:0,[B.DIAMOND]:0,[I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0};
+const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
+const itemColors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',8:'#454545',9:'#b78770',10:'#d6b33d',11:'#4ccbd2',15:'#ad7b46',16:'#686c6c',17:'#ccebee'};
+const itemGlyphs={[I.STICK]:'棒',[I.CRAFTING_TABLE]:'台',[I.FURNACE]:'炉',[I.WOOD_PICK]:'木⛏',[I.STONE_PICK]:'石⛏'};
 const recipes=[
   {name:'木材 ×4',out:B.PLANK,qty:4,needs:[[B.LOG,1]],unlockLevel:2},
   {name:'棒 ×4',out:I.STICK,qty:4,needs:[[B.PLANK,2]],unlockLevel:3},
@@ -172,13 +175,37 @@ function canMineBlock(id,showMessage=true){
   if([B.IRON,B.GOLD,B.DIAMOND].includes(id)&&!hasStone){if(showMessage)flash('この鉱石には石のツルハシが必要');return false}
   return true;
 }
+function normalizeHotbar(){
+  for(let i=0;i<hotbarSlots.length;i++){
+    const id=hotbarSlots[i];
+    if(id!=null&&(inventory[id]||0)<=0)hotbarSlots[i]=null;
+  }
+  for(const id of acquiredOrder){
+    if((inventory[id]||0)>0&&!hotbarSlots.includes(id)){
+      const empty=hotbarSlots.indexOf(null);
+      if(empty>=0)hotbarSlots[empty]=id;
+    }
+  }
+  if(selected!=null&&(inventory[selected]||0)<=0)selected=null;
+  if(selected==null)selected=hotbarSlots.find(id=>id!=null&&(inventory[id]||0)>0)??null;
+}
+function addItem(id,qty=1){
+  if(qty<=0)return;
+  inventory[id]=(inventory[id]||0)+qty;
+  if(!acquiredOrder.includes(id))acquiredOrder.push(id);
+  normalizeHotbar();
+}
+function removeItem(id,qty=1){
+  inventory[id]=Math.max(0,(inventory[id]||0)-qty);
+  normalizeHotbar();
+}
 function finishMine(x,y,z,id){
   if(get(x,y,z)!==id)return;
   set(x,y,z,B.AIR);
   let drop=id;
   if(id===B.STONE)drop=B.COBBLE;
   if(id===B.GRASS)drop=B.DIRT;
-  if(buildable.includes(drop)||[B.COAL,B.IRON,B.GOLD,B.DIAMOND].includes(drop))inventory[drop]=(inventory[drop]||0)+1;
+  if(buildable.includes(drop)||[B.COAL,B.IRON,B.GOLD,B.DIAMOND].includes(drop))addItem(drop,1);
   rebuild();renderHotbar();gainXP(blockXP[id]||1,names[id]||'採掘');
 }
 function clearMining(){
@@ -211,7 +238,7 @@ function updateMining(dt){
     breakFill.style.width='0%';
   }
 }
-function place(){const h=target();if(!h||!h.face)return;if(selected==null||(inventory[selected]||0)<=0){flash('置けるブロックを持っていません');return}const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;set(x,y,z,selected);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}inventory[selected]--;rebuild();renderHotbar();flash((names[selected]||'ブロック')+'を設置')}
+function place(){const h=target();if(!h||!h.face)return;if(selected==null||(inventory[selected]||0)<=0){flash('置けるブロックを持っていません');return}if(!buildable.includes(selected)){flash((names[selected]||'このアイテム')+'は今は設置できません');return}const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;set(x,y,z,selected);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}removeItem(selected,1);rebuild();renderHotbar();flash((names[selected]||'ブロック')+'を設置')}
 function attackMob(){
   ray.setFromCamera(new THREE.Vector2(0,0),camera);
   const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
@@ -234,17 +261,20 @@ function primaryActionStart(){
 function primaryActionStop(){miningHeld=false;clearMining()}
 
 function renderHotbar(){
-  hotbarEl.innerHTML='';
-  const colors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',16:'#686c6c',15:'#ad7b46',17:'#ccebee'};
-  if(selected!=null&&(inventory[selected]||0)<=0)selected=buildable.find(id=>(inventory[id]||0)>0)??null;
-  if(selected==null)selected=buildable.find(id=>(inventory[id]||0)>0)??null;
-  buildable.forEach((id,i)=>{
-    const count=inventory[id]||0,d=document.createElement('div');
-    d.className='slot'+(count>0&&id===selected?' active':'');
-    d.innerHTML=count>0
-      ? `<span class="key">${i+1}</span><span class="swatch" style="background:${colors[id]}"></span><span class="qty">${count}</span>`
-      : `<span class="key">${i+1}</span>`;
-    d.addEventListener('pointerdown',e=>{e.stopPropagation();if((inventory[id]||0)>0){selected=id;renderHotbar()}});
+  normalizeHotbar();hotbarEl.innerHTML='';
+  hotbarSlots.forEach((id,i)=>{
+    const d=document.createElement('div'),count=id==null?0:(inventory[id]||0);
+    d.className='slot'+(id!=null&&id===selected?' active':'');
+    if(id==null){
+      d.innerHTML=`<span class="key">${i+1}</span>`;
+    }else{
+      const visual=itemGlyphs[id]
+        ? `<span class="item-glyph">${itemGlyphs[id]}</span>`
+        : `<span class="swatch" style="background:${itemColors[id]||'#777'}"></span>`;
+      d.innerHTML=`<span class="key">${i+1}</span>${visual}<span class="qty">${count}</span><span class="item-name">${names[id]||'ITEM'}</span>`;
+      d.title=names[id]||'アイテム';
+      d.addEventListener('pointerdown',e=>{e.stopPropagation();selected=id;renderHotbar()});
+    }
     hotbarEl.appendChild(d);
   });
 }
@@ -267,8 +297,8 @@ function craftRecipe(i){
   const r=recipes[i];
   if(level<r.unlockLevel){flash('LV '+r.unlockLevel+'で設計図を獲得');return}
   if(!hasNeeds(r)){flash('材料が足りません');return}
-  r.needs.forEach(([id,n])=>inventory[id]-=n);
-  inventory[r.out]=(inventory[r.out]||0)+r.qty;
+  r.needs.forEach(([id,n])=>removeItem(id,n));
+  addItem(r.out,r.qty);
   renderHotbar();renderCrafting();flash(r.name+'をクラフト');
 }
 function setCraftOpen(v){
@@ -279,7 +309,7 @@ function setCraftOpen(v){
 }
 
 const keys={};
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}if(craftOpen)return;keys[k]=true;if(e.code==='Space'){e.preventDefault();jump()}if(/^[1-9]$/.test(e.key)){const id=buildable[+e.key-1];if(id&&(inventory[id]||0)>0)selected=id;renderHotbar()}if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}if(craftOpen)return;keys[k]=true;if(e.code==='Space'){e.preventDefault();jump()}if(/^[1-9]$/.test(e.key)){const id=hotbarSlots[+e.key-1];if(id!=null&&(inventory[id]||0)>0)selected=id;renderHotbar()}if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 function jump(){if(player.onGround){player.vel.y=7.3;player.onGround=false}}
 
