@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 
 const $=id=>document.getElementById(id);
-const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText');
+const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill');
 
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -42,8 +42,15 @@ const recipes=[
   {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7}
 ];
 const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
+const hardness={
+  [B.GRASS]:0.55,[B.DIRT]:0.45,[B.SAND]:0.4,[B.LEAF]:0.22,[B.SNOW]:0.18,[B.GRAVEL]:0.75,[B.CACTUS]:0.65,
+  [B.LOG]:1.55,[B.PLANK]:1.25,[B.GLASS]:0.3,
+  [B.STONE]:3.0,[B.COBBLE]:3.4,[B.COAL]:3.5,[B.IRON]:4.2,[B.GOLD]:4.0,[B.DIAMOND]:5.0,
+  [B.BEDROCK]:Infinity
+};
+const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND]);
 
-let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,level=1,xp=0;
+let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 let voxels=new Uint8Array(SIZE*HEIGHT*SIZE),surface=new Int16Array(SIZE*SIZE),biomes=new Uint8Array(SIZE*SIZE);
 
 const inside=(x,y,z)=>x>=-HALF&&x<HALF&&z>=-HALF&&z<HALF&&y>=0&&y<HEIGHT;
@@ -151,16 +158,58 @@ function gainXP(amount,source=''){
   if(unlocked.length)flash('LEVEL UP! LV '+level+'　設計図獲得：'+unlocked.join(' / '));
   else flash('+'+amount+' XP'+(source?'　'+source:''));
 }
-function mine(){const h=target();if(!h)return;const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const id=get(p.x,p.y,p.z);if(id===B.BEDROCK||id===B.WATER)return;
+function toolSpeed(id){
+  if(!rockBlocks.has(id))return 1;
+  if((inventory[I.STONE_PICK]||0)>0)return 3.6;
+  if((inventory[I.WOOD_PICK]||0)>0)return 2.2;
+  return 1;
+}
+function canMineBlock(id,showMessage=true){
   const hasWood=(inventory[I.WOOD_PICK]||0)>0,hasStone=(inventory[I.STONE_PICK]||0)>0;
-  if(id===B.COAL&&!hasWood&&!hasStone){flash('石炭にはツルハシが必要');return}
-  if([B.IRON,B.GOLD,B.DIAMOND].includes(id)&&!hasStone){flash('この鉱石には石のツルハシが必要');return}
-  set(p.x,p.y,p.z,B.AIR);
+  if(id===B.BEDROCK){if(showMessage)flash('岩盤は壊せません');return false}
+  if(id===B.WATER||id===B.AIR)return false;
+  if(id===B.COAL&&!hasWood&&!hasStone){if(showMessage)flash('石炭にはツルハシが必要');return false}
+  if([B.IRON,B.GOLD,B.DIAMOND].includes(id)&&!hasStone){if(showMessage)flash('この鉱石には石のツルハシが必要');return false}
+  return true;
+}
+function finishMine(x,y,z,id){
+  if(get(x,y,z)!==id)return;
+  set(x,y,z,B.AIR);
   let drop=id;
   if(id===B.STONE)drop=B.COBBLE;
   if(id===B.GRASS)drop=B.DIRT;
   if(buildable.includes(drop)||[B.COAL,B.IRON,B.GOLD,B.DIAMOND].includes(drop))inventory[drop]=(inventory[drop]||0)+1;
-  rebuild();renderHotbar();gainXP(blockXP[id]||1,names[id]||'採掘')
+  rebuild();renderHotbar();gainXP(blockXP[id]||1,names[id]||'採掘');
+}
+function clearMining(){
+  miningKey=null;miningElapsed=0;miningId=null;
+  breakFill.style.width='0%';breakMeter.classList.remove('active');
+}
+function startMining(){
+  const h=target();if(!h){clearMining();return}
+  const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p){clearMining();return}
+  const id=get(p.x,p.y,p.z);if(!canMineBlock(id,true)){clearMining();return}
+  miningKey=`${p.x},${p.y},${p.z}`;miningElapsed=0;miningId=id;
+  breakLabel.textContent=(names[id]||'ブロック')+' 硬度 '+(Number.isFinite(hardness[id])?hardness[id].toFixed(1):'∞');
+  breakFill.style.width='0%';breakMeter.classList.add('active');
+}
+function updateMining(dt){
+  if(!miningHeld||craftOpen){clearMining();return}
+  const h=target();if(!h){clearMining();return}
+  const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p){clearMining();return}
+  const id=get(p.x,p.y,p.z),key=`${p.x},${p.y},${p.z}`;
+  if(!canMineBlock(id,false)){clearMining();return}
+  if(key!==miningKey||id!==miningId){miningKey=key;miningElapsed=0;miningId=id}
+  const need=(hardness[id]??1)/toolSpeed(id);
+  miningElapsed+=dt;
+  const pct=Math.max(0,Math.min(100,miningElapsed/need*100));
+  breakLabel.textContent=(names[id]||'ブロック')+' '+Math.floor(pct)+'%';
+  breakFill.style.width=pct+'%';breakMeter.classList.add('active');
+  if(miningElapsed>=need){
+    finishMine(p.x,p.y,p.z,id);
+    miningElapsed=0;miningKey=null;miningId=null;
+    breakFill.style.width='0%';
+  }
 }
 function place(){const h=target();if(!h||!h.face)return;if(selected==null||(inventory[selected]||0)<=0){flash('置けるブロックを持っていません');return}const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;set(x,y,z,selected);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}inventory[selected]--;rebuild();renderHotbar();flash((names[selected]||'ブロック')+'を設置')}
 function attackMob(){
@@ -178,7 +227,11 @@ function attackMob(){
   }else flash((root.userData.name||'動物')+'に攻撃　HP '+root.userData.hp);
   return true;
 }
-function primaryAction(){if(!attackMob())mine()}
+function primaryActionStart(){
+  if(attackMob()){miningHeld=false;clearMining();return}
+  miningHeld=true;startMining();
+}
+function primaryActionStop(){miningHeld=false;clearMining()}
 
 function renderHotbar(){
   hotbarEl.innerHTML='';
@@ -221,7 +274,7 @@ function craftRecipe(i){
 function setCraftOpen(v){
   craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
-  if(v){document.exitPointerLock?.();renderCrafting()}
+  if(v){primaryActionStop();document.exitPointerLock?.();renderCrafting()}
   else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
 }
 
@@ -232,7 +285,8 @@ function jump(){if(player.onGround){player.vel.y=7.3;player.onGround=false}}
 
 renderer.domElement.addEventListener('click',()=>{if(!craftOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
-renderer.domElement.addEventListener('mousedown',e=>{if(!started||craftOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryAction();if(e.button===2)place()});
+renderer.domElement.addEventListener('mousedown',e=>{if(!started||craftOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
+addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop()});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 let touchLook=null;
@@ -243,7 +297,8 @@ renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 function hold(q,k){const b=document.querySelector(q),on=e=>{e.preventDefault();keys[k]=true},off=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',on);['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,off))}
 hold('.pad .up','w');hold('.pad .down','s');hold('.pad .left','a');hold('.pad .right','d');
 document.querySelector('.jump').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
-$('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();primaryAction()});
+$('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();primaryActionStart()});
+['pointerup','pointercancel','pointerleave'].forEach(t=>$('tapMine').addEventListener(t,e=>{e.preventDefault();primaryActionStop()}));
 $('tapPlace').addEventListener('pointerdown',e=>{e.preventDefault();place()});
 $('tapCraft').addEventListener('pointerdown',e=>{e.preventDefault();setCraftOpen(true)});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
@@ -254,6 +309,7 @@ const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vecto
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
   if(started&&!craftOpen){
+    updateMining(dt);
     dayTime=(dayTime+dt/210)%1;
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
     if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
