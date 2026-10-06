@@ -45,3 +45,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 #blueprintText{text-align:center;font-size:10px;color:#fff5b1}
 .recipe-level{display:inline-block;margin-left:6px;padding:1px 4px;background:#6a6a6a;color:#fff;font-size:9px}
 @media(max-width:760px),(pointer:coarse){#progress{bottom:70px;width:min(300px,70vw);left:53%}.xp-row{font-size:10px}#levelText{font-size:11px}#blueprintText{font-size:9px}}
+
+#breakMeter{position:fixed;left:50%;top:calc(50% + 28px);transform:translateX(-50%);width:180px;display:none;pointer-events:none;z-index:6;color:#fff;text-align:center;text-shadow:0 2px 2px #000}
+#breakMeter.active{display:block}
+#breakLabel{font-size:11px;margin-bottom:4px}
+#breakTrack{height:9px;background:rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.45);overflow:hidden}
+#breakFill{height:100%;width:0;background:#fff;transition:width .05s linear}
