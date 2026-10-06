@@ -36,3 +36,12 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 .recipe button:disabled{background:#888;box-shadow:none;color:#555;cursor:not-allowed}
 .craft-help{font-size:10px;color:#444;margin-top:10px;text-align:center}
 @media(max-width:760px),(pointer:coarse){#recipeList{grid-template-columns:1fr}.craft-panel{width:94vw;max-height:80vh;padding:10px}.recipe{grid-template-columns:1fr auto}.craft-title{font-size:18px}#tapbar{bottom:18px;right:12px;flex-direction:column}#tapbar button{min-width:68px;height:40px}}
+
+#progress{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);width:min(360px,78vw);background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.28);padding:7px 9px;border-radius:7px;backdrop-filter:blur(4px)}
+.xp-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px}
+#levelText{color:#d6ff68;font-size:13px}#xpText{opacity:.9}
+#xpTrack{height:8px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);margin:5px 0 4px;overflow:hidden}
+#xpFill{height:100%;width:0;background:#78c83d;transition:width .22s ease}
+#blueprintText{text-align:center;font-size:10px;color:#fff5b1}
+.recipe-level{display:inline-block;margin-left:6px;padding:1px 4px;background:#6a6a6a;color:#fff;font-size:9px}
+@media(max-width:760px),(pointer:coarse){#progress{bottom:70px;width:min(300px,70vw);left:53%}.xp-row{font-size:10px}#levelText{font-size:11px}#blueprintText{font-size:9px}}
