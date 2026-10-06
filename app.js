@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 
 const $=id=>document.getElementById(id);
-const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory');
+const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText');
 
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -32,17 +32,18 @@ const I={STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105};
 const names={1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭鉱石',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',101:'棒',102:'作業台',103:'かまど',104:'木のツルハシ',105:'石のツルハシ'};
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS];
-const inventory={[B.GRASS]:16,[B.DIRT]:32,[B.STONE]:32,[B.SAND]:24,[B.LOG]:16,[B.LEAF]:16,[B.COBBLE]:32,[B.PLANK]:32,[B.GLASS]:18,[B.COAL]:0,[B.IRON]:0,[B.GOLD]:0,[B.DIAMOND]:0,[I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0};
+const inventory={[B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.IRON]:0,[B.GOLD]:0,[B.DIAMOND]:0,[I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0};
 const recipes=[
-  {name:'木材 ×4',out:B.PLANK,qty:4,needs:[[B.LOG,1]],advanced:false},
-  {name:'棒 ×4',out:I.STICK,qty:4,needs:[[B.PLANK,2]],advanced:false},
-  {name:'作業台',out:I.CRAFTING_TABLE,qty:1,needs:[[B.PLANK,4]],advanced:false},
-  {name:'木のツルハシ',out:I.WOOD_PICK,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],advanced:true},
-  {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],advanced:true},
-  {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],advanced:true}
+  {name:'木材 ×4',out:B.PLANK,qty:4,needs:[[B.LOG,1]],unlockLevel:2},
+  {name:'棒 ×4',out:I.STICK,qty:4,needs:[[B.PLANK,2]],unlockLevel:3},
+  {name:'作業台',out:I.CRAFTING_TABLE,qty:1,needs:[[B.PLANK,4]],unlockLevel:4},
+  {name:'木のツルハシ',out:I.WOOD_PICK,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5},
+  {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
+  {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7}
 ];
+const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
 
-let selected=B.DIRT,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false;
+let selected=B.DIRT,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,level=1,xp=0;
 let voxels=new Uint8Array(SIZE*HEIGHT*SIZE),surface=new Int16Array(SIZE*SIZE),biomes=new Uint8Array(SIZE*SIZE);
 
 const inside=(x,y,z)=>x>=-HALF&&x<HALF&&z>=-HALF&&z<HALF&&y>=0&&y<HEIGHT;
@@ -114,7 +115,7 @@ function rebuild(){
 
 const mobs=[];
 function cube(g,sx,sy,sz,color,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);m.castShadow=true;g.add(m)}
-function spawnMobs(){mobs.forEach(m=>scene.remove(m));mobs.length=0;for(let i=0;i<10;i++){const x=Math.floor(hash3(i,1,2,seed+71)*(SIZE-14))-HALF+7,z=Math.floor(hash3(i,3,4,seed+81)*(SIZE-14))-HALF+7;if(surface[si(x,z)]<=SEA||biomes[si(x,z)]===2)continue;const type=i%3,color=type===0?0xeeeeea:type===1?0xe8999f:0x7b5239,g=new THREE.Group();cube(g,1.15,.72,.65,color,0,.85,0);cube(g,.57,.57,.55,color,0,.95,-.56);for(const lx of[-.4,.4])for(const lz of[-.2,.2])cube(g,.16,.55,.16,type===0?0x444444:color,lx,.33,lz);g.position.set(x,surface[si(x,z)]+.05,z);g.userData={angle:hash2(x,z)*Math.PI*2,t:2+hash2(z,x)*3,speed:.25+hash2(x+4,z+2)*.28};scene.add(g);mobs.push(g)}}
+function spawnMobs(){mobs.forEach(m=>scene.remove(m));mobs.length=0;for(let i=0;i<10;i++){const x=Math.floor(hash3(i,1,2,seed+71)*(SIZE-14))-HALF+7,z=Math.floor(hash3(i,3,4,seed+81)*(SIZE-14))-HALF+7;if(surface[si(x,z)]<=SEA||biomes[si(x,z)]===2)continue;const type=i%3,color=type===0?0xeeeeea:type===1?0xe8999f:0x7b5239,g=new THREE.Group();cube(g,1.15,.72,.65,color,0,.85,0);cube(g,.57,.57,.55,color,0,.95,-.56);for(const lx of[-.4,.4])for(const lz of[-.2,.2])cube(g,.16,.55,.16,type===0?0x444444:color,lx,.33,lz);g.position.set(x,surface[si(x,z)]+.05,z);g.userData={angle:hash2(x,z)*Math.PI*2,t:2+hash2(z,x)*3,speed:.25+hash2(x+4,z+2)*.28,hp:type===2?4:3,xp:type===2?18:type===1?14:12,name:type===0?'ヒツジ':type===1?'ブタ':'ウシ'};scene.add(g);mobs.push(g)}}
 
 const clouds=[];
 for(let i=0;i<10;i++){const g=new THREE.Group(),mat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.75,depthWrite:false});for(let j=0;j<3;j++){const m=new THREE.Mesh(new THREE.BoxGeometry(6+j*1.4,.55,3),mat);m.position.x=j*4;g.add(m)}g.position.set(-40+hash3(i,2,3,44)*80,25+hash3(i,3,4,55)*4,-35+hash3(i,4,5,66)*70);scene.add(g);clouds.push(g)}
@@ -131,16 +132,53 @@ function spawn(){let best={x:0,z:0,d:1e9};for(let x=-10;x<=10;x++)for(let z=-10;
 
 const ray=new THREE.Raycaster();ray.far=6;
 function target(){ray.setFromCamera(new THREE.Vector2(0,0),camera);const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
-function flash(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(flash.t);flash.t=setTimeout(()=>msgEl.style.opacity=0,900)}
+function flash(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(flash.t);flash.t=setTimeout(()=>msgEl.style.opacity=0,1200)}
+function xpNeeded(lv){return 12+lv*8}
+function nextBlueprint(){return recipes.find(r=>r.unlockLevel>level)||null}
+function updateProgress(){
+  const need=xpNeeded(level),pct=Math.max(0,Math.min(100,xp/need*100));
+  levelText.textContent='LV '+level;xpText.textContent=xp+' / '+need+' XP';xpFill.style.width=pct+'%';
+  const next=nextBlueprint();blueprintText.textContent=next?'次の設計図：'+next.name.replace(/ ×\d+$/,'')+'（LV '+next.unlockLevel+'）':'全設計図を獲得済み';
+}
+function gainXP(amount,source=''){
+  if(amount<=0)return;
+  xp+=amount;let unlocked=[];
+  while(xp>=xpNeeded(level)){
+    xp-=xpNeeded(level);level++;
+    const rs=recipes.filter(r=>r.unlockLevel===level);unlocked.push(...rs.map(r=>r.name.replace(/ ×\d+$/,'')));
+  }
+  updateProgress();
+  if(unlocked.length)flash('LEVEL UP! LV '+level+'　設計図獲得：'+unlocked.join(' / '));
+  else flash('+'+amount+' XP'+(source?'　'+source:''));
+}
 function mine(){const h=target();if(!h)return;const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const id=get(p.x,p.y,p.z);if(id===B.BEDROCK||id===B.WATER)return;
   const hasWood=(inventory[I.WOOD_PICK]||0)>0,hasStone=(inventory[I.STONE_PICK]||0)>0;
   if(id===B.COAL&&!hasWood&&!hasStone){flash('石炭にはツルハシが必要');return}
   if([B.IRON,B.GOLD,B.DIAMOND].includes(id)&&!hasStone){flash('この鉱石には石のツルハシが必要');return}
   set(p.x,p.y,p.z,B.AIR);
-  if(buildable.includes(id)||[B.COAL,B.IRON,B.GOLD,B.DIAMOND].includes(id))inventory[id]=(inventory[id]||0)+1;
-  rebuild();renderHotbar();flash((names[id]||'ブロック')+'を採掘')
+  let drop=id;
+  if(id===B.STONE)drop=B.COBBLE;
+  if(id===B.GRASS)drop=B.DIRT;
+  if(buildable.includes(drop)||[B.COAL,B.IRON,B.GOLD,B.DIAMOND].includes(drop))inventory[drop]=(inventory[drop]||0)+1;
+  rebuild();renderHotbar();gainXP(blockXP[id]||1,names[id]||'採掘')
 }
 function place(){const h=target();if(!h||!h.face)return;const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;if((inventory[selected]||0)<=0){flash('ブロックがありません');return}const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;set(x,y,z,selected);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}inventory[selected]--;rebuild();renderHotbar();flash((names[selected]||'ブロック')+'を設置')}
+function attackMob(){
+  ray.setFromCamera(new THREE.Vector2(0,0),camera);
+  const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
+  if(!hits.length)return false;
+  let root=hits[0].object;
+  while(root.parent&&!mobs.includes(root))root=root.parent;
+  if(!mobs.includes(root))return false;
+  root.userData.hp--;
+  if(root.userData.hp<=0){
+    const earned=root.userData.xp||12,name=root.userData.name||'動物';
+    scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1);
+    gainXP(earned,name+'を倒した');
+  }else flash((root.userData.name||'動物')+'に攻撃　HP '+root.userData.hp);
+  return true;
+}
+function primaryAction(){if(!attackMob())mine()}
 
 function renderHotbar(){hotbarEl.innerHTML='';const colors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',16:'#686c6c',15:'#ad7b46',17:'#ccebee'};buildable.forEach((id,i)=>{const d=document.createElement('div');d.className='slot'+(id===selected?' active':'');d.innerHTML=`<span class="key">${i+1}</span><span class="swatch" style="background:${colors[id]}"></span><span class="qty">${inventory[id]||0}</span>`;d.addEventListener('pointerdown',e=>{e.stopPropagation();selected=id;renderHotbar()});hotbarEl.appendChild(d)})}
 
@@ -148,20 +186,19 @@ function hasNeeds(recipe){return recipe.needs.every(([id,n])=>(inventory[id]||0)
 function renderCrafting(){
   const ids=[B.LOG,B.PLANK,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,I.STICK,I.CRAFTING_TABLE,I.FURNACE,I.WOOD_PICK,I.STONE_PICK];
   craftInventory.innerHTML=ids.map(id=>`<div class="inv-chip">${names[id]} <strong>${inventory[id]||0}</strong></div>`).join('');
-  const unlocked=(inventory[I.CRAFTING_TABLE]||0)>0;
   recipeList.innerHTML='';
   recipes.forEach((r,i)=>{
-    const locked=r.advanced&&!unlocked,can=!locked&&hasNeeds(r);
+    const locked=level<r.unlockLevel,can=!locked&&hasNeeds(r);
     const d=document.createElement('div');d.className='recipe'+(locked?' locked':'');
     const needText=r.needs.map(([id,n])=>`${names[id]} ×${n}`).join(' ＋ ');
-    d.innerHTML=`<div><div class="recipe-name">${locked?'🔒 ':''}${r.name}</div><div class="recipe-needs">${locked?'作業台が必要':needText}</div></div><button ${can?'':'disabled'}>作る</button>`;
+    d.innerHTML=`<div><div class="recipe-name">${locked?'🔒 ':''}${r.name}<span class="recipe-level">LV ${r.unlockLevel}</span></div><div class="recipe-needs">${locked?'設計図未取得':needText}</div></div><button ${can?'':'disabled'}>作る</button>`;
     d.querySelector('button').addEventListener('click',()=>craftRecipe(i));
     recipeList.appendChild(d);
   });
 }
 function craftRecipe(i){
-  const r=recipes[i],unlocked=(inventory[I.CRAFTING_TABLE]||0)>0;
-  if(r.advanced&&!unlocked){flash('先に作業台を作ってください');return}
+  const r=recipes[i];
+  if(level<r.unlockLevel){flash('LV '+r.unlockLevel+'で設計図を獲得');return}
   if(!hasNeeds(r)){flash('材料が足りません');return}
   r.needs.forEach(([id,n])=>inventory[id]-=n);
   inventory[r.out]=(inventory[r.out]||0)+r.qty;
@@ -181,7 +218,7 @@ function jump(){if(player.onGround){player.vel.y=7.3;player.onGround=false}}
 
 renderer.domElement.addEventListener('click',()=>{if(!craftOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
-renderer.domElement.addEventListener('mousedown',e=>{if(!started||craftOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)mine();if(e.button===2)place()});
+renderer.domElement.addEventListener('mousedown',e=>{if(!started||craftOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryAction();if(e.button===2)place()});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 let touchLook=null;
@@ -192,7 +229,7 @@ renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 function hold(q,k){const b=document.querySelector(q),on=e=>{e.preventDefault();keys[k]=true},off=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',on);['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,off))}
 hold('.pad .up','w');hold('.pad .down','s');hold('.pad .left','a');hold('.pad .right','d');
 document.querySelector('.jump').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
-$('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();mine()});
+$('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();primaryAction()});
 $('tapPlace').addEventListener('pointerdown',e=>{e.preventDefault();place()});
 $('tapCraft').addEventListener('pointerdown',e=>{e.preventDefault();setCraftOpen(true)});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
@@ -236,7 +273,7 @@ function loop(now){
 function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
-async function init(){loading.textContent='地形生成中...';await new Promise(r=>setTimeout(r,40));generate();loading.textContent='ブロック描画中...';await new Promise(r=>setTimeout(r,40));rebuild();spawnMobs();spawn();renderHotbar();loading.textContent='準備完了'}
+async function init(){loading.textContent='地形生成中...';await new Promise(r=>setTimeout(r,40));generate();loading.textContent='ブロック描画中...';await new Promise(r=>setTimeout(r,40));rebuild();spawnMobs();spawn();renderHotbar();updateProgress();loading.textContent='準備完了'}
 await init();
 $('startBtn').addEventListener('click',()=>{started=true;cover.style.display='none';if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 requestAnimationFrame(loop);
