@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 
 const $=id=>document.getElementById(id);
-const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading');
+const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory');
 
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -28,12 +28,21 @@ scene.add(sunBox,moonBox);
 
 const SIZE=68,HALF=SIZE>>1,HEIGHT=38,SEA=11;
 const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18};
-const names={1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭鉱石',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤'};
+const I={STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105};
+const names={1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭鉱石',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',101:'棒',102:'作業台',103:'かまど',104:'木のツルハシ',105:'石のツルハシ'};
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS];
-const inventory={[B.GRASS]:16,[B.DIRT]:32,[B.STONE]:32,[B.SAND]:24,[B.LOG]:16,[B.LEAF]:16,[B.COBBLE]:32,[B.PLANK]:32,[B.GLASS]:18};
+const inventory={[B.GRASS]:16,[B.DIRT]:32,[B.STONE]:32,[B.SAND]:24,[B.LOG]:16,[B.LEAF]:16,[B.COBBLE]:32,[B.PLANK]:32,[B.GLASS]:18,[B.COAL]:0,[B.IRON]:0,[B.GOLD]:0,[B.DIAMOND]:0,[I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0};
+const recipes=[
+  {name:'木材 ×4',out:B.PLANK,qty:4,needs:[[B.LOG,1]],advanced:false},
+  {name:'棒 ×4',out:I.STICK,qty:4,needs:[[B.PLANK,2]],advanced:false},
+  {name:'作業台',out:I.CRAFTING_TABLE,qty:1,needs:[[B.PLANK,4]],advanced:false},
+  {name:'木のツルハシ',out:I.WOOD_PICK,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],advanced:true},
+  {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],advanced:true},
+  {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],advanced:true}
+];
 
-let selected=B.DIRT,seed=(Date.now()>>>0),weather='clear',started=false;
+let selected=B.DIRT,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false;
 let voxels=new Uint8Array(SIZE*HEIGHT*SIZE),surface=new Int16Array(SIZE*SIZE),biomes=new Uint8Array(SIZE*SIZE);
 
 const inside=(x,y,z)=>x>=-HALF&&x<HALF&&z>=-HALF&&z<HALF&&y>=0&&y<HEIGHT;
@@ -123,23 +132,60 @@ function spawn(){let best={x:0,z:0,d:1e9};for(let x=-10;x<=10;x++)for(let z=-10;
 const ray=new THREE.Raycaster();ray.far=6;
 function target(){ray.setFromCamera(new THREE.Vector2(0,0),camera);const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
 function flash(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(flash.t);flash.t=setTimeout(()=>msgEl.style.opacity=0,900)}
-function mine(){const h=target();if(!h)return;const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const id=get(p.x,p.y,p.z);if(id===B.BEDROCK||id===B.WATER)return;set(p.x,p.y,p.z,B.AIR);if(buildable.includes(id))inventory[id]=(inventory[id]||0)+1;rebuild();renderHotbar();flash((names[id]||'ブロック')+'を採掘')}
+function mine(){const h=target();if(!h)return;const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const id=get(p.x,p.y,p.z);if(id===B.BEDROCK||id===B.WATER)return;
+  const hasWood=(inventory[I.WOOD_PICK]||0)>0,hasStone=(inventory[I.STONE_PICK]||0)>0;
+  if(id===B.COAL&&!hasWood&&!hasStone){flash('石炭にはツルハシが必要');return}
+  if([B.IRON,B.GOLD,B.DIAMOND].includes(id)&&!hasStone){flash('この鉱石には石のツルハシが必要');return}
+  set(p.x,p.y,p.z,B.AIR);
+  if(buildable.includes(id)||[B.COAL,B.IRON,B.GOLD,B.DIAMOND].includes(id))inventory[id]=(inventory[id]||0)+1;
+  rebuild();renderHotbar();flash((names[id]||'ブロック')+'を採掘')
+}
 function place(){const h=target();if(!h||!h.face)return;const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;if((inventory[selected]||0)<=0){flash('ブロックがありません');return}const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;set(x,y,z,selected);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}inventory[selected]--;rebuild();renderHotbar();flash((names[selected]||'ブロック')+'を設置')}
 
 function renderHotbar(){hotbarEl.innerHTML='';const colors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',16:'#686c6c',15:'#ad7b46',17:'#ccebee'};buildable.forEach((id,i)=>{const d=document.createElement('div');d.className='slot'+(id===selected?' active':'');d.innerHTML=`<span class="key">${i+1}</span><span class="swatch" style="background:${colors[id]}"></span><span class="qty">${inventory[id]||0}</span>`;d.addEventListener('pointerdown',e=>{e.stopPropagation();selected=id;renderHotbar()});hotbarEl.appendChild(d)})}
 
+function hasNeeds(recipe){return recipe.needs.every(([id,n])=>(inventory[id]||0)>=n)}
+function renderCrafting(){
+  const ids=[B.LOG,B.PLANK,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,I.STICK,I.CRAFTING_TABLE,I.FURNACE,I.WOOD_PICK,I.STONE_PICK];
+  craftInventory.innerHTML=ids.map(id=>`<div class="inv-chip">${names[id]} <strong>${inventory[id]||0}</strong></div>`).join('');
+  const unlocked=(inventory[I.CRAFTING_TABLE]||0)>0;
+  recipeList.innerHTML='';
+  recipes.forEach((r,i)=>{
+    const locked=r.advanced&&!unlocked,can=!locked&&hasNeeds(r);
+    const d=document.createElement('div');d.className='recipe'+(locked?' locked':'');
+    const needText=r.needs.map(([id,n])=>`${names[id]} ×${n}`).join(' ＋ ');
+    d.innerHTML=`<div><div class="recipe-name">${locked?'🔒 ':''}${r.name}</div><div class="recipe-needs">${locked?'作業台が必要':needText}</div></div><button ${can?'':'disabled'}>作る</button>`;
+    d.querySelector('button').addEventListener('click',()=>craftRecipe(i));
+    recipeList.appendChild(d);
+  });
+}
+function craftRecipe(i){
+  const r=recipes[i],unlocked=(inventory[I.CRAFTING_TABLE]||0)>0;
+  if(r.advanced&&!unlocked){flash('先に作業台を作ってください');return}
+  if(!hasNeeds(r)){flash('材料が足りません');return}
+  r.needs.forEach(([id,n])=>inventory[id]-=n);
+  inventory[r.out]=(inventory[r.out]||0)+r.qty;
+  renderHotbar();renderCrafting();flash(r.name+'をクラフト');
+}
+function setCraftOpen(v){
+  craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
+  Object.keys(keys).forEach(k=>keys[k]=false);
+  if(v){document.exitPointerLock?.();renderCrafting()}
+  else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
+}
+
 const keys={};
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){e.preventDefault();jump()}if(/^[1-9]$/.test(e.key)){selected=buildable[+e.key-1]??selected;renderHotbar()}if(e.key.toLowerCase()==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}if(craftOpen)return;keys[k]=true;if(e.code==='Space'){e.preventDefault();jump()}if(/^[1-9]$/.test(e.key)){selected=buildable[+e.key-1]??selected;renderHotbar()}if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 function jump(){if(player.onGround){player.vel.y=7.3;player.onGround=false}}
 
-renderer.domElement.addEventListener('click',()=>{if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
+renderer.domElement.addEventListener('click',()=>{if(!craftOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
-renderer.domElement.addEventListener('mousedown',e=>{if(!started)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)mine();if(e.button===2)place()});
+renderer.domElement.addEventListener('mousedown',e=>{if(!started||craftOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)mine();if(e.button===2)place()});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 let touchLook=null;
-renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&e.clientX>innerWidth*.35)touchLook={x:e.clientX,y:e.clientY}});
+renderer.domElement.addEventListener('pointerdown',e=>{if(craftOpen)return;if(e.pointerType==='touch'&&e.clientX>innerWidth*.35)touchLook={x:e.clientX,y:e.clientY}});
 renderer.domElement.addEventListener('pointermove',e=>{if(touchLook&&e.pointerType==='touch'){const dx=e.clientX-touchLook.x,dy=e.clientY-touchLook.y;player.yaw-=dx*.006;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch-dy*.006));touchLook={x:e.clientX,y:e.clientY}}});
 renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 
@@ -148,12 +194,15 @@ hold('.pad .up','w');hold('.pad .down','s');hold('.pad .left','a');hold('.pad .r
 document.querySelector('.jump').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
 $('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();mine()});
 $('tapPlace').addEventListener('pointerdown',e=>{e.preventDefault();place()});
+$('tapCraft').addEventListener('pointerdown',e=>{e.preventDefault();setCraftOpen(true)});
+$('craftClose').addEventListener('click',()=>setCraftOpen(false));
+crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
 
 let last=performance.now(),dayTime=.24;
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
-  if(started){
+  if(started&&!craftOpen){
     dayTime=(dayTime+dt/210)%1;
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
     if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
