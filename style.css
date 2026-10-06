@@ -128,3 +128,17 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
     bottom:calc(12px + env(safe-area-inset-bottom)) !important;
   }
 }
+
+/* General-item hotbar */
+.item-glyph{display:grid;place-items:center;width:29px;height:29px;background:#d8d8d8;color:#222;border:2px solid #555;font-size:10px;font-weight:900;line-height:1;text-shadow:none}
+.item-name{position:absolute;left:50%;bottom:-15px;transform:translateX(-50%);font-size:8px;white-space:nowrap;opacity:0;pointer-events:none}
+.slot.active .item-name{opacity:1}
+@media(max-width:760px),(pointer:coarse){
+  #hotbar{overflow-x:auto;overflow-y:visible;max-width:96vw;pointer-events:auto;scrollbar-width:none}
+  #hotbar::-webkit-scrollbar{display:none}
+  .slot{width:38px;height:38px;min-width:38px}
+  .swatch,.item-glyph{width:21px;height:21px}
+  .item-glyph{font-size:8px}
+  .slot:nth-child(n+7){display:grid!important}
+  .item-name{display:none}
+}
