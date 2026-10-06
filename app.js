@@ -43,7 +43,7 @@ const recipes=[
 ];
 const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
 
-let selected=B.DIRT,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,level=1,xp=0;
+let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,level=1,xp=0;
 let voxels=new Uint8Array(SIZE*HEIGHT*SIZE),surface=new Int16Array(SIZE*SIZE),biomes=new Uint8Array(SIZE*SIZE);
 
 const inside=(x,y,z)=>x>=-HALF&&x<HALF&&z>=-HALF&&z<HALF&&y>=0&&y<HEIGHT;
@@ -162,7 +162,7 @@ function mine(){const h=target();if(!h)return;const p=lookup.get(h.object.uuid)?
   if(buildable.includes(drop)||[B.COAL,B.IRON,B.GOLD,B.DIAMOND].includes(drop))inventory[drop]=(inventory[drop]||0)+1;
   rebuild();renderHotbar();gainXP(blockXP[id]||1,names[id]||'採掘')
 }
-function place(){const h=target();if(!h||!h.face)return;const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;if((inventory[selected]||0)<=0){flash('ブロックがありません');return}const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;set(x,y,z,selected);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}inventory[selected]--;rebuild();renderHotbar();flash((names[selected]||'ブロック')+'を設置')}
+function place(){const h=target();if(!h||!h.face)return;if(selected==null||(inventory[selected]||0)<=0){flash('置けるブロックを持っていません');return}const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;set(x,y,z,selected);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}inventory[selected]--;rebuild();renderHotbar();flash((names[selected]||'ブロック')+'を設置')}
 function attackMob(){
   ray.setFromCamera(new THREE.Vector2(0,0),camera);
   const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
@@ -180,12 +180,26 @@ function attackMob(){
 }
 function primaryAction(){if(!attackMob())mine()}
 
-function renderHotbar(){hotbarEl.innerHTML='';const colors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',16:'#686c6c',15:'#ad7b46',17:'#ccebee'};buildable.forEach((id,i)=>{const d=document.createElement('div');d.className='slot'+(id===selected?' active':'');d.innerHTML=`<span class="key">${i+1}</span><span class="swatch" style="background:${colors[id]}"></span><span class="qty">${inventory[id]||0}</span>`;d.addEventListener('pointerdown',e=>{e.stopPropagation();selected=id;renderHotbar()});hotbarEl.appendChild(d)})}
+function renderHotbar(){
+  hotbarEl.innerHTML='';
+  const colors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',16:'#686c6c',15:'#ad7b46',17:'#ccebee'};
+  if(selected!=null&&(inventory[selected]||0)<=0)selected=buildable.find(id=>(inventory[id]||0)>0)??null;
+  if(selected==null)selected=buildable.find(id=>(inventory[id]||0)>0)??null;
+  buildable.forEach((id,i)=>{
+    const count=inventory[id]||0,d=document.createElement('div');
+    d.className='slot'+(count>0&&id===selected?' active':'');
+    d.innerHTML=count>0
+      ? `<span class="key">${i+1}</span><span class="swatch" style="background:${colors[id]}"></span><span class="qty">${count}</span>`
+      : `<span class="key">${i+1}</span>`;
+    d.addEventListener('pointerdown',e=>{e.stopPropagation();if((inventory[id]||0)>0){selected=id;renderHotbar()}});
+    hotbarEl.appendChild(d);
+  });
+}
 
 function hasNeeds(recipe){return recipe.needs.every(([id,n])=>(inventory[id]||0)>=n)}
 function renderCrafting(){
   const ids=[B.LOG,B.PLANK,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,I.STICK,I.CRAFTING_TABLE,I.FURNACE,I.WOOD_PICK,I.STONE_PICK];
-  craftInventory.innerHTML=ids.map(id=>`<div class="inv-chip">${names[id]} <strong>${inventory[id]||0}</strong></div>`).join('');
+  const owned=ids.filter(id=>(inventory[id]||0)>0);craftInventory.innerHTML=owned.length?owned.map(id=>`<div class="inv-chip">${names[id]} <strong>${inventory[id]}</strong></div>`).join(''):'<div class="inv-chip">持ち物なし</div>';
   recipeList.innerHTML='';
   recipes.forEach((r,i)=>{
     const locked=level<r.unlockLevel,can=!locked&&hasNeeds(r);
@@ -212,7 +226,7 @@ function setCraftOpen(v){
 }
 
 const keys={};
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}if(craftOpen)return;keys[k]=true;if(e.code==='Space'){e.preventDefault();jump()}if(/^[1-9]$/.test(e.key)){selected=buildable[+e.key-1]??selected;renderHotbar()}if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}if(craftOpen)return;keys[k]=true;if(e.code==='Space'){e.preventDefault();jump()}if(/^[1-9]$/.test(e.key)){const id=buildable[+e.key-1];if(id&&(inventory[id]||0)>0)selected=id;renderHotbar()}if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 function jump(){if(player.onGround){player.vel.y=7.3;player.onGround=false}}
 
