@@ -28,23 +28,101 @@ scene.add(sunBox,moonBox);
 
 const SIZE=68,HALF=SIZE>>1,HEIGHT=38,SEA=11;
 const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20};
-const I={STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105};
-const names={1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭鉱石',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',101:'棒',102:'作業台',103:'かまど',104:'木のツルハシ',105:'石のツルハシ'};
+const I={
+  STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
+  RAW_IRON:106,RAW_GOLD:107,IRON_INGOT:108,GOLD_INGOT:109,DIAMOND:110,
+  STONE_SWORD:111,STONE_AXE:112,STONE_SHOVEL:113,
+  IRON_PICK:114,IRON_SWORD:115,IRON_AXE:116,IRON_SHOVEL:117,
+  GOLD_PICK:118,GOLD_SWORD:119,GOLD_AXE:120,GOLD_SHOVEL:121,
+  DIAMOND_PICK:122,DIAMOND_SWORD:123,DIAMOND_AXE:124,DIAMOND_SHOVEL:125,
+  IRON_HELMET:126,IRON_CHEST:127,IRON_LEGS:128,IRON_BOOTS:129,
+  GOLD_HELMET:130,GOLD_CHEST:131,GOLD_LEGS:132,GOLD_BOOTS:133,
+  DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137
+};
+const names={
+  1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
+  101:'棒',102:'作業台',103:'かまど',104:'木のツルハシ',105:'石のツルハシ',
+  106:'鉄の原石',107:'金の原石',108:'鉄インゴット',109:'金インゴット',110:'ダイヤモンド',
+  111:'石の剣',112:'石の斧',113:'石のシャベル',
+  114:'鉄のツルハシ',115:'鉄の剣',116:'鉄の斧',117:'鉄のシャベル',
+  118:'金のツルハシ',119:'金の剣',120:'金の斧',121:'金のシャベル',
+  122:'ダイヤのツルハシ',123:'ダイヤの剣',124:'ダイヤの斧',125:'ダイヤのシャベル',
+  126:'鉄のヘルメット',127:'鉄のチェストプレート',128:'鉄のレギンス',129:'鉄のブーツ',
+  130:'金のヘルメット',131:'金のチェストプレート',132:'金のレギンス',133:'金のブーツ',
+  134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ'
+};
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS];
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE};
 const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE};
-const inventory={[B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.IRON]:0,[B.GOLD]:0,[B.DIAMOND]:0,[I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0};
+const inventory={
+  [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,
+  [I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0,
+  [I.RAW_IRON]:0,[I.RAW_GOLD]:0,[I.IRON_INGOT]:0,[I.GOLD_INGOT]:0,[I.DIAMOND]:0,
+  [I.STONE_SWORD]:0,[I.STONE_AXE]:0,[I.STONE_SHOVEL]:0,
+  [I.IRON_PICK]:0,[I.IRON_SWORD]:0,[I.IRON_AXE]:0,[I.IRON_SHOVEL]:0,
+  [I.GOLD_PICK]:0,[I.GOLD_SWORD]:0,[I.GOLD_AXE]:0,[I.GOLD_SHOVEL]:0,
+  [I.DIAMOND_PICK]:0,[I.DIAMOND_SWORD]:0,[I.DIAMOND_AXE]:0,[I.DIAMOND_SHOVEL]:0,
+  [I.IRON_HELMET]:0,[I.IRON_CHEST]:0,[I.IRON_LEGS]:0,[I.IRON_BOOTS]:0,
+  [I.GOLD_HELMET]:0,[I.GOLD_CHEST]:0,[I.GOLD_LEGS]:0,[I.GOLD_BOOTS]:0,
+  [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0
+};
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const itemColors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',8:'#454545',9:'#b78770',10:'#d6b33d',11:'#4ccbd2',15:'#ad7b46',16:'#686c6c',17:'#ccebee'};
-const itemGlyphs={[I.STICK]:'棒',[I.CRAFTING_TABLE]:'台',[I.FURNACE]:'炉',[I.WOOD_PICK]:'木⛏',[I.STONE_PICK]:'石⛏'};
+const itemGlyphs={
+  [I.STICK]:'棒',[I.CRAFTING_TABLE]:'台',[I.FURNACE]:'炉',[I.WOOD_PICK]:'木⛏',[I.STONE_PICK]:'石⛏',
+  [I.RAW_IRON]:'鉄原',[I.RAW_GOLD]:'金原',[I.IRON_INGOT]:'鉄',[I.GOLD_INGOT]:'金',[I.DIAMOND]:'◆',
+  [I.STONE_SWORD]:'石剣',[I.STONE_AXE]:'石斧',[I.STONE_SHOVEL]:'石掘',
+  [I.IRON_PICK]:'鉄⛏',[I.IRON_SWORD]:'鉄剣',[I.IRON_AXE]:'鉄斧',[I.IRON_SHOVEL]:'鉄掘',
+  [I.GOLD_PICK]:'金⛏',[I.GOLD_SWORD]:'金剣',[I.GOLD_AXE]:'金斧',[I.GOLD_SHOVEL]:'金掘',
+  [I.DIAMOND_PICK]:'ダ⛏',[I.DIAMOND_SWORD]:'ダ剣',[I.DIAMOND_AXE]:'ダ斧',[I.DIAMOND_SHOVEL]:'ダ掘',
+  [I.IRON_HELMET]:'鉄頭',[I.IRON_CHEST]:'鉄胴',[I.IRON_LEGS]:'鉄脚',[I.IRON_BOOTS]:'鉄靴',
+  [I.GOLD_HELMET]:'金頭',[I.GOLD_CHEST]:'金胴',[I.GOLD_LEGS]:'金脚',[I.GOLD_BOOTS]:'金靴',
+  [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴'
+};
 const recipes=[
   {name:'木材 ×4',out:B.PLANK,qty:4,needs:[[B.LOG,1]],unlockLevel:2},
   {name:'棒 ×4',out:I.STICK,qty:4,needs:[[B.PLANK,2]],unlockLevel:3},
   {name:'作業台',out:I.CRAFTING_TABLE,qty:1,needs:[[B.PLANK,4]],unlockLevel:4},
   {name:'木のツルハシ',out:I.WOOD_PICK,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5},
-  {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
   {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7}
+];
+const workbenchRecipes=[
+  {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
+  {name:'石の剣',out:I.STONE_SWORD,qty:1,needs:[[B.COBBLE,2],[I.STICK,1]],unlockLevel:6},
+  {name:'石の斧',out:I.STONE_AXE,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
+  {name:'石のシャベル',out:I.STONE_SHOVEL,qty:1,needs:[[B.COBBLE,1],[I.STICK,2]],unlockLevel:6},
+
+  {name:'鉄のツルハシ',out:I.IRON_PICK,qty:1,needs:[[I.IRON_INGOT,3],[I.STICK,2]],unlockLevel:8},
+  {name:'鉄の剣',out:I.IRON_SWORD,qty:1,needs:[[I.IRON_INGOT,2],[I.STICK,1]],unlockLevel:8},
+  {name:'鉄の斧',out:I.IRON_AXE,qty:1,needs:[[I.IRON_INGOT,3],[I.STICK,2]],unlockLevel:8},
+  {name:'鉄のシャベル',out:I.IRON_SHOVEL,qty:1,needs:[[I.IRON_INGOT,1],[I.STICK,2]],unlockLevel:8},
+  {name:'鉄のヘルメット',out:I.IRON_HELMET,qty:1,needs:[[I.IRON_INGOT,5]],unlockLevel:9},
+  {name:'鉄のチェストプレート',out:I.IRON_CHEST,qty:1,needs:[[I.IRON_INGOT,8]],unlockLevel:9},
+  {name:'鉄のレギンス',out:I.IRON_LEGS,qty:1,needs:[[I.IRON_INGOT,7]],unlockLevel:9},
+  {name:'鉄のブーツ',out:I.IRON_BOOTS,qty:1,needs:[[I.IRON_INGOT,4]],unlockLevel:9},
+
+  {name:'金のツルハシ',out:I.GOLD_PICK,qty:1,needs:[[I.GOLD_INGOT,3],[I.STICK,2]],unlockLevel:10},
+  {name:'金の剣',out:I.GOLD_SWORD,qty:1,needs:[[I.GOLD_INGOT,2],[I.STICK,1]],unlockLevel:10},
+  {name:'金の斧',out:I.GOLD_AXE,qty:1,needs:[[I.GOLD_INGOT,3],[I.STICK,2]],unlockLevel:10},
+  {name:'金のシャベル',out:I.GOLD_SHOVEL,qty:1,needs:[[I.GOLD_INGOT,1],[I.STICK,2]],unlockLevel:10},
+  {name:'金のヘルメット',out:I.GOLD_HELMET,qty:1,needs:[[I.GOLD_INGOT,5]],unlockLevel:11},
+  {name:'金のチェストプレート',out:I.GOLD_CHEST,qty:1,needs:[[I.GOLD_INGOT,8]],unlockLevel:11},
+  {name:'金のレギンス',out:I.GOLD_LEGS,qty:1,needs:[[I.GOLD_INGOT,7]],unlockLevel:11},
+  {name:'金のブーツ',out:I.GOLD_BOOTS,qty:1,needs:[[I.GOLD_INGOT,4]],unlockLevel:11},
+
+  {name:'ダイヤのツルハシ',out:I.DIAMOND_PICK,qty:1,needs:[[I.DIAMOND,3],[I.STICK,2]],unlockLevel:12},
+  {name:'ダイヤの剣',out:I.DIAMOND_SWORD,qty:1,needs:[[I.DIAMOND,2],[I.STICK,1]],unlockLevel:12},
+  {name:'ダイヤの斧',out:I.DIAMOND_AXE,qty:1,needs:[[I.DIAMOND,3],[I.STICK,2]],unlockLevel:12},
+  {name:'ダイヤのシャベル',out:I.DIAMOND_SHOVEL,qty:1,needs:[[I.DIAMOND,1],[I.STICK,2]],unlockLevel:12},
+  {name:'ダイヤのヘルメット',out:I.DIAMOND_HELMET,qty:1,needs:[[I.DIAMOND,5]],unlockLevel:13},
+  {name:'ダイヤのチェストプレート',out:I.DIAMOND_CHEST,qty:1,needs:[[I.DIAMOND,8]],unlockLevel:13},
+  {name:'ダイヤのレギンス',out:I.DIAMOND_LEGS,qty:1,needs:[[I.DIAMOND,7]],unlockLevel:13},
+  {name:'ダイヤのブーツ',out:I.DIAMOND_BOOTS,qty:1,needs:[[I.DIAMOND,4]],unlockLevel:13}
+];
+const furnaceRecipes=[
+  {name:'鉄インゴット',out:I.IRON_INGOT,qty:1,needs:[[I.RAW_IRON,1],[B.COAL,1]],unlockLevel:7,xp:4},
+  {name:'金インゴット',out:I.GOLD_INGOT,qty:1,needs:[[I.RAW_GOLD,1],[B.COAL,1]],unlockLevel:7,xp:6}
 ];
 const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
 const hardness={
@@ -55,7 +133,7 @@ const hardness={
 };
 const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE]);
 
-let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
+let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 let voxels=new Uint8Array(SIZE*HEIGHT*SIZE),surface=new Int16Array(SIZE*SIZE),biomes=new Uint8Array(SIZE*SIZE);
 
 const inside=(x,y,z)=>x>=-HALF&&x<HALF&&z>=-HALF&&z<HALF&&y>=0&&y<HEIGHT;
@@ -149,7 +227,7 @@ const ray=new THREE.Raycaster();ray.far=6;
 function target(){ray.setFromCamera(new THREE.Vector2(0,0),camera);const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
 function flash(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(flash.t);flash.t=setTimeout(()=>msgEl.style.opacity=0,1200)}
 function xpNeeded(lv){return 12+lv*8}
-function nextBlueprint(){return recipes.find(r=>r.unlockLevel>level)||null}
+function nextBlueprint(){return [...recipes,...workbenchRecipes].sort((a,b)=>a.unlockLevel-b.unlockLevel).find(r=>r.unlockLevel>level)||null}
 function updateProgress(){
   const need=xpNeeded(level),pct=Math.max(0,Math.min(100,xp/need*100));
   levelText.textContent='LV '+level;xpText.textContent=xp+' / '+need+' XP';xpFill.style.width=pct+'%';
@@ -160,24 +238,37 @@ function gainXP(amount,source=''){
   xp+=amount;let unlocked=[];
   while(xp>=xpNeeded(level)){
     xp-=xpNeeded(level);level++;
-    const rs=recipes.filter(r=>r.unlockLevel===level);unlocked.push(...rs.map(r=>r.name.replace(/ ×\d+$/,'')));
+    const rs=[...recipes,...workbenchRecipes].filter(r=>r.unlockLevel===level);unlocked.push(...rs.map(r=>r.name.replace(/ ×\d+$/,'')));
   }
   updateProgress();
   if(unlocked.length)flash('LEVEL UP! LV '+level+'　設計図獲得：'+unlocked.join(' / '));
   else flash('+'+amount+' XP'+(source?'　'+source:''));
 }
+function pickTier(){
+  if(selected===I.DIAMOND_PICK)return 4;
+  if(selected===I.IRON_PICK)return 3;
+  if(selected===I.GOLD_PICK)return 2;
+  if(selected===I.STONE_PICK)return 2;
+  if(selected===I.WOOD_PICK)return 1;
+  return 0;
+}
 function toolSpeed(id){
   if(!rockBlocks.has(id))return 1;
-  if((inventory[I.STONE_PICK]||0)>0)return 3.6;
-  if((inventory[I.WOOD_PICK]||0)>0)return 2.2;
+  const t=pickTier();
+  if(t>=4)return 7.0;
+  if(selected===I.GOLD_PICK)return 6.0;
+  if(t>=3)return 5.2;
+  if(t>=2)return 3.6;
+  if(t>=1)return 2.2;
   return 1;
 }
 function canMineBlock(id,showMessage=true){
-  const hasWood=(inventory[I.WOOD_PICK]||0)>0,hasStone=(inventory[I.STONE_PICK]||0)>0;
+  const t=pickTier();
   if(id===B.BEDROCK){if(showMessage)flash('岩盤は壊せません');return false}
   if(id===B.WATER||id===B.AIR)return false;
-  if(id===B.COAL&&!hasWood&&!hasStone){if(showMessage)flash('石炭にはツルハシが必要');return false}
-  if([B.IRON,B.GOLD,B.DIAMOND].includes(id)&&!hasStone){if(showMessage)flash('この鉱石には石のツルハシが必要');return false}
+  if(id===B.COAL&&t<1){if(showMessage)flash('石炭にはツルハシが必要');return false}
+  if([B.IRON,B.GOLD].includes(id)&&t<2){if(showMessage)flash('この鉱石には石以上のツルハシが必要');return false}
+  if(id===B.DIAMOND&&t<3){if(showMessage)flash('ダイヤには鉄以上のツルハシが必要');return false}
   return true;
 }
 function normalizeHotbar(){
@@ -210,7 +301,10 @@ function finishMine(x,y,z,id){
   let drop=specialBlockDrops[id]??id;
   if(id===B.STONE)drop=B.COBBLE;
   if(id===B.GRASS)drop=B.DIRT;
-  if(buildable.includes(drop)||[B.COAL,B.IRON,B.GOLD,B.DIAMOND].includes(drop)||drop===I.CRAFTING_TABLE||drop===I.FURNACE)addItem(drop,1);
+  if(id===B.IRON)drop=I.RAW_IRON;
+  if(id===B.GOLD)drop=I.RAW_GOLD;
+  if(id===B.DIAMOND)drop=I.DIAMOND;
+  if(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE)addItem(drop,1);
   rebuild();renderHotbar();gainXP(blockXP[id]||1,names[id]||'採掘');
 }
 function clearMining(){
@@ -257,7 +351,8 @@ function attackMob(){
   let root=hits[0].object;
   while(root.parent&&!mobs.includes(root))root=root.parent;
   if(!mobs.includes(root))return false;
-  root.userData.hp--;
+  const damage=selected===I.DIAMOND_SWORD?4:selected===I.IRON_SWORD?3:selected===I.GOLD_SWORD?2:selected===I.STONE_SWORD?2:1;
+  root.userData.hp-=damage;
   if(root.userData.hp<=0){
     const earned=root.userData.xp||12,name=root.userData.name||'動物';
     scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1);
@@ -291,32 +386,75 @@ function renderHotbar(){
 }
 
 function hasNeeds(recipe){return recipe.needs.every(([id,n])=>(inventory[id]||0)>=n)}
+function distanceToBlock(x,y,z){
+  const dx=player.pos.x-x,dy=(player.pos.y+1)-y,dz=player.pos.z-z;
+  return Math.hypot(dx,dy,dz);
+}
+function stationInReach(){
+  const h=target();
+  if(h){
+    const p=lookup.get(h.object.uuid)?.[h.instanceId];
+    if(p){
+      const id=get(p.x,p.y,p.z);
+      if((id===B.CRAFTING_TABLE||id===B.FURNACE)&&h.distance<=5)return id;
+    }
+  }
+  let best=null,bestD=3.25;
+  const px=Math.floor(player.pos.x),py=Math.floor(player.pos.y),pz=Math.floor(player.pos.z);
+  for(let x=px-3;x<=px+3;x++)for(let y=Math.max(0,py-2);y<=Math.min(HEIGHT-1,py+3);y++)for(let z=pz-3;z<=pz+3;z++){
+    const id=get(x,y,z);
+    if(id!==B.CRAFTING_TABLE&&id!==B.FURNACE)continue;
+    const d=distanceToBlock(x,y,z);
+    if(d<bestD){bestD=d;best=id}
+  }
+  return best;
+}
+function chooseCraftMode(){
+  const station=stationInReach();
+  if(station===B.CRAFTING_TABLE)return 'workbench';
+  if(station===B.FURNACE)return 'furnace';
+  return 'inventory';
+}
+function currentRecipeList(){
+  return craftMode==='workbench'?workbenchRecipes:craftMode==='furnace'?furnaceRecipes:recipes;
+}
 function renderCrafting(){
-  const ids=[B.LOG,B.PLANK,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,I.STICK,I.CRAFTING_TABLE,I.FURNACE,I.WOOD_PICK,I.STONE_PICK];
-  const owned=ids.filter(id=>(inventory[id]||0)>0);craftInventory.innerHTML=owned.length?owned.map(id=>`<div class="inv-chip">${names[id]} <strong>${inventory[id]}</strong></div>`).join(''):'<div class="inv-chip">持ち物なし</div>';
+  const title=document.querySelector('.craft-title'),sub=document.querySelector('.craft-sub');
+  if(craftMode==='workbench'){title.textContent='WORKBENCH';sub.textContent='作業台専用：石以上のツール・防具'}
+  else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭を燃料に原石を精錬'}
+  else {title.textContent='CRAFTING';sub.textContent='インベントリで作れる基本アイテム'}
+  const ids=Object.keys(inventory).map(Number);
+  const owned=ids.filter(id=>(inventory[id]||0)>0);
+  craftInventory.innerHTML=owned.length?owned.map(id=>`<div class="inv-chip">${names[id]||'ITEM'} <strong>${inventory[id]}</strong></div>`).join(''):'<div class="inv-chip">持ち物なし</div>';
   recipeList.innerHTML='';
-  recipes.forEach((r,i)=>{
+  const list=currentRecipeList();
+  list.forEach((r,i)=>{
     const locked=level<r.unlockLevel,can=!locked&&hasNeeds(r);
     const d=document.createElement('div');d.className='recipe'+(locked?' locked':'');
     const needText=r.needs.map(([id,n])=>`${names[id]} ×${n}`).join(' ＋ ');
-    d.innerHTML=`<div><div class="recipe-name">${locked?'🔒 ':''}${r.name}<span class="recipe-level">LV ${r.unlockLevel}</span></div><div class="recipe-needs">${locked?'設計図未取得':needText}</div></div><button ${can?'':'disabled'}>作る</button>`;
+    const verb=craftMode==='furnace'?'精錬':'作る';
+    d.innerHTML=`<div><div class="recipe-name">${locked?'🔒 ':''}${r.name}<span class="recipe-level">LV ${r.unlockLevel}</span></div><div class="recipe-needs">${locked?'設計図未取得':needText}</div></div><button ${can?'':'disabled'}>${verb}</button>`;
     d.querySelector('button').addEventListener('click',()=>craftRecipe(i));
     recipeList.appendChild(d);
   });
 }
 function craftRecipe(i){
-  const r=recipes[i];
+  const list=currentRecipeList(),r=list[i];
   if(level<r.unlockLevel){flash('LV '+r.unlockLevel+'で設計図を獲得');return}
   if(!hasNeeds(r)){flash('材料が足りません');return}
   r.needs.forEach(([id,n])=>removeItem(id,n));
   addItem(r.out,r.qty);
-  renderHotbar();renderCrafting();flash(r.name+'をクラフト');
+  if(craftMode==='furnace'&&r.xp)gainXP(r.xp,r.name+'を精錬');
+  renderHotbar();renderCrafting();flash(r.name+(craftMode==='furnace'?'を精錬':'をクラフト'));
 }
 function setCraftOpen(v){
   craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
-  if(v){primaryActionStop();document.exitPointerLock?.();renderCrafting()}
-  else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
+  if(v){
+    craftMode=chooseCraftMode();
+    primaryActionStop();document.exitPointerLock?.();renderCrafting();
+    if(craftMode==='inventory')flash('近くの作業台・かまどで専用メニューが開きます');
+  } else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
 }
 
 const keys={};
