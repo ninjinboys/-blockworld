@@ -253,6 +253,12 @@ function pickTier(){
   return 0;
 }
 function toolSpeed(id){
+  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE]);
+  const softLike=new Set([B.GRASS,B.DIRT,B.SAND,B.GRAVEL,B.SNOW]);
+  const axeSpeed=selected===I.DIAMOND_AXE?6.5:selected===I.IRON_AXE?5:selected===I.GOLD_AXE?5.8:selected===I.STONE_AXE?3.2:1;
+  const shovelSpeed=selected===I.DIAMOND_SHOVEL?6.5:selected===I.IRON_SHOVEL?5:selected===I.GOLD_SHOVEL?5.8:selected===I.STONE_SHOVEL?3.2:1;
+  if(woodLike.has(id))return axeSpeed;
+  if(softLike.has(id))return shovelSpeed;
   if(!rockBlocks.has(id))return 1;
   const t=pickTier();
   if(t>=4)return 7.0;
