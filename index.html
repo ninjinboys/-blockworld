@@ -9,7 +9,7 @@
 </head>
 <body>
 <div id="game"></div>
-<div id="crosshair"></div>
+<div id="crosshair"></div><div id="breakMeter"><div id="breakLabel"></div><div id="breakTrack"><div id="breakFill"></div></div></div>
 <div id="hud">
   <div id="stats"><div id="coords">X 0 Y 0 Z 0</div><div id="biome">Plains</div><div id="clock">☀ 06:00</div><div id="weather">Clear</div></div>
   <div id="progress">
@@ -17,14 +17,14 @@
     <div id="xpTrack"><div id="xpFill"></div></div>
     <div id="blueprintText">次の設計図：木材（LV 2）</div>
   </div>
-  <div id="hint">WASD 移動 / Space ジャンプ / 左クリック 攻撃/採掘 / 右クリック 設置 / C クラフト / R 雨</div>
+  <div id="hint">WASD 移動 / Space ジャンプ / 左クリック長押し 攻撃/採掘 / 右クリック 設置 / C クラフト / R 雨</div>
   <div id="message"></div>
   <div id="hotbar"></div>
 </div>
 <div id="mobile">
   <div class="pad"><button class="up">▲</button><button class="left">◀</button><button class="down">▼</button><button class="right">▶</button></div>
   <button class="jump">JUMP</button>
-  <div id="tapbar"><button id="tapMine">攻撃/採掘</button><button id="tapPlace">設置</button><button id="tapCraft">CRAFT</button></div>
+  <div id="tapbar"><button id="tapMine">長押し採掘</button><button id="tapPlace">設置</button><button id="tapCraft">CRAFT</button></div>
 </div>
 <div id="crafting" aria-hidden="true">
   <div class="craft-panel">
@@ -49,6 +49,6 @@
     <div id="loading">世界を生成中...</div>
   </div>
 </div>
-<script type="module" src="app.js?v=20261007b"></script>
+<script type="module" src="app.js?v=20261007c"></script>
 </body>
 </html>
