@@ -424,7 +424,7 @@ function applySaveData(data){
 function resetWorldRuntime(){
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
-  mobs.forEach(m=>scene.remove(m));mobs.length=0;
+  mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
   clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
 }
@@ -1051,7 +1051,7 @@ function streamChunks(force=false){
     const x=cx+dx,z=cz+dz,k=chunkKey(x,z);wanted.add(k);ensureChunk(x,z);
   }
   for(const k of [...chunks.keys()])if(!wanted.has(k))chunks.delete(k);
-  rebuild();spawnMobs();
+  rebuild();
   return true;
 }
 
@@ -1110,9 +1110,9 @@ function buildSheep(){
   const wool=0xf2efe6,woolLight=0xfffdf7,woolShade=0xd9d4c8,skin=0xd8c6aa,ear=0xe8b0a3,eye=0x171717,nose=0xd98987,hoof=0x4a3b35;
 
   // woolly body with layered tufts
-  cube(g,1.36,.82,.78,wool,0,1.00,.04);
-  cube(g,1.18,.18,.86,woolLight,0,1.46,.02);
-  for(const x of[-.48,0,.48])for(const z of[-.25,.25])cube(g,.34,.22,.30,(x===0? woolLight:woolShade),x,1.42,z);
+  cube(g,1.18,.78,.68,wool,0,1.00,.04);
+  cube(g,1.02,.16,.74,woolLight,0,1.43,.02);
+  for(const x of[-.40,0,.40])for(const z of[-.21,.21])cube(g,.30,.20,.26,(x===0? woolLight:woolShade),x,1.39,z);
 
   // head and wool cap
   cube(g,.62,.60,.56,skin,0,1.08,-.61);
@@ -1133,7 +1133,7 @@ function buildSheep(){
   cube(g,.08,.07,.065,0x7a514a,0,.96,-.915);
 
   // legs
-  for(const x of[-.45,.45])for(const z of[-.25,.25]){
+  for(const x of[-.38,.38])for(const z of[-.21,.21]){
     cube(g,.22,.52,.22,skin,x,.48,z);
     cube(g,.24,.16,.24,hoof,x,.18,z);
   }
@@ -1144,8 +1144,8 @@ function buildPig(){
   const g=new THREE.Group();
   const pink=0xef8f95,pinkLight=0xf6a4a9,pinkShade=0xd96f78,snout=0xf3a0a2,nostril=0x70464a,eye=0x171717,hoof=0x5b3c3e;
 
-  cube(g,1.38,.76,.78,pink,0,.94,.04);
-  cube(g,1.22,.18,.82,pinkLight,0,1.37,.04);
+  cube(g,1.22,.72,.68,pink,0,.94,.04);
+  cube(g,1.08,.16,.72,pinkLight,0,1.33,.04);
 
   // head
   cube(g,.66,.62,.58,pinkLight,0,1.04,-.62);
@@ -1160,7 +1160,7 @@ function buildPig(){
   cube(g,.22,.28,.12,pinkShade,.31,1.38,-.62,0,0,.12);
 
   // legs
-  for(const x of[-.45,.45])for(const z of[-.24,.24]){
+  for(const x of[-.39,.39])for(const z of[-.20,.20]){
     cube(g,.22,.48,.22,pinkShade,x,.45,z);
     cube(g,.24,.14,.24,hoof,x,.18,z);
   }
@@ -1177,7 +1177,7 @@ function buildCow(){
   const brown=0x744a32,brownDark=0x4f3024,white=0xf1eee5,cream=0xd9c6aa,pink=0xd88f91,eye=0x141414,hoof=0x292525,horn=0xcab489;
 
   // body
-  cube(g,1.46,.86,.82,brown,0,1.02,.04);
+  cube(g,1.28,.80,.72,brown,0,1.02,.04);
   // irregular white patches
   voxelPatch(g,white,-.40,1.25,-.38,.48,.32,.04);
   voxelPatch(g,white,.38,1.08,.445,.42,.42,.04);
@@ -1204,7 +1204,7 @@ function buildCow(){
   cube(g,.12,.24,.12,horn,.25,1.52,-.68,0,0,.16);
 
   // legs with white socks / dark hooves
-  for(const x of[-.47,.47])for(const z of[-.25,.25]){
+  for(const x of[-.40,.40])for(const z of[-.21,.21]){
     cube(g,.24,.54,.24,brown,x,.48,z);
     cube(g,.25,.18,.25,white,x,.25,z);
     cube(g,.26,.13,.26,hoof,x,.13,z);
@@ -1217,28 +1217,44 @@ function buildCow(){
   return g;
 }
 
-function spawnMobs(){
-  mobs.forEach(m=>scene.remove(m));mobs.length=0;
-  const pcx=chunkCoord(player.pos.x),pcz=chunkCoord(player.pos.z);
-  for(let i=0;i<12;i++){
-    const rx=hash3(i,pcx,pcz,seed+71),rz=hash3(i+91,pcz,pcx,seed+81);
-    const x=Math.floor(player.pos.x+(rx-.5)*58),z=Math.floor(player.pos.z+(rz-.5)*58);
-    const h=surfaceAt(x,z),bio=biomeAt(x,z);
-    if(h<=SEA||bio===2||bio===6)continue;
+let passiveSpawnCooldown=20;
+function spawnPassiveMob(){
+  if(mobs.length>=8)return false;
+  const angle=Math.random()*Math.PI*2;
+  const dist=18+Math.random()*14;
+  const x=Math.floor(player.pos.x+Math.cos(angle)*dist);
+  const z=Math.floor(player.pos.z+Math.sin(angle)*dist);
+  const h=surfaceAt(x,z),bio=biomeAt(x,z);
+  if(h<=SEA||bio===2||bio===6||bio===7)return false;
 
-    const type=i%3;
-    const g=type===0?buildSheep():type===1?buildPig():buildCow();
-    g.position.set(x,h+.04,z);
-    g.userData={
-      angle:hash2(x,z)*Math.PI*2,
-      t:2+hash2(z,x)*3,
-      speed:.22+hash2(x+4,z+2)*.24,
-      hp:type===2?5:3,
-      xp:type===2?18:type===1?14:12,
-      name:type===0?'ヒツジ':type===1?'ブタ':'ウシ',
-      type
-    };
-    scene.add(g);mobs.push(g);
+  const type=Math.floor(Math.random()*3);
+  const g=type===0?buildSheep():type===1?buildPig():buildCow();
+  g.position.set(x,h+.04,z);
+  g.userData={
+    angle:hash2(x,z)*Math.PI*2,
+    t:2+hash2(z,x)*3,
+    speed:.22+hash2(x+4,z+2)*.24,
+    hp:type===2?5:3,
+    xp:type===2?18:type===1?14:12,
+    name:type===0?'ヒツジ':type===1?'ブタ':'ウシ',
+    type
+  };
+  scene.add(g);mobs.push(g);
+  return true;
+}
+function updatePassiveSpawning(dt){
+  passiveSpawnCooldown-=dt;
+  if(passiveSpawnCooldown>0)return;
+  passiveSpawnCooldown=25;
+  const attempts=mobs.length<4?2:1;
+  for(let i=0;i<attempts;i++)spawnPassiveMob();
+
+  // Far-away animals leave the active area instead of being recreated every chunk.
+  for(let i=mobs.length-1;i>=0;i--){
+    const m=mobs[i];
+    if(Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>72){
+      scene.remove(m);mobs.splice(i,1);
+    }
   }
 }
 
@@ -1862,7 +1878,7 @@ function advanceDayTime(dt){
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
-  if(started)updateWorldDrops(dt,now);
+  if(started){updateWorldDrops(dt,now);updatePassiveSpawning(dt)}
   if(started&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
     advanceDayTime(dt);
