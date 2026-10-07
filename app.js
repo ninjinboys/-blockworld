@@ -778,13 +778,11 @@ function renderHotbar(){
   hotbarSlots.forEach((id,i)=>{
     const d=document.createElement('div'),count=id==null?0:(inventory[id]||0);
     d.className='slot'+(id!=null&&id===selected?' active':'');
-    if(id==null){
-      d.innerHTML=`<span class="key">${i+1}</span>`;
-    }else{
-      const visual=itemGlyphs[id]
-        ? `<span class="item-glyph">${itemGlyphs[id]}</span>`
-        : `<span class="swatch" style="background:${itemColors[id]||'#777'}"></span>`;
-      d.innerHTML=`<span class="key">${i+1}</span>${visual}<span class="qty">${count}</span><span class="item-name">${names[id]||'ITEM'}</span>`;
+    const key=document.createElement('span');key.className='key';key.textContent=i+1;d.appendChild(key);
+    if(id!=null){
+      d.appendChild(itemCanvas(id,'item-icon hotbar-icon'));
+      const qty=document.createElement('span');qty.className='qty';qty.textContent=count;d.appendChild(qty);
+      const name=document.createElement('span');name.className='item-name';name.textContent=names[id]||'ITEM';d.appendChild(name);
       d.title=names[id]||'アイテム';
       d.addEventListener('pointerdown',e=>{e.stopPropagation();selected=id;renderHotbar()});
     }
@@ -832,7 +830,18 @@ function renderCrafting(){
   else {title.textContent='CRAFTING';sub.textContent='インベントリで作れる基本アイテム'}
   const ids=Object.keys(inventory).map(Number);
   const owned=ids.filter(id=>(inventory[id]||0)>0);
-  craftInventory.innerHTML=owned.length?owned.map(id=>`<div class="inv-chip">${names[id]||'ITEM'} <strong>${inventory[id]}</strong></div>`).join(''):'<div class="inv-chip">持ち物なし</div>';
+  craftInventory.innerHTML='';
+  if(!owned.length){
+    const empty=document.createElement('div');empty.className='inv-chip';empty.textContent='持ち物なし';craftInventory.appendChild(empty);
+  }else{
+    owned.forEach(id=>{
+      const chip=document.createElement('div');chip.className='inv-chip';
+      chip.appendChild(itemCanvas(id,'item-icon inv-icon'));
+      const label=document.createElement('span');label.className='inv-label';label.textContent=names[id]||'ITEM';chip.appendChild(label);
+      const count=document.createElement('strong');count.textContent=inventory[id];chip.appendChild(count);
+      craftInventory.appendChild(chip);
+    });
+  }
   recipeList.innerHTML='';
   const list=currentRecipeList();
   list.forEach((r,i)=>{
@@ -840,9 +849,18 @@ function renderCrafting(){
     const d=document.createElement('div');d.className='recipe'+(locked?' locked':'');
     const needText=r.needs.map(([id,n])=>`${names[id]} ×${n}`).join(' ＋ ');
     const verb=craftMode==='furnace'?'精錬':'作る';
-    d.innerHTML=`<div><div class="recipe-name">${locked?'🔒 ':''}${r.name}<span class="recipe-level">LV ${r.unlockLevel}</span></div><div class="recipe-needs">${locked?'設計図未取得':needText}</div></div><button ${can?'':'disabled'}>${verb}</button>`;
-    d.querySelector('button').addEventListener('click',()=>craftRecipe(i));
-    recipeList.appendChild(d);
+
+    const main=document.createElement('div');main.className='recipe-main';
+    main.appendChild(itemCanvas(r.out,'item-icon recipe-icon'));
+    const copy=document.createElement('div');copy.className='recipe-copy';
+    const rn=document.createElement('div');rn.className='recipe-name';rn.textContent=(locked?'🔒 ':'')+r.name;
+    const lv=document.createElement('span');lv.className='recipe-level';lv.textContent='LV '+r.unlockLevel;rn.appendChild(lv);
+    const needs=document.createElement('div');needs.className='recipe-needs';needs.textContent=locked?'設計図未取得':needText;
+    copy.append(rn,needs);main.appendChild(copy);
+
+    const button=document.createElement('button');button.disabled=!can;button.textContent=verb;
+    button.addEventListener('click',()=>craftRecipe(i));
+    d.append(main,button);recipeList.appendChild(d);
   });
 }
 function craftRecipe(i){
