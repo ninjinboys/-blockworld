@@ -279,7 +279,7 @@ const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURN
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
 let streamCX=NaN,streamCZ=NaN;
-let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=2;
+let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=3;
 const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
 const inside=(x,y,z)=>y>=0&&y<HEIGHT;
@@ -399,7 +399,7 @@ async function initializeAccountWorld(save,slot){
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
   else{
-    seed=freshSeed();generatorVersion=2;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    seed=freshSeed();generatorVersion=3;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     for(const k of Object.keys(inventory))inventory[k]=0;
     acquiredOrder.length=0;hotbarSlots.fill(null);editChunks.clear();
   }
@@ -614,8 +614,97 @@ function columnInfoV2(x,z){
   if(lake)bio=p.moist>.18?5:7;
   return {h,bio,river:river||lake,riverBank,rugged:p.rugged,temp:p.temp,moist:p.moist,lake};
 }
-function terrainProfile(x,z){return generatorVersion>=2?terrainProfileV2(x,z):terrainProfileV1(x,z)}
-function columnInfo(x,z){return generatorVersion>=2?columnInfoV2(x,z):columnInfoV1(x,z)}
+
+function climateV3(x,z){
+  // Different scales are warped independently so long straight/repeating bands do not appear.
+  const warpX=fbm(x*.0061+12,z*.0061-37,3101,3)*38+fbm(x*.017-71,z*.017+53,3111,2)*10;
+  const warpZ=fbm(x*.0061-44,z*.0061+29,3121,3)*38+fbm(x*.017+61,z*.017-47,3131,2)*10;
+  const X=x+warpX,Z=z+warpZ;
+  return {
+    X,Z,
+    continental:fbm(X*.0047,Z*.0047,3201,4),
+    temp:fbm(X*.010+80,Z*.010-60,3211,3),
+    moist:fbm(X*.010-42,Z*.010+51,3221,3),
+    region:fbm(X*.013+31,Z*.013-27,3231,3),
+    rolling:fbm(X*.030-80,Z*.030+60,3241,3),
+    detail:fbm(x*.078+19,z*.078-23,3251,2),
+    ridge:1-Math.abs(fbm(X*.015+120,Z*.015-90,3261,3)),
+    erosion:fbm(X*.020-210,Z*.020+160,3271,2)
+  };
+}
+function chooseBiomeV3(c,mountain){
+  if(c.continental<-.27)return 6;
+  if(mountain>.58)return c.temp<-.04?4:3;
+  if(c.moist>.50&&c.continental<.18)return 5;
+  if(c.temp>.28&&c.moist<-.10)return 2;
+  if(c.temp<-.30)return 3;
+  if(c.moist>.12)return 1;
+  return 0;
+}
+function terrainProfileV3(x,z){
+  const c=climateV3(x,z);
+  const ridgeShape=Math.pow(Math.max(0,(c.ridge-.50)/.50),1.55);
+  const mountainZone=Math.max(0,Math.min(1,(c.region+.22)*1.35))*Math.max(0,Math.min(1,(c.continental+.28)*1.7));
+  const mountain=ridgeShape*mountainZone;
+  let bio=chooseBiomeV3(c,mountain);
+
+  let y=SEA+5;
+  if(bio===6){
+    y=SEA-5+c.region*2.7+c.rolling*1.2-Math.max(0,-c.continental-.18)*9;
+  }else if(bio===5){
+    y=SEA+2+c.region*.9+c.rolling*.65;
+  }else if(bio===2){
+    y=SEA+4+c.region*1.5+c.rolling*.9+c.detail*.25;
+  }else if(bio===0){
+    y=SEA+5+c.region*1.8+c.rolling*1.15+c.detail*.35;
+  }else if(bio===1){
+    y=SEA+6+c.region*2.7+c.rolling*1.6+c.detail*.45;
+  }else if(bio===3){
+    y=SEA+7+c.region*3.2+c.rolling*2.1+c.detail*.55;
+  }else{
+    y=SEA+9+c.region*3.5+c.rolling*2.2+c.detail*.55;
+  }
+
+  // Broad hills and mountains blend continuously. No height snapping / artificial terraces.
+  if(bio!==6&&bio!==5){
+    y+=mountain*(17+c.ridge*9);
+    if(mountain>.58)bio=c.temp<-.04?4:3;
+  }
+
+  // Natural valleys: erosion lowers broad areas without creating parallel steps.
+  const valley=Math.max(0,(-c.erosion-.28)/.72);
+  if(bio!==6)y-=valley*(bio===5?1.0:2.3);
+
+  const h=Math.max(3,Math.min(HEIGHT-5,Math.floor(y)));
+  return {h,bio,continental:c.continental,rugged:mountain,temp:c.temp,moist:c.moist,X:c.X,Z:c.Z};
+}
+function columnInfoV3(x,z){
+  const p=terrainProfileV3(x,z);let h=p.h,bio=p.bio;
+
+  const riverField=Math.abs(fbm(p.X*.019+20,p.Z*.019-18,3301,4));
+  const riverWidth=.022+(fbm(p.X*.008-50,p.Z*.008+45,3311,2)+1)*.008;
+  const river=riverField<riverWidth&&p.continental>-.20&&h>SEA-3;
+
+  const lakeShape=fbm(p.X*.025+310,p.Z*.025-270,3321,3);
+  const lakeRegion=fbm(p.X*.010-140,p.Z*.010+190,3331,2);
+  const lake=!river&&p.continental>-.10&&p.continental<.30&&p.rugged<.18&&lakeRegion>.52&&lakeShape<-.46&&h<=SEA+6;
+
+  if(river||lake)h=Math.min(h,SEA-1);
+  const riverBank=!river&&!lake&&riverField<riverWidth*1.9&&h<=SEA+5;
+  if(lake)bio=p.moist>.18?5:7;
+  return {h,bio,river:river||lake,riverBank,rugged:p.rugged,temp:p.temp,moist:p.moist,lake};
+}
+
+function terrainProfile(x,z){
+  if(generatorVersion>=3)return terrainProfileV3(x,z);
+  if(generatorVersion>=2)return terrainProfileV2(x,z);
+  return terrainProfileV1(x,z);
+}
+function columnInfo(x,z){
+  if(generatorVersion>=3)return columnInfoV3(x,z);
+  if(generatorVersion>=2)return columnInfoV2(x,z);
+  return columnInfoV1(x,z);
+}
 const surfaceAt=(x,z)=>columnInfo(x,z).h;
 const biomeAt=(x,z)=>columnInfo(x,z).bio;
 
@@ -663,6 +752,17 @@ function featureCellRoot(x,z,spacing,salt){
   const oz=Math.floor(hash3(cx,2,cz,seed+salt+17)*spacing);
   return x===cx*spacing+ox&&z===cz*spacing+oz;
 }
+function naturalScatterRoot(x,z,radius,salt,minScore=.0){
+  const score=hash2(x,z,seed+salt);
+  if(score<minScore)return false;
+  const rr=radius*radius;
+  for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+    if(dx===0&&dz===0)continue;
+    if(dx*dx+dz*dz>rr)continue;
+    if(hash2(x+dx,z+dz,seed+salt)>score)return false;
+  }
+  return true;
+}
 function isTreeRoot(x,z,info){
   if(info.h<SEA+1||info.river||info.riverBank||info.rugged>.72)return false;
   const cluster=fbm(x*.020+70,z*.020-55,710,3);
@@ -673,11 +773,19 @@ function isTreeRoot(x,z,info){
     if(info.bio===5)return cluster>.30&&featureCellRoot(x,z,8,751)&&hash2(x,z,seed+752)>.25;
     return false;
   }
-  // V2: forests form dense patches separated by obvious clearings; plains stay mostly open.
-  if(info.bio===1)return cluster>-.05&&featureCellRoot(x,z,4,721)&&hash2(x,z,seed+722)>.16;
-  if(info.bio===3)return cluster>-.20&&featureCellRoot(x,z,5,731)&&hash2(x,z,seed+732)>.12;
-  if(info.bio===0)return cluster>.56&&featureCellRoot(x,z,11,741)&&hash2(x,z,seed+742)>.42;
-  if(info.bio===5)return cluster>.18&&featureCellRoot(x,z,7,751)&&hash2(x,z,seed+752)>.28;
+  if(generatorVersion===2){
+    if(info.bio===1)return cluster>-.05&&featureCellRoot(x,z,4,721)&&hash2(x,z,seed+722)>.16;
+    if(info.bio===3)return cluster>-.20&&featureCellRoot(x,z,5,731)&&hash2(x,z,seed+732)>.12;
+    if(info.bio===0)return cluster>.56&&featureCellRoot(x,z,11,741)&&hash2(x,z,seed+742)>.42;
+    if(info.bio===5)return cluster>.18&&featureCellRoot(x,z,7,751)&&hash2(x,z,seed+752)>.28;
+    return false;
+  }
+
+  // V3 uses local random maxima instead of one tree per grid cell, so rows cannot form.
+  if(info.bio===1)return cluster>-.12&&naturalScatterRoot(x,z,2,721,.30);
+  if(info.bio===3)return cluster>-.18&&naturalScatterRoot(x,z,2,731,.26);
+  if(info.bio===0)return cluster>.52&&naturalScatterRoot(x,z,4,741,.38);
+  if(info.bio===5)return cluster>.18&&naturalScatterRoot(x,z,3,751,.32);
   return false;
 }
 function isBoulderRoot(x,z,info){
