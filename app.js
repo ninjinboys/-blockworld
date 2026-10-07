@@ -278,19 +278,26 @@ function writeGenerated(data,cx,cz,x,y,z,id){
 function generateChunk(cx,cz){
   const data=new Uint8Array(CHUNK*HEIGHT*CHUNK);
   const x0=cx*CHUNK,z0=cz*CHUNK;
+  const infoCache=new Map();
+  const getInfo=(x,z)=>{
+    const k=x+','+z;
+    let info=infoCache.get(k);
+    if(!info){info=columnInfo(x,z);infoCache.set(k,info)}
+    return info;
+  };
 
   // Compute each column once; richer terrain stays fast enough for streaming.
   for(let lx=0;lx<CHUNK;lx++)for(let lz=0;lz<CHUNK;lz++){
-    const x=x0+lx,z=z0+lz,info=columnInfo(x,z);
+    const x=x0+lx,z=z0+lz,info=getInfo(x,z);
     for(let y=0;y<HEIGHT;y++)data[cIndex(lx,y,lz)]=blockFromInfo(x,y,z,info);
   }
 
   // Natural surface features are generated from deterministic roots with margins,
   // so they line up across chunk boundaries.
   for(let x=x0-3;x<x0+CHUNK+3;x++)for(let z=z0-3;z<z0+CHUNK+3;z++){
-    const info=columnInfo(x,z),h=info.h;
+    const info=getInfo(x,z),h=info.h;
 
-    if(isTreeRoot(x,z,info)&&baseBlockAt(x,h,z)!==B.SAND){
+    if(isTreeRoot(x,z,info)&&blockFromInfo(x,h,z,info)!==B.SAND){
       const hv=hash2(x,z,seed+805);
       const tall=info.bio===3?5+Math.floor(hv*3):4+Math.floor(hv*2);
 
