@@ -394,7 +394,7 @@ function freshSeed(){
 }
 async function initializeAccountWorld(save,slot){
   currentWorldSlot=slot;worldReady=false;worldCover.style.display='none';cover.style.display='flex';
-  accountBox.style.display='block';accountNameEl.textContent=currentAccount.name+' · W'+slot;
+  accountBox.style.display='block';
   loading.textContent='セーブデータを読み込み中...';resetWorldRuntime();
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
@@ -409,6 +409,7 @@ async function initializeAccountWorld(save,slot){
   streamChunks(true);
   for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
   rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
+  accountNameEl.textContent=currentAccount.name+' · W'+slot+' · GEN'+generatorVersion;
   renderHotbar();updateProgress();
   loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
