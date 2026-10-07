@@ -279,7 +279,7 @@ const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURN
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
 let streamCX=NaN,streamCZ=NaN;
-let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=4;
+let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=5;
 const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
 const inside=(x,y,z)=>y>=0&&y<HEIGHT;
@@ -399,7 +399,7 @@ async function initializeAccountWorld(save,slot){
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
   else{
-    seed=freshSeed();generatorVersion=4;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     for(const k of Object.keys(inventory))inventory[k]=0;
     acquiredOrder.length=0;hotbarSlots.fill(null);editChunks.clear();
   }
@@ -433,7 +433,7 @@ function renderWorldSelection(){
       const x=Math.floor(save.player?.x||0),z=Math.floor(save.player?.z||0);
       meta.textContent='LV '+(save.level||1)+'  ·  GEN'+(save.generatorVersion||1)+'  ·  '+formatSavedAt(save.savedAt)+'\nX '+x+' / Z '+z;
       meta.style.whiteSpace='pre-line';
-    }else meta.textContent='空きスロット · 新規はGEN4';
+    }else meta.textContent='空きスロット · 新規はGEN5';
     info.appendChild(meta);
 
     const actions=document.createElement('div');actions.className='world-slot-actions';
@@ -495,7 +495,24 @@ async function submitAuth(e){
   }
 }
 
-function hash3(x,y,z,s=seed){let n=(x*374761393+y*668265263+z*2147483647+s*1274126177)|0;n=(n^(n>>>13))*1274126177;n^=n>>>16;return(n>>>0)/4294967295}
+function hash3Legacy(x,y,z,s=seed){
+  let n=(x*374761393+y*668265263+z*2147483647+s*1274126177)|0;
+  n=(n^(n>>>13))*1274126177;n^=n>>>16;
+  return(n>>>0)/4294967295
+}
+function hash3Modern(x,y,z,s=seed){
+  // Strong 32-bit avalanche mixing with independent X/Y/Z multipliers.
+  // Math.imul keeps the intended low 32 bits without the old Z-axis correlation.
+  let h=(s|0);
+  h^=Math.imul(x|0,0x9e3779b1);
+  h^=Math.imul(y|0,0x85ebca77);
+  h^=Math.imul(z|0,0xc2b2ae3d);
+  h^=h>>>16;h=Math.imul(h,0x7feb352d);
+  h^=h>>>15;h=Math.imul(h,0x846ca68b);
+  h^=h>>>16;
+  return(h>>>0)/4294967296
+}
+function hash3(x,y,z,s=seed){return generatorVersion>=5?hash3Modern(x,y,z,s):hash3Legacy(x,y,z,s)}
 const hash2=(x,z,s=seed)=>hash3(x,0,z,s),fade=t=>t*t*(3-2*t),lerp=(a,b,t)=>a+(b-a)*t;
 function noise2(x,z,o=0){const x0=Math.floor(x),z0=Math.floor(z),tx=x-x0,tz=z-z0,f=(dx,dz)=>hash2(x0+dx,z0+dz,seed+o)*2-1;return lerp(lerp(f(0,0),f(1,0),fade(tx)),lerp(f(0,1),f(1,1),fade(tx)),fade(tz))}
 function fbm(x,z,o=0,n=4){let v=0,a=.5,f=1,t=0;for(let i=0;i<n;i++){v+=noise2(x*f,z*f,o+i*101)*a;t+=a;a*=.5;f*=2}return v/t}
