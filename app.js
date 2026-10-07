@@ -1458,12 +1458,18 @@ $('craftClose').addEventListener('click',()=>setCraftOpen(false));
 crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
 
 let last=performance.now(),dayTime=.24;
+const DAY_START=.25,DAY_END=.75,DAY_REAL_SECONDS=15*60,NIGHT_REAL_SECONDS=5*60;
+function advanceDayTime(dt){
+  const isDay=dayTime>=DAY_START&&dayTime<DAY_END;
+  const halfCycleSeconds=isDay?DAY_REAL_SECONDS:NIGHT_REAL_SECONDS;
+  dayTime=(dayTime+dt*(.5/halfCycleSeconds))%1;
+}
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
   if(started&&!craftOpen){
     updateMining(dt);
-    dayTime=(dayTime+dt/210)%1;
+    advanceDayTime(dt);
     const inWater=playerInWater();
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
     if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
