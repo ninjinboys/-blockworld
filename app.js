@@ -452,7 +452,7 @@ function resetWorldRuntime(){
   mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
   clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
-  health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;
+  health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;healthRegenTimer=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
 }
 function freshSeed(){
@@ -466,7 +466,7 @@ async function initializeAccountWorld(save,slot){
   if(save)hasSavedPos=applySaveData(save);
   else{
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
-    health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;
+    health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;healthRegenTimer=0;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
     editChunks.clear();clearWorldDrops();
   }
@@ -1305,8 +1305,8 @@ const rain=new THREE.Points(rainG,new THREE.PointsMaterial({color:0xb8d7f0,size:
 rain.visible=false;scene.add(rain);
 
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
-const MAX_HEALTH=20;
-let health=MAX_HEALTH,dead=false,fallOriginY=null,initialSpawn=null;
+const MAX_HEALTH=20,HEALTH_REGEN_SECONDS=5;
+let health=MAX_HEALTH,dead=false,fallOriginY=null,initialSpawn=null,healthRegenTimer=0;
 const worldDrops=[],dropTextures=new Map();
 function dropTexture(id){
   if(dropTextures.has(id))return dropTextures.get(id);
@@ -1470,6 +1470,7 @@ function showDeathScreen(){
 }
 function damagePlayer(points,source='ダメージ'){
   if(dead||points<=0)return;
+  healthRegenTimer=0;
   health=Math.max(0,health-Math.floor(points));renderHealth();markSaveDirty();
   if(health<=0){showDeathScreen();return}
   const heartsLost=points/2;
@@ -1480,8 +1481,17 @@ function applyFallDamage(distance){
   if(blocks<=3)return;
   damagePlayer(blocks-3,'落下ダメージ');
 }
+function updateHealthRegen(dt){
+  if(dead||health>=MAX_HEALTH){healthRegenTimer=0;return}
+  healthRegenTimer+=dt;
+  while(healthRegenTimer>=HEALTH_REGEN_SECONDS&&health<MAX_HEALTH){
+    healthRegenTimer-=HEALTH_REGEN_SECONDS;
+    health=Math.min(MAX_HEALTH,health+1);
+    renderHealth();markSaveDirty();
+  }
+}
 function respawnPlayer(){
-  health=MAX_HEALTH;dead=false;fallOriginY=null;
+  health=MAX_HEALTH;dead=false;fallOriginY=null;healthRegenTimer=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
   spawn();streamChunks(true);
   player.yaw=0;player.pitch=0;renderHealth();markSaveDirty();saveCurrentGame(false);
@@ -2025,7 +2035,7 @@ function advanceDayTime(dt){
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
-  if(started&&!dead){updateWorldDrops(dt,now);updatePassiveSpawning(dt)}
+  if(started&&!dead){updateWorldDrops(dt,now);updatePassiveSpawning(dt);updateHealthRegen(dt)}
   if(started&&!dead&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
     advanceDayTime(dt);
