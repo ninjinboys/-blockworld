@@ -1541,20 +1541,20 @@ function primaryActionStart(){
 function primaryActionStop(){miningHeld=false;clearMining()}
 
 function renderHotbar(){
-  normalizeHotbar();hotbarEl.innerHTML='';
-  hotbarSlots.forEach((id,i)=>{
-    const d=document.createElement('div'),count=id==null?0:(inventory[id]||0);
-    d.className='slot'+(id!=null&&id===selected?' active':'');
+  syncDerivedInventory();hotbarEl.innerHTML='';
+  for(let i=0;i<9;i++){
+    const st=inventorySlots[i],d=document.createElement('div');
+    d.className='slot'+(i===selectedHotbarIndex?' active':'');
     const key=document.createElement('span');key.className='key';key.textContent=i+1;d.appendChild(key);
-    if(id!=null){
-      d.appendChild(itemCanvas(id,'item-icon hotbar-icon'));
-      const qty=document.createElement('span');qty.className='qty';qty.textContent=count;d.appendChild(qty);
-      const name=document.createElement('span');name.className='item-name';name.textContent=names[id]||'ITEM';d.appendChild(name);
-      d.title=names[id]||'アイテム';
-      d.addEventListener('pointerdown',e=>{e.stopPropagation();selected=id;renderHotbar()});
+    if(st){
+      d.appendChild(itemCanvas(st.id,'item-icon hotbar-icon'));
+      const qty=document.createElement('span');qty.className='qty';qty.textContent=st.qty;d.appendChild(qty);
+      const name=document.createElement('span');name.className='item-name';name.textContent=names[st.id]||'ITEM';d.appendChild(name);
+      d.title=names[st.id]||'アイテム';
     }
+    d.addEventListener('pointerdown',e=>{e.stopPropagation();selectHotbar(i)});
     hotbarEl.appendChild(d);
-  });
+  }
 }
 
 function hasNeeds(recipe){return recipe.needs.every(([id,n])=>(inventory[id]||0)>=n)}
@@ -1634,6 +1634,7 @@ function craftRecipe(i){
   const list=currentRecipeList(),r=list[i];
   if(level<r.unlockLevel){flash('LV '+r.unlockLevel+'で設計図を獲得');return}
   if(!hasNeeds(r)){flash('材料が足りません');return}
+  if(!canFitItem(r.out,r.qty)){flash('インベントリがいっぱいです');return}
   r.needs.forEach(([id,n])=>removeItem(id,n));
   addItem(r.out,r.qty);
   if(craftMode==='furnace'&&r.xp)gainXP(r.xp,r.name+'を精錬');
@@ -1643,6 +1644,7 @@ function setCraftOpen(v){
   craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
   if(v){
+    if(inventoryOpen)setInventoryOpen(false);
     craftMode=chooseCraftMode();
     primaryActionStop();document.exitPointerLock?.();renderCrafting();
     if(craftMode==='inventory')flash('近くの作業台・かまどで専用メニューが開きます');
@@ -1650,7 +1652,16 @@ function setCraftOpen(v){
 }
 
 const keys={};
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}if(craftOpen)return;keys[k]=true;if(e.code==='Space'){e.preventDefault();jump()}if(/^[1-9]$/.test(e.key)){const id=hotbarSlots[+e.key-1];if(id!=null&&(inventory[id]||0)>0)selected=id;renderHotbar()}if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}});
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(k==='e'&&started){e.preventDefault();setInventoryOpen(!inventoryOpen);return}
+  if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}
+  if(craftOpen||inventoryOpen)return;
+  keys[k]=true;
+  if(e.code==='Space'){e.preventDefault();jump()}
+  if(/^[1-9]$/.test(e.key))selectHotbar(+e.key-1);
+  if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}
+});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 function blockAtPoint(x,y,z){return get(Math.floor(x+0.5),Math.floor(y+0.5),Math.floor(z+0.5))}
 function playerInWater(){
@@ -1668,14 +1679,14 @@ function jump(){
   if(player.onGround){player.vel.y=7.3;player.onGround=false}
 }
 
-renderer.domElement.addEventListener('click',()=>{if(!craftOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
+renderer.domElement.addEventListener('click',()=>{if(!craftOpen&&!inventoryOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
-renderer.domElement.addEventListener('mousedown',e=>{if(!started||craftOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
+renderer.domElement.addEventListener('mousedown',e=>{if(!started||craftOpen||inventoryOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
 addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop()});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 let touchLook=null;
-renderer.domElement.addEventListener('pointerdown',e=>{if(craftOpen)return;if(e.pointerType==='touch'&&e.clientX>innerWidth*.35)touchLook={x:e.clientX,y:e.clientY}});
+renderer.domElement.addEventListener('pointerdown',e=>{if(craftOpen||inventoryOpen)return;if(e.pointerType==='touch'&&e.clientX>innerWidth*.35)touchLook={x:e.clientX,y:e.clientY}});
 renderer.domElement.addEventListener('pointermove',e=>{if(touchLook&&e.pointerType==='touch'){const dx=e.clientX-touchLook.x,dy=e.clientY-touchLook.y;player.yaw-=dx*.006;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch-dy*.006));touchLook={x:e.clientX,y:e.clientY}}});
 renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 
@@ -1687,7 +1698,13 @@ jumpBtn.addEventListener('pointerdown',e=>{e.preventDefault();keys.swimup=true;j
 $('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();primaryActionStart()});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>$('tapMine').addEventListener(t,e=>{e.preventDefault();primaryActionStop()}));
 $('tapPlace').addEventListener('pointerdown',e=>{e.preventDefault();place()});
+$('tapInventory').addEventListener('pointerdown',e=>{e.preventDefault();setInventoryOpen(true)});
 $('tapCraft').addEventListener('pointerdown',e=>{e.preventDefault();setCraftOpen(true)});
+inventoryClose.addEventListener('click',()=>setInventoryOpen(false));
+inventoryScreen.addEventListener('pointerdown',e=>{if(e.target===inventoryScreen)setInventoryOpen(false)});
+inventoryMove.addEventListener('click',()=>{if(inventorySelectedSlot!=null)moveInventoryStack(inventorySelectedSlot)});
+inventorySplit.addEventListener('click',()=>{if(inventorySelectedSlot!=null)splitInventoryStack(inventorySelectedSlot)});
+inventoryDrop.addEventListener('click',()=>{if(inventorySelectedSlot!=null)dropInventoryStack(inventorySelectedSlot)});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
 crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
 
@@ -1701,7 +1718,8 @@ function advanceDayTime(dt){
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
-  if(started&&!craftOpen){
+  if(started)updateWorldDrops(dt,now);
+  if(started&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
     advanceDayTime(dt);
     const inWater=playerInWater();
