@@ -230,11 +230,11 @@ const recipes=[
   {name:'棒 ×4',out:I.STICK,qty:4,needs:[[B.PLANK,2]],unlockLevel:3},
   {name:'作業台',out:I.CRAFTING_TABLE,qty:1,needs:[[B.PLANK,4]],unlockLevel:4},
   {name:'木のツルハシ',out:I.WOOD_PICK,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5},
-  {name:'木の斧',out:I.WOOD_AXE,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5},
-  {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7}
+  {name:'木の斧',out:I.WOOD_AXE,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5}
 ];
 const workbenchRecipes=[
   {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
+  {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7},
   {name:'石の剣',out:I.STONE_SWORD,qty:1,needs:[[B.COBBLE,2],[I.STICK,1]],unlockLevel:6},
   {name:'石の斧',out:I.STONE_AXE,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
   {name:'石のシャベル',out:I.STONE_SHOVEL,qty:1,needs:[[B.COBBLE,1],[I.STICK,2]],unlockLevel:6},
