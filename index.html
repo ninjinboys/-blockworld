@@ -5,13 +5,34 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261007n">
+<link rel="stylesheet" href="style.css?v=20261007p">
 </head>
 <body>
 <div id="game"></div>
+<div id="authCover">
+  <div class="auth-panel">
+    <h1>BLOCKWORLD</h1>
+    <div class="auth-tabs">
+      <button id="showLogin" class="active" type="button">ログイン</button>
+      <button id="showCreate" type="button">新規アカウント作成</button>
+    </div>
+    <form id="authForm" autocomplete="off">
+      <div id="authModeText">アカウントにログイン</div>
+      <label>名前<input id="authName" name="username" maxlength="20" autocomplete="username" required></label>
+      <label>パスワード<input id="authPassword" name="password" type="password" minlength="6" maxlength="64" autocomplete="current-password" required></label>
+      <button id="authSubmit" type="submit">ログイン</button>
+      <div id="authError" role="alert"></div>
+    </form>
+    <div class="auth-note">この版ではアカウントとセーブはこの端末に保存されます。</div>
+  </div>
+</div>
 <div id="crosshair"></div><div id="breakMeter"><div id="breakLabel"></div><div id="breakTrack"><div id="breakFill"></div></div></div>
 <div id="hud">
   <div id="stats"><div id="coords">X 0 Y 0 Z 0</div><div id="biome">Plains</div><div id="clock">☀ 06:00</div><div id="weather">Clear</div></div>
+  <div id="accountBox">
+    <div><strong id="accountName">---</strong><span id="saveStatus">未ログイン</span></div>
+    <div class="account-actions"><button id="saveNow" type="button">保存</button><button id="logoutBtn" type="button">ログアウト</button></div>
+  </div>
   <div id="progress">
     <div class="xp-row"><strong id="levelText">LV 1</strong><span id="xpText">0 / 20 XP</span></div>
     <div id="xpTrack"><div id="xpFill"></div></div>
@@ -40,7 +61,7 @@
     <div class="craft-help">Cキーで開閉 / 採掘や動物討伐でXPを獲得</div>
   </div>
 </div>
-<div id="startCover">
+<div id="startCover" style="display:none">
   <div class="panel">
     <h1>BLOCKWORLD</h1>
     <p>持ち物ゼロから開始。無限に続くワールドを探索し、採掘や動物討伐で経験値を稼いでクラフト設計図を解放します。</p>
@@ -49,6 +70,6 @@
     <div id="loading">世界を生成中...</div>
   </div>
 </div>
-<script type="module" src="app.js?v=20261007o"></script>
+<script type="module" src="app.js?v=20261007p"></script>
 </body>
 </html>
