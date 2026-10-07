@@ -1428,6 +1428,7 @@ function dropInventoryStack(index){
 function renderInventorySlot(index){
   const st=inventorySlots[index],d=document.createElement('button');
   d.type='button';d.className='inv-slot'+(inventorySelectedSlot===index?' selected-slot':'')+(index===selectedHotbarIndex&&index<9?' hotbar-current':'');
+  if(inventorySelectedSlot!=null&&inventorySelectedSlot!==index)d.classList.add('move-target');
   if(index<9){const n=document.createElement('span');n.className='slot-number';n.textContent=index+1;d.appendChild(n)}
   if(st){
     d.appendChild(itemCanvas(st.id,'item-icon'));
@@ -1435,8 +1436,22 @@ function renderInventorySlot(index){
     d.title=names[st.id]||'アイテム';
   }
   d.addEventListener('click',()=>{
-    inventorySelectedSlot=st?index:null;
-    if(st&&index<9)selectedHotbarIndex=index;
+    const from=inventorySelectedSlot;
+    if(from!=null&&from!==index&&inventorySlots[from]){
+      const moving=inventorySlots[from],target=inventorySlots[index];
+      inventorySlots[index]=moving;
+      inventorySlots[from]=target;
+      inventorySelectedSlot=index;
+      syncDerivedInventory();markSaveDirty();renderHotbar();renderInventoryUI();
+      flash(target?'アイテムを入れ替えました':'アイテムを移動しました');
+      return;
+    }
+    if(st){
+      inventorySelectedSlot=index;
+      if(index<9)selectedHotbarIndex=index;
+    }else{
+      inventorySelectedSlot=null;
+    }
     syncDerivedInventory();renderHotbar();renderInventoryUI();
   });
   return d;
