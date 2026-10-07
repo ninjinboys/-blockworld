@@ -41,7 +41,8 @@ const I={
   IRON_HELMET:126,IRON_CHEST:127,IRON_LEGS:128,IRON_BOOTS:129,
   GOLD_HELMET:130,GOLD_CHEST:131,GOLD_LEGS:132,GOLD_BOOTS:133,
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
-  WOOD_AXE:138
+  WOOD_AXE:138,
+  WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -54,7 +55,8 @@ const names={
   126:'鉄のヘルメット',127:'鉄のチェストプレート',128:'鉄のレギンス',129:'鉄のブーツ',
   130:'金のヘルメット',131:'金のチェストプレート',132:'金のレギンス',133:'金のブーツ',
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
-  138:'木の斧'
+  138:'木の斧',
+  139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
@@ -71,7 +73,8 @@ const inventory={
   [I.IRON_HELMET]:0,[I.IRON_CHEST]:0,[I.IRON_LEGS]:0,[I.IRON_BOOTS]:0,
   [I.GOLD_HELMET]:0,[I.GOLD_CHEST]:0,[I.GOLD_LEGS]:0,[I.GOLD_BOOTS]:0,
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
-  [I.WOOD_AXE]:0
+  [I.WOOD_AXE]:0,
+  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
@@ -87,7 +90,8 @@ const itemGlyphs={
   [I.IRON_HELMET]:'鉄頭',[I.IRON_CHEST]:'鉄胴',[I.IRON_LEGS]:'鉄脚',[I.IRON_BOOTS]:'鉄靴',
   [I.GOLD_HELMET]:'金頭',[I.GOLD_CHEST]:'金胴',[I.GOLD_LEGS]:'金脚',[I.GOLD_BOOTS]:'金靴',
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
-  [I.WOOD_AXE]:'木斧'
+  [I.WOOD_AXE]:'木斧',
+  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革'
 };
 
 const ICON_MAT={
@@ -193,8 +197,24 @@ function gemIcon(g,m){
   ir(g,10,6,1,3,m.dark);
 }
 function stickIcon(g){pixelLine(g,11,3,4,13,'#332417',3);pixelLine(g,11,3,4,13,'#8b5b32',2);pixelLine(g,10,4,5,11,'#c08a52',1)}
+function mobDropIcon(g,id){
+  if(id===I.WOOL){
+    ir(g,4,4,8,8,'#f4f1e9');ir(g,3,6,2,5,'#ded9cf');ir(g,11,5,2,6,'#ffffff');
+    ir(g,5,3,3,2,'#ffffff');ir(g,8,3,3,2,'#e7e2d8');ir(g,6,11,5,2,'#c9c4bb');return;
+  }
+  if(id===I.RAW_PORK||id===I.RAW_BEEF){
+    const main=id===I.RAW_PORK?'#d8737d':'#a84448',light=id===I.RAW_PORK?'#f3a2aa':'#d8666b',dark=id===I.RAW_PORK?'#9e4f58':'#6f2b30';
+    poly(g,[[3,6],[6,3],[11,4],[13,7],[11,12],[6,13],[3,10]],main);
+    ir(g,6,5,4,2,light);ir(g,4,8,2,2,dark);ir(g,9,10,2,2,dark);return;
+  }
+  if(id===I.LEATHER){
+    poly(g,[[4,3],[7,4],[9,3],[12,5],[11,8],[13,11],[10,13],[7,12],[4,13],[3,9],[4,7],[3,5]],'#8a5533');
+    ir(g,6,5,4,2,'#b77a4e');ir(g,5,10,5,1,'#5f3822');return;
+  }
+}
 function drawItemIcon(g,id){
   g.clearRect(0,0,16,16);
+  if(id===I.WOOL||id===I.RAW_PORK||id===I.RAW_BEEF||id===I.LEATHER)return mobDropIcon(g,id);
   if(id===B.GRASS)return blockIcon(g,'#78b85c','#785032','#5f4028','grass');
   if(id===B.DIRT)return blockIcon(g,'#98643c','#7c4e31','#684029','plain');
   if(id===B.STONE)return blockIcon(g,'#a3a7aa','#888d91','#6f7478','stone');
