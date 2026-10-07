@@ -1702,6 +1702,46 @@ function place(){const h=target();if(!h||!h.face)return;if(selected==null||(inve
   set(x,y,z,blockId);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}
   const placedName=names[selected]||names[blockId]||'ブロック';consumeSelected(1);rebuild();renderHotbar();flash(placedName+'を設置')
 }
+function prepareMobHitMaterials(root){
+  root.traverse(o=>{
+    if(!o.isMesh||!o.material)return;
+    if(!o.userData.mobOwnMaterial){
+      o.material=o.material.clone();
+      o.userData.mobOwnMaterial=true;
+      o.userData.mobBaseColor=o.material.color.getHex();
+    }
+  });
+}
+function setMobHitFlash(root){
+  prepareMobHitMaterials(root);
+  root.userData.hitFlash=.22;
+  root.traverse(o=>{
+    if(o.isMesh&&o.material?.color)o.material.color.setHex(0xff4040);
+  });
+}
+function restoreMobColors(root){
+  root.traverse(o=>{
+    if(o.isMesh&&o.material?.color&&o.userData.mobBaseColor!=null)o.material.color.setHex(o.userData.mobBaseColor);
+  });
+}
+function makeMobFlee(root){
+  const dx=root.position.x-player.pos.x,dz=root.position.z-player.pos.z;
+  root.userData.angle=Math.atan2(dx,dz);
+  root.userData.fleeTime=2.6;
+  root.userData.t=2.6;
+}
+function dropMobLoot(root){
+  const x=root.position.x,y=root.position.y+.75,z=root.position.z;
+  const type=root.userData.type;
+  if(type===0){
+    spawnWorldDrop(I.WOOL,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
+  }else if(type===1){
+    spawnWorldDrop(I.RAW_PORK,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
+  }else{
+    spawnWorldDrop(I.RAW_BEEF,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
+    spawnWorldDrop(I.LEATHER,1,x+.12,y,z+.08,{scatter:true,pickupDelay:.55});
+  }
+}
 function attackMob(){
   ray.setFromCamera(new THREE.Vector2(0,0),camera);
   const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
@@ -1709,15 +1749,23 @@ function attackMob(){
   let root=hits[0].object;
   while(root.parent&&!mobs.includes(root))root=root.parent;
   if(!mobs.includes(root))return false;
+
   const damage=selected===I.DIAMOND_SWORD?4:selected===I.IRON_SWORD?3:selected===I.GOLD_SWORD?2:selected===I.STONE_SWORD?2:1;
   root.userData.hp-=damage;
+  setMobHitFlash(root);
+  makeMobFlee(root);
+
   if(root.userData.hp<=0){
     const earned=root.userData.xp||12,name=root.userData.name||'動物';
+    dropMobLoot(root);
     scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1);
     gainXP(earned,name+'を倒した');
-  }else flash((root.userData.name||'動物')+'に攻撃　HP '+root.userData.hp);
+  }else{
+    flash((root.userData.name||'動物')+'に攻撃　HP '+root.userData.hp);
+  }
   return true;
 }
+
 function primaryActionStart(){
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
@@ -1929,7 +1977,33 @@ function loop(now){
 
     if(weather==='rain'){const a=rain.geometry.attributes.position.array;for(let i=0;i<rainN;i++){a[i*3+1]-=dt*19;if(a[i*3+1]<0){a[i*3+1]=25+Math.random()*9;a[i*3]=(Math.random()-.5)*44;a[i*3+2]=(Math.random()-.5)*44}}rain.position.set(player.pos.x,0,player.pos.z);rain.geometry.attributes.position.needsUpdate=true}
 
-    mobs.forEach((m,i)=>{m.userData.t-=dt;if(m.userData.t<=0){m.userData.t=1.5+hash3(i,Math.floor(now/1000),3,seed)*3;m.userData.angle+=(hash3(i,4,Math.floor(now/900),seed)-.5)*2.4}const x=m.position.x+Math.sin(m.userData.angle)*m.userData.speed*dt,z=m.position.z+Math.cos(m.userData.angle)*m.userData.speed*dt,ix=Math.round(x),iz=Math.round(z),h=surfaceAt(ix,iz),bio=biomeAt(ix,iz);if(h>SEA&&bio!==6){m.position.x=x;m.position.z=z;m.position.y=h+.05;m.rotation.y=m.userData.angle+Math.PI}});
+    mobs.forEach((m,i)=>{
+      if(m.userData.hitFlash>0){
+        m.userData.hitFlash-=dt;
+        if(m.userData.hitFlash<=0)restoreMobColors(m);
+      }
+      if(m.userData.fleeTime>0){
+        m.userData.fleeTime-=dt;
+        const dx=m.position.x-player.pos.x,dz=m.position.z-player.pos.z;
+        if(dx*dx+dz*dz>1)m.userData.angle=Math.atan2(dx,dz);
+      }else{
+        m.userData.t-=dt;
+        if(m.userData.t<=0){
+          m.userData.t=1.5+hash3(i,Math.floor(now/1000),3,seed)*3;
+          m.userData.angle+=(hash3(i,4,Math.floor(now/900),seed)-.5)*2.4;
+        }
+      }
+      const fleeMult=m.userData.fleeTime>0?3.4:1;
+      const speed=m.userData.speed*fleeMult;
+      const x=m.position.x+Math.sin(m.userData.angle)*speed*dt;
+      const z=m.position.z+Math.cos(m.userData.angle)*speed*dt;
+      const ix=Math.round(x),iz=Math.round(z),h=surfaceAt(ix,iz),bio=biomeAt(ix,iz);
+      if(h>SEA&&bio!==6){
+        m.position.x=x;m.position.z=z;m.position.y=h+.05;m.rotation.y=m.userData.angle+Math.PI;
+      }else if(m.userData.fleeTime>0){
+        m.userData.angle+=Math.PI*.65;
+      }
+    });
 
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
