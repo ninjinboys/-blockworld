@@ -57,11 +57,11 @@ const names={
   138:'木の斧'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
-const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS];
+const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE};
 const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE};
 const inventory={
-  [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,
+  [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
   [I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0,
   [I.RAW_IRON]:0,[I.RAW_GOLD]:0,[I.IRON_INGOT]:0,[I.GOLD_INGOT]:0,[I.DIAMOND]:0,
   [I.STONE_SWORD]:0,[I.STONE_AXE]:0,[I.STONE_SHOVEL]:0,
@@ -1135,7 +1135,7 @@ function makeDropSprite(id){
 function spawnWorldDrop(id,qty,x,y,z,opts={}){
   qty=Math.max(1,Math.floor(qty||1));
   const sprite=makeDropSprite(id);
-  const d={id,qty,x,y,z,vx:Number(opts.vx)||0,vy:Number(opts.vy)||0,vz:Number(opts.vz)||0,age:Number(opts.age)||0,pickupDelay:Number(opts.pickupDelay)??.45,sprite,phase:Math.random()*Math.PI*2};
+  const d={id,qty,x,y,z,vx:Number(opts.vx)||0,vy:Number(opts.vy)||0,vz:Number(opts.vz)||0,age:Number(opts.age)||0,pickupDelay:Number.isFinite(Number(opts.pickupDelay))?Number(opts.pickupDelay):.45,sprite,phase:Math.random()*Math.PI*2};
   if(opts.scatter){d.vx+=(Math.random()-.5)*1.4;d.vz+=(Math.random()-.5)*1.4;d.vy+=1.7+Math.random()*.7}
   sprite.position.set(x,y,z);scene.add(sprite);worldDrops.push(d);markSaveDirty();return d;
 }
@@ -1362,7 +1362,7 @@ function canFitItem(id,qty=1){
 }
 function addItem(id,qty=1){
   let left=Math.max(0,Math.floor(qty));if(!left)return 0;
-  const max=maxStackFor(id);
+  const original=left,max=maxStackFor(id);
   for(const st of inventorySlots){
     if(!st||st.id!==id||st.qty>=max)continue;
     const take=Math.min(left,max-st.qty);st.qty+=take;left-=take;if(!left)break;
@@ -1371,8 +1371,10 @@ function addItem(id,qty=1){
     const idx=inventorySlots.findIndex(v=>!v);if(idx<0)break;
     const take=Math.min(left,max);inventorySlots[idx]={id,qty:take};left-=take;
   }
-  syncDerivedInventory();markSaveDirty();renderHotbar();
-  if(inventoryOpen)renderInventoryUI();
+  if(left!==original){
+    syncDerivedInventory();markSaveDirty();renderHotbar();
+    if(inventoryOpen)renderInventoryUI();
+  }
   return left;
 }
 function removeItem(id,qty=1){
