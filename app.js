@@ -1225,30 +1225,183 @@ function canMineBlock(id,showMessage=true){
   if(id===B.DIAMOND&&t<3){if(showMessage)flash('ダイヤには鉄以上のツルハシが必要');return false}
   return true;
 }
-function normalizeHotbar(){
-  for(let i=0;i<hotbarSlots.length;i++){
-    const id=hotbarSlots[i];
-    if(id!=null&&(inventory[id]||0)<=0)hotbarSlots[i]=null;
+const NON_STACKABLE=new Set([
+  I.WOOD_PICK,I.STONE_PICK,I.IRON_PICK,I.GOLD_PICK,I.DIAMOND_PICK,
+  I.STONE_SWORD,I.IRON_SWORD,I.GOLD_SWORD,I.DIAMOND_SWORD,
+  I.WOOD_AXE,I.STONE_AXE,I.IRON_AXE,I.GOLD_AXE,I.DIAMOND_AXE,
+  I.STONE_SHOVEL,I.IRON_SHOVEL,I.GOLD_SHOVEL,I.DIAMOND_SHOVEL,
+  I.IRON_HELMET,I.IRON_CHEST,I.IRON_LEGS,I.IRON_BOOTS,
+  I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS,
+  I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS
+]);
+function maxStackFor(id){return NON_STACKABLE.has(id)?1:64}
+function clearInventorySlots(){
+  inventorySlots.fill(null);hotbarSlots.fill(null);acquiredOrder.length=0;
+  for(const k of Object.keys(inventory))inventory[k]=0;
+  selected=null;inventorySelectedSlot=null;
+}
+function syncDerivedInventory(){
+  for(const k of Object.keys(inventory))inventory[k]=0;
+  acquiredOrder.length=0;
+  for(let i=0;i<36;i++){
+    const st=inventorySlots[i];
+    if(st&&st.qty>0){
+      inventory[st.id]=(inventory[st.id]||0)+st.qty;
+      if(!acquiredOrder.includes(st.id))acquiredOrder.push(st.id);
+    }else inventorySlots[i]=null;
   }
-  for(const id of acquiredOrder){
-    if((inventory[id]||0)>0&&!hotbarSlots.includes(id)){
-      const empty=hotbarSlots.indexOf(null);
-      if(empty>=0)hotbarSlots[empty]=id;
+  for(let i=0;i<9;i++)hotbarSlots[i]=inventorySlots[i]?.id??null;
+  if(selectedHotbarIndex<0||selectedHotbarIndex>8)selectedHotbarIndex=0;
+  let st=inventorySlots[selectedHotbarIndex];
+  if(!st){
+    const first=inventorySlots.findIndex((v,i)=>i<9&&v);
+    if(first>=0){selectedHotbarIndex=first;st=inventorySlots[first]}
+  }
+  selected=st?.id??null;
+}
+function migrateLegacyInventoryToSlots(data){
+  clearInventorySlots();
+  const counts={};
+  if(data?.inventory&&typeof data.inventory==='object'){
+    for(const [k,v] of Object.entries(data.inventory))if(Number(v)>0)counts[Number(k)]=Math.floor(Number(v));
+  }
+  if(Array.isArray(data?.hotbarSlots)){
+    for(let i=0;i<Math.min(9,data.hotbarSlots.length);i++){
+      const id=Number(data.hotbarSlots[i]);
+      if(!Number.isFinite(id)||!(counts[id]>0))continue;
+      const qty=Math.min(maxStackFor(id),counts[id]);
+      inventorySlots[i]={id,qty};counts[id]-=qty;
     }
   }
-  if(selected!=null&&(inventory[selected]||0)<=0)selected=null;
-  if(selected==null)selected=hotbarSlots.find(id=>id!=null&&(inventory[id]||0)>0)??null;
+  const order=[...(Array.isArray(data?.acquiredOrder)?data.acquiredOrder.map(Number):[]),...Object.keys(counts).map(Number)];
+  for(const id of [...new Set(order)]){
+    let left=counts[id]||0;
+    while(left>0){
+      let idx=inventorySlots.findIndex((v,i)=>i>=9&&!v);
+      if(idx<0)idx=inventorySlots.findIndex(v=>!v);
+      if(idx<0)break;
+      const qty=Math.min(maxStackFor(id),left);inventorySlots[idx]={id,qty};left-=qty;
+    }
+  }
+  syncDerivedInventory();
+}
+function normalizeHotbar(){syncDerivedInventory()}
+function canFitItem(id,qty=1){
+  let room=0,max=maxStackFor(id);
+  for(const st of inventorySlots){
+    if(!st)room+=max;
+    else if(st.id===id)room+=Math.max(0,max-st.qty);
+    if(room>=qty)return true;
+  }
+  return false;
 }
 function addItem(id,qty=1){
-  if(qty<=0)return;
-  inventory[id]=(inventory[id]||0)+qty;
-  if(!acquiredOrder.includes(id))acquiredOrder.push(id);
-  normalizeHotbar();markSaveDirty();
+  let left=Math.max(0,Math.floor(qty));if(!left)return 0;
+  const max=maxStackFor(id);
+  for(const st of inventorySlots){
+    if(!st||st.id!==id||st.qty>=max)continue;
+    const take=Math.min(left,max-st.qty);st.qty+=take;left-=take;if(!left)break;
+  }
+  while(left>0){
+    const idx=inventorySlots.findIndex(v=>!v);if(idx<0)break;
+    const take=Math.min(left,max);inventorySlots[idx]={id,qty:take};left-=take;
+  }
+  syncDerivedInventory();markSaveDirty();renderHotbar();
+  if(inventoryOpen)renderInventoryUI();
+  return left;
 }
 function removeItem(id,qty=1){
-  inventory[id]=Math.max(0,(inventory[id]||0)-qty);
-  normalizeHotbar();markSaveDirty();
+  let left=Math.max(0,Math.floor(qty));
+  for(let i=35;i>=0&&left>0;i--){
+    const st=inventorySlots[i];if(!st||st.id!==id)continue;
+    const take=Math.min(left,st.qty);st.qty-=take;left-=take;if(st.qty<=0)inventorySlots[i]=null;
+  }
+  syncDerivedInventory();markSaveDirty();renderHotbar();
+  if(inventoryOpen)renderInventoryUI();
+  return left;
 }
+function removeFromSlot(index,qty=1){
+  const st=inventorySlots[index];if(!st)return 0;
+  const take=Math.min(st.qty,Math.max(0,Math.floor(qty)));st.qty-=take;
+  if(st.qty<=0)inventorySlots[index]=null;
+  syncDerivedInventory();markSaveDirty();renderHotbar();
+  if(inventoryOpen)renderInventoryUI();
+  return take;
+}
+function consumeSelected(qty=1){return removeFromSlot(selectedHotbarIndex,qty)}
+function selectHotbar(index){
+  selectedHotbarIndex=Math.max(0,Math.min(8,index));syncDerivedInventory();renderHotbar();
+  if(inventoryOpen)renderInventoryUI();
+}
+function firstEmptySlot(start=0,end=36,exclude=-1){
+  for(let i=start;i<end;i++)if(i!==exclude&&!inventorySlots[i])return i;
+  return -1;
+}
+function splitInventoryStack(index){
+  const st=inventorySlots[index];if(!st||st.qty<2){flash('分けられる個数がありません');return}
+  let empty=firstEmptySlot(index<9?9:0,36,index);
+  if(empty<0&&index>=9)empty=firstEmptySlot(0,9,index);
+  if(empty<0){flash('空きスロットがありません');return}
+  const moved=Math.floor(st.qty/2);st.qty-=moved;inventorySlots[empty]={id:st.id,qty:moved};
+  inventorySelectedSlot=empty;syncDerivedInventory();markSaveDirty();renderHotbar();renderInventoryUI();
+}
+function moveInventoryStack(index){
+  const st=inventorySlots[index];if(!st)return;
+  const toHotbar=index>=9;
+  const empty=toHotbar?firstEmptySlot(0,9,index):firstEmptySlot(9,36,index);
+  if(empty<0){flash(toHotbar?'ホットバーに空きがありません':'インベントリに空きがありません');return}
+  inventorySlots[empty]=st;inventorySlots[index]=null;inventorySelectedSlot=empty;
+  if(empty<9)selectedHotbarIndex=empty;
+  syncDerivedInventory();markSaveDirty();renderHotbar();renderInventoryUI();
+}
+function dropInventoryStack(index){
+  const st=inventorySlots[index];if(!st)return;
+  const id=st.id,qty=st.qty;
+  inventorySlots[index]=null;inventorySelectedSlot=null;syncDerivedInventory();markSaveDirty();renderHotbar();
+  const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);
+  spawnWorldDrop(id,qty,player.pos.x+fx*.85,player.pos.y+1.05,player.pos.z+fz*.85,{vx:fx*2.1,vz:fz*2.1,vy:1.8,pickupDelay:1.25});
+  renderInventoryUI();flash((names[id]||'アイテム')+'を捨てた');
+}
+function renderInventorySlot(index){
+  const st=inventorySlots[index],d=document.createElement('button');
+  d.type='button';d.className='inv-slot'+(inventorySelectedSlot===index?' selected-slot':'')+(index===selectedHotbarIndex&&index<9?' hotbar-current':'');
+  if(index<9){const n=document.createElement('span');n.className='slot-number';n.textContent=index+1;d.appendChild(n)}
+  if(st){
+    d.appendChild(itemCanvas(st.id,'item-icon'));
+    const q=document.createElement('span');q.className='stack-qty';q.textContent=st.qty;d.appendChild(q);
+    d.title=names[st.id]||'アイテム';
+  }
+  d.addEventListener('click',()=>{
+    inventorySelectedSlot=st?index:null;
+    if(st&&index<9)selectedHotbarIndex=index;
+    syncDerivedInventory();renderHotbar();renderInventoryUI();
+  });
+  return d;
+}
+function renderInventoryUI(){
+  inventoryMainGrid.innerHTML='';inventoryHotbarGrid.innerHTML='';
+  for(let i=9;i<36;i++)inventoryMainGrid.appendChild(renderInventorySlot(i));
+  for(let i=0;i<9;i++)inventoryHotbarGrid.appendChild(renderInventorySlot(i));
+  const st=inventorySelectedSlot==null?null:inventorySlots[inventorySelectedSlot];
+  inventoryDetailIcon.innerHTML='';
+  if(!st){
+    inventoryDetail.classList.add('empty');inventoryDetailName.textContent='アイテムを選択';inventoryDetailQty.textContent='';
+    inventoryMove.disabled=true;inventorySplit.disabled=true;inventoryDrop.disabled=true;return;
+  }
+  inventoryDetail.classList.remove('empty');inventoryDetailIcon.appendChild(itemCanvas(st.id,'item-icon'));
+  inventoryDetailName.textContent=names[st.id]||'ITEM';inventoryDetailQty.textContent='× '+st.qty;
+  inventoryMove.disabled=false;inventoryMove.textContent=inventorySelectedSlot<9?'インベントリへ':'ホットバーへ';
+  inventorySplit.disabled=st.qty<2;inventoryDrop.disabled=false;
+}
+function setInventoryOpen(v){
+  inventoryOpen=v;inventoryScreen.classList.toggle('open',v);inventoryScreen.setAttribute('aria-hidden',String(!v));
+  Object.keys(keys).forEach(k=>keys[k]=false);
+  if(v){
+    if(craftOpen)setCraftOpen(false);
+    primaryActionStop();document.exitPointerLock?.();inventorySelectedSlot=null;renderInventoryUI();
+  }else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
+}
+
 function finishMine(x,y,z,id){
   if(get(x,y,z)!==id)return;
   set(x,y,z,B.AIR);
