@@ -250,3 +250,45 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   #accountName{max-width:86px}
   .account-actions button{height:26px}
 }
+
+/* Five-world selection */
+#worldCover{
+  position:fixed;inset:0;z-index:35;display:none;align-items:center;justify-content:center;
+  background:linear-gradient(#6ea4d6,#a9c98b 67%,#688556);color:#fff;padding:18px
+}
+.world-panel{
+  width:min(820px,95vw);max-height:90vh;overflow:auto;background:rgba(18,21,24,.9);
+  border:2px solid rgba(255,255,255,.34);box-shadow:0 18px 60px rgba(0,0,0,.38);
+  padding:20px;border-radius:12px;text-shadow:none
+}
+.world-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}
+.world-head h2{margin:2px 0 4px;font-size:28px}
+.world-head p{margin:0;color:#c9c9c9;font-size:11px}
+.world-kicker{font-size:10px;color:#bfc4c8;letter-spacing:.08em}
+.world-kicker strong{color:#eaffaa}
+#worldLogout{
+  min-width:100px;height:40px;border:2px solid #555;background:#777;color:#fff;
+  font:800 11px monospace;box-shadow:inset 2px 2px 0 rgba(255,255,255,.25),inset -2px -2px 0 rgba(0,0,0,.25)
+}
+#worldGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.world-slot{
+  border:3px solid #555;background:#c6c6c6;color:#202020;padding:12px;
+  box-shadow:inset 2px 2px 0 #eee,inset -2px -2px 0 #858585;
+  display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;min-height:108px
+}
+.world-slot.empty{background:#a9a9a9}
+.world-slot-title{font-size:17px;font-weight:900;letter-spacing:.04em}
+.world-slot-meta{font-size:10px;line-height:1.55;color:#444;margin-top:5px}
+.world-slot-actions{display:flex;flex-direction:column;gap:6px}
+.world-slot button{
+  min-width:104px;height:38px;border:3px solid #4a4a4a;background:#6f9b52;color:#111;
+  font:800 11px monospace;box-shadow:inset 2px 2px 0 #b6d49f,inset -2px -2px 0 #4b6d38
+}
+.world-slot .delete-world{background:#9b6760;box-shadow:inset 2px 2px 0 #d1aaa5,inset -2px -2px 0 #68413d;color:#fff}
+@media(max-width:680px),(pointer:coarse){
+  .world-panel{padding:14px;max-height:88vh}
+  .world-head h2{font-size:22px}
+  #worldGrid{grid-template-columns:1fr}
+  .world-slot{min-height:92px;padding:10px}
+  .world-slot button{min-width:96px;height:36px}
+}
