@@ -1129,33 +1129,35 @@ function buildSheep(){
   const g=new THREE.Group();
   const wool=0xf2efe6,woolLight=0xfffdf7,woolShade=0xd9d4c8,skin=0xd8c6aa,ear=0xe8b0a3,eye=0x171717,nose=0xd98987,hoof=0x4a3b35;
 
-  // woolly body with layered tufts
-  cube(g,1.18,.78,.68,wool,0,1.00,.04);
-  cube(g,1.02,.16,.74,woolLight,0,1.43,.02);
-  for(const x of[-.40,0,.40])for(const z of[-.21,.21])cube(g,.30,.20,.26,(x===0? woolLight:woolShade),x,1.39,z);
+  // About 1 block wide and under 2 blocks long overall.
+  cube(g,.96,.74,1.10,wool,0,1.00,.02);
+  cube(g,.86,.16,1.16,woolLight,0,1.40,.02);
+  for(const x of[-.29,0,.29])for(const z of[-.36,0,.36]){
+    cube(g,.24,.18,.28,(x===0?woolLight:woolShade),x,1.37,z);
+  }
 
-  // head and wool cap
-  cube(g,.62,.60,.56,skin,0,1.08,-.61);
-  cube(g,.72,.22,.63,woolLight,0,1.43,-.60);
-  cube(g,.18,.26,.18,woolShade,-.26,1.48,-.77);
-  cube(g,.18,.26,.18,woolShade,.26,1.48,-.77);
+  // head
+  cube(g,.58,.58,.50,skin,0,1.08,-.78);
+  cube(g,.66,.20,.57,woolLight,0,1.40,-.77);
+  cube(g,.16,.22,.16,woolShade,-.23,1.45,-.88);
+  cube(g,.16,.22,.16,woolShade,.23,1.45,-.88);
 
   // ears
-  cube(g,.22,.18,.14,skin,-.40,1.20,-.64,0,0,.16);
-  cube(g,.22,.18,.14,skin,.40,1.20,-.64,0,0,-.16);
-  cube(g,.13,.10,.08,ear,-.42,1.20,-.72,0,0,.16);
-  cube(g,.13,.10,.08,ear,.42,1.20,-.72,0,0,-.16);
+  cube(g,.20,.16,.12,skin,-.35,1.18,-.79,0,0,.14);
+  cube(g,.20,.16,.12,skin,.35,1.18,-.79,0,0,-.14);
+  cube(g,.11,.09,.07,ear,-.36,1.18,-.86,0,0,.14);
+  cube(g,.11,.09,.07,ear,.36,1.18,-.86,0,0,-.14);
 
   // face
-  cube(g,.10,.15,.035,eye,-.16,1.20,-.905);
-  cube(g,.10,.15,.035,eye,.16,1.20,-.905);
-  cube(g,.20,.12,.06,nose,0,1.03,-.91);
-  cube(g,.08,.07,.065,0x7a514a,0,.96,-.915);
+  cube(g,.09,.14,.035,eye,-.15,1.19,-1.045);
+  cube(g,.09,.14,.035,eye,.15,1.19,-1.045);
+  cube(g,.18,.11,.055,nose,0,1.03,-1.05);
+  cube(g,.07,.06,.06,0x7a514a,0,.96,-1.055);
 
   // legs
-  for(const x of[-.38,.38])for(const z of[-.21,.21]){
-    cube(g,.22,.52,.22,skin,x,.48,z);
-    cube(g,.24,.16,.24,hoof,x,.18,z);
+  for(const x of[-.29,.29])for(const z of[-.36,.36]){
+    cube(g,.20,.50,.20,skin,x,.47,z);
+    cube(g,.22,.14,.22,hoof,x,.17,z);
   }
   return g;
 }
@@ -1164,31 +1166,32 @@ function buildPig(){
   const g=new THREE.Group();
   const pink=0xef8f95,pinkLight=0xf6a4a9,pinkShade=0xd96f78,snout=0xf3a0a2,nostril=0x70464a,eye=0x171717,hoof=0x5b3c3e;
 
-  cube(g,1.22,.72,.68,pink,0,.94,.04);
-  cube(g,1.08,.16,.72,pinkLight,0,1.33,.04);
+  // slimmer body, longer front-to-back silhouette
+  cube(g,.95,.68,1.12,pink,0,.94,.02);
+  cube(g,.84,.14,1.16,pinkLight,0,1.31,.02);
 
   // head
-  cube(g,.66,.62,.58,pinkLight,0,1.04,-.62);
-  cube(g,.40,.24,.15,snout,0,.96,-.94);
-  cube(g,.08,.08,.04,nostril,-.11,.96,-1.025);
-  cube(g,.08,.08,.04,nostril,.11,.96,-1.025);
-  cube(g,.09,.14,.035,eye,-.17,1.19,-.915);
-  cube(g,.09,.14,.035,eye,.17,1.19,-.915);
+  cube(g,.60,.56,.50,pinkLight,0,1.03,-.80);
+  cube(g,.36,.22,.14,snout,0,.96,-1.095);
+  cube(g,.07,.07,.035,nostril,-.10,.96,-1.175);
+  cube(g,.07,.07,.035,nostril,.10,.96,-1.175);
+  cube(g,.08,.13,.035,eye,-.15,1.17,-1.045);
+  cube(g,.08,.13,.035,eye,.15,1.17,-1.045);
 
   // ears
-  cube(g,.22,.28,.12,pinkShade,-.31,1.38,-.62,0,0,-.12);
-  cube(g,.22,.28,.12,pinkShade,.31,1.38,-.62,0,0,.12);
+  cube(g,.20,.25,.11,pinkShade,-.27,1.34,-.80,0,0,-.10);
+  cube(g,.20,.25,.11,pinkShade,.27,1.34,-.80,0,0,.10);
 
   // legs
-  for(const x of[-.39,.39])for(const z of[-.20,.20]){
-    cube(g,.22,.48,.22,pinkShade,x,.45,z);
-    cube(g,.24,.14,.24,hoof,x,.18,z);
+  for(const x of[-.29,.29])for(const z of[-.37,.37]){
+    cube(g,.20,.46,.20,pinkShade,x,.44,z);
+    cube(g,.22,.13,.22,hoof,x,.17,z);
   }
 
-  // curled block tail
-  cube(g,.12,.12,.28,pinkShade,.53,1.07,.47);
-  cube(g,.12,.28,.12,pinkShade,.53,1.17,.58);
-  cube(g,.22,.12,.12,pinkShade,.43,1.30,.58);
+  // curled tail
+  cube(g,.10,.10,.20,pinkShade,.35,1.02,.62);
+  cube(g,.10,.22,.10,pinkShade,.35,1.12,.73);
+  cube(g,.17,.10,.10,pinkShade,.28,1.22,.73);
   return g;
 }
 
@@ -1196,44 +1199,45 @@ function buildCow(){
   const g=new THREE.Group();
   const brown=0x744a32,brownDark=0x4f3024,white=0xf1eee5,cream=0xd9c6aa,pink=0xd88f91,eye=0x141414,hoof=0x292525,horn=0xcab489;
 
-  // body
-  cube(g,1.28,.80,.72,brown,0,1.02,.04);
-  // irregular white patches
-  voxelPatch(g,white,-.40,1.25,-.38,.48,.32,.04);
-  voxelPatch(g,white,.38,1.08,.445,.42,.42,.04);
-  voxelPatch(g,white,-.05,1.44,.05,.56,.08,.48);
-  voxelPatch(g,white,.70,1.03,-.05,.04,.48,.44);
+  // roughly one block wide, just under two blocks long overall
+  cube(g,1.00,.76,1.20,brown,0,1.02,.03);
+
+  // patches adjusted to the slimmer, longer body
+  voxelPatch(g,white,-.27,1.22,-.34,.34,.28,.04);
+  voxelPatch(g,white,.25,1.08,.50,.30,.34,.04);
+  voxelPatch(g,white,-.03,1.40,.06,.42,.07,.56);
+  voxelPatch(g,white,.48,1.03,.05,.04,.40,.44);
 
   // head + muzzle
-  cube(g,.68,.64,.60,brownDark,0,1.10,-.66);
-  voxelPatch(g,white,-.17,1.24,-.965,.26,.34,.035);
-  cube(g,.44,.25,.18,cream,0,.98,-.99);
-  cube(g,.075,.075,.04,0x4b3a33,-.12,.98,-1.095);
-  cube(g,.075,.075,.04,0x4b3a33,.12,.98,-1.095);
-  cube(g,.09,.14,.035,eye,-.18,1.25,-.955);
-  cube(g,.09,.14,.035,eye,.18,1.25,-.955);
+  cube(g,.62,.60,.54,brownDark,0,1.10,-.84);
+  voxelPatch(g,white,-.15,1.22,-1.125,.23,.30,.035);
+  cube(g,.40,.23,.16,cream,0,.98,-1.145);
+  cube(g,.07,.07,.035,0x4b3a33,-.11,.98,-1.235);
+  cube(g,.07,.07,.035,0x4b3a33,.11,.98,-1.235);
+  cube(g,.08,.13,.035,eye,-.16,1.23,-1.115);
+  cube(g,.08,.13,.035,eye,.16,1.23,-1.115);
 
-  // ears + inner ears
-  cube(g,.24,.18,.14,brown,-.42,1.28,-.67,0,0,.15);
-  cube(g,.24,.18,.14,brown,.42,1.28,-.67,0,0,-.15);
-  cube(g,.12,.08,.08,pink,-.43,1.28,-.75);
-  cube(g,.12,.08,.08,pink,.43,1.28,-.75);
+  // ears
+  cube(g,.22,.16,.13,brown,-.37,1.27,-.84,0,0,.14);
+  cube(g,.22,.16,.13,brown,.37,1.27,-.84,0,0,-.14);
+  cube(g,.11,.07,.07,pink,-.38,1.27,-.91);
+  cube(g,.11,.07,.07,pink,.38,1.27,-.91);
 
   // horns
-  cube(g,.12,.24,.12,horn,-.25,1.52,-.68,0,0,-.16);
-  cube(g,.12,.24,.12,horn,.25,1.52,-.68,0,0,.16);
+  cube(g,.11,.22,.11,horn,-.22,1.50,-.85,0,0,-.14);
+  cube(g,.11,.22,.11,horn,.22,1.50,-.85,0,0,.14);
 
-  // legs with white socks / dark hooves
-  for(const x of[-.40,.40])for(const z of[-.21,.21]){
-    cube(g,.24,.54,.24,brown,x,.48,z);
-    cube(g,.25,.18,.25,white,x,.25,z);
-    cube(g,.26,.13,.26,hoof,x,.13,z);
+  // legs
+  for(const x of[-.31,.31])for(const z of[-.40,.40]){
+    cube(g,.22,.52,.22,brown,x,.47,z);
+    cube(g,.23,.16,.23,white,x,.24,z);
+    cube(g,.24,.12,.24,hoof,x,.12,z);
   }
 
-  // udder and tail
-  cube(g,.36,.16,.30,pink,0,.57,.25);
-  cube(g,.12,.46,.12,brownDark,0,1.02,.50,0,0,.10);
-  cube(g,.18,.18,.18,hoof,0,.73,.66);
+  // udder + tail
+  cube(g,.32,.14,.28,pink,0,.57,.30);
+  cube(g,.10,.40,.10,brownDark,0,1.00,.68,0,0,.10);
+  cube(g,.15,.15,.15,hoof,0,.75,.78);
   return g;
 }
 
