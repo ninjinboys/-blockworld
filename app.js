@@ -279,7 +279,7 @@ const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURN
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
 let streamCX=NaN,streamCZ=NaN;
-let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false;
+let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=2;
 const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
 const inside=(x,y,z)=>y>=0&&y<HEIGHT;
@@ -335,7 +335,7 @@ function restoreEdits(raw){
 }
 function makeSaveData(){
   return {
-    version:3,worldSlot:currentWorldSlot,savedAt:Date.now(),seed:seed>>>0,
+    version:3,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
     level,xp,weather,dayTime,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
@@ -363,6 +363,7 @@ function readSaveForAccount(key,slot){
 function applySaveData(data){
   if(!data||typeof data!=='object')return false;
   if(Number.isFinite(data.seed))seed=data.seed>>>0;
+  generatorVersion=Math.max(1,Number(data.generatorVersion)||1);
   level=Math.max(1,Number(data.level)||1);xp=Math.max(0,Number(data.xp)||0);
   weather=data.weather==='rain'?'rain':'clear';
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
@@ -398,7 +399,7 @@ async function initializeAccountWorld(save,slot){
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
   else{
-    seed=freshSeed();level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    seed=freshSeed();generatorVersion=2;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     for(const k of Object.keys(inventory))inventory[k]=0;
     acquiredOrder.length=0;hotbarSlots.fill(null);editChunks.clear();
   }
@@ -499,8 +500,7 @@ const hash2=(x,z,s=seed)=>hash3(x,0,z,s),fade=t=>t*t*(3-2*t),lerp=(a,b,t)=>a+(b-
 function noise2(x,z,o=0){const x0=Math.floor(x),z0=Math.floor(z),tx=x-x0,tz=z-z0,f=(dx,dz)=>hash2(x0+dx,z0+dz,seed+o)*2-1;return lerp(lerp(f(0,0),f(1,0),fade(tx)),lerp(f(0,1),f(1,1),fade(tx)),fade(tz))}
 function fbm(x,z,o=0,n=4){let v=0,a=.5,f=1,t=0;for(let i=0;i<n;i++){v+=noise2(x*f,z*f,o+i*101)*a;t+=a;a*=.5;f*=2}return v/t}
 function noise3(x,y,z,o=0){const x0=Math.floor(x),y0=Math.floor(y),z0=Math.floor(z),tx=fade(x-x0),ty=fade(y-y0),tz=fade(z-z0),q=(a,b,c)=>hash3(x0+a,y0+b,z0+c,seed+o)*2-1;const x00=lerp(q(0,0,0),q(1,0,0),tx),x10=lerp(q(0,1,0),q(1,1,0),tx),x01=lerp(q(0,0,1),q(1,0,1),tx),x11=lerp(q(0,1,1),q(1,1,1),tx);return lerp(lerp(x00,x10,ty),lerp(x01,x11,ty),tz)}
-function terrainProfile(x,z){
-  // Large-scale land masses + rolling country + rugged mountain belts.
+function terrainProfileV1(x,z){
   const continent=fbm(x*.006,z*.006,11,5);
   const regional=fbm(x*.017+31,z*.017-27,91,4);
   const detail=fbm(x*.062-80,z*.062+60,151,3);
@@ -509,24 +509,16 @@ function terrainProfile(x,z){
   const ridgeLift=Math.pow(Math.max(0,(ridge-.48)/.52),1.65)*mountainMask*23;
   const broadHills=regional*5.2+detail*1.7;
   let y=SEA+5+continent*8.5+broadHills+ridgeLift;
-
-  // Deep ocean basins make coastlines feel less like a square noise carpet.
   if(continent<-.22)y-=2+Math.abs(continent+.22)*12;
-
-  // Occasional broad plateaus create flat high country separated by escarpments.
   const plateau=fbm(x*.009-210,z*.009+160,222,3);
   if(plateau>.48&&continent>.02&&y>SEA+7){
-    const stepped=Math.round(y/3)*3;
-    y=lerp(y,stepped,.62);
+    const stepped=Math.round(y/3)*3;y=lerp(y,stepped,.62);
   }
-
   const h=Math.max(3,Math.min(HEIGHT-6,Math.floor(y)));
   return {h,continent,regional,rugged:Math.max(0,(ridge-.43)/.57)*mountainMask};
 }
-function terrainH(x,z){return terrainProfile(x,z).h}
-function chooseBiome(h,temp,moist,river,rugged){
-  if(river)return 7;
-  if(h<SEA-2)return 6;
+function chooseBiomeV1(h,temp,moist,river,rugged){
+  if(river)return 7;if(h<SEA-2)return 6;
   if(rugged>.62&&h>SEA+10)return temp<-.05?4:3;
   if(temp>.30&&moist<-.20)return 2;
   if(temp<-.33&&h>SEA+5)return 4;
@@ -535,21 +527,95 @@ function chooseBiome(h,temp,moist,river,rugged){
   if(moist>.12)return 1;
   return 0;
 }
-
-function columnInfo(x,z){
-  const p=terrainProfile(x,z);
-  let h=p.h;
-  // Wider, meandering river corridors with sandy/gravelly banks.
+function columnInfoV1(x,z){
+  const p=terrainProfileV1(x,z);let h=p.h;
   const rf=Math.abs(fbm(x*.019+20,z*.019-18,260,4));
   const width=.030+(fbm(x*.008-50,z*.008+45,275,3)+1)*.010;
-  const river=rf<width&&h>SEA-3;
-  const riverBank=!river&&rf<width*1.75&&h<=SEA+4;
+  const river=rf<width&&h>SEA-3,riverBank=!river&&rf<width*1.75&&h<=SEA+4;
   if(river)h=Math.min(h,SEA-1);
   const temp=fbm(x*.008+80,z*.008-60,331,4)-h*.0085;
   const moist=fbm(x*.009-42,z*.009+51,441,4);
-  const bio=chooseBiome(h,temp,moist,river,p.rugged);
-  return {h,bio,river,riverBank,rugged:p.rugged,temp,moist};
+  return {h,bio:chooseBiomeV1(h,temp,moist,river,p.rugged),river,riverBank,rugged:p.rugged,temp,moist,lake:false};
 }
+
+function climateV2(x,z){
+  // Domain warping breaks up long repeating stripes and creates larger natural regions.
+  const wx=fbm(x*.0042+17,z*.0042-29,1301,3)*72;
+  const wz=fbm(x*.0042-53,z*.0042+41,1401,3)*72;
+  const X=x+wx,Z=z+wz;
+  const continental=fbm(X*.0036,Z*.0036,1501,4);
+  const temp=fbm(X*.0062+80,Z*.0062-60,1601,3);
+  const moist=fbm(X*.0060-42,Z*.0060+51,1701,3);
+  const hills=fbm(X*.014+31,Z*.014-27,1801,3);
+  const detail=fbm(x*.052-80,z*.052+60,1901,2);
+  const ridge=1-Math.abs(fbm(X*.011+120,Z*.011-90,2001,3));
+  const erosion=fbm(X*.009-210,Z*.009+160,2101,3);
+  return {X,Z,continental,temp,moist,hills,detail,ridge,erosion};
+}
+function chooseBiomeV2(c,mountainStrength){
+  if(c.continental<-.24)return 6;
+  if(mountainStrength>.62)return c.temp<-.08?4:3;
+  if(c.moist>.48&&c.continental<.20)return 5;
+  if(c.temp>.26&&c.moist<-.08)return 2;
+  if(c.temp<-.24)return 3;
+  if(c.moist>.10)return 1;
+  return 0;
+}
+function terrainProfileV2(x,z){
+  const c=climateV2(x,z);
+  const mountainBase=Math.max(0,(c.ridge-.52)/.48);
+  const mountainZone=Math.max(0,Math.min(1,(c.hills+.30)*1.25))*Math.max(0,Math.min(1,(c.continental+.35)*1.5));
+  const mountainStrength=Math.pow(mountainBase,1.45)*mountainZone;
+  let bio=chooseBiomeV2(c,mountainStrength);
+
+  // Each biome has its own terrain character instead of sharing one universal height field.
+  let base=SEA+5,amp=2.2,detailAmp=1.0;
+  if(bio===0){base=SEA+5;amp=2.0;detailAmp=.9}       // broad plains
+  if(bio===1){base=SEA+6;amp=3.4;detailAmp=1.1}       // rolling forest
+  if(bio===2){base=SEA+4;amp=1.8;detailAmp=.8}         // flatter desert
+  if(bio===3){base=SEA+7;amp=4.6;detailAmp=1.3}        // taiga / high country
+  if(bio===4){base=SEA+10;amp=5.5;detailAmp=1.5}       // snowy mountain base
+  if(bio===5){base=SEA+2;amp=1.2;detailAmp=.55}        // low swamp
+  if(bio===6){base=SEA-5;amp=3.2;detailAmp=.7}         // ocean floor
+
+  let y=base+c.hills*amp+c.detail*detailAmp+c.continental*4.0;
+  if(bio===6)y-=Math.max(0,-c.continental-.15)*10;
+
+  if(mountainStrength>.05&&bio!==6&&bio!==5){
+    y+=mountainStrength*(18+c.ridge*8);
+    if(mountainStrength>.55)bio=c.temp<-.08?4:3;
+  }
+
+  // Occasional broad shelves and escarpments make exploration less like smooth noise.
+  const shelf=Math.max(0,(c.erosion-.42)/.58);
+  if(shelf>.18&&bio!==5&&bio!==6&&mountainStrength<.45){
+    const stepped=Math.round(y/2)*2;
+    y=lerp(y,stepped,Math.min(.58,shelf*.62));
+  }
+
+  const h=Math.max(3,Math.min(HEIGHT-5,Math.floor(y)));
+  return {h,bio,continental:c.continental,rugged:mountainStrength,temp:c.temp,moist:c.moist,X:c.X,Z:c.Z};
+}
+function columnInfoV2(x,z){
+  const p=terrainProfileV2(x,z);let h=p.h,bio=p.bio;
+  // Warped river channels cross biome borders.
+  const riverField=Math.abs(fbm(p.X*.016+20,p.Z*.016-18,2201,4));
+  const riverWidth=.026+(fbm(p.X*.005-50,p.Z*.005+45,2301,2)+1)*.009;
+  let river=riverField<riverWidth&&p.continental>-.18&&h>SEA-3;
+
+  // Small inland basins become lakes, especially in plains/forest.
+  const basin=fbm(p.X*.020+310,p.Z*.020-270,2401,3);
+  const lakeMask=fbm(p.X*.006-140,p.Z*.006+190,2501,2);
+  const lake=!river&&p.continental>-.08&&p.continental<.34&&p.rugged<.22&&lakeMask>.46&&basin<-.38&&h<=SEA+7;
+
+  if(river)h=Math.min(h,SEA-1);
+  if(lake)h=Math.min(h,SEA-1);
+  const riverBank=!river&&!lake&&riverField<riverWidth*1.85&&h<=SEA+5;
+  if(lake)bio=p.moist>.18?5:7;
+  return {h,bio,river:river||lake,riverBank,rugged:p.rugged,temp:p.temp,moist:p.moist,lake};
+}
+function terrainProfile(x,z){return generatorVersion>=2?terrainProfileV2(x,z):terrainProfileV1(x,z)}
+function columnInfo(x,z){return generatorVersion>=2?columnInfoV2(x,z):columnInfoV1(x,z)}
 const surfaceAt=(x,z)=>columnInfo(x,z).h;
 const biomeAt=(x,z)=>columnInfo(x,z).bio;
 
@@ -598,21 +664,20 @@ function featureCellRoot(x,z,spacing,salt){
   return x===cx*spacing+ox&&z===cz*spacing+oz;
 }
 function isTreeRoot(x,z,info){
-  if(info.h<SEA+1||info.river||info.riverBank||info.rugged>.68)return false;
-  const cluster=fbm(x*.024+70,z*.024-55,710,3);
-  if(info.bio===1){
-    // Forest has groves and broad clearings instead of trees everywhere.
-    return cluster>-.18&&featureCellRoot(x,z,5,721)&&hash2(x,z,seed+722)>.12;
+  if(info.h<SEA+1||info.river||info.riverBank||info.rugged>.72)return false;
+  const cluster=fbm(x*.020+70,z*.020-55,710,3);
+  if(generatorVersion<2){
+    if(info.bio===1)return cluster>-.18&&featureCellRoot(x,z,5,721)&&hash2(x,z,seed+722)>.12;
+    if(info.bio===3)return cluster>-.28&&featureCellRoot(x,z,6,731)&&hash2(x,z,seed+732)>.10;
+    if(info.bio===0)return cluster>.48&&featureCellRoot(x,z,9,741)&&hash2(x,z,seed+742)>.35;
+    if(info.bio===5)return cluster>.30&&featureCellRoot(x,z,8,751)&&hash2(x,z,seed+752)>.25;
+    return false;
   }
-  if(info.bio===3){
-    return cluster>-.28&&featureCellRoot(x,z,6,731)&&hash2(x,z,seed+732)>.10;
-  }
-  if(info.bio===0){
-    return cluster>.48&&featureCellRoot(x,z,9,741)&&hash2(x,z,seed+742)>.35;
-  }
-  if(info.bio===5){
-    return cluster>.30&&featureCellRoot(x,z,8,751)&&hash2(x,z,seed+752)>.25;
-  }
+  // V2: forests form dense patches separated by obvious clearings; plains stay mostly open.
+  if(info.bio===1)return cluster>-.05&&featureCellRoot(x,z,4,721)&&hash2(x,z,seed+722)>.16;
+  if(info.bio===3)return cluster>-.20&&featureCellRoot(x,z,5,731)&&hash2(x,z,seed+732)>.12;
+  if(info.bio===0)return cluster>.56&&featureCellRoot(x,z,11,741)&&hash2(x,z,seed+742)>.42;
+  if(info.bio===5)return cluster>.18&&featureCellRoot(x,z,7,751)&&hash2(x,z,seed+752)>.28;
   return false;
 }
 function isBoulderRoot(x,z,info){
