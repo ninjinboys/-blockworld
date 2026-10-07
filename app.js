@@ -1737,7 +1737,10 @@ function finishMine(x,y,z,id){
   if(id===B.IRON)drop=I.RAW_IRON;
   if(id===B.GOLD)drop=I.RAW_GOLD;
   if(id===B.DIAMOND)drop=I.DIAMOND;
-  if(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE){
+
+  // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
+  const canDrop=id!==B.STONE||pickTier()>=1;
+  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE)){
     spawnWorldDrop(drop,1,x,y+.75,z,{scatter:true,pickupDelay:.45});
   }
   rebuild();gainXP(blockXP[id]||1,names[id]||'採掘');
