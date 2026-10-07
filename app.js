@@ -1093,7 +1093,130 @@ function rebuild(){
 }
 
 const mobs=[];
-function cube(g,sx,sy,sz,color,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);m.castShadow=true;g.add(m)}
+const mobMaterials=new Map();
+function mobMat(color){
+  const key=String(color);
+  if(!mobMaterials.has(key))mobMaterials.set(key,new THREE.MeshLambertMaterial({color}));
+  return mobMaterials.get(key);
+}
+function cube(g,sx,sy,sz,color,x,y,z,rx=0,ry=0,rz=0){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mobMat(color));
+  m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=true;m.receiveShadow=true;g.add(m);return m
+}
+function voxelPatch(g,color,x,y,z,sx,sy,sz){return cube(g,sx,sy,sz,color,x,y,z)}
+
+function buildSheep(){
+  const g=new THREE.Group();
+  const wool=0xf2efe6,woolLight=0xfffdf7,woolShade=0xd9d4c8,skin=0xd8c6aa,ear=0xe8b0a3,eye=0x171717,nose=0xd98987,hoof=0x4a3b35;
+
+  // woolly body with layered tufts
+  cube(g,1.36,.82,.78,wool,0,1.00,.04);
+  cube(g,1.18,.18,.86,woolLight,0,1.46,.02);
+  for(const x of[-.48,0,.48])for(const z of[-.25,.25])cube(g,.34,.22,.30,(x===0? woolLight:woolShade),x,1.42,z);
+
+  // head and wool cap
+  cube(g,.62,.60,.56,skin,0,1.08,-.61);
+  cube(g,.72,.22,.63,woolLight,0,1.43,-.60);
+  cube(g,.18,.26,.18,woolShade,-.26,1.48,-.77);
+  cube(g,.18,.26,.18,woolShade,.26,1.48,-.77);
+
+  // ears
+  cube(g,.22,.18,.14,skin,-.40,1.20,-.64,0,0,.16);
+  cube(g,.22,.18,.14,skin,.40,1.20,-.64,0,0,-.16);
+  cube(g,.13,.10,.08,ear,-.42,1.20,-.72,0,0,.16);
+  cube(g,.13,.10,.08,ear,.42,1.20,-.72,0,0,-.16);
+
+  // face
+  cube(g,.10,.15,.035,eye,-.16,1.20,-.905);
+  cube(g,.10,.15,.035,eye,.16,1.20,-.905);
+  cube(g,.20,.12,.06,nose,0,1.03,-.91);
+  cube(g,.08,.07,.065,0x7a514a,0,.96,-.915);
+
+  // legs
+  for(const x of[-.45,.45])for(const z of[-.25,.25]){
+    cube(g,.22,.52,.22,skin,x,.48,z);
+    cube(g,.24,.16,.24,hoof,x,.18,z);
+  }
+  return g;
+}
+
+function buildPig(){
+  const g=new THREE.Group();
+  const pink=0xef8f95,pinkLight=0xf6a4a9,pinkShade=0xd96f78,snout=0xf3a0a2,nostril=0x70464a,eye=0x171717,hoof=0x5b3c3e;
+
+  cube(g,1.38,.76,.78,pink,0,.94,.04);
+  cube(g,1.22,.18,.82,pinkLight,0,1.37,.04);
+
+  // head
+  cube(g,.66,.62,.58,pinkLight,0,1.04,-.62);
+  cube(g,.40,.24,.15,snout,0,.96,-.94);
+  cube(g,.08,.08,.04,nostril,-.11,.96,-1.025);
+  cube(g,.08,.08,.04,nostril,.11,.96,-1.025);
+  cube(g,.09,.14,.035,eye,-.17,1.19,-.915);
+  cube(g,.09,.14,.035,eye,.17,1.19,-.915);
+
+  // ears
+  cube(g,.22,.28,.12,pinkShade,-.31,1.38,-.62,0,0,-.12);
+  cube(g,.22,.28,.12,pinkShade,.31,1.38,-.62,0,0,.12);
+
+  // legs
+  for(const x of[-.45,.45])for(const z of[-.24,.24]){
+    cube(g,.22,.48,.22,pinkShade,x,.45,z);
+    cube(g,.24,.14,.24,hoof,x,.18,z);
+  }
+
+  // curled block tail
+  cube(g,.12,.12,.28,pinkShade,.53,1.07,.47);
+  cube(g,.12,.28,.12,pinkShade,.53,1.17,.58);
+  cube(g,.22,.12,.12,pinkShade,.43,1.30,.58);
+  return g;
+}
+
+function buildCow(){
+  const g=new THREE.Group();
+  const brown=0x744a32,brownDark=0x4f3024,white=0xf1eee5,cream=0xd9c6aa,pink=0xd88f91,eye=0x141414,hoof=0x292525,horn=0xcab489;
+
+  // body
+  cube(g,1.46,.86,.82,brown,0,1.02,.04);
+  // irregular white patches
+  voxelPatch(g,white,-.40,1.25,-.38,.48,.32,.04);
+  voxelPatch(g,white,.38,1.08,.445,.42,.42,.04);
+  voxelPatch(g,white,-.05,1.44,.05,.56,.08,.48);
+  voxelPatch(g,white,.70,1.03,-.05,.04,.48,.44);
+
+  // head + muzzle
+  cube(g,.68,.64,.60,brownDark,0,1.10,-.66);
+  voxelPatch(g,white,-.17,1.24,-.965,.26,.34,.035);
+  cube(g,.44,.25,.18,cream,0,.98,-.99);
+  cube(g,.075,.075,.04,0x4b3a33,-.12,.98,-1.095);
+  cube(g,.075,.075,.04,0x4b3a33,.12,.98,-1.095);
+  cube(g,.09,.14,.035,eye,-.18,1.25,-.955);
+  cube(g,.09,.14,.035,eye,.18,1.25,-.955);
+
+  // ears + inner ears
+  cube(g,.24,.18,.14,brown,-.42,1.28,-.67,0,0,.15);
+  cube(g,.24,.18,.14,brown,.42,1.28,-.67,0,0,-.15);
+  cube(g,.12,.08,.08,pink,-.43,1.28,-.75);
+  cube(g,.12,.08,.08,pink,.43,1.28,-.75);
+
+  // horns
+  cube(g,.12,.24,.12,horn,-.25,1.52,-.68,0,0,-.16);
+  cube(g,.12,.24,.12,horn,.25,1.52,-.68,0,0,.16);
+
+  // legs with white socks / dark hooves
+  for(const x of[-.47,.47])for(const z of[-.25,.25]){
+    cube(g,.24,.54,.24,brown,x,.48,z);
+    cube(g,.25,.18,.25,white,x,.25,z);
+    cube(g,.26,.13,.26,hoof,x,.13,z);
+  }
+
+  // udder and tail
+  cube(g,.36,.16,.30,pink,0,.57,.25);
+  cube(g,.12,.46,.12,brownDark,0,1.02,.50,0,0,.10);
+  cube(g,.18,.18,.18,hoof,0,.73,.66);
+  return g;
+}
+
 function spawnMobs(){
   mobs.forEach(m=>scene.remove(m));mobs.length=0;
   const pcx=chunkCoord(player.pos.x),pcz=chunkCoord(player.pos.z);
@@ -1102,11 +1225,19 @@ function spawnMobs(){
     const x=Math.floor(player.pos.x+(rx-.5)*58),z=Math.floor(player.pos.z+(rz-.5)*58);
     const h=surfaceAt(x,z),bio=biomeAt(x,z);
     if(h<=SEA||bio===2||bio===6)continue;
-    const type=i%3,color=type===0?0xeeeeea:type===1?0xe8999f:0x7b5239,g=new THREE.Group();
-    cube(g,1.15,.72,.65,color,0,.85,0);cube(g,.57,.57,.55,color,0,.95,-.56);
-    for(const lx of[-.4,.4])for(const lz of[-.2,.2])cube(g,.16,.55,.16,type===0?0x444444:color,lx,.33,lz);
-    g.position.set(x,h+.05,z);
-    g.userData={angle:hash2(x,z)*Math.PI*2,t:2+hash2(z,x)*3,speed:.25+hash2(x+4,z+2)*.28,hp:type===2?4:3,xp:type===2?18:type===1?14:12,name:type===0?'ヒツジ':type===1?'ブタ':'ウシ'};
+
+    const type=i%3;
+    const g=type===0?buildSheep():type===1?buildPig():buildCow();
+    g.position.set(x,h+.04,z);
+    g.userData={
+      angle:hash2(x,z)*Math.PI*2,
+      t:2+hash2(z,x)*3,
+      speed:.22+hash2(x+4,z+2)*.24,
+      hp:type===2?5:3,
+      xp:type===2?18:type===1?14:12,
+      name:type===0?'ヒツジ':type===1?'ブタ':'ウシ',
+      type
+    };
     scene.add(g);mobs.push(g);
   }
 }
