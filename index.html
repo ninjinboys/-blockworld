@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261007x">
+<link rel="stylesheet" href="style.css?v=20261007aa">
 </head>
 <body>
 <div id="game"></div>
@@ -58,7 +58,34 @@
 <div id="mobile">
   <div class="pad"><button class="up">▲</button><button class="left">◀</button><button class="down">▼</button><button class="right">▶</button></div>
   <button class="jump">JUMP</button>
-  <div id="tapbar"><button id="tapMine">長押し採掘</button><button id="tapPlace">設置</button><button id="tapCraft">CRAFT</button></div>
+  <div id="tapbar"><button id="tapMine">長押し採掘</button><button id="tapPlace">設置</button><button id="tapInventory">持ち物</button><button id="tapCraft">CRAFT</button></div>
+</div>
+<div id="inventoryScreen" aria-hidden="true">
+  <div class="inventory-panel">
+    <div class="inventory-head">
+      <div>
+        <div class="inventory-title">INVENTORY</div>
+        <div class="inventory-sub">下の9マスはホットバー</div>
+      </div>
+      <button id="inventoryClose" aria-label="閉じる">×</button>
+    </div>
+    <div id="inventoryMainGrid" class="inventory-grid main-grid"></div>
+    <div class="inventory-hotbar-label">HOTBAR</div>
+    <div id="inventoryHotbarGrid" class="inventory-grid hotbar-grid"></div>
+    <div id="inventoryDetail" class="inventory-detail empty">
+      <div id="inventoryDetailIcon"></div>
+      <div class="inventory-detail-copy">
+        <strong id="inventoryDetailName">アイテムを選択</strong>
+        <span id="inventoryDetailQty"></span>
+      </div>
+      <div class="inventory-actions">
+        <button id="inventoryMove" type="button">ホットバーへ</button>
+        <button id="inventorySplit" type="button">半分に分ける</button>
+        <button id="inventoryDrop" type="button">捨てる</button>
+      </div>
+    </div>
+    <div class="inventory-help">タップで選択 / Eキーで開閉</div>
+  </div>
 </div>
 <div id="crafting" aria-hidden="true">
   <div class="craft-panel">
@@ -122,6 +149,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261007z"></script>
+<script type="module" src="app.js?v=20261007aa"></script>
 </body>
 </html>
