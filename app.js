@@ -1111,11 +1111,13 @@ if(pattern==='bedFootTop'){
   g.fillStyle='#8d1b22';g.fillRect(0,15,16,1);
 }
 if(pattern==='bedHeadTop'){
+  // Pillow spans the full bed width on the head half.
   g.fillStyle='#c82d36';g.fillRect(0,0,16,16);
-  g.fillStyle='#f2efe7';g.fillRect(2,2,12,6);
-  g.fillStyle='#d8d3c8';g.fillRect(2,7,12,1);
-  g.fillStyle='#e9555d';g.fillRect(1,9,14,3);
-  g.fillStyle='#a92028';g.fillRect(0,13,16,3);
+  g.fillStyle='#f2efe7';g.fillRect(0,1,16,7);
+  g.fillStyle='#ffffff';g.fillRect(1,1,14,2);
+  g.fillStyle='#d8d3c8';g.fillRect(0,7,16,1);
+  g.fillStyle='#e9555d';g.fillRect(0,8,16,4);
+  g.fillStyle='#a92028';g.fillRect(0,12,16,4);
 }
 if(pattern==='bedSide'){
   g.fillStyle='#c82d36';g.fillRect(0,0,16,8);
