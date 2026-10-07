@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 
 const $=id=>document.getElementById(id);
-const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill');
+const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill'),heartsEl=$('hearts'),deathScreen=$('deathScreen'),respawnBtn=$('respawnBtn');
 const authCover=$('authCover'),authForm=$('authForm'),authName=$('authName'),authPassword=$('authPassword'),authSubmit=$('authSubmit'),authError=$('authError'),authModeText=$('authModeText'),showLogin=$('showLogin'),showCreate=$('showCreate'),accountNameEl=$('accountName'),saveStatusEl=$('saveStatus'),saveNowBtn=$('saveNow'),logoutBtn=$('logoutBtn');
 const worldCover=$('worldCover'),worldGrid=$('worldGrid'),worldAccountName=$('worldAccountName'),worldLogout=$('worldLogout'),worldListBtn=$('worldListBtn'),accountBox=$('accountBox');
 const inventoryScreen=$('inventoryScreen'),inventoryMainGrid=$('inventoryMainGrid'),inventoryHotbarGrid=$('inventoryHotbarGrid'),inventoryClose=$('inventoryClose'),inventoryDetail=$('inventoryDetail'),inventoryDetailIcon=$('inventoryDetailIcon'),inventoryDetailName=$('inventoryDetailName'),inventoryDetailQty=$('inventoryDetailQty'),inventoryMove=$('inventoryMove'),inventorySplit=$('inventorySplit'),inventoryDrop=$('inventoryDrop');
@@ -384,7 +384,8 @@ function restoreEdits(raw){
 function makeSaveData(){
   return {
     version:3,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
-    level,xp,weather,dayTime,
+    level,xp,weather,dayTime,health,
+    initialSpawn:initialSpawn?{x:initialSpawn.x,y:initialSpawn.y,z:initialSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
     inventorySlots:inventorySlots.map(v=>v?{id:v.id,qty:v.qty}:null),selectedHotbarIndex,
     worldDrops:serializeWorldDrops(),
@@ -417,6 +418,10 @@ function applySaveData(data){
   level=Math.max(1,Number(data.level)||1);xp=Math.max(0,Number(data.xp)||0);
   weather=data.weather==='rain'?'rain':'clear';
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
+  health=Number.isFinite(Number(data.health))?Math.max(0,Math.min(MAX_HEALTH,Math.floor(Number(data.health)))):MAX_HEALTH;
+  dead=health<=0;
+  initialSpawn=(data.initialSpawn&&Number.isFinite(data.initialSpawn.x)&&Number.isFinite(data.initialSpawn.y)&&Number.isFinite(data.initialSpawn.z))
+    ?{x:Number(data.initialSpawn.x),y:Number(data.initialSpawn.y),z:Number(data.initialSpawn.z)}:null;
 
   clearInventorySlots();
   if(Array.isArray(data.inventorySlots)&&data.inventorySlots.length){
@@ -447,6 +452,8 @@ function resetWorldRuntime(){
   mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
   clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
+  health=MAX_HEALTH;dead=false;fallPeakY=null;initialSpawn=null;
+  deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
 }
 function freshSeed(){
   try{return crypto.getRandomValues(new Uint32Array(1))[0]>>>0}catch{return Date.now()>>>0}
@@ -459,10 +466,12 @@ async function initializeAccountWorld(save,slot){
   if(save)hasSavedPos=applySaveData(save);
   else{
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    health=MAX_HEALTH;dead=false;fallPeakY=null;initialSpawn=null;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
     editChunks.clear();clearWorldDrops();
   }
   await new Promise(r=>setTimeout(r,30));
+  ensureInitialSpawn();
   if(!hasSavedPos)spawn();
   loading.textContent='周辺チャンクを生成中...';await new Promise(r=>setTimeout(r,30));
   streamChunks(true);
@@ -1296,6 +1305,8 @@ const rain=new THREE.Points(rainG,new THREE.PointsMaterial({color:0xb8d7f0,size:
 rain.visible=false;scene.add(rain);
 
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
+const MAX_HEALTH=20;
+let health=MAX_HEALTH,dead=false,fallPeakY=null,initialSpawn=null;
 const worldDrops=[],dropTextures=new Map();
 function dropTexture(id){
   if(dropTextures.has(id))return dropTextures.get(id);
@@ -1392,7 +1403,7 @@ function movePlayerAxis(axis,amount){
   }
   return true;
 }
-function spawn(){
+function calculateInitialSpawn(){
   let best={x:0,z:0,score:1e9},fallback={x:0,z:0,score:1e9};
   const radius=generatorVersion>=4?44:10,step=generatorVersion>=4?2:1;
   for(let x=-radius;x<=radius;x+=step)for(let z=-radius;z<=radius;z+=step){
@@ -1407,8 +1418,17 @@ function spawn(){
     if(b===0&&slope<=2&&score<best.score)best={x,z,score};
   }
   if(best.score===1e9)best=fallback;
-  player.pos.set(best.x+.5,surfaceAt(best.x,best.z)+1.05,best.z+.5);
-  player.vel.set(0,0,0)
+  return {x:best.x+.5,y:surfaceAt(best.x,best.z)+1.05,z:best.z+.5};
+}
+function ensureInitialSpawn(){
+  if(!initialSpawn)initialSpawn=calculateInitialSpawn();
+  return initialSpawn;
+}
+function spawn(){
+  const p=ensureInitialSpawn();
+  player.pos.set(p.x,p.y,p.z);
+  player.vel.set(0,0,0);player.onGround=false;fallPeakY=null;
+  for(let i=0;i<16&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
 }
 
 const ray=new THREE.Raycaster();ray.far=6;
