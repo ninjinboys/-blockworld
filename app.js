@@ -791,7 +791,9 @@ function isTreeRoot(x,z,info){
 function isBoulderRoot(x,z,info){
   if(info.h<=SEA+1||info.river||info.bio===2||info.bio===6||info.bio===7)return false;
   const rocky=info.rugged>.26||fbm(x*.031-90,z*.031+105,760,3)>.52;
-  return rocky&&featureCellRoot(x,z,12,761)&&hash2(x,z,seed+762)>.38;
+  if(!rocky)return false;
+  if(generatorVersion>=3)return naturalScatterRoot(x,z,5,761,.48);
+  return featureCellRoot(x,z,12,761)&&hash2(x,z,seed+762)>.38;
 }
 
 function writeGenerated(data,cx,cz,x,y,z,id){
@@ -853,7 +855,10 @@ function generateChunk(cx,cz){
       }
     }
 
-    if(info.bio===2&&featureCellRoot(x,z,7,900)&&hash2(x,z,seed+901)>.52){
+    const cactusRoot=generatorVersion>=3
+      ? naturalScatterRoot(x,z,3,900,.54)
+      : featureCellRoot(x,z,7,900)&&hash2(x,z,seed+901)>.52;
+    if(info.bio===2&&cactusRoot){
       const n=2+Math.floor(hash2(x,z,seed+902)*3);
       for(let y=1;y<=n;y++)writeGenerated(data,cx,cz,x,h+y,z,B.CACTUS);
     }
