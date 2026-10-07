@@ -279,7 +279,7 @@ const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURN
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
 let streamCX=NaN,streamCZ=NaN;
-let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=3;
+let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=4;
 const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
 const inside=(x,y,z)=>y>=0&&y<HEIGHT;
@@ -399,7 +399,7 @@ async function initializeAccountWorld(save,slot){
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
   else{
-    seed=freshSeed();generatorVersion=3;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    seed=freshSeed();generatorVersion=4;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     for(const k of Object.keys(inventory))inventory[k]=0;
     acquiredOrder.length=0;hotbarSlots.fill(null);editChunks.clear();
   }
@@ -431,9 +431,9 @@ function renderWorldSelection(){
     const meta=document.createElement('div');meta.className='world-slot-meta';
     if(save){
       const x=Math.floor(save.player?.x||0),z=Math.floor(save.player?.z||0);
-      meta.textContent='LV '+(save.level||1)+'  ·  '+formatSavedAt(save.savedAt)+'\nX '+x+' / Z '+z;
+      meta.textContent='LV '+(save.level||1)+'  ·  GEN'+(save.generatorVersion||1)+'  ·  '+formatSavedAt(save.savedAt)+'\nX '+x+' / Z '+z;
       meta.style.whiteSpace='pre-line';
-    }else meta.textContent='空きスロット';
+    }else meta.textContent='空きスロット · 新規はGEN4';
     info.appendChild(meta);
 
     const actions=document.createElement('div');actions.className='world-slot-actions';
@@ -695,12 +695,85 @@ function columnInfoV3(x,z){
   return {h,bio,river:river||lake,riverBank,rugged:p.rugged,temp:p.temp,moist:p.moist,lake};
 }
 
+
+function climateV4(x,z){
+  const warpX=fbm(x*.008+17,z*.008-29,4101,3)*30+fbm(x*.026-41,z*.026+63,4111,2)*8;
+  const warpZ=fbm(x*.008-53,z*.008+47,4121,3)*30+fbm(x*.026+57,z*.026-35,4131,2)*8;
+  const X=x+warpX,Z=z+warpZ;
+  const largeTemp=fbm(X*.007+80,Z*.007-60,4201,3);
+  const largeMoist=fbm(X*.007-42,Z*.007+51,4211,3);
+  return {
+    X,Z,
+    continental:fbm(X*.0052,Z*.0052,4221,4),
+    temp:largeTemp*.72+fbm(X*.020+13,Z*.020-17,4231,2)*.28,
+    moist:largeMoist*.72+fbm(X*.020-19,Z*.020+11,4241,2)*.28,
+    macro:fbm(X*.011+31,Z*.011-27,4251,3),
+    hills:fbm(X*.028-80,Z*.028+60,4261,3),
+    local:fbm(x*.072+19,z*.072-23,4271,2),
+    micro:fbm(x*.145-9,z*.145+15,4281,2),
+    ridge:1-Math.abs(fbm(X*.018+120,Z*.018-90,4291,3)),
+    valley:fbm(X*.023-210,Z*.023+160,4301,2)
+  };
+}
+function chooseBiomeV4(c,mountain){
+  if(c.continental<-.29)return 6;
+  if(mountain>.60)return c.temp<-.06?4:3;
+  if(c.moist>.52&&c.continental<.16)return 5;
+  if(c.temp>.25&&c.moist<-.10)return 2;
+  if(c.temp<-.28)return 3;
+  if(c.moist>.08)return 1;
+  return 0;
+}
+function terrainProfileV4(x,z){
+  const c=climateV4(x,z);
+  const ridge=Math.pow(Math.max(0,(c.ridge-.54)/.46),1.7);
+  const mountainZone=Math.max(0,Math.min(1,(c.macro+.20)*1.45))*Math.max(0,Math.min(1,(c.continental+.30)*1.8));
+  const mountain=ridge*mountainZone;
+  let bio=chooseBiomeV4(c,mountain),y;
+
+  if(bio===6)y=SEA-6+c.macro*2.6+c.hills*1.2-Math.max(0,-c.continental-.16)*8;
+  else if(bio===5)y=SEA+2+c.macro*.8+c.hills*.6+c.local*.2;
+  else if(bio===2)y=SEA+4+c.macro*1.4+c.hills*.85+c.local*.35+c.micro*.12;
+  else if(bio===0)y=SEA+5+c.macro*1.6+c.hills*1.0+c.local*.55+c.micro*.18;
+  else if(bio===1)y=SEA+6+c.macro*2.2+c.hills*1.45+c.local*.65+c.micro*.20;
+  else if(bio===3)y=SEA+7+c.macro*2.7+c.hills*1.8+c.local*.75+c.micro*.22;
+  else y=SEA+9+c.macro*3.0+c.hills*1.9+c.local*.75+c.micro*.22;
+
+  if(bio!==6&&bio!==5){
+    y+=mountain*(19+c.ridge*8);
+    if(mountain>.60)bio=c.temp<-.06?4:3;
+  }
+
+  const valley=Math.max(0,(-c.valley-.30)/.70);
+  if(bio!==6)y-=valley*(bio===5?.8:2.0);
+
+  const h=Math.max(3,Math.min(HEIGHT-5,Math.floor(y)));
+  return {h,bio,continental:c.continental,rugged:mountain,temp:c.temp,moist:c.moist,X:c.X,Z:c.Z};
+}
+function columnInfoV4(x,z){
+  const p=terrainProfileV4(x,z);let h=p.h,bio=p.bio;
+  const riverField=Math.abs(fbm(p.X*.021+20,p.Z*.021-18,4401,4));
+  const riverWidth=.020+(fbm(p.X*.010-50,p.Z*.010+45,4411,2)+1)*.007;
+  const river=riverField<riverWidth&&p.continental>-.21&&h>SEA-3;
+
+  const lakeShape=fbm(p.X*.031+310,p.Z*.031-270,4421,3);
+  const lakeRegion=fbm(p.X*.013-140,p.Z*.013+190,4431,2);
+  const lake=!river&&p.continental>-.10&&p.continental<.30&&p.rugged<.18&&lakeRegion>.50&&lakeShape<-.49&&h<=SEA+6;
+
+  if(river||lake)h=Math.min(h,SEA-1);
+  const riverBank=!river&&!lake&&riverField<riverWidth*1.95&&h<=SEA+5;
+  if(lake)bio=p.moist>.18?5:7;
+  return {h,bio,river:river||lake,riverBank,rugged:p.rugged,temp:p.temp,moist:p.moist,lake};
+}
+
 function terrainProfile(x,z){
+  if(generatorVersion>=4)return terrainProfileV4(x,z);
   if(generatorVersion>=3)return terrainProfileV3(x,z);
   if(generatorVersion>=2)return terrainProfileV2(x,z);
   return terrainProfileV1(x,z);
 }
 function columnInfo(x,z){
+  if(generatorVersion>=4)return columnInfoV4(x,z);
   if(generatorVersion>=3)return columnInfoV3(x,z);
   if(generatorVersion>=2)return columnInfoV2(x,z);
   return columnInfoV1(x,z);
@@ -781,11 +854,18 @@ function isTreeRoot(x,z,info){
     return false;
   }
 
-  // V3 uses local random maxima instead of one tree per grid cell, so rows cannot form.
-  if(info.bio===1)return cluster>-.12&&naturalScatterRoot(x,z,2,721,.30);
-  if(info.bio===3)return cluster>-.18&&naturalScatterRoot(x,z,2,731,.26);
-  if(info.bio===0)return cluster>.52&&naturalScatterRoot(x,z,4,741,.38);
-  if(info.bio===5)return cluster>.18&&naturalScatterRoot(x,z,3,751,.32);
+  if(generatorVersion===3){
+    if(info.bio===1)return cluster>-.12&&naturalScatterRoot(x,z,2,721,.30);
+    if(info.bio===3)return cluster>-.18&&naturalScatterRoot(x,z,2,731,.26);
+    if(info.bio===0)return cluster>.52&&naturalScatterRoot(x,z,4,741,.38);
+    if(info.bio===5)return cluster>.18&&naturalScatterRoot(x,z,3,751,.32);
+    return false;
+  }
+  // V4 keeps forests readable: clumps exist, but there are large gaps and plains are genuinely open.
+  if(info.bio===1)return cluster>-.08&&naturalScatterRoot(x,z,3,721,.36);
+  if(info.bio===3)return cluster>-.15&&naturalScatterRoot(x,z,3,731,.32);
+  if(info.bio===0)return cluster>.60&&naturalScatterRoot(x,z,5,741,.48);
+  if(info.bio===5)return cluster>.24&&naturalScatterRoot(x,z,4,751,.40);
   return false;
 }
 function isBoulderRoot(x,z,info){
@@ -1015,7 +1095,24 @@ function movePlayerAxis(axis,amount){
   }
   return true;
 }
-function spawn(){let best={x:0,z:0,d:1e9};for(let x=-10;x<=10;x++)for(let z=-10;z<=10;z++){const h=surfaceAt(x,z),b=biomeAt(x,z),d=x*x+z*z;if(h>SEA&&b!==2&&b!==6&&d<best.d)best={x,z,d}}player.pos.set(best.x+.5,surfaceAt(best.x,best.z)+1.05,best.z+.5);player.vel.set(0,0,0)}
+function spawn(){
+  let best={x:0,z:0,score:1e9},fallback={x:0,z:0,score:1e9};
+  const radius=generatorVersion>=4?44:10,step=generatorVersion>=4?2:1;
+  for(let x=-radius;x<=radius;x+=step)for(let z=-radius;z<=radius;z+=step){
+    const info=columnInfo(x,z),h=info.h,b=info.bio;
+    if(h<=SEA||b===2||b===6||info.river)continue;
+    const h1=surfaceAt(x+2,z),h2=surfaceAt(x-2,z),h3=surfaceAt(x,z+2),h4=surfaceAt(x,z-2);
+    const slope=Math.max(Math.abs(h-h1),Math.abs(h-h2),Math.abs(h-h3),Math.abs(h-h4));
+    const d=Math.hypot(x,z);
+    const nearDifferent=[biomeAt(x+18,z),biomeAt(x-18,z),biomeAt(x,z+18),biomeAt(x,z-18)].some(v=>v!==b);
+    const score=d+slope*12-(nearDifferent?12:0);
+    if(score<fallback.score)fallback={x,z,score};
+    if(b===0&&slope<=2&&score<best.score)best={x,z,score};
+  }
+  if(best.score===1e9)best=fallback;
+  player.pos.set(best.x+.5,surfaceAt(best.x,best.z)+1.05,best.z+.5);
+  player.vel.set(0,0,0)
+}
 
 const ray=new THREE.Raycaster();ray.far=6;
 function target(){ray.setFromCamera(new THREE.Vector2(0,0),camera);const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
