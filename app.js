@@ -1219,13 +1219,14 @@ function buildCow(){
 
 let passiveSpawnCooldown=20;
 function spawnPassiveMob(){
-  if(mobs.length>=8)return false;
+  if(mobs.length>=20)return false;
   const angle=Math.random()*Math.PI*2;
   const dist=18+Math.random()*14;
   const x=Math.floor(player.pos.x+Math.cos(angle)*dist);
   const z=Math.floor(player.pos.z+Math.sin(angle)*dist);
   const h=surfaceAt(x,z),bio=biomeAt(x,z);
   if(h<=SEA||bio===2||bio===6||bio===7)return false;
+  if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<5))return false;
 
   const type=Math.floor(Math.random()*3);
   const g=type===0?buildSheep():type===1?buildPig():buildCow();
@@ -1246,16 +1247,19 @@ function updatePassiveSpawning(dt){
   passiveSpawnCooldown-=dt;
   if(passiveSpawnCooldown>0)return;
   passiveSpawnCooldown=25;
-  const attempts=mobs.length<4?2:1;
-  for(let i=0;i<attempts;i++)spawnPassiveMob();
 
-  // Far-away animals leave the active area instead of being recreated every chunk.
+  // Animals persist over a wide area. They are only cleaned up once very far away.
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i];
-    if(Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>72){
+    if(Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>180){
       scene.remove(m);mobs.splice(i,1);
     }
   }
+
+  // Old animals can stay behind without preventing fresh animals from appearing near the player.
+  const nearby=mobs.filter(m=>Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)<55).length;
+  const attempts=nearby<3?3:nearby<6?2:0;
+  for(let i=0;i<attempts;i++)spawnPassiveMob();
 }
 
 const clouds=[];
