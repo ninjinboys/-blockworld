@@ -292,3 +292,75 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   .world-slot{min-height:92px;padding:10px}
   .world-slot button{min-width:96px;height:36px}
 }
+
+/* Full inventory */
+#inventoryScreen{
+  position:fixed;inset:0;z-index:28;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.46);padding:14px;pointer-events:auto
+}
+#inventoryScreen.open{display:flex}
+.inventory-panel{
+  width:min(640px,96vw);max-height:94vh;overflow:auto;
+  background:#c6c6c6;color:#222;border:4px solid #383838;
+  box-shadow:inset 3px 3px 0 #eee,inset -3px -3px 0 #7b7b7b,0 12px 40px rgba(0,0,0,.45);
+  padding:14px;text-shadow:none
+}
+.inventory-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.inventory-title{font:900 22px monospace;letter-spacing:.06em}
+.inventory-sub{font:700 10px monospace;color:#555;margin-top:2px}
+#inventoryClose{
+  width:38px;height:38px;border:3px solid #555;background:#9a9a9a;color:#222;
+  font:900 22px monospace;box-shadow:inset 2px 2px 0 #ddd,inset -2px -2px 0 #666
+}
+.inventory-grid{
+  display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px;
+}
+.main-grid{margin-bottom:9px}
+.inventory-hotbar-label{font:900 10px monospace;color:#555;margin:2px 0 4px}
+.inv-slot{
+  position:relative;aspect-ratio:1/1;min-width:0;
+  border:3px solid #555;background:#8f8f8f;
+  box-shadow:inset 2px 2px 0 #d7d7d7,inset -2px -2px 0 #666;
+  display:flex;align-items:center;justify-content:center;padding:2px;touch-action:manipulation
+}
+.inv-slot.selected-slot{outline:3px solid #f7ef90;outline-offset:1px}
+.inv-slot.hotbar-current{border-color:#e8e17d}
+.inv-slot .item-icon{width:70%;height:70%;filter:drop-shadow(1px 2px 0 rgba(0,0,0,.3))}
+.inv-slot .stack-qty{
+  position:absolute;right:3px;bottom:1px;color:#fff;font:900 12px monospace;
+  text-shadow:1px 1px 0 #000,-1px -1px 0 #000
+}
+.inv-slot .slot-number{
+  position:absolute;left:3px;top:2px;font:700 8px monospace;color:#222;opacity:.75
+}
+.inventory-detail{
+  display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:9px;align-items:center;
+  margin-top:12px;padding:9px;border:3px solid #666;background:#aaa;
+  box-shadow:inset 2px 2px 0 #ddd,inset -2px -2px 0 #777
+}
+.inventory-detail.empty{opacity:.65}
+#inventoryDetailIcon{width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+#inventoryDetailIcon .item-icon{width:40px;height:40px}
+.inventory-detail-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+#inventoryDetailName{font:900 14px monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#inventoryDetailQty{font:700 10px monospace;color:#555}
+.inventory-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.inventory-actions button{
+  min-width:84px;height:36px;border:3px solid #555;background:#8e8e8e;color:#222;
+  font:900 10px monospace;box-shadow:inset 2px 2px 0 #ddd,inset -2px -2px 0 #666
+}
+#inventoryDrop{background:#9d6660;color:#fff;box-shadow:inset 2px 2px 0 #d6a29e,inset -2px -2px 0 #68433f}
+.inventory-actions button:disabled{opacity:.4}
+.inventory-help{text-align:center;margin-top:8px;font:700 9px monospace;color:#666}
+@media(max-width:760px),(pointer:coarse){
+  .inventory-panel{padding:10px}
+  .inventory-title{font-size:18px}
+  .inventory-grid{gap:3px}
+  .inv-slot{border-width:2px}
+  .inventory-detail{grid-template-columns:42px 1fr;gap:7px}
+  #inventoryDetailIcon{width:38px;height:38px}
+  #inventoryDetailIcon .item-icon{width:36px;height:36px}
+  .inventory-actions{grid-column:1/-1;justify-content:stretch;display:grid;grid-template-columns:repeat(3,1fr)}
+  .inventory-actions button{min-width:0;height:34px}
+  #tapbar button{width:100px;min-width:100px}
+}
