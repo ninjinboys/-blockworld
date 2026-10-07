@@ -478,7 +478,7 @@ async function initializeAccountWorld(save,slot){
   for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
   rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
   accountNameEl.textContent=currentAccount.name+' · W'+slot+' · GEN'+generatorVersion;
-  renderHotbar();updateProgress();
+  renderHotbar();updateProgress();renderHealth();
   loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
   clearInterval(saveInterval);saveInterval=setInterval(()=>saveCurrentGame(false),10000);
@@ -1434,6 +1434,47 @@ function spawn(){
 const ray=new THREE.Raycaster();ray.far=6;
 function target(){ray.setFromCamera(new THREE.Vector2(0,0),camera);const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
 function flash(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(flash.t);flash.t=setTimeout(()=>msgEl.style.opacity=0,1200)}
+function renderHealth(){
+  heartsEl.innerHTML='';
+  for(let i=0;i<10;i++){
+    const h=document.createElement('span');
+    const remaining=health-i*2;
+    h.className='heart '+(remaining>=2?'full':remaining===1?'half':'empty');
+    h.textContent='♥';
+    heartsEl.appendChild(h);
+  }
+  heartsEl.parentElement?.setAttribute('aria-label','体力 '+(health/2)+' / 10');
+}
+function showDeathScreen(){
+  dead=true;health=0;renderHealth();primaryActionStop();
+  Object.keys(keys).forEach(k=>keys[k]=false);
+  craftOpen=false;inventoryOpen=false;
+  crafting.classList.remove('open');inventoryScreen.classList.remove('open');
+  crafting.setAttribute('aria-hidden','true');inventoryScreen.setAttribute('aria-hidden','true');
+  deathScreen.classList.add('open');deathScreen.setAttribute('aria-hidden','false');
+  document.exitPointerLock?.();markSaveDirty();saveCurrentGame(false);
+}
+function damagePlayer(points,source='ダメージ'){
+  if(dead||points<=0)return;
+  health=Math.max(0,health-Math.floor(points));renderHealth();markSaveDirty();
+  if(health<=0){showDeathScreen();return}
+  const heartsLost=points/2;
+  flash(source+' -'+heartsLost.toFixed(heartsLost%1?1:0)+'♥');
+}
+function applyFallDamage(distance){
+  const blocks=Math.floor(Math.max(0,distance)+.15);
+  if(blocks<=3)return;
+  damagePlayer(blocks-3,'落下ダメージ');
+}
+function respawnPlayer(){
+  health=MAX_HEALTH;dead=false;fallPeakY=null;
+  deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
+  spawn();streamChunks(true);
+  player.yaw=0;player.pitch=0;renderHealth();markSaveDirty();saveCurrentGame(false);
+  last=performance.now();
+  if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
+}
+
 function xpNeeded(lv){return 12+lv*8}
 function nextBlueprint(){return [...recipes,...workbenchRecipes].sort((a,b)=>a.unlockLevel-b.unlockLevel).find(r=>r.unlockLevel>level)||null}
 function updateProgress(){
