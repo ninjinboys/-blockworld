@@ -236,9 +236,17 @@ function drawItemIcon(g,id){
   if(id===B.BEDROCK)return blockIcon(g,'#6e7174','#505356','#37393b','bedrock');
   if(id===B.CRAFTING_TABLE||id===I.CRAFTING_TABLE)return blockIcon(g,'#d7a05e','#9d6234','#774523','table');
   if(id===B.FURNACE||id===I.FURNACE)return blockIcon(g,'#a0a5a8','#777c7f','#5b6063','furnace');
-  if(id===I.BED||id===B.BED){
-    ir(g,2,5,12,7,'#5b3822');ir(g,2,4,12,6,'#c73338');ir(g,3,4,4,3,'#f0eee6');
-    ir(g,2,10,2,3,'#4b2d1b');ir(g,12,10,2,3,'#4b2d1b');ir(g,6,8,7,2,'#9e2026');return;
+  if(id===I.BED||id===B.BED||id===B.BED_HEAD){
+    // side-view pixel bed: wood frame + red blanket + white pillow + four feet
+    ir(g,1,9,14,3,'#6b4325');
+    ir(g,2,5,12,5,'#c92f38');
+    ir(g,2,4,5,3,'#f3f0e8');
+    ir(g,3,5,4,1,'#d9d4c9');
+    ir(g,7,6,7,1,'#e4575f');
+    ir(g,2,10,2,3,'#4c2e19');
+    ir(g,12,10,2,3,'#4c2e19');
+    ir(g,1,8,14,1,'#8f1e25');
+    return;
   }
   if(id===I.STICK)return stickIcon(g);
   if(id===I.RAW_IRON)return rawChunkIcon(g,'#8e7569','#c79a81','#624f47');
@@ -1096,13 +1104,50 @@ function streamChunks(force=false){
 function tex(rgb,noise=.12,pattern=''){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');for(let y=0;y<16;y++)for(let x=0;x<16;x++){const n=(hash3(x,y,pattern.length,12345)-.5)*noise*255;g.fillStyle=`rgb(${Math.max(0,Math.min(255,rgb[0]+n))|0},${Math.max(0,Math.min(255,rgb[1]+n))|0},${Math.max(0,Math.min(255,rgb[2]+n))|0})`;g.fillRect(x,y,1,1)}if(pattern==='grassSide'){g.fillStyle='#43883d';g.fillRect(0,0,16,4)}if(pattern==='log'){g.fillStyle='rgba(60,35,18,.3)';for(let x=2;x<16;x+=4)g.fillRect(x,0,1,16)}if(pattern.startsWith('ore')){const color=pattern==='oreC'?'#222':pattern==='oreI'?'#b78669':pattern==='oreG'?'#e4b935':'#43cad0';g.fillStyle=color;[[3,4],[11,3],[7,8],[13,11],[4,13]].forEach(([x,y])=>g.fillRect(x,y,2,2))}if(pattern==='plank'){g.fillStyle='rgba(70,43,20,.32)';for(let y=3;y<16;y+=4)g.fillRect(0,y,16,1)}if(pattern==='cobble'){g.strokeStyle='rgba(20,20,20,.28)';g.strokeRect(1.5,1.5,6,5);g.strokeRect(8.5,2.5,6,5);g.strokeRect(4.5,8.5,8,6)}
 if(pattern==='craft'){g.strokeStyle='#5f3d20';g.lineWidth=2;g.strokeRect(2,2,12,12);g.beginPath();g.moveTo(8,2);g.lineTo(8,14);g.moveTo(2,8);g.lineTo(14,8);g.stroke();g.fillStyle='#d6a267';g.fillRect(5,5,6,6)}
 if(pattern==='furnace'){g.fillStyle='#3c3c3c';g.fillRect(3,4,10,4);g.fillStyle='#1f1f1f';g.fillRect(4,10,8,4);g.fillStyle='#8b5a2b';g.fillRect(5,11,6,2)}
-if(pattern==='bed'){g.fillStyle='#c72f36';g.fillRect(0,0,16,16);g.fillStyle='#f1eee6';g.fillRect(1,1,6,5);g.fillStyle='#9d2026';g.fillRect(0,11,16,5);g.fillStyle='#704524';g.fillRect(0,14,16,2)}
+if(pattern==='bedFootTop'){
+  g.fillStyle='#c82d36';g.fillRect(0,0,16,16);
+  g.fillStyle='#e9555d';g.fillRect(1,1,14,3);
+  g.fillStyle='#a92028';g.fillRect(0,12,16,4);
+  g.fillStyle='#8d1b22';g.fillRect(0,15,16,1);
+}
+if(pattern==='bedHeadTop'){
+  g.fillStyle='#c82d36';g.fillRect(0,0,16,16);
+  g.fillStyle='#f2efe7';g.fillRect(2,2,12,6);
+  g.fillStyle='#d8d3c8';g.fillRect(2,7,12,1);
+  g.fillStyle='#e9555d';g.fillRect(1,9,14,3);
+  g.fillStyle='#a92028';g.fillRect(0,13,16,3);
+}
+if(pattern==='bedSide'){
+  g.fillStyle='#c82d36';g.fillRect(0,0,16,8);
+  g.fillStyle='#9d2027';g.fillRect(0,7,16,2);
+  g.fillStyle='#744724';g.fillRect(0,9,16,4);
+  g.fillStyle='#4c2e19';g.fillRect(1,13,3,3);g.fillRect(12,13,3,3);
+  g.fillStyle='#9a6636';g.fillRect(0,9,16,1);
+}
+if(pattern==='bedEnd'){
+  g.fillStyle='#c82d36';g.fillRect(0,0,16,8);
+  g.fillStyle='#9d2027';g.fillRect(0,7,16,2);
+  g.fillStyle='#744724';g.fillRect(0,9,16,5);
+  g.fillStyle='#4c2e19';g.fillRect(1,13,3,3);g.fillRect(12,13,3,3);
+}
+if(pattern==='bedBottom'){
+  g.fillStyle='#5b371f';g.fillRect(0,0,16,16);
+  g.fillStyle='#7a4b29';g.fillRect(2,2,12,12);
+}
 const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;t.colorSpace=THREE.SRGBColorSpace;return t}
-const T={grass:tex([92,159,64],.15),grassSide:tex([121,88,52],.15,'grassSide'),dirt:tex([125,86,54],.16),stone:tex([124,126,128],.12),sand:tex([215,200,140],.08),log:tex([113,79,44],.14,'log'),leaf:tex([59,120,52],.19),coal:tex([119,121,122],.11,'oreC'),iron:tex([119,121,122],.11,'oreI'),gold:tex([119,121,122],.11,'oreG'),diamond:tex([119,121,122],.11,'oreD'),snow:tex([238,242,245],.03),gravel:tex([116,110,108],.18),cactus:tex([57,126,55],.1),plank:tex([167,120,70],.1,'plank'),cobble:tex([102,105,106],.16,'cobble'),bedrock:tex([55,57,58],.24),craft:tex([164,113,62],.10,'craft'),furnace:tex([112,114,114],.14,'furnace'),bed:tex([190,48,54],.04,'bed')};
+const T={grass:tex([92,159,64],.15),grassSide:tex([121,88,52],.15,'grassSide'),dirt:tex([125,86,54],.16),stone:tex([124,126,128],.12),sand:tex([215,200,140],.08),log:tex([113,79,44],.14,'log'),leaf:tex([59,120,52],.19),coal:tex([119,121,122],.11,'oreC'),iron:tex([119,121,122],.11,'oreI'),gold:tex([119,121,122],.11,'oreG'),diamond:tex([119,121,122],.11,'oreD'),snow:tex([238,242,245],.03),gravel:tex([116,110,108],.18),cactus:tex([57,126,55],.1),plank:tex([167,120,70],.1,'plank'),cobble:tex([102,105,106],.16,'cobble'),bedrock:tex([55,57,58],.24),craft:tex([164,113,62],.10,'craft'),furnace:tex([112,114,114],.14,'furnace'),
+bedFootTop:tex([194,45,53],.02,'bedFootTop'),
+bedHeadTop:tex([194,45,53],.02,'bedHeadTop'),
+bedSide:tex([126,67,35],.02,'bedSide'),
+bedEnd:tex([126,67,35],.02,'bedEnd'),
+bedBottom:tex([92,56,31],.02,'bedBottom')};
 const L=t=>new THREE.MeshLambertMaterial({map:t});
 const grassSide=L(T.grassSide),dirt=L(T.dirt),grass=L(T.grass),stone=L(T.stone),sand=L(T.sand),log=L(T.log);
 const leaf=new THREE.MeshLambertMaterial({map:T.leaf,transparent:true,opacity:.92}),water=new THREE.MeshLambertMaterial({color:0x397bc6,transparent:true,opacity:.58,depthWrite:false}),glass=new THREE.MeshLambertMaterial({color:0xcce8ee,transparent:true,opacity:.32,depthWrite:false});
-const M={[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:L(T.bed),[B.BED_HEAD]:L(T.bed)};
+const bedSide=L(T.bedSide),bedEnd=L(T.bedEnd),bedBottom=L(T.bedBottom),bedFootTop=L(T.bedFootTop),bedHeadTop=L(T.bedHeadTop);
+const bedFootMaterials=[bedSide,bedSide,bedFootTop,bedBottom,bedEnd,bedEnd];
+const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
+const M={[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
 let meshes=[],lookup=new Map();
 function rebuild(){
