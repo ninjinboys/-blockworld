@@ -26,7 +26,7 @@ const sunBox=new THREE.Mesh(new THREE.BoxGeometry(2.1,2.1,.5),new THREE.MeshBasi
 const moonBox=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.7,.5),new THREE.MeshBasicMaterial({color:0xe5edf5}));
 scene.add(sunBox,moonBox);
 
-const SIZE=68,HALF=SIZE>>1,HEIGHT=38,SEA=11;
+const CHUNK=16,RENDER_RADIUS=2,HEIGHT=38,SEA=11;
 const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20};
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
@@ -134,13 +134,14 @@ const hardness={
 const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE]);
 
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
-let voxels=new Uint8Array(SIZE*HEIGHT*SIZE),surface=new Int16Array(SIZE*SIZE),biomes=new Uint8Array(SIZE*SIZE);
+const chunks=new Map(),editChunks=new Map();
+let streamCX=NaN,streamCZ=NaN;
 
-const inside=(x,y,z)=>x>=-HALF&&x<HALF&&z>=-HALF&&z<HALF&&y>=0&&y<HEIGHT;
-const wi=(x,y,z)=>(y*SIZE+(z+HALF))*SIZE+(x+HALF);
-const si=(x,z)=>(z+HALF)*SIZE+(x+HALF);
-const get=(x,y,z)=>inside(x,y,z)?voxels[wi(x,y,z)]:B.AIR;
-const set=(x,y,z,v)=>{if(inside(x,y,z))voxels[wi(x,y,z)]=v};
+const inside=(x,y,z)=>y>=0&&y<HEIGHT;
+const chunkCoord=v=>Math.floor(v/CHUNK);
+const localCoord=v=>((v%CHUNK)+CHUNK)%CHUNK;
+const chunkKey=(cx,cz)=>cx+','+cz;
+const cIndex=(lx,y,lz)=>(y*CHUNK+lz)*CHUNK+lx;
 const solid=id=>id!==B.AIR&&id!==B.WATER;
 
 function hash3(x,y,z,s=seed){let n=(x*374761393+y*668265263+z*2147483647+s*1274126177)|0;n=(n^(n>>>13))*1274126177;n^=n>>>16;return(n>>>0)/4294967295}
@@ -151,35 +152,113 @@ function noise3(x,y,z,o=0){const x0=Math.floor(x),y0=Math.floor(y),z0=Math.floor
 function terrainH(x,z){const c=fbm(x*.018,z*.018,11,4),h=fbm(x*.055,z*.055,91,4),r=1-Math.abs(fbm(x*.027,z*.027,181,3));let y=SEA+3+c*7+h*3;if(c>.1)y+=Math.max(0,r-.48)*16;if(c<-.22)y-=4+Math.abs(c)*6;return Math.max(3,Math.min(HEIGHT-7,Math.floor(y)))}
 function chooseBiome(h,temp,moist,river){if(river)return 7;if(h<SEA-2)return 6;if(temp>.28&&moist<-.18)return 2;if(temp<-.32&&h>SEA+6)return 4;if(temp<-.18)return 3;if(moist>.38&&h<=SEA+2)return 5;if(moist>.1)return 1;return 0}
 
-function addTree(x,z,b){const h=surface[si(x,z)];if(h<SEA||get(x,h,z)===B.SAND)return;const tall=b===3?5:4;for(let y=1;y<=tall;y++)set(x,h+y,z,B.LOG);for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=tall-1;dy<=tall+2;dy++)if(Math.abs(dx)+Math.abs(dz)+(dy===tall+2?2:0)<=5&&get(x+dx,h+dy,z+dz)===B.AIR)set(x+dx,h+dy,z+dz,B.LEAF)}
-function house(cx,cz){const y=surface[si(cx,cz)]+1,w=5,d=5;for(let x=cx-2;x<=cx+2;x++)for(let z=cz-2;z<=cz+2;z++){set(x,y-1,z,B.COBBLE);for(let yy=y;yy<y+4;yy++)if(x===cx-2||x===cx+2||z===cz-2||z===cz+2)set(x,yy,z,B.PLANK)}set(cx,y,cz+2,B.AIR);set(cx,y+1,cz+2,B.AIR);for(let x=cx-3;x<=cx+3;x++)for(let z=cz-3;z<=cz+3;z++)set(x,y+4,z,B.PLANK)}
-function village(){for(let r=14;r<27;r+=4)for(let a=0;a<20;a++){const ang=a/20*Math.PI*2,x=Math.round(Math.cos(ang)*r),z=Math.round(Math.sin(ang)*r),bio=biomes[si(x,z)];if((bio===0||bio===1)&&surface[si(x,z)]>SEA){house(x,z);if(x+7<HALF-3)house(x+7,z+2);return}}}
+function columnInfo(x,z){
+  let h=terrainH(x,z);
+  const river=Math.abs(fbm(x*.035+20,z*.035-18,260,4))<.045&&h>SEA-2;
+  if(river)h=Math.min(h,SEA-1);
+  const temp=fbm(x*.018+80,z*.018-60,331,3)-h*.009;
+  const moist=fbm(x*.022-42,z*.022+51,441,3);
+  return {h,bio:chooseBiome(h,temp,moist,river)};
+}
+const surfaceAt=(x,z)=>columnInfo(x,z).h;
+const biomeAt=(x,z)=>columnInfo(x,z).bio;
 
-function generate(){
-  voxels.fill(0);
-  for(let x=-HALF;x<HALF;x++)for(let z=-HALF;z<HALF;z++){
-    let h=terrainH(x,z);
-    const river=Math.abs(fbm(x*.035+20,z*.035-18,260,4))<.045&&h>SEA-2;
-    if(river)h=Math.min(h,SEA-1);
-    const temp=fbm(x*.018+80,z*.018-60,331,3)-h*.009,moist=fbm(x*.022-42,z*.022+51,441,3),bio=chooseBiome(h,temp,moist,river);
-    surface[si(x,z)]=h;biomes[si(x,z)]=bio;
-    for(let y=0;y<=h;y++){
-      let id=y===0?B.BEDROCK:B.STONE;
-      if(y>0){
-        if(y>=h-3)id=(bio===2||bio===6||bio===7)?B.SAND:(bio===4&&y===h?B.SNOW:(y===h?B.GRASS:B.DIRT));
-        if(y>2&&y<h-3){const c=noise3(x*.095,y*.12,z*.095,810)*.67+noise3(x*.19,y*.19,z*.19,1210)*.33;if(c>.54&&y<SEA+9)id=B.AIR}
-        if(id===B.STONE){const r=hash3(x,y,z,seed+5100);if(y<7&&r>.986)id=B.DIAMOND;else if(y<13&&r>.974)id=B.GOLD;else if(y<23&&r>.955)id=B.IRON;else if(r>.932)id=B.COAL;else if(r<.018)id=B.GRAVEL}
+function baseBlockAt(x,y,z){
+  if(y<0||y>=HEIGHT)return B.AIR;
+  const {h,bio}=columnInfo(x,z);
+  if(y>h)return y<=SEA?B.WATER:B.AIR;
+  if(y===0)return B.BEDROCK;
+  let id=B.STONE;
+  if(y>=h-3)id=(bio===2||bio===6||bio===7)?B.SAND:(bio===4&&y===h?B.SNOW:(y===h?B.GRASS:B.DIRT));
+  if(y>2&&y<h-3){
+    const c=noise3(x*.095,y*.12,z*.095,810)*.67+noise3(x*.19,y*.19,z*.19,1210)*.33;
+    if(c>.54&&y<SEA+9)id=B.AIR;
+  }
+  if(id===B.STONE){
+    const r=hash3(x,y,z,seed+5100);
+    if(y<7&&r>.986)id=B.DIAMOND;
+    else if(y<13&&r>.974)id=B.GOLD;
+    else if(y<23&&r>.955)id=B.IRON;
+    else if(r>.932)id=B.COAL;
+    else if(r<.018)id=B.GRAVEL;
+  }
+  return id;
+}
+function writeGenerated(data,cx,cz,x,y,z,id){
+  if(y<0||y>=HEIGHT||chunkCoord(x)!==cx||chunkCoord(z)!==cz)return;
+  data[cIndex(localCoord(x),y,localCoord(z))]=id;
+}
+function generateChunk(cx,cz){
+  const data=new Uint8Array(CHUNK*HEIGHT*CHUNK);
+  const x0=cx*CHUNK,z0=cz*CHUNK;
+  for(let lx=0;lx<CHUNK;lx++)for(let lz=0;lz<CHUNK;lz++){
+    const x=x0+lx,z=z0+lz;
+    for(let y=0;y<HEIGHT;y++)data[cIndex(lx,y,lz)]=baseBlockAt(x,y,z);
+  }
+  // Vegetation roots are checked with a margin so trees cross chunk borders cleanly.
+  for(let x=x0-2;x<x0+CHUNK+2;x++)for(let z=z0-2;z<z0+CHUNK+2;z++){
+    const {h,bio}=columnInfo(x,z),r=hash2(x,z,seed+780);
+    const tree=(bio===1&&r>.93)||(bio===3&&r>.915)||(bio===0&&r>.982);
+    if(tree&&h>=SEA&&baseBlockAt(x,h,z)!==B.SAND){
+      const tall=bio===3?5:4;
+      for(let y=1;y<=tall;y++)writeGenerated(data,cx,cz,x,h+y,z,B.LOG);
+      for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=tall-1;dy<=tall+2;dy++){
+        if(Math.abs(dx)+Math.abs(dz)+(dy===tall+2?2:0)>5)continue;
+        const tx=x+dx,ty=h+dy,tz=z+dz;
+        if(chunkCoord(tx)===cx&&chunkCoord(tz)===cz){
+          const i=cIndex(localCoord(tx),ty,localCoord(tz));
+          if(ty>=0&&ty<HEIGHT&&data[i]===B.AIR)data[i]=B.LEAF;
+        }
       }
-      set(x,y,z,id);
     }
-    if(h<SEA)for(let y=h+1;y<=SEA;y++)set(x,y,z,B.WATER);
+    if(bio===2&&r>.986){
+      const n=2+Math.floor(hash2(x,z,seed+900)*3);
+      for(let y=1;y<=n;y++)writeGenerated(data,cx,cz,x,h+y,z,B.CACTUS);
+    }
   }
-  for(let x=-HALF+3;x<HALF-3;x++)for(let z=-HALF+3;z<HALF-3;z++){
-    const b=biomes[si(x,z)],r=hash2(x,z,seed+780);
-    if((b===1&&r>.93)||(b===3&&r>.915)||(b===0&&r>.982))addTree(x,z,b);
-    if(b===2&&r>.986){const h=surface[si(x,z)],n=2+Math.floor(hash2(x,z,seed+900)*3);for(let y=1;y<=n;y++)set(x,h+y,z,B.CACTUS)}
+  const edits=editChunks.get(chunkKey(cx,cz));
+  if(edits)for(const [i,v] of edits)data[i]=v;
+  return {cx,cz,data};
+}
+function ensureChunk(cx,cz){
+  const k=chunkKey(cx,cz);
+  let c=chunks.get(k);
+  if(!c){c=generateChunk(cx,cz);chunks.set(k,c)}
+  return c;
+}
+function getLoaded(x,y,z){
+  if(y<0||y>=HEIGHT)return B.AIR;
+  const c=chunks.get(chunkKey(chunkCoord(x),chunkCoord(z)));
+  return c?c.data[cIndex(localCoord(x),y,localCoord(z))]:B.AIR;
+}
+function get(x,y,z){
+  if(y<0||y>=HEIGHT)return B.AIR;
+  const cx=chunkCoord(x),cz=chunkCoord(z),c=chunks.get(chunkKey(cx,cz));
+  if(c)return c.data[cIndex(localCoord(x),y,localCoord(z))];
+  const edits=editChunks.get(chunkKey(cx,cz)),i=cIndex(localCoord(x),y,localCoord(z));
+  if(edits&&edits.has(i))return edits.get(i);
+  return baseBlockAt(x,y,z);
+}
+function set(x,y,z,v){
+  if(y<0||y>=HEIGHT)return;
+  const cx=chunkCoord(x),cz=chunkCoord(z),c=ensureChunk(cx,cz),i=cIndex(localCoord(x),y,localCoord(z));
+  c.data[i]=v;
+  const k=chunkKey(cx,cz);
+  let edits=editChunks.get(k);
+  if(!edits){edits=new Map();editChunks.set(k,edits)}
+  edits.set(i,v);
+}
+function streamChunks(force=false){
+  const cx=chunkCoord(Math.floor(player.pos.x)),cz=chunkCoord(Math.floor(player.pos.z));
+  if(!force&&cx===streamCX&&cz===streamCZ)return false;
+  streamCX=cx;streamCZ=cz;
+  const wanted=new Set();
+  for(let dx=-RENDER_RADIUS;dx<=RENDER_RADIUS;dx++)for(let dz=-RENDER_RADIUS;dz<=RENDER_RADIUS;dz++){
+    const x=cx+dx,z=cz+dz,k=chunkKey(x,z);wanted.add(k);ensureChunk(x,z);
   }
-  village();
+  for(const k of [...chunks.keys()])if(!wanted.has(k))chunks.delete(k);
+  rebuild();spawnMobs();
+  return true;
 }
 
 function tex(rgb,noise=.12,pattern=''){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');for(let y=0;y<16;y++)for(let x=0;x<16;x++){const n=(hash3(x,y,pattern.length,12345)-.5)*noise*255;g.fillStyle=`rgb(${Math.max(0,Math.min(255,rgb[0]+n))|0},${Math.max(0,Math.min(255,rgb[1]+n))|0},${Math.max(0,Math.min(255,rgb[2]+n))|0})`;g.fillRect(x,y,1,1)}if(pattern==='grassSide'){g.fillStyle='#43883d';g.fillRect(0,0,16,4)}if(pattern==='log'){g.fillStyle='rgba(60,35,18,.3)';for(let x=2;x<16;x+=4)g.fillRect(x,0,1,16)}if(pattern.startsWith('ore')){const color=pattern==='oreC'?'#222':pattern==='oreI'?'#b78669':pattern==='oreG'?'#e4b935':'#43cad0';g.fillStyle=color;[[3,4],[11,3],[7,8],[13,11],[4,13]].forEach(([x,y])=>g.fillRect(x,y,2,2))}if(pattern==='plank'){g.fillStyle='rgba(70,43,20,.32)';for(let y=3;y<16;y+=4)g.fillRect(0,y,16,1)}if(pattern==='cobble'){g.strokeStyle='rgba(20,20,20,.28)';g.strokeRect(1.5,1.5,6,5);g.strokeRect(8.5,2.5,6,5);g.strokeRect(4.5,8.5,8,6)}
@@ -197,18 +276,46 @@ function rebuild(){
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
   const groups={};Object.keys(M).forEach(k=>groups[k]=[]);
   const nb=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-  for(let y=0;y<HEIGHT;y++)for(let z=-HALF;z<HALF;z++)for(let x=-HALF;x<HALF;x++){
-    const id=get(x,y,z);if(id===B.AIR)continue;let vis=false;
-    for(const[dX,dY,dZ]of nb){const n=get(x+dX,y+dY,z+dZ);if(id===B.WATER?n!==B.WATER:n===B.AIR||n===B.WATER||n===B.GLASS){vis=true;break}}
-    if(vis)groups[id].push({x,y,z});
+  for(const c of chunks.values()){
+    const x0=c.cx*CHUNK,z0=c.cz*CHUNK;
+    for(let y=0;y<HEIGHT;y++)for(let lz=0;lz<CHUNK;lz++)for(let lx=0;lx<CHUNK;lx++){
+      const id=c.data[cIndex(lx,y,lz)];if(id===B.AIR)continue;
+      const x=x0+lx,z=z0+lz;let vis=false;
+      for(const[dX,dY,dZ]of nb){
+        const n=getLoaded(x+dX,y+dY,z+dZ);
+        if(id===B.WATER?n!==B.WATER:n===B.AIR||n===B.WATER||n===B.GLASS){vis=true;break}
+      }
+      if(vis)groups[id].push({x,y,z});
+    }
   }
   const dummy=new THREE.Object3D();
-  for(const key in groups){const id=+key,a=groups[id];if(!a.length)continue;const m=new THREE.InstancedMesh(box,M[id],a.length);m.userData.id=id;m.castShadow=id!==B.WATER&&id!==B.GLASS;m.receiveShadow=id!==B.WATER;a.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix)});scene.add(m);meshes.push(m);lookup.set(m.uuid,a)}
+  for(const key in groups){
+    const id=+key,a=groups[id];if(!a.length)continue;
+    const m=new THREE.InstancedMesh(box,M[id],a.length);
+    m.userData.id=id;m.castShadow=id!==B.WATER&&id!==B.GLASS;m.receiveShadow=id!==B.WATER;
+    a.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix)});
+    scene.add(m);meshes.push(m);lookup.set(m.uuid,a);
+  }
 }
 
 const mobs=[];
 function cube(g,sx,sy,sz,color,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);m.castShadow=true;g.add(m)}
-function spawnMobs(){mobs.forEach(m=>scene.remove(m));mobs.length=0;for(let i=0;i<10;i++){const x=Math.floor(hash3(i,1,2,seed+71)*(SIZE-14))-HALF+7,z=Math.floor(hash3(i,3,4,seed+81)*(SIZE-14))-HALF+7;if(surface[si(x,z)]<=SEA||biomes[si(x,z)]===2)continue;const type=i%3,color=type===0?0xeeeeea:type===1?0xe8999f:0x7b5239,g=new THREE.Group();cube(g,1.15,.72,.65,color,0,.85,0);cube(g,.57,.57,.55,color,0,.95,-.56);for(const lx of[-.4,.4])for(const lz of[-.2,.2])cube(g,.16,.55,.16,type===0?0x444444:color,lx,.33,lz);g.position.set(x,surface[si(x,z)]+.05,z);g.userData={angle:hash2(x,z)*Math.PI*2,t:2+hash2(z,x)*3,speed:.25+hash2(x+4,z+2)*.28,hp:type===2?4:3,xp:type===2?18:type===1?14:12,name:type===0?'ヒツジ':type===1?'ブタ':'ウシ'};scene.add(g);mobs.push(g)}}
+function spawnMobs(){
+  mobs.forEach(m=>scene.remove(m));mobs.length=0;
+  const pcx=chunkCoord(player.pos.x),pcz=chunkCoord(player.pos.z);
+  for(let i=0;i<12;i++){
+    const rx=hash3(i,pcx,pcz,seed+71),rz=hash3(i+91,pcz,pcx,seed+81);
+    const x=Math.floor(player.pos.x+(rx-.5)*58),z=Math.floor(player.pos.z+(rz-.5)*58);
+    const h=surfaceAt(x,z),bio=biomeAt(x,z);
+    if(h<=SEA||bio===2||bio===6)continue;
+    const type=i%3,color=type===0?0xeeeeea:type===1?0xe8999f:0x7b5239,g=new THREE.Group();
+    cube(g,1.15,.72,.65,color,0,.85,0);cube(g,.57,.57,.55,color,0,.95,-.56);
+    for(const lx of[-.4,.4])for(const lz of[-.2,.2])cube(g,.16,.55,.16,type===0?0x444444:color,lx,.33,lz);
+    g.position.set(x,h+.05,z);
+    g.userData={angle:hash2(x,z)*Math.PI*2,t:2+hash2(z,x)*3,speed:.25+hash2(x+4,z+2)*.28,hp:type===2?4:3,xp:type===2?18:type===1?14:12,name:type===0?'ヒツジ':type===1?'ブタ':'ウシ'};
+    scene.add(g);mobs.push(g);
+  }
+}
 
 const clouds=[];
 for(let i=0;i<10;i++){const g=new THREE.Group(),mat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.75,depthWrite:false});for(let j=0;j<3;j++){const m=new THREE.Mesh(new THREE.BoxGeometry(6+j*1.4,.55,3),mat);m.position.x=j*4;g.add(m)}g.position.set(-40+hash3(i,2,3,44)*80,25+hash3(i,3,4,55)*4,-35+hash3(i,4,5,66)*70);scene.add(g);clouds.push(g)}
@@ -251,7 +358,7 @@ function movePlayerAxis(axis,amount){
   }
   return true;
 }
-function spawn(){let best={x:0,z:0,d:1e9};for(let x=-10;x<=10;x++)for(let z=-10;z<=10;z++){const h=surface[si(x,z)],b=biomes[si(x,z)],d=x*x+z*z;if(h>SEA&&b!==2&&b!==6&&d<best.d)best={x,z,d}}player.pos.set(best.x+.5,surface[si(best.x,best.z)]+1.05,best.z+.5);player.vel.set(0,0,0)}
+function spawn(){let best={x:0,z:0,d:1e9};for(let x=-10;x<=10;x++)for(let z=-10;z<=10;z++){const h=surfaceAt(x,z),b=biomeAt(x,z),d=x*x+z*z;if(h>SEA&&b!==2&&b!==6&&d<best.d)best={x,z,d}}player.pos.set(best.x+.5,surfaceAt(best.x,best.z)+1.05,best.z+.5);player.vel.set(0,0,0)}
 
 const ray=new THREE.Raycaster();ray.far=6;
 function target(){ray.setFromCamera(new THREE.Vector2(0,0),camera);const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
@@ -563,21 +670,22 @@ function loop(now){
     const vy=player.vel.y;
     player.onGround=false;
     movePlayerAxis('y',vy*dt);
-    if(player.pos.y<-5||Math.abs(player.pos.x)>HALF+3||Math.abs(player.pos.z)>HALF+3)spawn();
+    if(player.pos.y<-5)spawn();
+    streamChunks();
     camera.position.set(player.pos.x,player.pos.y+EYE,player.pos.z);camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
 
     const ang=dayTime*Math.PI*2-Math.PI/2,day=Math.max(0,Math.sin(ang));
-    sunBox.position.set(Math.cos(ang)*48,Math.sin(ang)*48,13);moonBox.position.set(-Math.cos(ang)*48,-Math.sin(ang)*48,-13);sun.position.copy(sunBox.position);
+    sunBox.position.set(player.pos.x+Math.cos(ang)*48,Math.sin(ang)*48,player.pos.z+13);moonBox.position.set(player.pos.x-Math.cos(ang)*48,-Math.sin(ang)*48,player.pos.z-13);sun.position.copy(sunBox.position);
     sun.intensity=.14+2.2*day;hemi.intensity=.25+1.15*day;
     const sky=new THREE.Color().setHSL(.57,.48,.08+.56*day);scene.background.copy(sky);scene.fog.color.copy(sky);
-    clouds.forEach((c,i)=>{c.position.x+=dt*(.5+i*.01);if(c.position.x>50)c.position.x=-50});
+    clouds.forEach((c,i)=>{c.position.x+=dt*(.5+i*.01);if(c.position.x>player.pos.x+50)c.position.x=player.pos.x-50;if(Math.abs(c.position.z-player.pos.z)>45)c.position.z=player.pos.z+(hash3(i,7,9,seed)-.5)*70});
 
     if(weather==='rain'){const a=rain.geometry.attributes.position.array;for(let i=0;i<rainN;i++){a[i*3+1]-=dt*19;if(a[i*3+1]<0){a[i*3+1]=25+Math.random()*9;a[i*3]=(Math.random()-.5)*44;a[i*3+2]=(Math.random()-.5)*44}}rain.position.set(player.pos.x,0,player.pos.z);rain.geometry.attributes.position.needsUpdate=true}
 
-    mobs.forEach((m,i)=>{m.userData.t-=dt;if(m.userData.t<=0){m.userData.t=1.5+hash3(i,Math.floor(now/1000),3,seed)*3;m.userData.angle+=(hash3(i,4,Math.floor(now/900),seed)-.5)*2.4}const x=m.position.x+Math.sin(m.userData.angle)*m.userData.speed*dt,z=m.position.z+Math.cos(m.userData.angle)*m.userData.speed*dt,ix=Math.round(x),iz=Math.round(z);if(ix>-HALF+2&&ix<HALF-2&&iz>-HALF+2&&iz<HALF-2&&surface[si(ix,iz)]>SEA){m.position.x=x;m.position.z=z;m.position.y=surface[si(ix,iz)]+.05;m.rotation.y=m.userData.angle}});
+    mobs.forEach((m,i)=>{m.userData.t-=dt;if(m.userData.t<=0){m.userData.t=1.5+hash3(i,Math.floor(now/1000),3,seed)*3;m.userData.angle+=(hash3(i,4,Math.floor(now/900),seed)-.5)*2.4}const x=m.position.x+Math.sin(m.userData.angle)*m.userData.speed*dt,z=m.position.z+Math.cos(m.userData.angle)*m.userData.speed*dt,ix=Math.round(x),iz=Math.round(z),h=surfaceAt(ix,iz),bio=biomeAt(ix,iz);if(h>SEA&&bio!==6){m.position.x=x;m.position.z=z;m.position.y=h+.05;m.rotation.y=m.userData.angle}});
 
-    const bx=Math.max(-HALF,Math.min(HALF-1,Math.floor(player.pos.x))),bz=Math.max(-HALF,Math.min(HALF-1,Math.floor(player.pos.z)));
-    coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomes[si(bx,bz)]]||'Unknown';
+    const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
+    coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');clockEl.textContent=(day>.2?'☀':'☾')+' '+hh+':'+mm;
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
@@ -588,7 +696,7 @@ function loop(now){
 function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
-async function init(){loading.textContent='地形生成中...';await new Promise(r=>setTimeout(r,40));generate();loading.textContent='ブロック描画中...';await new Promise(r=>setTimeout(r,40));rebuild();spawnMobs();spawn();renderHotbar();updateProgress();loading.textContent='準備完了'}
+async function init(){loading.textContent='初期チャンク生成中...';await new Promise(r=>setTimeout(r,40));spawn();streamChunks(true);renderHotbar();updateProgress();loading.textContent='準備完了'}
 await init();
 $('startBtn').addEventListener('click',()=>{started=true;cover.style.display='none';if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 requestAnimationFrame(loop);
