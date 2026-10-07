@@ -30,7 +30,7 @@ const moonBox=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.7,.5),new THREE.MeshBas
 scene.add(sunBox,moonBox);
 
 const CHUNK=16,RENDER_RADIUS=3,HEIGHT=48,SEA=11;
-const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21};
+const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22};
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
   RAW_IRON:106,RAW_GOLD:107,IRON_INGOT:108,GOLD_INGOT:109,DIAMOND:110,
@@ -57,12 +57,12 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  21:'ベッド'
+  21:'ベッド',22:'ベッド'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED};
-const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED};
+const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED};
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
   [I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0,
@@ -299,7 +299,7 @@ const furnaceRecipes=[
 const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
 const hardness={
   [B.GRASS]:0.55,[B.DIRT]:0.45,[B.SAND]:0.4,[B.LEAF]:0.22,[B.SNOW]:0.18,[B.GRAVEL]:0.75,[B.CACTUS]:0.65,
-  [B.LOG]:1.55,[B.PLANK]:1.25,[B.GLASS]:0.3,[B.CRAFTING_TABLE]:2.0,[B.BED]:1.0,
+  [B.LOG]:1.55,[B.PLANK]:1.25,[B.GLASS]:0.3,[B.CRAFTING_TABLE]:2.0,[B.BED]:1.0,[B.BED_HEAD]:1.0,
   [B.STONE]:3.0,[B.COBBLE]:3.4,[B.COAL]:3.5,[B.IRON]:4.2,[B.GOLD]:4.0,[B.DIAMOND]:5.0,[B.FURNACE]:3.8,
   [B.BEDROCK]:Infinity
 };
@@ -1102,7 +1102,7 @@ const T={grass:tex([92,159,64],.15),grassSide:tex([121,88,52],.15,'grassSide'),d
 const L=t=>new THREE.MeshLambertMaterial({map:t});
 const grassSide=L(T.grassSide),dirt=L(T.dirt),grass=L(T.grass),stone=L(T.stone),sand=L(T.sand),log=L(T.log);
 const leaf=new THREE.MeshLambertMaterial({map:T.leaf,transparent:true,opacity:.92}),water=new THREE.MeshLambertMaterial({color:0x397bc6,transparent:true,opacity:.58,depthWrite:false}),glass=new THREE.MeshLambertMaterial({color:0xcce8ee,transparent:true,opacity:.32,depthWrite:false});
-const M={[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:L(T.bed)};
+const M={[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:L(T.bed),[B.BED_HEAD]:L(T.bed)};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
 let meshes=[],lookup=new Map();
 function rebuild(){
@@ -1124,10 +1124,10 @@ function rebuild(){
   const dummy=new THREE.Object3D();
   for(const key in groups){
     const id=+key,a=groups[id];if(!a.length)continue;
-    const geom=id===B.BED?bedBox:box;
+    const geom=(id===B.BED||id===B.BED_HEAD)?bedBox:box;
     const m=new THREE.InstancedMesh(geom,M[id],a.length);
     m.userData.id=id;m.castShadow=id!==B.WATER&&id!==B.GLASS;m.receiveShadow=id!==B.WATER;
-    a.forEach((p,i)=>{dummy.position.set(p.x,id===B.BED?p.y-.25:p.y,p.z);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix)});
+    a.forEach((p,i)=>{dummy.position.set(p.x,(id===B.BED||id===B.BED_HEAD)?p.y-.25:p.y,p.z);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix)});
     scene.add(m);meshes.push(m);lookup.set(m.uuid,a);
   }
 }
@@ -1435,10 +1435,30 @@ function ensureInitialSpawn(){
   if(!initialSpawn)initialSpawn=calculateInitialSpawn();
   return initialSpawn;
 }
+function isBedBlock(id){return id===B.BED||id===B.BED_HEAD}
+function findBedOtherHalf(x,y,z,id=get(x,y,z)){
+  const want=id===B.BED?B.BED_HEAD:id===B.BED_HEAD?B.BED:null;
+  if(want==null)return null;
+  for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    if(get(x+dx,y,z+dz)===want)return {x:x+dx,y,z:z+dz};
+  }
+  return null;
+}
+function canonicalBedFoot(x,y,z){
+  const id=get(x,y,z);
+  if(id===B.BED)return {x,y,z};
+  if(id===B.BED_HEAD)return findBedOtherHalf(x,y,z,id);
+  return null;
+}
+function bedDirectionFromYaw(){
+  const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);
+  return Math.abs(fx)>Math.abs(fz)?{dx:Math.sign(fx)||1,dz:0}:{dx:0,dz:Math.sign(fz)||-1};
+}
 function activeRespawnPoint(){
   if(bedSpawn){
-    if(get(bedSpawn.x,bedSpawn.y,bedSpawn.z)===B.BED){
-      return {x:bedSpawn.x,y:bedSpawn.y+1.05,z:bedSpawn.z};
+    const foot=canonicalBedFoot(bedSpawn.x,bedSpawn.y,bedSpawn.z);
+    if(foot&&findBedOtherHalf(foot.x,foot.y,foot.z,B.BED)){
+      return {x:foot.x,y:foot.y+1.05,z:foot.z};
     }
     bedSpawn=null;
   }
@@ -1534,7 +1554,7 @@ function pickTier(){
   return 0;
 }
 function toolSpeed(id){
-  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE,B.BED]);
+  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE,B.BED,B.BED_HEAD]);
   const softLike=new Set([B.GRASS,B.DIRT,B.SAND,B.GRAVEL,B.SNOW]);
   const axeSpeed=selected===I.DIAMOND_AXE?6.5:selected===I.IRON_AXE?5:selected===I.GOLD_AXE?5.8:selected===I.STONE_AXE?3.2:selected===I.WOOD_AXE?2.1:1;
   const shovelSpeed=selected===I.DIAMOND_SHOVEL?6.5:selected===I.IRON_SHOVEL?5:selected===I.GOLD_SHOVEL?5.8:selected===I.STONE_SHOVEL?3.2:1;
