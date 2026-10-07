@@ -3,6 +3,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 const $=id=>document.getElementById(id);
 const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill');
 const authCover=$('authCover'),authForm=$('authForm'),authName=$('authName'),authPassword=$('authPassword'),authSubmit=$('authSubmit'),authError=$('authError'),authModeText=$('authModeText'),showLogin=$('showLogin'),showCreate=$('showCreate'),accountNameEl=$('accountName'),saveStatusEl=$('saveStatus'),saveNowBtn=$('saveNow'),logoutBtn=$('logoutBtn');
+const worldCover=$('worldCover'),worldGrid=$('worldGrid'),worldAccountName=$('worldAccountName'),worldLogout=$('worldLogout'),worldListBtn=$('worldListBtn'),accountBox=$('accountBox');
 
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -278,8 +279,8 @@ const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURN
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
 let streamCX=NaN,streamCZ=NaN;
-let currentAccount=null,worldReady=false,saveInterval=null,saveDirty=false;
-const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SAVE_PREFIX='blockworld_save_v2:';
+let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false;
+const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
 const inside=(x,y,z)=>y>=0&&y<HEIGHT;
 const chunkCoord=v=>Math.floor(v/CHUNK);
@@ -299,8 +300,8 @@ function loadAccountRegistry(){
   catch{return {version:1,accounts:{}}}
 }
 function saveAccountRegistry(reg){localStorage.setItem(ACCOUNT_REGISTRY_KEY,JSON.stringify(reg))}
-function bytesToB64(bytes){let s='';for(const b of bytes)s+=String.fromCharCode(b);return btoa(s)}
-function b64ToBytes(s){const raw=atob(s),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out}
+function bytesToB64(bytes){let t='';for(const b of bytes)t+=String.fromCharCode(b);return btoa(t)}
+function b64ToBytes(t){const raw=atob(t),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out}
 async function passwordHash(password,salt){
   const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
   const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:120000,hash:'SHA-256'},base,256);
@@ -310,59 +311,54 @@ function safeEqual(a,b){
   if(a.length!==b.length)return false;
   let d=0;for(let i=0;i<a.length;i++)d|=a.charCodeAt(i)^b.charCodeAt(i);return d===0;
 }
-function saveKeyForAccount(key){return SAVE_PREFIX+encodeURIComponent(key)}
-function setSaveStatus(text){saveStatusEl.textContent=text}
-function markSaveDirty(){if(currentAccount){saveDirty=true;setSaveStatus('未保存')}}
-function serializeEdits(){
-  return [...editChunks.entries()].map(([k,m])=>[k,[...m.entries()]]);
+function legacySaveKey(key){return LEGACY_SAVE_PREFIX+encodeURIComponent(key)}
+function saveKeyForAccount(key,slot){return SAVE_PREFIX+encodeURIComponent(key)+':'+slot}
+function migrateLegacySave(key){
+  try{
+    const legacy=localStorage.getItem(legacySaveKey(key));
+    const slot1=localStorage.getItem(saveKeyForAccount(key,1));
+    if(legacy&&!slot1)localStorage.setItem(saveKeyForAccount(key,1),legacy);
+  }catch(e){console.warn?.('legacy save migration failed',e)}
 }
+function setSaveStatus(text){saveStatusEl.textContent=text}
+function markSaveDirty(){if(currentAccount&&currentWorldSlot){saveDirty=true;setSaveStatus('未保存')}}
+function serializeEdits(){return [...editChunks.entries()].map(([k,m])=>[k,[...m.entries()]])}
 function restoreEdits(raw){
   editChunks.clear();
   if(!Array.isArray(raw))return;
   for(const row of raw){
     if(!Array.isArray(row)||row.length!==2||!Array.isArray(row[1]))continue;
     const m=new Map();
-    for(const pair of row[1]){
-      if(Array.isArray(pair)&&pair.length===2)m.set(Number(pair[0]),Number(pair[1]));
-    }
+    for(const pair of row[1])if(Array.isArray(pair)&&pair.length===2)m.set(Number(pair[0]),Number(pair[1]));
     editChunks.set(String(row[0]),m);
   }
 }
 function makeSaveData(){
   return {
-    version:2,
-    savedAt:Date.now(),
-    seed:seed>>>0,
+    version:3,worldSlot:currentWorldSlot,savedAt:Date.now(),seed:seed>>>0,
     level,xp,weather,dayTime,
-    inventory:{...inventory},
-    acquiredOrder:[...acquiredOrder],
-    hotbarSlots:[...hotbarSlots],
-    selected,
+    inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits()
   };
 }
 function saveCurrentGame(showMessage=false){
-  if(!currentAccount||!worldReady)return false;
+  if(!currentAccount||!currentWorldSlot||!worldReady)return false;
   try{
-    localStorage.setItem(saveKeyForAccount(currentAccount.key),JSON.stringify(makeSaveData()));
+    localStorage.setItem(saveKeyForAccount(currentAccount.key,currentWorldSlot),JSON.stringify(makeSaveData()));
     saveDirty=false;
     const d=new Date(),hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');
-    setSaveStatus('保存済 '+hh+':'+mm);
-    if(showMessage)flash('セーブしました');
+    setSaveStatus('W'+currentWorldSlot+' 保存済 '+hh+':'+mm);
+    if(showMessage)flash('ワールド'+currentWorldSlot+'をセーブしました');
     return true;
   }catch(e){
     setSaveStatus('保存失敗');
     if(showMessage)flash('セーブに失敗しました');
-    console.warn?.('save failed',e);
-    return false;
+    console.warn?.('save failed',e);return false;
   }
 }
-function readSaveForAccount(key){
-  try{
-    const raw=localStorage.getItem(saveKeyForAccount(key));
-    return raw?JSON.parse(raw):null;
-  }catch{return null}
+function readSaveForAccount(key,slot){
+  try{const raw=localStorage.getItem(saveKeyForAccount(key,slot));return raw?JSON.parse(raw):null}catch{return null}
 }
 function applySaveData(data){
   if(!data||typeof data!=='object')return false;
@@ -370,22 +366,19 @@ function applySaveData(data){
   level=Math.max(1,Number(data.level)||1);xp=Math.max(0,Number(data.xp)||0);
   weather=data.weather==='rain'?'rain':'clear';
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
-
   for(const k of Object.keys(inventory))inventory[k]=0;
   if(data.inventory&&typeof data.inventory==='object'){
     for(const [k,v] of Object.entries(data.inventory))if(Object.prototype.hasOwnProperty.call(inventory,k))inventory[k]=Math.max(0,Number(v)||0);
   }
   acquiredOrder.length=0;
-  if(Array.isArray(data.acquiredOrder))for(const id of data.acquiredOrder){const n=Number(id);if(Object.prototype.hasOwnProperty.call(inventory,n)&&!acquiredOrder.includes(n))acquiredOrder.push(n)}
+  if(Array.isArray(data.acquiredOrder))for(const id of data.acquiredOrder){
+    const n=Number(id);if(Object.prototype.hasOwnProperty.call(inventory,n)&&!acquiredOrder.includes(n))acquiredOrder.push(n);
+  }
   hotbarSlots.fill(null);
   if(Array.isArray(data.hotbarSlots))for(let i=0;i<Math.min(9,data.hotbarSlots.length);i++){const n=data.hotbarSlots[i];hotbarSlots[i]=n==null?null:Number(n)}
-  selected=data.selected==null?null:Number(data.selected);
-  restoreEdits(data.edits);
-
+  selected=data.selected==null?null:Number(data.selected);restoreEdits(data.edits);
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
-    player.pos.set(data.player.x,data.player.y,data.player.z);
-    player.yaw=Number(data.player.yaw)||0;player.pitch=Number(data.player.pitch)||0;
-    return true;
+    player.pos.set(data.player.x,data.player.y,data.player.z);player.yaw=Number(data.player.yaw)||0;player.pitch=Number(data.player.pitch)||0;return true;
   }
   return false;
 }
@@ -395,29 +388,75 @@ function resetWorldRuntime(){
   mobs.forEach(m=>scene.remove(m));mobs.length=0;
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
 }
-async function initializeAccountWorld(save){
-  worldReady=false;cover.style.display='flex';loading.textContent='セーブデータを読み込み中...';
-  resetWorldRuntime();
+function freshSeed(){
+  try{return crypto.getRandomValues(new Uint32Array(1))[0]>>>0}catch{return Date.now()>>>0}
+}
+async function initializeAccountWorld(save,slot){
+  currentWorldSlot=slot;worldReady=false;worldCover.style.display='none';cover.style.display='flex';
+  accountBox.style.display='block';accountNameEl.textContent=currentAccount.name+' · W'+slot;
+  loading.textContent='セーブデータを読み込み中...';resetWorldRuntime();
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
   else{
-    seed=(Date.now()>>>0);level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    seed=freshSeed();level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     for(const k of Object.keys(inventory))inventory[k]=0;
     acquiredOrder.length=0;hotbarSlots.fill(null);editChunks.clear();
   }
-
   await new Promise(r=>setTimeout(r,30));
   if(!hasSavedPos)spawn();
-  loading.textContent='周辺チャンクを生成中...';
-  await new Promise(r=>setTimeout(r,30));
+  loading.textContent='周辺チャンクを生成中...';await new Promise(r=>setTimeout(r,30));
   streamChunks(true);
   for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
   rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
   renderHotbar();updateProgress();
-  accountNameEl.textContent=currentAccount.name;
-  loading.textContent=save?'セーブデータを復元しました':'新しい世界を作成しました';
+  loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
   clearInterval(saveInterval);saveInterval=setInterval(()=>saveCurrentGame(false),10000);
+}
+function formatSavedAt(ms){
+  if(!Number.isFinite(ms))return '保存日時不明';
+  const d=new Date(ms),mo=d.getMonth()+1,da=d.getDate(),hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');
+  return mo+'/'+da+' '+hh+':'+mm;
+}
+function renderWorldSelection(){
+  if(!currentAccount)return;
+  migrateLegacySave(currentAccount.key);
+  worldAccountName.textContent=currentAccount.name;worldGrid.innerHTML='';
+  for(let slot=1;slot<=MAX_WORLDS;slot++){
+    const save=readSaveForAccount(currentAccount.key,slot),card=document.createElement('div');
+    card.className='world-slot'+(save?'':' empty');
+    const info=document.createElement('div');
+    const title=document.createElement('div');title.className='world-slot-title';title.textContent='WORLD '+slot;info.appendChild(title);
+    const meta=document.createElement('div');meta.className='world-slot-meta';
+    if(save){
+      const x=Math.floor(save.player?.x||0),z=Math.floor(save.player?.z||0);
+      meta.textContent='LV '+(save.level||1)+'  ·  '+formatSavedAt(save.savedAt)+'\nX '+x+' / Z '+z;
+      meta.style.whiteSpace='pre-line';
+    }else meta.textContent='空きスロット';
+    info.appendChild(meta);
+
+    const actions=document.createElement('div');actions.className='world-slot-actions';
+    const play=document.createElement('button');play.type='button';play.textContent=save?'続きから':'新しく作る';
+    play.addEventListener('click',()=>initializeAccountWorld(save,slot));actions.appendChild(play);
+    if(save){
+      const del=document.createElement('button');del.type='button';del.className='delete-world';del.textContent='削除';
+      del.addEventListener('click',()=>{
+        if(confirm('WORLD '+slot+'を完全に削除しますか？')){
+          localStorage.removeItem(saveKeyForAccount(currentAccount.key,slot));renderWorldSelection();
+        }
+      });
+      actions.appendChild(del);
+    }
+    card.append(info,actions);worldGrid.appendChild(card);
+  }
+}
+function showWorldSelection(){
+  if(!currentAccount)return;
+  if(worldReady)saveCurrentGame(false);
+  clearInterval(saveInterval);saveInterval=null;
+  resetWorldRuntime();worldReady=false;currentWorldSlot=null;
+  cover.style.display='none';accountBox.style.display='none';worldCover.style.display='flex';
+  document.exitPointerLock?.();renderWorldSelection();
 }
 function setAuthMode(mode){
   const create=mode==='create';authForm.dataset.mode=mode;
@@ -437,21 +476,19 @@ async function submitAuth(e){
     if(mode==='create'){
       if(reg.accounts[key]){authError.textContent='その名前はすでに使われています';return}
       const salt=crypto.getRandomValues(new Uint8Array(16)),hash=await passwordHash(password,salt);
-      reg.accounts[key]={name,salt:bytesToB64(salt),hash,createdAt:Date.now()};
-      saveAccountRegistry(reg);currentAccount={key,name};setSaveStatus('新規');
-      await initializeAccountWorld(null);
+      reg.accounts[key]={name,salt:bytesToB64(salt),hash,createdAt:Date.now()};saveAccountRegistry(reg);
+      currentAccount={key,name};setSaveStatus('ワールド未選択');
     }else{
       const acc=reg.accounts[key];
       if(!acc){authError.textContent='そのアカウントはありません';return}
       const hash=await passwordHash(password,b64ToBytes(acc.salt));
       if(!safeEqual(hash,acc.hash)){authError.textContent='パスワードが違います';return}
-      currentAccount={key,name:acc.name||name};setSaveStatus('読込中');
-      await initializeAccountWorld(readSaveForAccount(key));
+      currentAccount={key,name:acc.name||name};setSaveStatus('ワールド未選択');
     }
-    authPassword.value='';authCover.style.display='none';cover.style.display='flex';
+    authPassword.value='';authCover.style.display='none';cover.style.display='none';accountBox.style.display='none';
+    worldCover.style.display='flex';renderWorldSelection();
   }catch(err){
-    authError.textContent='アカウント処理に失敗しました';
-    console.warn?.('auth failed',err);
+    authError.textContent='アカウント処理に失敗しました';console.warn?.('auth failed',err);
   }finally{
     authSubmit.disabled=false;authSubmit.textContent=(authForm.dataset.mode||'login')==='create'?'アカウント作成':'ログイン';
   }
@@ -1162,6 +1199,11 @@ authForm.addEventListener('submit',submitAuth);
 setAuthMode('login');
 
 saveNowBtn.addEventListener('click',()=>saveCurrentGame(true));
+worldListBtn.addEventListener('click',()=>{
+  if(!currentAccount)return;
+  showWorldSelection();
+});
+worldLogout.addEventListener('click',()=>{location.reload()});
 logoutBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
   if(confirm('セーブしてログアウトしますか？')){
