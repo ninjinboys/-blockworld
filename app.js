@@ -1899,7 +1899,7 @@ function loop(now){
 
     if(weather==='rain'){const a=rain.geometry.attributes.position.array;for(let i=0;i<rainN;i++){a[i*3+1]-=dt*19;if(a[i*3+1]<0){a[i*3+1]=25+Math.random()*9;a[i*3]=(Math.random()-.5)*44;a[i*3+2]=(Math.random()-.5)*44}}rain.position.set(player.pos.x,0,player.pos.z);rain.geometry.attributes.position.needsUpdate=true}
 
-    mobs.forEach((m,i)=>{m.userData.t-=dt;if(m.userData.t<=0){m.userData.t=1.5+hash3(i,Math.floor(now/1000),3,seed)*3;m.userData.angle+=(hash3(i,4,Math.floor(now/900),seed)-.5)*2.4}const x=m.position.x+Math.sin(m.userData.angle)*m.userData.speed*dt,z=m.position.z+Math.cos(m.userData.angle)*m.userData.speed*dt,ix=Math.round(x),iz=Math.round(z),h=surfaceAt(ix,iz),bio=biomeAt(ix,iz);if(h>SEA&&bio!==6){m.position.x=x;m.position.z=z;m.position.y=h+.05;m.rotation.y=m.userData.angle}});
+    mobs.forEach((m,i)=>{m.userData.t-=dt;if(m.userData.t<=0){m.userData.t=1.5+hash3(i,Math.floor(now/1000),3,seed)*3;m.userData.angle+=(hash3(i,4,Math.floor(now/900),seed)-.5)*2.4}const x=m.position.x+Math.sin(m.userData.angle)*m.userData.speed*dt,z=m.position.z+Math.cos(m.userData.angle)*m.userData.speed*dt,ix=Math.round(x),iz=Math.round(z),h=surfaceAt(ix,iz),bio=biomeAt(ix,iz);if(h>SEA&&bio!==6){m.position.x=x;m.position.z=z;m.position.y=h+.05;m.rotation.y=m.userData.angle+Math.PI}});
 
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
