@@ -452,7 +452,7 @@ function resetWorldRuntime(){
   mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
   clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
-  health=MAX_HEALTH;dead=false;fallDistance=0;initialSpawn=null;
+  health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
 }
 function freshSeed(){
@@ -466,7 +466,7 @@ async function initializeAccountWorld(save,slot){
   if(save)hasSavedPos=applySaveData(save);
   else{
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
-    health=MAX_HEALTH;dead=false;fallDistance=0;initialSpawn=null;
+    health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
     editChunks.clear();clearWorldDrops();
   }
@@ -1306,7 +1306,7 @@ rain.visible=false;scene.add(rain);
 
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
 const MAX_HEALTH=20;
-let health=MAX_HEALTH,dead=false,fallDistance=0,initialSpawn=null;
+let health=MAX_HEALTH,dead=false,fallOriginY=null,initialSpawn=null;
 const worldDrops=[],dropTextures=new Map();
 function dropTexture(id){
   if(dropTextures.has(id))return dropTextures.get(id);
@@ -1427,7 +1427,7 @@ function ensureInitialSpawn(){
 function spawn(){
   const p=ensureInitialSpawn();
   player.pos.set(p.x,p.y,p.z);
-  player.vel.set(0,0,0);player.onGround=false;fallDistance=0;
+  player.vel.set(0,0,0);player.onGround=false;fallOriginY=null;
   for(let i=0;i<16&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
 }
 
@@ -1468,7 +1468,7 @@ function applyFallDamage(distance){
   damagePlayer(blocks-3,'落下ダメージ');
 }
 function respawnPlayer(){
-  health=MAX_HEALTH;dead=false;fallDistance=0;
+  health=MAX_HEALTH;dead=false;fallOriginY=null;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
   spawn();streamChunks(true);
   player.yaw=0;player.pitch=0;renderHealth();markSaveDirty();saveCurrentGame(false);
@@ -1961,11 +1961,16 @@ function playerInWater(){
 }
 function jump(){
   if(playerInWater()){
+    fallOriginY=null;
     player.vel.y=Math.max(player.vel.y,4.6);
     player.onGround=false;
     return;
   }
-  if(player.onGround){player.vel.y=7.3;player.onGround=false}
+  if(player.onGround){
+    // Damage is based on the height of the ledge we left, not the jump apex.
+    fallOriginY=player.pos.y;
+    player.vel.y=7.3;player.onGround=false;
+  }
 }
 
 renderer.domElement.addEventListener('click',()=>{if(!dead&&!craftOpen&&!inventoryOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
@@ -2029,23 +2034,22 @@ function loop(now){
     }
     movePlayerAxis('x',player.vel.x*dt);
     movePlayerAxis('z',player.vel.z*dt);
-    const preVerticalY=player.pos.y,vy=player.vel.y;
+    const preVerticalY=player.pos.y,wasGrounded=player.onGround,vy=player.vel.y;
     player.onGround=false;
     movePlayerAxis('y',vy*dt);
-    const dropped=Math.max(0,preVerticalY-player.pos.y);
     const nowInWater=playerInWater();
 
     if(nowInWater){
-      fallDistance=0;
-    }else if(vy<0){
-      fallDistance+=dropped;
-      if(player.onGround){
-        applyFallDamage(fallDistance);
-        fallDistance=0;
-      }
-    }else if(vy>0){
-      // Rising does not count toward fall damage.
-      fallDistance=0;
+      fallOriginY=null;
+    }else if(player.onGround){
+      if(fallOriginY!=null&&vy<0)applyFallDamage(fallOriginY-player.pos.y);
+      fallOriginY=null;
+    }else if(wasGrounded&&vy<=0){
+      // Walked off an edge: remember the ledge height.
+      fallOriginY=preVerticalY;
+    }else if(fallOriginY==null&&vy<0){
+      // Safety for cases where the player becomes airborne without a normal ledge/jump transition.
+      fallOriginY=preVerticalY;
     }
 
     if(player.pos.y<-5&&!dead){health=0;showDeathScreen()}
