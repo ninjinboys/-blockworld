@@ -4,6 +4,7 @@ const $=id=>document.getElementById(id);
 const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill');
 const authCover=$('authCover'),authForm=$('authForm'),authName=$('authName'),authPassword=$('authPassword'),authSubmit=$('authSubmit'),authError=$('authError'),authModeText=$('authModeText'),showLogin=$('showLogin'),showCreate=$('showCreate'),accountNameEl=$('accountName'),saveStatusEl=$('saveStatus'),saveNowBtn=$('saveNow'),logoutBtn=$('logoutBtn');
 const worldCover=$('worldCover'),worldGrid=$('worldGrid'),worldAccountName=$('worldAccountName'),worldLogout=$('worldLogout'),worldListBtn=$('worldListBtn'),accountBox=$('accountBox');
+const inventoryScreen=$('inventoryScreen'),inventoryMainGrid=$('inventoryMainGrid'),inventoryHotbarGrid=$('inventoryHotbarGrid'),inventoryClose=$('inventoryClose'),inventoryDetail=$('inventoryDetail'),inventoryDetailIcon=$('inventoryDetailIcon'),inventoryDetailName=$('inventoryDetailName'),inventoryDetailQty=$('inventoryDetailQty'),inventoryMove=$('inventoryMove'),inventorySplit=$('inventorySplit'),inventoryDrop=$('inventoryDrop');
 
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -73,6 +74,8 @@ const inventory={
   [I.WOOD_AXE]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
+const inventorySlots=Array(36).fill(null);
+let selectedHotbarIndex=0,inventorySelectedSlot=null,inventoryOpen=false;
 const itemColors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',8:'#454545',9:'#b78770',10:'#d6b33d',11:'#4ccbd2',15:'#ad7b46',16:'#686c6c',17:'#ccebee'};
 const itemGlyphs={
   [I.STICK]:'棒',[I.CRAFTING_TABLE]:'台',[I.FURNACE]:'炉',[I.WOOD_PICK]:'木⛏',[I.STONE_PICK]:'石⛏',
@@ -363,6 +366,8 @@ function makeSaveData(){
     version:3,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
     level,xp,weather,dayTime,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
+    inventorySlots:inventorySlots.map(v=>v?{id:v.id,qty:v.qty}:null),selectedHotbarIndex,
+    worldDrops:serializeWorldDrops(),
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits()
   };
@@ -392,26 +397,35 @@ function applySaveData(data){
   level=Math.max(1,Number(data.level)||1);xp=Math.max(0,Number(data.xp)||0);
   weather=data.weather==='rain'?'rain':'clear';
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
-  for(const k of Object.keys(inventory))inventory[k]=0;
-  if(data.inventory&&typeof data.inventory==='object'){
-    for(const [k,v] of Object.entries(data.inventory))if(Object.prototype.hasOwnProperty.call(inventory,k))inventory[k]=Math.max(0,Number(v)||0);
+
+  clearInventorySlots();
+  if(Array.isArray(data.inventorySlots)&&data.inventorySlots.length){
+    for(let i=0;i<Math.min(36,data.inventorySlots.length);i++){
+      const v=data.inventorySlots[i];
+      if(v&&Number.isFinite(Number(v.id))&&Number(v.qty)>0)inventorySlots[i]={id:Number(v.id),qty:Math.max(1,Math.floor(Number(v.qty)))};
+    }
+  }else{
+    migrateLegacyInventoryToSlots(data);
   }
-  acquiredOrder.length=0;
-  if(Array.isArray(data.acquiredOrder))for(const id of data.acquiredOrder){
-    const n=Number(id);if(Object.prototype.hasOwnProperty.call(inventory,n)&&!acquiredOrder.includes(n))acquiredOrder.push(n);
+  selectedHotbarIndex=Number.isInteger(data.selectedHotbarIndex)?Math.max(0,Math.min(8,data.selectedHotbarIndex)):0;
+  if(data.selected!=null&&!inventorySlots[selectedHotbarIndex]){
+    const oldSelected=Number(data.selected),idx=inventorySlots.findIndex((v,i)=>i<9&&v?.id===oldSelected);
+    if(idx>=0)selectedHotbarIndex=idx;
   }
-  hotbarSlots.fill(null);
-  if(Array.isArray(data.hotbarSlots))for(let i=0;i<Math.min(9,data.hotbarSlots.length);i++){const n=data.hotbarSlots[i];hotbarSlots[i]=n==null?null:Number(n)}
-  selected=data.selected==null?null:Number(data.selected);restoreEdits(data.edits);
+  syncDerivedInventory();
+  restoreEdits(data.edits);
+  restoreWorldDrops(data.worldDrops);
+
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
     player.pos.set(data.player.x,data.player.y,data.player.z);player.yaw=Number(data.player.yaw)||0;player.pitch=Number(data.player.pitch)||0;return true;
   }
   return false;
 }
 function resetWorldRuntime(){
-  started=false;craftOpen=false;crafting.classList.remove('open');primaryActionStop();
+  started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
   mobs.forEach(m=>scene.remove(m));mobs.length=0;
+  clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
 }
 function freshSeed(){
@@ -425,8 +439,8 @@ async function initializeAccountWorld(save,slot){
   if(save)hasSavedPos=applySaveData(save);
   else{
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
-    for(const k of Object.keys(inventory))inventory[k]=0;
-    acquiredOrder.length=0;hotbarSlots.fill(null);editChunks.clear();
+    clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
+    editChunks.clear();clearWorldDrops();
   }
   await new Promise(r=>setTimeout(r,30));
   if(!hasSavedPos)spawn();
