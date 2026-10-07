@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261007r">
+<link rel="stylesheet" href="style.css?v=20261007s">
 </head>
 <body>
 <div id="game"></div>
@@ -26,12 +26,25 @@
     <div class="auth-note">この版ではアカウントとセーブはこの端末に保存されます。</div>
   </div>
 </div>
+<div id="worldCover">
+  <div class="world-panel">
+    <div class="world-head">
+      <div>
+        <div class="world-kicker">PLAYER <strong id="worldAccountName">---</strong></div>
+        <h2>ワールドを選択</h2>
+        <p>1アカウントにつき最大5個まで保存できます。</p>
+      </div>
+      <button id="worldLogout" type="button">ログアウト</button>
+    </div>
+    <div id="worldGrid"></div>
+  </div>
+</div>
 <div id="crosshair"></div><div id="breakMeter"><div id="breakLabel"></div><div id="breakTrack"><div id="breakFill"></div></div></div>
 <div id="hud">
   <div id="stats"><div id="coords">X 0 Y 0 Z 0</div><div id="biome">Plains</div><div id="clock">☀ 06:00</div><div id="weather">Clear</div></div>
   <div id="accountBox">
     <div><strong id="accountName">---</strong><span id="saveStatus">未ログイン</span></div>
-    <div class="account-actions"><button id="saveNow" type="button">保存</button><button id="logoutBtn" type="button">ログアウト</button></div>
+    <div class="account-actions"><button id="saveNow" type="button">保存</button><button id="worldListBtn" type="button">ワールド</button><button id="logoutBtn" type="button">ログアウト</button></div>
   </div>
   <div id="progress">
     <div class="xp-row"><strong id="levelText">LV 1</strong><span id="xpText">0 / 20 XP</span></div>
@@ -109,6 +122,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261007r"></script>
+<script type="module" src="app.js?v=20261007s"></script>
 </body>
 </html>
