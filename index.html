@@ -53,12 +53,20 @@
   </div>
   <div id="hint">WASD 移動 / Space ジャンプ / 左クリック長押し 攻撃/採掘 / 右クリック 設置 / C クラフト / R 雨</div>
   <div id="message"></div>
+  <div id="healthHud" aria-label="体力"><div id="hearts"></div></div>
   <div id="hotbar"></div>
 </div>
 <div id="mobile">
   <div class="pad"><button class="up">▲</button><button class="left">◀</button><button class="down">▼</button><button class="right">▶</button></div>
   <button class="jump">JUMP</button>
   <div id="tapbar"><button id="tapMine">長押し採掘</button><button id="tapPlace">設置</button><button id="tapInventory">持ち物</button><button id="tapCraft">CRAFT</button></div>
+</div>
+<div id="deathScreen" aria-hidden="true">
+  <div class="death-panel">
+    <div class="death-title">死んだ！</div>
+    <div class="death-sub">初期スポーン地点から復活します</div>
+    <button id="respawnBtn" type="button">リスポーン</button>
+  </div>
 </div>
 <div id="inventoryScreen" aria-hidden="true">
   <div class="inventory-panel">
