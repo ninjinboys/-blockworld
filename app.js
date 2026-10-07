@@ -1727,23 +1727,13 @@ function distanceToBlock(x,y,z){
   return Math.hypot(dx,dy,dz);
 }
 function stationInReach(){
+  // Workbench/furnace menus only open when the center reticle is directly aiming at that block.
   const h=target();
-  if(h){
-    const p=lookup.get(h.object.uuid)?.[h.instanceId];
-    if(p){
-      const id=get(p.x,p.y,p.z);
-      if((id===B.CRAFTING_TABLE||id===B.FURNACE)&&h.distance<=5)return id;
-    }
-  }
-  let best=null,bestD=3.25;
-  const px=Math.floor(player.pos.x),py=Math.floor(player.pos.y),pz=Math.floor(player.pos.z);
-  for(let x=px-3;x<=px+3;x++)for(let y=Math.max(0,py-2);y<=Math.min(HEIGHT-1,py+3);y++)for(let z=pz-3;z<=pz+3;z++){
-    const id=get(x,y,z);
-    if(id!==B.CRAFTING_TABLE&&id!==B.FURNACE)continue;
-    const d=distanceToBlock(x,y,z);
-    if(d<bestD){bestD=d;best=id}
-  }
-  return best;
+  if(!h||h.distance>5)return null;
+  const p=lookup.get(h.object.uuid)?.[h.instanceId];
+  if(!p)return null;
+  const id=get(p.x,p.y,p.z);
+  return (id===B.CRAFTING_TABLE||id===B.FURNACE)?id:null;
 }
 function chooseCraftMode(){
   const station=stationInReach();
@@ -1811,7 +1801,7 @@ function setCraftOpen(v){
     if(inventoryOpen)setInventoryOpen(false);
     craftMode=chooseCraftMode();
     primaryActionStop();document.exitPointerLock?.();renderCrafting();
-    if(craftMode==='inventory')flash('近くの作業台・かまどで専用メニューが開きます');
+    if(craftMode==='inventory')flash('作業台・かまどにレティクルを合わせると専用メニューが開きます');
   } else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
 }
 
