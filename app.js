@@ -220,7 +220,37 @@ const rain=new THREE.Points(rainG,new THREE.PointsMaterial({color:0xb8d7f0,size:
 rain.visible=false;scene.add(rain);
 
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
-function blocked(px,py,pz){for(let x=Math.floor(px-PR);x<=Math.floor(px+PR);x++)for(let y=Math.floor(py);y<=Math.floor(py+PH-.05);y++)for(let z=Math.floor(pz-PR);z<=Math.floor(pz+PR);z++)if(solid(get(x,y,z)))return true;return false}
+function blocked(px,py,pz){
+  const e=1e-4;
+  const minX=Math.ceil((px-PR)-0.5+e),maxX=Math.floor((px+PR)+0.5-e);
+  const minY=Math.ceil(py-0.5+e),maxY=Math.floor((py+PH)+0.5-e);
+  const minZ=Math.ceil((pz-PR)-0.5+e),maxZ=Math.floor((pz+PR)+0.5-e);
+  for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)for(let z=minZ;z<=maxZ;z++){
+    if(solid(get(x,y,z)))return true;
+  }
+  return false;
+}
+function movePlayerAxis(axis,amount){
+  if(!amount)return true;
+  const steps=Math.max(1,Math.ceil(Math.abs(amount)/0.08));
+  const step=amount/steps;
+  for(let i=0;i<steps;i++){
+    const nx=player.pos.x+(axis==='x'?step:0);
+    const ny=player.pos.y+(axis==='y'?step:0);
+    const nz=player.pos.z+(axis==='z'?step:0);
+    if(blocked(nx,ny,nz)){
+      if(axis==='x')player.vel.x=0;
+      if(axis==='z')player.vel.z=0;
+      if(axis==='y'){
+        if(step<0)player.onGround=true;
+        player.vel.y=0;
+      }
+      return false;
+    }
+    player.pos.set(nx,ny,nz);
+  }
+  return true;
+}
 function spawn(){let best={x:0,z:0,d:1e9};for(let x=-10;x<=10;x++)for(let z=-10;z<=10;z++){const h=surface[si(x,z)],b=biomes[si(x,z)],d=x*x+z*z;if(h>SEA&&b!==2&&b!==6&&d<best.d)best={x,z,d}}player.pos.set(best.x+.5,surface[si(best.x,best.z)]+1.05,best.z+.5);player.vel.set(0,0,0)}
 
 const ray=new THREE.Raycaster();ray.far=6;
@@ -500,9 +530,11 @@ function loop(now){
     if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
     if(move.lengthSq())move.normalize().multiplyScalar(4.5);
     player.vel.x+=(move.x-player.vel.x)*Math.min(1,dt*11);player.vel.z+=(move.z-player.vel.z)*Math.min(1,dt*11);player.vel.y-=18*dt;
-    let nx=player.pos.x+player.vel.x*dt;if(!blocked(nx,player.pos.y,player.pos.z))player.pos.x=nx;else player.vel.x=0;
-    let nz=player.pos.z+player.vel.z*dt;if(!blocked(player.pos.x,player.pos.y,nz))player.pos.z=nz;else player.vel.z=0;
-    let ny=player.pos.y+player.vel.y*dt;if(!blocked(player.pos.x,ny,player.pos.z)){player.pos.y=ny;player.onGround=false}else{if(player.vel.y<0)player.onGround=true;player.vel.y=0}
+    movePlayerAxis('x',player.vel.x*dt);
+    movePlayerAxis('z',player.vel.z*dt);
+    const vy=player.vel.y;
+    player.onGround=false;
+    movePlayerAxis('y',vy*dt);
     if(player.pos.y<-5||Math.abs(player.pos.x)>HALF+3||Math.abs(player.pos.z)>HALF+3)spawn();
     camera.position.set(player.pos.x,player.pos.y+EYE,player.pos.z);camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
 
