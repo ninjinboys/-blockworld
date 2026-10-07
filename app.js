@@ -1406,8 +1406,8 @@ function firstEmptySlot(start=0,end=36,exclude=-1){
 }
 function splitInventoryStack(index){
   const st=inventorySlots[index];if(!st||st.qty<2){flash('分けられる個数がありません');return}
-  let empty=firstEmptySlot(index<9?9:0,36,index);
-  if(empty<0&&index>=9)empty=firstEmptySlot(0,9,index);
+  let empty=index<9?firstEmptySlot(0,9,index):firstEmptySlot(9,36,index);
+  if(empty<0)empty=index<9?firstEmptySlot(9,36,index):firstEmptySlot(0,9,index);
   if(empty<0){flash('空きスロットがありません');return}
   const moved=Math.floor(st.qty/2);st.qty-=moved;inventorySlots[empty]={id:st.id,qty:moved};
   inventorySelectedSlot=empty;syncDerivedInventory();markSaveDirty();renderHotbar();renderInventoryUI();
