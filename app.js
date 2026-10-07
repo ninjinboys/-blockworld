@@ -1438,24 +1438,12 @@ function renderHealth(){
   heartsEl.innerHTML='';
   for(let i=0;i<10;i++){
     const remaining=health-i*2;
-    const wrap=document.createElement('span');wrap.className='heart-wrap';
-
-    const empty=document.createElement('span');
-    empty.className='heart-empty';empty.textContent='♥';
-    wrap.appendChild(empty);
-
-    if(remaining>=1){
-      const left=document.createElement('span');
-      left.className='heart-half heart-left';left.textContent='♥';
-      wrap.appendChild(left);
-    }
-    if(remaining>=2){
-      const right=document.createElement('span');
-      right.className='heart-half heart-right';right.textContent='♥';
-      wrap.appendChild(right);
-    }
-
-    heartsEl.appendChild(wrap);
+    const img=document.createElement('img');
+    img.className='heart-img';
+    img.alt='';
+    img.draggable=false;
+    img.src=remaining>=2?'assets/heart-full.svg':remaining===1?'assets/heart-half.svg':'assets/heart-empty.svg';
+    heartsEl.appendChild(img);
   }
   heartsEl.parentElement?.setAttribute('aria-label','体力 '+(health/2)+' / 10');
 }
