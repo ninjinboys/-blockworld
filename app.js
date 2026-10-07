@@ -1121,6 +1121,71 @@ const rain=new THREE.Points(rainG,new THREE.PointsMaterial({color:0xb8d7f0,size:
 rain.visible=false;scene.add(rain);
 
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
+const worldDrops=[],dropTextures=new Map();
+function dropTexture(id){
+  if(dropTextures.has(id))return dropTextures.get(id);
+  const canvas=itemCanvas(id,'item-icon'),tex=new THREE.CanvasTexture(canvas);
+  tex.magFilter=THREE.NearestFilter;tex.minFilter=THREE.NearestFilter;tex.colorSpace=THREE.SRGBColorSpace;
+  dropTextures.set(id,tex);return tex;
+}
+function makeDropSprite(id){
+  const mat=new THREE.SpriteMaterial({map:dropTexture(id),transparent:true,depthTest:true});
+  const sp=new THREE.Sprite(mat);sp.scale.set(.58,.58,.58);sp.renderOrder=2;return sp;
+}
+function spawnWorldDrop(id,qty,x,y,z,opts={}){
+  qty=Math.max(1,Math.floor(qty||1));
+  const sprite=makeDropSprite(id);
+  const d={id,qty,x,y,z,vx:Number(opts.vx)||0,vy:Number(opts.vy)||0,vz:Number(opts.vz)||0,age:Number(opts.age)||0,pickupDelay:Number(opts.pickupDelay)??.45,sprite,phase:Math.random()*Math.PI*2};
+  if(opts.scatter){d.vx+=(Math.random()-.5)*1.4;d.vz+=(Math.random()-.5)*1.4;d.vy+=1.7+Math.random()*.7}
+  sprite.position.set(x,y,z);scene.add(sprite);worldDrops.push(d);markSaveDirty();return d;
+}
+function removeWorldDrop(d){
+  scene.remove(d.sprite);d.sprite.material.dispose();
+  const i=worldDrops.indexOf(d);if(i>=0)worldDrops.splice(i,1);
+}
+function clearWorldDrops(){
+  for(const d of worldDrops){scene.remove(d.sprite);d.sprite.material.dispose()}
+  worldDrops.length=0;
+}
+function serializeWorldDrops(){
+  return worldDrops.filter(d=>d.age<300).map(d=>({id:d.id,qty:d.qty,x:d.x,y:d.y,z:d.z,age:d.age}));
+}
+function restoreWorldDrops(raw){
+  if(!Array.isArray(raw))return;
+  for(const d of raw){
+    if(!d||!Number.isFinite(Number(d.id))||!(Number(d.qty)>0))continue;
+    spawnWorldDrop(Number(d.id),Number(d.qty),Number(d.x)||0,Number(d.y)||1,Number(d.z)||0,{age:Number(d.age)||0,pickupDelay:.25});
+  }
+}
+function updateWorldDrops(dt,now){
+  for(let i=worldDrops.length-1;i>=0;i--){
+    const d=worldDrops[i];d.age+=dt;
+    if(d.age>300){removeWorldDrop(d);continue}
+    d.vy-=11*dt;
+    d.x+=d.vx*dt;d.z+=d.vz*dt;d.y+=d.vy*dt;
+    d.vx*=Math.pow(.86,dt*60);d.vz*=Math.pow(.86,dt*60);
+
+    const bx=Math.floor(d.x+.5),bz=Math.floor(d.z+.5),foot=d.y-.24;
+    const by=Math.floor(foot+.5);
+    if(d.vy<=0&&solid(get(bx,by,bz))&&foot<=by+.5){
+      d.y=by+.74;d.vy=0;d.vx*=.55;d.vz*=.55;
+    }
+    d.sprite.position.set(d.x,d.y+Math.sin(now*.004+d.phase)*.06,d.z);
+    d.sprite.material.rotation=Math.sin(now*.0015+d.phase)*.22;
+
+    if(d.age>d.pickupDelay){
+      const dist=Math.hypot(player.pos.x-d.x,player.pos.y+.8-d.y,player.pos.z-d.z);
+      if(dist<1.45){
+        const left=addItem(d.id,d.qty),picked=d.qty-left;
+        if(picked>0){
+          d.qty=left;
+          if(left<=0){flash((names[d.id]||'アイテム')+'を拾った');removeWorldDrop(d);continue}
+        }
+      }
+    }
+  }
+}
+
 function blocked(px,py,pz){
   const e=1e-4;
   const minX=Math.ceil((px-PR)-0.5+e),maxX=Math.floor((px+PR)+0.5-e);
@@ -1411,8 +1476,10 @@ function finishMine(x,y,z,id){
   if(id===B.IRON)drop=I.RAW_IRON;
   if(id===B.GOLD)drop=I.RAW_GOLD;
   if(id===B.DIAMOND)drop=I.DIAMOND;
-  if(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE)addItem(drop,1);
-  rebuild();renderHotbar();gainXP(blockXP[id]||1,names[id]||'採掘');
+  if(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE){
+    spawnWorldDrop(drop,1,x,y+.75,z,{scatter:true,pickupDelay:.45});
+  }
+  rebuild();gainXP(blockXP[id]||1,names[id]||'採掘');
 }
 function clearMining(){
   miningKey=null;miningElapsed=0;miningId=null;
@@ -1427,7 +1494,7 @@ function startMining(){
   breakFill.style.width='0%';breakMeter.classList.add('active');
 }
 function updateMining(dt){
-  if(!miningHeld||craftOpen){clearMining();return}
+  if(!miningHeld||craftOpen||inventoryOpen){clearMining();return}
   const h=target();if(!h){clearMining();return}
   const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p){clearMining();return}
   const id=get(p.x,p.y,p.z),key=`${p.x},${p.y},${p.z}`;
@@ -1449,7 +1516,7 @@ function place(){const h=target();if(!h||!h.face)return;if(selected==null||(inve
   if(blockId==null){flash((names[selected]||'このアイテム')+'は設置できません');return}
   const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
   set(x,y,z,blockId);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}
-  const placedName=names[selected]||names[blockId]||'ブロック';removeItem(selected,1);rebuild();renderHotbar();flash(placedName+'を設置')
+  const placedName=names[selected]||names[blockId]||'ブロック';consumeSelected(1);rebuild();renderHotbar();flash(placedName+'を設置')
 }
 function attackMob(){
   ray.setFromCamera(new THREE.Vector2(0,0),camera);
