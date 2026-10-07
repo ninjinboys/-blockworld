@@ -1941,6 +1941,7 @@ function setCraftOpen(v){
 const keys={};
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
+  if(dead)return;
   if(k==='e'&&started){e.preventDefault();setInventoryOpen(!inventoryOpen);return}
   if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}
   if(craftOpen||inventoryOpen)return;
@@ -1966,14 +1967,14 @@ function jump(){
   if(player.onGround){player.vel.y=7.3;player.onGround=false}
 }
 
-renderer.domElement.addEventListener('click',()=>{if(!craftOpen&&!inventoryOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
+renderer.domElement.addEventListener('click',()=>{if(!dead&&!craftOpen&&!inventoryOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
-renderer.domElement.addEventListener('mousedown',e=>{if(!started||craftOpen||inventoryOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
+renderer.domElement.addEventListener('mousedown',e=>{if(!started||dead||craftOpen||inventoryOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
 addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop()});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 let touchLook=null;
-renderer.domElement.addEventListener('pointerdown',e=>{if(craftOpen||inventoryOpen)return;if(e.pointerType==='touch'&&e.clientX>innerWidth*.35)touchLook={x:e.clientX,y:e.clientY}});
+renderer.domElement.addEventListener('pointerdown',e=>{if(dead||craftOpen||inventoryOpen)return;if(e.pointerType==='touch'&&e.clientX>innerWidth*.35)touchLook={x:e.clientX,y:e.clientY}});
 renderer.domElement.addEventListener('pointermove',e=>{if(touchLook&&e.pointerType==='touch'){const dx=e.clientX-touchLook.x,dy=e.clientY-touchLook.y;player.yaw-=dx*.006;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch-dy*.006));touchLook={x:e.clientX,y:e.clientY}}});
 renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 
@@ -2005,8 +2006,8 @@ function advanceDayTime(dt){
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
-  if(started){updateWorldDrops(dt,now);updatePassiveSpawning(dt)}
-  if(started&&!craftOpen&&!inventoryOpen){
+  if(started&&!dead){updateWorldDrops(dt,now);updatePassiveSpawning(dt)}
+  if(started&&!dead&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
     advanceDayTime(dt);
     const inWater=playerInWater();
@@ -2027,10 +2028,26 @@ function loop(now){
     }
     movePlayerAxis('x',player.vel.x*dt);
     movePlayerAxis('z',player.vel.z*dt);
-    const vy=player.vel.y;
+    const preVerticalY=player.pos.y,wasGrounded=player.onGround,vy=player.vel.y;
+    if(!wasGrounded||vy>0.05){
+      if(fallPeakY==null)fallPeakY=preVerticalY;
+      fallPeakY=Math.max(fallPeakY,preVerticalY);
+    }
     player.onGround=false;
     movePlayerAxis('y',vy*dt);
-    if(player.pos.y<-5)spawn();
+
+    const nowInWater=playerInWater();
+    if(nowInWater){
+      fallPeakY=null;
+    }else if(player.onGround){
+      if(fallPeakY!=null&&vy<0)applyFallDamage(fallPeakY-player.pos.y);
+      fallPeakY=null;
+    }else{
+      if(fallPeakY==null)fallPeakY=preVerticalY;
+      fallPeakY=Math.max(fallPeakY,player.pos.y);
+    }
+
+    if(player.pos.y<-5&&!dead){health=0;showDeathScreen()}
     streamChunks();
     camera.position.set(player.pos.x,player.pos.y+EYE,player.pos.z);camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
 
@@ -2102,9 +2119,12 @@ logoutBtn.addEventListener('click',()=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCurrentGame(false)});
 addEventListener('pagehide',()=>saveCurrentGame(false));
 
+respawnBtn.addEventListener('click',()=>respawnPlayer());
+
 $('startBtn').addEventListener('click',()=>{
   if(!worldReady||!currentAccount)return;
-  started=true;cover.style.display='none';last=performance.now();
+  started=true;cover.style.display='none';last=performance.now();renderHealth();
+  if(dead){showDeathScreen();return}
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
 });
 if(!restoreSession())authName.focus();
