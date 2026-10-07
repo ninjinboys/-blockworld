@@ -1317,11 +1317,7 @@ function syncDerivedInventory(){
   }
   for(let i=0;i<9;i++)hotbarSlots[i]=inventorySlots[i]?.id??null;
   if(selectedHotbarIndex<0||selectedHotbarIndex>8)selectedHotbarIndex=0;
-  let st=inventorySlots[selectedHotbarIndex];
-  if(!st){
-    const first=inventorySlots.findIndex((v,i)=>i<9&&v);
-    if(first>=0){selectedHotbarIndex=first;st=inventorySlots[first]}
-  }
+  const st=inventorySlots[selectedHotbarIndex];
   selected=st?.id??null;
 }
 function migrateLegacyInventoryToSlots(data){
