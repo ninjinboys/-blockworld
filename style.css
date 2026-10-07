@@ -367,3 +367,41 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 
 .inv-slot.move-target{box-shadow:inset 2px 2px 0 #d7d7d7,inset -2px -2px 0 #666,0 0 0 1px rgba(255,245,150,.22)}
 .inv-slot.move-target:active{outline:2px solid rgba(255,245,150,.85)}
+
+/* Player health + death */
+#healthHud{
+  position:absolute;left:50%;bottom:84px;transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:center;
+  padding:4px 7px;background:rgba(0,0,0,.34);border-radius:6px
+}
+#hearts{display:flex;gap:2px;line-height:1}
+.heart{
+  display:inline-block;font-size:22px;font-family:Arial,sans-serif;
+  color:#3a3a3a;text-shadow:0 1px 0 #000,-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000
+}
+.heart.full{color:#e53935}
+.heart.half{
+  color:transparent;
+  background:linear-gradient(90deg,#e53935 0 50%,#3a3a3a 50% 100%);
+  -webkit-background-clip:text;background-clip:text
+}
+#deathScreen{
+  position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+  background:rgba(74,0,0,.58);backdrop-filter:blur(2px);pointer-events:auto
+}
+#deathScreen.open{display:flex}
+.death-panel{text-align:center;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.55);padding:28px}
+.death-title{font:900 clamp(44px,10vw,82px)/1 monospace;margin-bottom:16px}
+.death-sub{font:700 13px monospace;margin-bottom:20px}
+#respawnBtn{
+  min-width:220px;padding:14px 24px;border:3px solid #fff;background:#6d6d6d;color:#fff;
+  font:900 16px monospace;box-shadow:inset 3px 3px 0 #a9a9a9,inset -3px -3px 0 #3d3d3d;
+  cursor:pointer
+}
+#respawnBtn:active{transform:translateY(1px)}
+@media(max-width:760px),(pointer:coarse){
+  #healthHud{bottom:72px}
+  .heart{font-size:19px}
+  #hearts{gap:1px}
+  #respawnBtn{min-width:190px;min-height:48px}
+}
