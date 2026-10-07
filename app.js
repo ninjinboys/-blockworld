@@ -280,7 +280,7 @@ let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=
 const chunks=new Map(),editChunks=new Map();
 let streamCX=NaN,streamCZ=NaN;
 let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=5;
-const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
+const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SESSION_KEY='blockworld_session_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
 const inside=(x,y,z)=>y>=0&&y<HEIGHT;
 const chunkCoord=v=>Math.floor(v/CHUNK);
@@ -300,6 +300,31 @@ function loadAccountRegistry(){
   catch{return {version:1,accounts:{}}}
 }
 function saveAccountRegistry(reg){localStorage.setItem(ACCOUNT_REGISTRY_KEY,JSON.stringify(reg))}
+function rememberSession(key){
+  try{localStorage.setItem(SESSION_KEY,JSON.stringify({key,rememberedAt:Date.now()}))}catch{}
+}
+function clearSession(){
+  try{localStorage.removeItem(SESSION_KEY)}catch{}
+}
+function restoreSession(){
+  try{
+    const raw=localStorage.getItem(SESSION_KEY);
+    if(!raw)return false;
+    const saved=JSON.parse(raw),reg=loadAccountRegistry(),acc=reg.accounts?.[saved?.key];
+    if(!acc){clearSession();return false}
+    currentAccount={key:saved.key,name:acc.name||saved.key};
+    setSaveStatus('ワールド未選択');
+    authCover.style.display='none';
+    cover.style.display='none';
+    accountBox.style.display='none';
+    worldCover.style.display='flex';
+    renderWorldSelection();
+    return true;
+  }catch{
+    clearSession();
+    return false;
+  }
+}
 function bytesToB64(bytes){let t='';for(const b of bytes)t+=String.fromCharCode(b);return btoa(t)}
 function b64ToBytes(t){const raw=atob(t),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out}
 async function passwordHash(password,salt){
@@ -479,13 +504,13 @@ async function submitAuth(e){
       if(reg.accounts[key]){authError.textContent='その名前はすでに使われています';return}
       const salt=crypto.getRandomValues(new Uint8Array(16)),hash=await passwordHash(password,salt);
       reg.accounts[key]={name,salt:bytesToB64(salt),hash,createdAt:Date.now()};saveAccountRegistry(reg);
-      currentAccount={key,name};setSaveStatus('ワールド未選択');
+      currentAccount={key,name};rememberSession(key);setSaveStatus('ワールド未選択');
     }else{
       const acc=reg.accounts[key];
       if(!acc){authError.textContent='そのアカウントはありません';return}
       const hash=await passwordHash(password,b64ToBytes(acc.salt));
       if(!safeEqual(hash,acc.hash)){authError.textContent='パスワードが違います';return}
-      currentAccount={key,name:acc.name||name};setSaveStatus('ワールド未選択');
+      currentAccount={key,name:acc.name||name};rememberSession(key);setSaveStatus('ワールド未選択');
     }
     authPassword.value='';authCover.style.display='none';cover.style.display='none';accountBox.style.display='none';
     worldCover.style.display='flex';renderWorldSelection();
@@ -1496,11 +1521,11 @@ worldListBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
   showWorldSelection();
 });
-worldLogout.addEventListener('click',()=>{location.reload()});
+worldLogout.addEventListener('click',()=>{clearSession();location.reload()});
 logoutBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
   if(confirm('セーブしてログアウトしますか？')){
-    saveCurrentGame(false);clearInterval(saveInterval);location.reload();
+    saveCurrentGame(false);clearInterval(saveInterval);clearSession();location.reload();
   }
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCurrentGame(false)});
@@ -1511,5 +1536,5 @@ $('startBtn').addEventListener('click',()=>{
   started=true;cover.style.display='none';last=performance.now();
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
 });
-authName.focus();
+if(!restoreSession())authName.focus();
 requestAnimationFrame(loop);
