@@ -80,6 +80,142 @@ const itemGlyphs={
   [I.GOLD_HELMET]:'金頭',[I.GOLD_CHEST]:'金胴',[I.GOLD_LEGS]:'金脚',[I.GOLD_BOOTS]:'金靴',
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴'
 };
+
+const ICON_MAT={
+  wood:{main:'#9a6335',light:'#c58a50',dark:'#624021'},
+  stone:{main:'#8b9096',light:'#b8bdc2',dark:'#555b60'},
+  iron:{main:'#c8d0d7',light:'#f0f4f6',dark:'#7b858d'},
+  gold:{main:'#e0b52e',light:'#ffe16a',dark:'#9d7613'},
+  diamond:{main:'#43d7df',light:'#9affff',dark:'#168891'}
+};
+function itemCanvas(id,cls='item-icon'){
+  const c=document.createElement('canvas');
+  c.width=16;c.height=16;c.className=cls;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  drawItemIcon(g,id);
+  return c;
+}
+function ir(g,x,y,w,h,color){g.fillStyle=color;g.fillRect(x,y,w,h)}
+function poly(g,pts,color){g.fillStyle=color;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill()}
+function pixelLine(g,x0,y0,x1,y1,color,w=1){
+  const dx=Math.abs(x1-x0),sx=x0<x1?1:-1,dy=-Math.abs(y1-y0),sy=y0<y1?1:-1;let err=dx+dy;
+  while(true){ir(g,x0,y0,w,w,color);if(x0===x1&&y0===y1)break;const e2=2*err;if(e2>=dy){err+=dy;x0+=sx}if(e2<=dx){err+=dx;y0+=sy}}
+}
+function blockIcon(g,top,front,side,kind='plain'){
+  poly(g,[[2,4],[8,1],[14,4],[8,7]],top);
+  poly(g,[[2,4],[8,7],[8,14],[2,11]],front);
+  poly(g,[[8,7],[14,4],[14,11],[8,14]],side);
+  ir(g,2,4,1,7,'rgba(255,255,255,.18)');
+  ir(g,13,5,1,6,'rgba(0,0,0,.18)');
+  if(kind==='grass'){ir(g,2,4,6,2,'#62a84f');ir(g,8,5,6,2,'#4c8f43');ir(g,4,8,2,1,'#6e482d');ir(g,10,9,2,1,'#5d3b28')}
+  if(kind==='stone'){ir(g,4,7,2,1,'#6f7478');ir(g,5,11,2,1,'#a4a8ab');ir(g,10,7,2,1,'#676c70');ir(g,11,11,1,1,'#b3b7ba')}
+  if(kind==='sand'){ir(g,5,3,1,1,'#efe1a4');ir(g,4,9,1,1,'#bfae72');ir(g,11,8,1,1,'#f2dfa0')}
+  if(kind==='log'){ir(g,5,2,6,1,'#6d4223');ir(g,6,3,4,1,'#d09758');ir(g,4,7,1,5,'#5e391f');ir(g,10,8,1,5,'#81502b')}
+  if(kind==='leaf'){ir(g,4,3,2,1,'#74a95d');ir(g,5,8,1,1,'#2f6734');ir(g,10,7,2,1,'#315f32');ir(g,11,11,1,1,'#6ea45b')}
+  if(kind==='plank'){ir(g,3,7,5,1,'#6e4828');ir(g,3,11,5,1,'#6e4828');ir(g,9,9,5,1,'#6b4426')}
+  if(kind==='cobble'){ir(g,3,7,3,2,'#60656a');ir(g,5,11,3,2,'#6b7075');ir(g,9,7,3,2,'#5b6064');ir(g,10,11,3,2,'#777c80')}
+  if(kind==='glass'){g.globalAlpha=.55;ir(g,4,5,1,5,'#eaffff');ir(g,10,6,1,4,'#eaffff');g.globalAlpha=1}
+  if(kind==='oreCoal'||kind==='oreIron'||kind==='oreGold'||kind==='oreDiamond'){
+    const col=kind==='oreCoal'?'#252729':kind==='oreIron'?'#b77e61':kind==='oreGold'?'#e7bd35':'#45d5dc';
+    ir(g,4,8,2,2,col);ir(g,6,11,1,1,col);ir(g,10,7,2,2,col);ir(g,11,11,1,2,col);
+  }
+  if(kind==='snow'){ir(g,3,5,5,1,'#ffffff');ir(g,9,5,4,1,'#dfeef5')}
+  if(kind==='gravel'){ir(g,4,8,2,2,'#8c8480');ir(g,6,11,2,1,'#5f5a58');ir(g,10,8,2,1,'#aaa29d')}
+  if(kind==='cactus'){ir(g,5,4,1,8,'#276c31');ir(g,11,5,1,7,'#235e2b')}
+  if(kind==='bedrock'){ir(g,4,8,2,2,'#222');ir(g,6,11,2,1,'#777');ir(g,10,7,2,2,'#252525')}
+  if(kind==='table'){ir(g,3,5,5,1,'#633d20');ir(g,5,2,1,4,'#e2b273');ir(g,9,3,1,3,'#5c371d');ir(g,10,8,3,1,'#e0a75d')}
+  if(kind==='furnace'){ir(g,3,7,5,2,'#3d4144');ir(g,4,10,4,3,'#202224');ir(g,10,8,3,1,'#4d5154');ir(g,10,10,3,2,'#d0732d')}
+}
+function materialForTool(id){
+  if([I.WOOD_PICK].includes(id))return ICON_MAT.wood;
+  if([I.STONE_PICK,I.STONE_SWORD,I.STONE_AXE,I.STONE_SHOVEL].includes(id))return ICON_MAT.stone;
+  if([I.IRON_PICK,I.IRON_SWORD,I.IRON_AXE,I.IRON_SHOVEL].includes(id))return ICON_MAT.iron;
+  if([I.GOLD_PICK,I.GOLD_SWORD,I.GOLD_AXE,I.GOLD_SHOVEL].includes(id))return ICON_MAT.gold;
+  return ICON_MAT.diamond;
+}
+function toolType(id){
+  if([I.WOOD_PICK,I.STONE_PICK,I.IRON_PICK,I.GOLD_PICK,I.DIAMOND_PICK].includes(id))return 'pick';
+  if([I.STONE_SWORD,I.IRON_SWORD,I.GOLD_SWORD,I.DIAMOND_SWORD].includes(id))return 'sword';
+  if([I.STONE_AXE,I.IRON_AXE,I.GOLD_AXE,I.DIAMOND_AXE].includes(id))return 'axe';
+  if([I.STONE_SHOVEL,I.IRON_SHOVEL,I.GOLD_SHOVEL,I.DIAMOND_SHOVEL].includes(id))return 'shovel';
+  return null;
+}
+function toolIcon(g,id){
+  const m=materialForTool(id),t=toolType(id),handle='#78502e',handleHi='#a77343',outline='#242424';
+  if(t==='pick'){
+    pixelLine(g,5,4,12,4,outline,2);pixelLine(g,4,5,12,5,m.dark,1);
+    ir(g,4,3,7,1,m.light);ir(g,3,4,9,1,m.main);ir(g,11,5,2,1,m.dark);
+    pixelLine(g,8,6,4,13,outline,3);pixelLine(g,8,6,4,13,handle,2);pixelLine(g,8,6,5,11,handleHi,1);
+  }else if(t==='sword'){
+    pixelLine(g,10,2,5,10,outline,3);pixelLine(g,10,2,5,10,m.main,2);pixelLine(g,9,3,6,8,m.light,1);
+    ir(g,3,9,6,2,outline);ir(g,4,9,4,1,m.dark);pixelLine(g,5,11,3,14,outline,3);pixelLine(g,5,11,3,14,handle,2);
+  }else if(t==='axe'){
+    pixelLine(g,8,6,4,14,outline,3);pixelLine(g,8,6,4,14,handle,2);pixelLine(g,8,6,5,12,handleHi,1);
+    poly(g,[[6,3],[11,2],[13,4],[11,8],[7,7]],outline);poly(g,[[7,4],[11,3],[12,4],[10,7],[7,6]],m.main);ir(g,8,4,3,1,m.light);
+  }else if(t==='shovel'){
+    pixelLine(g,8,6,4,14,outline,3);pixelLine(g,8,6,4,14,handle,2);pixelLine(g,8,6,5,12,handleHi,1);
+    poly(g,[[7,2],[11,3],[11,6],[8,8],[5,6],[5,4]],outline);poly(g,[[7,3],[10,4],[10,6],[8,7],[6,6],[6,4]],m.main);ir(g,7,3,2,1,m.light);
+  }
+}
+function armorIcon(g,id){
+  const iron=[I.IRON_HELMET,I.IRON_CHEST,I.IRON_LEGS,I.IRON_BOOTS],gold=[I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS];
+  const m=iron.includes(id)?ICON_MAT.iron:gold.includes(id)?ICON_MAT.gold:ICON_MAT.diamond;
+  const group=iron.includes(id)?iron:gold.includes(id)?gold:[I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS];
+  const idx=group.indexOf(id),o='#2b2b2b';
+  if(idx===0){ir(g,4,3,8,2,o);ir(g,3,5,10,6,o);ir(g,4,4,8,2,m.light);ir(g,4,6,8,4,m.main);ir(g,5,9,2,2,m.dark);ir(g,9,9,2,2,m.dark)}
+  if(idx===1){poly(g,[[5,2],[11,2],[14,5],[12,8],[11,14],[5,14],[4,8],[2,5]],o);poly(g,[[6,3],[10,3],[12,5],[10,7],[10,13],[6,13],[6,7],[4,5]],m.main);ir(g,6,3,4,1,m.light);ir(g,6,8,4,1,m.dark)}
+  if(idx===2){ir(g,4,3,8,4,o);ir(g,4,6,4,8,o);ir(g,8,6,4,8,o);ir(g,5,4,6,2,m.light);ir(g,5,6,3,7,m.main);ir(g,9,6,2,7,m.main);ir(g,6,10,1,3,m.dark);ir(g,10,10,1,3,m.dark)}
+  if(idx===3){ir(g,3,7,5,7,o);ir(g,9,7,4,7,o);ir(g,4,8,3,4,m.main);ir(g,10,8,2,4,m.main);ir(g,3,12,5,1,m.light);ir(g,9,12,4,1,m.light)}
+}
+function rawChunkIcon(g,main,bright,dark){
+  poly(g,[[3,6],[6,3],[11,4],[14,8],[11,13],[5,12],[2,9]],'#2d2d2d');
+  poly(g,[[4,6],[6,4],[10,5],[13,8],[10,12],[5,11],[3,9]],main);
+  ir(g,6,5,2,2,bright);ir(g,10,8,2,2,dark);ir(g,5,9,2,1,bright);
+}
+function ingotIcon(g,m){
+  poly(g,[[4,5],[11,5],[14,8],[12,12],[4,12],[2,9]],'#2d2d2d');
+  poly(g,[[5,6],[10,6],[12,8],[11,10],[5,10],[4,9]],m.main);
+  ir(g,5,6,5,1,m.light);ir(g,5,10,6,1,m.dark);
+}
+function gemIcon(g,m){
+  poly(g,[[8,2],[13,5],[12,10],[8,14],[4,10],[3,5]],'#1d4548');
+  poly(g,[[8,3],[12,5],[11,9],[8,13],[5,9],[4,5]],m.main);
+  poly(g,[[5,5],[8,3],[8,12],[5,9]],m.light);
+  ir(g,10,6,1,3,m.dark);
+}
+function stickIcon(g){pixelLine(g,11,3,4,13,'#332417',3);pixelLine(g,11,3,4,13,'#8b5b32',2);pixelLine(g,10,4,5,11,'#c08a52',1)}
+function drawItemIcon(g,id){
+  g.clearRect(0,0,16,16);
+  if(id===B.GRASS)return blockIcon(g,'#78b85c','#785032','#5f4028','grass');
+  if(id===B.DIRT)return blockIcon(g,'#98643c','#7c4e31','#684029','plain');
+  if(id===B.STONE)return blockIcon(g,'#a3a7aa','#888d91','#6f7478','stone');
+  if(id===B.SAND)return blockIcon(g,'#eadb99','#d2c183','#b8a96f','sand');
+  if(id===B.WATER)return blockIcon(g,'#65b4df','#3687c4','#2b69a1','glass');
+  if(id===B.LOG)return blockIcon(g,'#b88149','#87552e','#674123','log');
+  if(id===B.LEAF)return blockIcon(g,'#639a4d','#447c3e','#315f31','leaf');
+  if(id===B.COAL)return blockIcon(g,'#92979b','#777c80','#62676b','oreCoal');
+  if(id===B.IRON)return blockIcon(g,'#92979b','#777c80','#62676b','oreIron');
+  if(id===B.GOLD)return blockIcon(g,'#92979b','#777c80','#62676b','oreGold');
+  if(id===B.DIAMOND)return blockIcon(g,'#92979b','#777c80','#62676b','oreDiamond');
+  if(id===B.SNOW)return blockIcon(g,'#ffffff','#e6f0f5','#cddce4','snow');
+  if(id===B.GRAVEL)return blockIcon(g,'#99918c','#7b7572','#625e5b','gravel');
+  if(id===B.CACTUS)return blockIcon(g,'#4c9b50','#377d3e','#286030','cactus');
+  if(id===B.PLANK)return blockIcon(g,'#c58b50','#a86f3d','#89562f','plank');
+  if(id===B.COBBLE)return blockIcon(g,'#858a8e','#6f7478','#595e62','cobble');
+  if(id===B.GLASS)return blockIcon(g,'#d9f7fb','#9ddce6','#72b9c8','glass');
+  if(id===B.BEDROCK)return blockIcon(g,'#6e7174','#505356','#37393b','bedrock');
+  if(id===B.CRAFTING_TABLE||id===I.CRAFTING_TABLE)return blockIcon(g,'#d7a05e','#9d6234','#774523','table');
+  if(id===B.FURNACE||id===I.FURNACE)return blockIcon(g,'#a0a5a8','#777c7f','#5b6063','furnace');
+  if(id===I.STICK)return stickIcon(g);
+  if(id===I.RAW_IRON)return rawChunkIcon(g,'#8e7569','#c79a81','#624f47');
+  if(id===I.RAW_GOLD)return rawChunkIcon(g,'#a88d32','#f0ca45','#6d5a21');
+  if(id===I.IRON_INGOT)return ingotIcon(g,ICON_MAT.iron);
+  if(id===I.GOLD_INGOT)return ingotIcon(g,ICON_MAT.gold);
+  if(id===I.DIAMOND)return gemIcon(g,ICON_MAT.diamond);
+  if(toolType(id))return toolIcon(g,id);
+  if(id>=I.IRON_HELMET&&id<=I.DIAMOND_BOOTS)return armorIcon(g,id);
+  ir(g,3,3,10,10,'#777');ir(g,5,5,6,6,'#aaa');
+}
 const recipes=[
   {name:'木材 ×4',out:B.PLANK,qty:4,needs:[[B.LOG,1]],unlockLevel:2},
   {name:'棒 ×4',out:I.STICK,qty:4,needs:[[B.PLANK,2]],unlockLevel:3},
