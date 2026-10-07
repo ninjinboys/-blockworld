@@ -452,7 +452,7 @@ function resetWorldRuntime(){
   mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
   clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
-  health=MAX_HEALTH;dead=false;fallPeakY=null;initialSpawn=null;
+  health=MAX_HEALTH;dead=false;fallDistance=0;initialSpawn=null;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
 }
 function freshSeed(){
@@ -466,7 +466,7 @@ async function initializeAccountWorld(save,slot){
   if(save)hasSavedPos=applySaveData(save);
   else{
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
-    health=MAX_HEALTH;dead=false;fallPeakY=null;initialSpawn=null;
+    health=MAX_HEALTH;dead=false;fallDistance=0;initialSpawn=null;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
     editChunks.clear();clearWorldDrops();
   }
@@ -1306,7 +1306,7 @@ rain.visible=false;scene.add(rain);
 
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
 const MAX_HEALTH=20;
-let health=MAX_HEALTH,dead=false,fallPeakY=null,initialSpawn=null;
+let health=MAX_HEALTH,dead=false,fallDistance=0,initialSpawn=null;
 const worldDrops=[],dropTextures=new Map();
 function dropTexture(id){
   if(dropTextures.has(id))return dropTextures.get(id);
@@ -1427,7 +1427,7 @@ function ensureInitialSpawn(){
 function spawn(){
   const p=ensureInitialSpawn();
   player.pos.set(p.x,p.y,p.z);
-  player.vel.set(0,0,0);player.onGround=false;fallPeakY=null;
+  player.vel.set(0,0,0);player.onGround=false;fallDistance=0;
   for(let i=0;i<16&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
 }
 
@@ -1437,11 +1437,12 @@ function flash(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(flash.t
 function renderHealth(){
   heartsEl.innerHTML='';
   for(let i=0;i<10;i++){
-    const h=document.createElement('span');
     const remaining=health-i*2;
-    h.className='heart '+(remaining>=2?'full':remaining===1?'half':'empty');
-    h.textContent='♥';
-    heartsEl.appendChild(h);
+    const wrap=document.createElement('span');wrap.className='heart-wrap';
+    const empty=document.createElement('span');empty.className='heart-empty';empty.textContent='♥';
+    const fill=document.createElement('span');fill.className='heart-fill';fill.textContent='♥';
+    fill.style.width=remaining>=2?'100%':remaining===1?'50%':'0%';
+    wrap.appendChild(empty);wrap.appendChild(fill);heartsEl.appendChild(wrap);
   }
   heartsEl.parentElement?.setAttribute('aria-label','体力 '+(health/2)+' / 10');
 }
@@ -1462,12 +1463,12 @@ function damagePlayer(points,source='ダメージ'){
   flash(source+' -'+heartsLost.toFixed(heartsLost%1?1:0)+'♥');
 }
 function applyFallDamage(distance){
-  const blocks=Math.floor(Math.max(0,distance)+.15);
+  const blocks=Math.round(Math.max(0,distance));
   if(blocks<=3)return;
   damagePlayer(blocks-3,'落下ダメージ');
 }
 function respawnPlayer(){
-  health=MAX_HEALTH;dead=false;fallPeakY=null;
+  health=MAX_HEALTH;dead=false;fallDistance=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
   spawn();streamChunks(true);
   player.yaw=0;player.pitch=0;renderHealth();markSaveDirty();saveCurrentGame(false);
@@ -2028,23 +2029,23 @@ function loop(now){
     }
     movePlayerAxis('x',player.vel.x*dt);
     movePlayerAxis('z',player.vel.z*dt);
-    const preVerticalY=player.pos.y,wasGrounded=player.onGround,vy=player.vel.y;
-    if(!wasGrounded||vy>0.05){
-      if(fallPeakY==null)fallPeakY=preVerticalY;
-      fallPeakY=Math.max(fallPeakY,preVerticalY);
-    }
+    const preVerticalY=player.pos.y,vy=player.vel.y;
     player.onGround=false;
     movePlayerAxis('y',vy*dt);
-
+    const dropped=Math.max(0,preVerticalY-player.pos.y);
     const nowInWater=playerInWater();
+
     if(nowInWater){
-      fallPeakY=null;
-    }else if(player.onGround){
-      if(fallPeakY!=null&&vy<0)applyFallDamage(fallPeakY-player.pos.y);
-      fallPeakY=null;
-    }else{
-      if(fallPeakY==null)fallPeakY=preVerticalY;
-      fallPeakY=Math.max(fallPeakY,player.pos.y);
+      fallDistance=0;
+    }else if(vy<0){
+      fallDistance+=dropped;
+      if(player.onGround){
+        applyFallDamage(fallDistance);
+        fallDistance=0;
+      }
+    }else if(vy>0){
+      // Rising does not count toward fall damage.
+      fallDistance=0;
     }
 
     if(player.pos.y<-5&&!dead){health=0;showDeathScreen()}
