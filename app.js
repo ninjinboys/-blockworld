@@ -1771,16 +1771,22 @@ function setInventoryOpen(v){
 
 function finishMine(x,y,z,id){
   if(get(x,y,z)!==id)return;
+
+  const bedFoot=isBedBlock(id)?canonicalBedFoot(x,y,z):null;
+  const bedOther=isBedBlock(id)?findBedOtherHalf(x,y,z,id):null;
+  const brokeRespawnBed=!!(bedFoot&&bedSpawn&&bedSpawn.x===bedFoot.x&&bedSpawn.y===bedFoot.y&&bedSpawn.z===bedFoot.z);
+
   set(x,y,z,B.AIR);
+  if(bedOther)set(bedOther.x,bedOther.y,bedOther.z,B.AIR);
+  if(brokeRespawnBed)bedSpawn=null;
+
   let drop=specialBlockDrops[id]??id;
   if(id===B.STONE)drop=B.COBBLE;
   if(id===B.GRASS)drop=B.DIRT;
   if(id===B.IRON)drop=I.RAW_IRON;
   if(id===B.GOLD)drop=I.RAW_GOLD;
   if(id===B.DIAMOND)drop=I.DIAMOND;
-
-  const brokeRespawnBed=id===B.BED&&bedSpawn&&bedSpawn.x===x&&bedSpawn.y===y&&bedSpawn.z===z;
-  if(brokeRespawnBed)bedSpawn=null;
+  if(isBedBlock(id))drop=I.BED;
 
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
@@ -1790,6 +1796,7 @@ function finishMine(x,y,z,id){
   rebuild();gainXP(blockXP[id]||1,names[id]||'採掘');
   if(brokeRespawnBed)flash('ベッドが壊れたため初期スポーンに戻りました');
 }
+
 function clearMining(){
   miningKey=null;miningElapsed=0;miningId=null;
   breakFill.style.width='0%';breakMeter.classList.remove('active');
@@ -1825,20 +1832,46 @@ function place(){
   const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;
   const targetId=get(p.x,p.y,p.z);
 
-  if(targetId===B.BED&&h.distance<=5){
-    bedSpawn={x:p.x,y:p.y,z:p.z};
+  if(isBedBlock(targetId)&&h.distance<=5){
+    const foot=canonicalBedFoot(p.x,p.y,p.z);
+    if(!foot||!findBedOtherHalf(foot.x,foot.y,foot.z,B.BED)){
+      flash('ベッドが壊れています');
+      return;
+    }
+    bedSpawn={x:foot.x,y:foot.y,z:foot.z};
     markSaveDirty();saveCurrentGame(false);
     flash('リスポーン地点をベッドに設定しました');
     return;
   }
 
   if(selected==null||(inventory[selected]||0)<=0){flash('置けるブロックを持っていません');return}
+
+  const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);
+  if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
+
+  if(selected===I.BED){
+    const dir=bedDirectionFromYaw(),x2=x+dir.dx,z2=z+dir.dz;
+    if(!inside(x2,y,z2)||get(x2,y,z2)!==B.AIR){
+      flash('ベッドを置くには縦2マスの空きが必要です');
+      return;
+    }
+    set(x,y,z,B.BED);
+    set(x2,y,z2,B.BED_HEAD);
+    if(blocked(player.pos.x,player.pos.y,player.pos.z)){
+      set(x,y,z,B.AIR);set(x2,y,z2,B.AIR);rebuild();
+      return;
+    }
+    consumeSelected(1);rebuild();renderHotbar();flash('ベッドを設置');
+    return;
+  }
+
   const blockId=buildable.includes(selected)?selected:placeableItemToBlock[selected];
   if(blockId==null){flash((names[selected]||'このアイテム')+'は設置できません');return}
-  const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
-  set(x,y,z,blockId);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}
+  set(x,y,z,blockId);
+  if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}
   const placedName=names[selected]||names[blockId]||'ブロック';consumeSelected(1);rebuild();renderHotbar();flash(placedName+'を設置')
 }
+
 function prepareMobHitMaterials(root){
   root.traverse(o=>{
     if(!o.isMesh||!o.material)return;
