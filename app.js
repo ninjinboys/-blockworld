@@ -2,6 +2,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 
 const $=id=>document.getElementById(id);
 const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill');
+const authCover=$('authCover'),authForm=$('authForm'),authName=$('authName'),authPassword=$('authPassword'),authSubmit=$('authSubmit'),authError=$('authError'),authModeText=$('authModeText'),showLogin=$('showLogin'),showCreate=$('showCreate'),accountNameEl=$('accountName'),saveStatusEl=$('saveStatus'),saveNowBtn=$('saveNow'),logoutBtn=$('logoutBtn');
 
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -277,6 +278,8 @@ const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURN
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
 let streamCX=NaN,streamCZ=NaN;
+let currentAccount=null,worldReady=false,saveInterval=null,saveDirty=false;
+const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SAVE_PREFIX='blockworld_save_v2:';
 
 const inside=(x,y,z)=>y>=0&&y<HEIGHT;
 const chunkCoord=v=>Math.floor(v/CHUNK);
@@ -284,6 +287,175 @@ const localCoord=v=>((v%CHUNK)+CHUNK)%CHUNK;
 const chunkKey=(cx,cz)=>cx+','+cz;
 const cIndex=(lx,y,lz)=>(y*CHUNK+lz)*CHUNK+lx;
 const solid=id=>id!==B.AIR&&id!==B.WATER;
+
+
+function accountKey(name){return name.normalize('NFKC').trim().toLocaleLowerCase('ja-JP')}
+function validAccountName(name){
+  const n=name.normalize('NFKC').trim();
+  return n.length>=2&&n.length<=20&&!/[\u0000-\u001f<>:"/\\|?*]/.test(n);
+}
+function loadAccountRegistry(){
+  try{return JSON.parse(localStorage.getItem(ACCOUNT_REGISTRY_KEY)||'{"version":1,"accounts":{}}')}
+  catch{return {version:1,accounts:{}}}
+}
+function saveAccountRegistry(reg){localStorage.setItem(ACCOUNT_REGISTRY_KEY,JSON.stringify(reg))}
+function bytesToB64(bytes){let s='';for(const b of bytes)s+=String.fromCharCode(b);return btoa(s)}
+function b64ToBytes(s){const raw=atob(s),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out}
+async function passwordHash(password,salt){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:120000,hash:'SHA-256'},base,256);
+  return bytesToB64(new Uint8Array(bits));
+}
+function safeEqual(a,b){
+  if(a.length!==b.length)return false;
+  let d=0;for(let i=0;i<a.length;i++)d|=a.charCodeAt(i)^b.charCodeAt(i);return d===0;
+}
+function saveKeyForAccount(key){return SAVE_PREFIX+encodeURIComponent(key)}
+function setSaveStatus(text){saveStatusEl.textContent=text}
+function markSaveDirty(){if(currentAccount){saveDirty=true;setSaveStatus('未保存')}}
+function serializeEdits(){
+  return [...editChunks.entries()].map(([k,m])=>[k,[...m.entries()]]);
+}
+function restoreEdits(raw){
+  editChunks.clear();
+  if(!Array.isArray(raw))return;
+  for(const row of raw){
+    if(!Array.isArray(row)||row.length!==2||!Array.isArray(row[1]))continue;
+    const m=new Map();
+    for(const pair of row[1]){
+      if(Array.isArray(pair)&&pair.length===2)m.set(Number(pair[0]),Number(pair[1]));
+    }
+    editChunks.set(String(row[0]),m);
+  }
+}
+function makeSaveData(){
+  return {
+    version:2,
+    savedAt:Date.now(),
+    seed:seed>>>0,
+    level,xp,weather,dayTime,
+    inventory:{...inventory},
+    acquiredOrder:[...acquiredOrder],
+    hotbarSlots:[...hotbarSlots],
+    selected,
+    player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
+    edits:serializeEdits()
+  };
+}
+function saveCurrentGame(showMessage=false){
+  if(!currentAccount||!worldReady)return false;
+  try{
+    localStorage.setItem(saveKeyForAccount(currentAccount.key),JSON.stringify(makeSaveData()));
+    saveDirty=false;
+    const d=new Date(),hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');
+    setSaveStatus('保存済 '+hh+':'+mm);
+    if(showMessage)flash('セーブしました');
+    return true;
+  }catch(e){
+    setSaveStatus('保存失敗');
+    if(showMessage)flash('セーブに失敗しました');
+    console.warn?.('save failed',e);
+    return false;
+  }
+}
+function readSaveForAccount(key){
+  try{
+    const raw=localStorage.getItem(saveKeyForAccount(key));
+    return raw?JSON.parse(raw):null;
+  }catch{return null}
+}
+function applySaveData(data){
+  if(!data||typeof data!=='object')return false;
+  if(Number.isFinite(data.seed))seed=data.seed>>>0;
+  level=Math.max(1,Number(data.level)||1);xp=Math.max(0,Number(data.xp)||0);
+  weather=data.weather==='rain'?'rain':'clear';
+  dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
+
+  for(const k of Object.keys(inventory))inventory[k]=0;
+  if(data.inventory&&typeof data.inventory==='object'){
+    for(const [k,v] of Object.entries(data.inventory))if(Object.prototype.hasOwnProperty.call(inventory,k))inventory[k]=Math.max(0,Number(v)||0);
+  }
+  acquiredOrder.length=0;
+  if(Array.isArray(data.acquiredOrder))for(const id of data.acquiredOrder){const n=Number(id);if(Object.prototype.hasOwnProperty.call(inventory,n)&&!acquiredOrder.includes(n))acquiredOrder.push(n)}
+  hotbarSlots.fill(null);
+  if(Array.isArray(data.hotbarSlots))for(let i=0;i<Math.min(9,data.hotbarSlots.length);i++){const n=data.hotbarSlots[i];hotbarSlots[i]=n==null?null:Number(n)}
+  selected=data.selected==null?null:Number(data.selected);
+  restoreEdits(data.edits);
+
+  if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
+    player.pos.set(data.player.x,data.player.y,data.player.z);
+    player.yaw=Number(data.player.yaw)||0;player.pitch=Number(data.player.pitch)||0;
+    return true;
+  }
+  return false;
+}
+function resetWorldRuntime(){
+  started=false;craftOpen=false;crafting.classList.remove('open');primaryActionStop();
+  meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
+  mobs.forEach(m=>scene.remove(m));mobs.length=0;
+  chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
+}
+async function initializeAccountWorld(save){
+  worldReady=false;cover.style.display='flex';loading.textContent='セーブデータを読み込み中...';
+  resetWorldRuntime();
+  let hasSavedPos=false;
+  if(save)hasSavedPos=applySaveData(save);
+  else{
+    seed=(Date.now()>>>0);level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    for(const k of Object.keys(inventory))inventory[k]=0;
+    acquiredOrder.length=0;hotbarSlots.fill(null);editChunks.clear();
+  }
+
+  await new Promise(r=>setTimeout(r,30));
+  if(!hasSavedPos)spawn();
+  loading.textContent='周辺チャンクを生成中...';
+  await new Promise(r=>setTimeout(r,30));
+  streamChunks(true);
+  for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
+  rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
+  renderHotbar();updateProgress();
+  accountNameEl.textContent=currentAccount.name;
+  loading.textContent=save?'セーブデータを復元しました':'新しい世界を作成しました';
+  worldReady=true;saveDirty=false;saveCurrentGame(false);
+  clearInterval(saveInterval);saveInterval=setInterval(()=>saveCurrentGame(false),10000);
+}
+function setAuthMode(mode){
+  const create=mode==='create';authForm.dataset.mode=mode;
+  showLogin.classList.toggle('active',!create);showCreate.classList.toggle('active',create);
+  authModeText.textContent=create?'新しいアカウントを作成':'アカウントにログイン';
+  authSubmit.textContent=create?'アカウント作成':'ログイン';
+  authPassword.autocomplete=create?'new-password':'current-password';authError.textContent='';
+}
+async function submitAuth(e){
+  e.preventDefault();authError.textContent='';
+  const name=authName.value.normalize('NFKC').trim(),password=authPassword.value;
+  if(!validAccountName(name)){authError.textContent='名前は2〜20文字で入力してください';return}
+  if(password.length<6){authError.textContent='パスワードは6文字以上にしてください';return}
+  const key=accountKey(name),reg=loadAccountRegistry(),mode=authForm.dataset.mode||'login';
+  authSubmit.disabled=true;authSubmit.textContent=mode==='create'?'作成中...':'確認中...';
+  try{
+    if(mode==='create'){
+      if(reg.accounts[key]){authError.textContent='その名前はすでに使われています';return}
+      const salt=crypto.getRandomValues(new Uint8Array(16)),hash=await passwordHash(password,salt);
+      reg.accounts[key]={name,salt:bytesToB64(salt),hash,createdAt:Date.now()};
+      saveAccountRegistry(reg);currentAccount={key,name};setSaveStatus('新規');
+      await initializeAccountWorld(null);
+    }else{
+      const acc=reg.accounts[key];
+      if(!acc){authError.textContent='そのアカウントはありません';return}
+      const hash=await passwordHash(password,b64ToBytes(acc.salt));
+      if(!safeEqual(hash,acc.hash)){authError.textContent='パスワードが違います';return}
+      currentAccount={key,name:acc.name||name};setSaveStatus('読込中');
+      await initializeAccountWorld(readSaveForAccount(key));
+    }
+    authPassword.value='';authCover.style.display='none';cover.style.display='flex';
+  }catch(err){
+    authError.textContent='アカウント処理に失敗しました';
+    console.warn?.('auth failed',err);
+  }finally{
+    authSubmit.disabled=false;authSubmit.textContent=(authForm.dataset.mode||'login')==='create'?'アカウント作成':'ログイン';
+  }
+}
 
 function hash3(x,y,z,s=seed){let n=(x*374761393+y*668265263+z*2147483647+s*1274126177)|0;n=(n^(n>>>13))*1274126177;n^=n>>>16;return(n>>>0)/4294967295}
 const hash2=(x,z,s=seed)=>hash3(x,0,z,s),fade=t=>t*t*(3-2*t),lerp=(a,b,t)=>a+(b-a)*t;
@@ -516,6 +688,7 @@ function set(x,y,z,v){
   let edits=editChunks.get(k);
   if(!edits){edits=new Map();editChunks.set(k,edits)}
   edits.set(i,v);
+  markSaveDirty();
 }
 function streamChunks(force=false){
   const cx=chunkCoord(Math.floor(player.pos.x)),cz=chunkCoord(Math.floor(player.pos.z));
@@ -646,7 +819,7 @@ function gainXP(amount,source=''){
     xp-=xpNeeded(level);level++;
     const rs=[...recipes,...workbenchRecipes].filter(r=>r.unlockLevel===level);unlocked.push(...rs.map(r=>r.name.replace(/ ×\d+$/,'')));
   }
-  updateProgress();
+  updateProgress();markSaveDirty();
   if(unlocked.length)flash('LEVEL UP! LV '+level+'　設計図獲得：'+unlocked.join(' / '));
   else flash('+'+amount+' XP'+(source?'　'+source:''));
 }
@@ -701,11 +874,11 @@ function addItem(id,qty=1){
   if(qty<=0)return;
   inventory[id]=(inventory[id]||0)+qty;
   if(!acquiredOrder.includes(id))acquiredOrder.push(id);
-  normalizeHotbar();
+  normalizeHotbar();markSaveDirty();
 }
 function removeItem(id,qty=1){
   inventory[id]=Math.max(0,(inventory[id]||0)-qty);
-  normalizeHotbar();
+  normalizeHotbar();markSaveDirty();
 }
 function finishMine(x,y,z,id){
   if(get(x,y,z)!==id)return;
@@ -983,7 +1156,25 @@ function loop(now){
 function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
-async function init(){loading.textContent='初期チャンク生成中...';await new Promise(r=>setTimeout(r,40));spawn();streamChunks(true);renderHotbar();updateProgress();loading.textContent='準備完了'}
-await init();
-$('startBtn').addEventListener('click',()=>{started=true;cover.style.display='none';if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
+showLogin.addEventListener('click',()=>setAuthMode('login'));
+showCreate.addEventListener('click',()=>setAuthMode('create'));
+authForm.addEventListener('submit',submitAuth);
+setAuthMode('login');
+
+saveNowBtn.addEventListener('click',()=>saveCurrentGame(true));
+logoutBtn.addEventListener('click',()=>{
+  if(!currentAccount)return;
+  if(confirm('セーブしてログアウトしますか？')){
+    saveCurrentGame(false);clearInterval(saveInterval);location.reload();
+  }
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCurrentGame(false)});
+addEventListener('pagehide',()=>saveCurrentGame(false));
+
+$('startBtn').addEventListener('click',()=>{
+  if(!worldReady||!currentAccount)return;
+  started=true;cover.style.display='none';last=performance.now();
+  if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
+});
+authName.focus();
 requestAnimationFrame(loop);
