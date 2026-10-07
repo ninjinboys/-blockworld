@@ -1435,8 +1435,17 @@ function ensureInitialSpawn(){
   if(!initialSpawn)initialSpawn=calculateInitialSpawn();
   return initialSpawn;
 }
-function spawn(){
-  const p=ensureInitialSpawn();
+function activeRespawnPoint(){
+  if(bedSpawn){
+    if(get(bedSpawn.x,bedSpawn.y,bedSpawn.z)===B.BED){
+      return {x:bedSpawn.x,y:bedSpawn.y+1.05,z:bedSpawn.z};
+    }
+    bedSpawn=null;
+  }
+  return ensureInitialSpawn();
+}
+function spawn(useBed=false){
+  const p=useBed?activeRespawnPoint():ensureInitialSpawn();
   player.pos.set(p.x,p.y,p.z);
   player.vel.set(0,0,0);player.onGround=false;fallOriginY=null;
   for(let i=0;i<16&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
@@ -1492,7 +1501,7 @@ function updateHealthRegen(dt){
 function respawnPlayer(){
   health=MAX_HEALTH;dead=false;fallOriginY=null;healthRegenTimer=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
-  spawn();streamChunks(true);
+  spawn(true);streamChunks(true);
   player.yaw=0;player.pitch=0;renderHealth();markSaveDirty();saveCurrentGame(false);
   last=performance.now();
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
@@ -1750,12 +1759,16 @@ function finishMine(x,y,z,id){
   if(id===B.GOLD)drop=I.RAW_GOLD;
   if(id===B.DIAMOND)drop=I.DIAMOND;
 
+  const brokeRespawnBed=id===B.BED&&bedSpawn&&bedSpawn.x===x&&bedSpawn.y===y&&bedSpawn.z===z;
+  if(brokeRespawnBed)bedSpawn=null;
+
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
-  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE)){
+  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED)){
     spawnWorldDrop(drop,1,x,y+.75,z,{scatter:true,pickupDelay:.45});
   }
   rebuild();gainXP(blockXP[id]||1,names[id]||'採掘');
+  if(brokeRespawnBed)flash('ベッドが壊れたため初期スポーンに戻りました');
 }
 function clearMining(){
   miningKey=null;miningElapsed=0;miningId=null;
@@ -1787,10 +1800,22 @@ function updateMining(dt){
     breakFill.style.width='0%';
   }
 }
-function place(){const h=target();if(!h||!h.face)return;if(selected==null||(inventory[selected]||0)<=0){flash('置けるブロックを持っていません');return}
+function place(){
+  const h=target();if(!h||!h.face)return;
+  const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;
+  const targetId=get(p.x,p.y,p.z);
+
+  if(targetId===B.BED&&h.distance<=5){
+    bedSpawn={x:p.x,y:p.y,z:p.z};
+    markSaveDirty();saveCurrentGame(false);
+    flash('リスポーン地点をベッドに設定しました');
+    return;
+  }
+
+  if(selected==null||(inventory[selected]||0)<=0){flash('置けるブロックを持っていません');return}
   const blockId=buildable.includes(selected)?selected:placeableItemToBlock[selected];
   if(blockId==null){flash((names[selected]||'このアイテム')+'は設置できません');return}
-  const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
+  const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
   set(x,y,z,blockId);if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}
   const placedName=names[selected]||names[blockId]||'ブロック';consumeSelected(1);rebuild();renderHotbar();flash(placedName+'を設置')
 }
@@ -1906,7 +1931,7 @@ function currentRecipeList(){
 }
 function renderCrafting(){
   const title=document.querySelector('.craft-title'),sub=document.querySelector('.craft-sub');
-  if(craftMode==='workbench'){title.textContent='WORKBENCH';sub.textContent='作業台専用：石以上のツール・防具'}
+  if(craftMode==='workbench'){title.textContent='WORKBENCH';sub.textContent='作業台専用：ツール・防具・設備'}
   else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭を燃料に原石を精錬'}
   else {title.textContent='CRAFTING';sub.textContent='インベントリで作れる基本アイテム'}
   const ids=Object.keys(inventory).map(Number);
