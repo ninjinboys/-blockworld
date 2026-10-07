@@ -496,7 +496,21 @@ function setCraftOpen(v){
 const keys={};
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}if(craftOpen)return;keys[k]=true;if(e.code==='Space'){e.preventDefault();jump()}if(/^[1-9]$/.test(e.key)){const id=hotbarSlots[+e.key-1];if(id!=null&&(inventory[id]||0)>0)selected=id;renderHotbar()}if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-function jump(){if(player.onGround){player.vel.y=7.3;player.onGround=false}}
+function blockAtPoint(x,y,z){return get(Math.floor(x+0.5),Math.floor(y+0.5),Math.floor(z+0.5))}
+function playerInWater(){
+  const x=player.pos.x,z=player.pos.z;
+  return blockAtPoint(x,player.pos.y+0.15,z)===B.WATER||
+         blockAtPoint(x,player.pos.y+0.9,z)===B.WATER||
+         blockAtPoint(x,player.pos.y+1.55,z)===B.WATER;
+}
+function jump(){
+  if(playerInWater()){
+    player.vel.y=Math.max(player.vel.y,4.6);
+    player.onGround=false;
+    return;
+  }
+  if(player.onGround){player.vel.y=7.3;player.onGround=false}
+}
 
 renderer.domElement.addEventListener('click',()=>{if(!craftOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
@@ -511,7 +525,9 @@ renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 
 function hold(q,k){const b=document.querySelector(q),on=e=>{e.preventDefault();keys[k]=true},off=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',on);['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,off))}
 hold('.pad .up','w');hold('.pad .down','s');hold('.pad .left','a');hold('.pad .right','d');
-document.querySelector('.jump').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
+const jumpBtn=document.querySelector('.jump');
+jumpBtn.addEventListener('pointerdown',e=>{e.preventDefault();keys.swimup=true;jump()});
+['pointerup','pointercancel','pointerleave'].forEach(t=>jumpBtn.addEventListener(t,e=>{e.preventDefault();keys.swimup=false}));
 $('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();primaryActionStart()});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>$('tapMine').addEventListener(t,e=>{e.preventDefault();primaryActionStop()}));
 $('tapPlace').addEventListener('pointerdown',e=>{e.preventDefault();place()});
@@ -526,10 +542,22 @@ function loop(now){
   if(started&&!craftOpen){
     updateMining(dt);
     dayTime=(dayTime+dt/210)%1;
+    const inWater=playerInWater();
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
     if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
-    if(move.lengthSq())move.normalize().multiplyScalar(4.5);
-    player.vel.x+=(move.x-player.vel.x)*Math.min(1,dt*11);player.vel.z+=(move.z-player.vel.z)*Math.min(1,dt*11);player.vel.y-=18*dt;
+    if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:4.5);
+    player.vel.x+=(move.x-player.vel.x)*Math.min(1,dt*(inWater?7:11));
+    player.vel.z+=(move.z-player.vel.z)*Math.min(1,dt*(inWater?7:11));
+    if(inWater){
+      const swimHeld=keys[' ']||keys.swimup;
+      if(swimHeld)player.vel.y=Math.min(4.8,player.vel.y+15*dt);
+      else player.vel.y=Math.max(-2.2,player.vel.y-3.2*dt);
+      player.vel.x*=Math.pow(.86,dt*60);
+      player.vel.z*=Math.pow(.86,dt*60);
+      player.vel.y*=Math.pow(.96,dt*60);
+    }else{
+      player.vel.y-=18*dt;
+    }
     movePlayerAxis('x',player.vel.x*dt);
     movePlayerAxis('z',player.vel.z*dt);
     const vy=player.vel.y;
@@ -551,7 +579,7 @@ function loop(now){
     const bx=Math.max(-HALF,Math.min(HALF-1,Math.floor(player.pos.x))),bz=Math.max(-HALF,Math.min(HALF-1,Math.floor(player.pos.z)));
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomes[si(bx,bz)]]||'Unknown';
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');clockEl.textContent=(day>.2?'☀':'☾')+' '+hh+':'+mm;
-    const eye=get(Math.floor(player.pos.x),Math.floor(player.pos.y+EYE),Math.floor(player.pos.z));scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
+    const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
