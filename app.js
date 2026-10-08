@@ -2391,8 +2391,10 @@ function attackMob(){
 // Food is eaten with a deliberate one-second hold on the attack/mine action.
 const FOOD_EAT_SECONDS=1;
 const FOOD_HEAL_POINTS={
-  [I.RAW_PORK]:4,[I.COOKED_PORK]:4, // 2 hearts
-  [I.RAW_BEEF]:6,[I.COOKED_BEEF]:6  // 3 hearts
+  [I.RAW_PORK]:4,     // 2 hearts
+  [I.COOKED_PORK]:8,  // 4 hearts (+2 hearts cooked)
+  [I.RAW_BEEF]:6,     // 3 hearts
+  [I.COOKED_BEEF]:10 // 5 hearts (+2 hearts cooked)
 };
 let eatingHeld=false,eatingElapsed=0,eatingStartedAt=0,eatingSlot=-1,eatingItem=null;
 function resetEating(){
