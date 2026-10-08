@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261009a">
+<link rel="stylesheet" href="style.css?v=20261009menu1">
 </head>
 <body>
 <div id="game"></div>
@@ -26,6 +26,17 @@
     <div class="auth-note">この版ではアカウントとセーブはこの端末に保存されます。</div>
   </div>
 </div>
+<div id="menuCover">
+  <div class="menu-panel">
+    <h1>BLOCKWORLD</h1>
+    <div class="menu-kicker">PLAYER <strong id="menuAccountName">---</strong></div>
+    <div class="menu-actions">
+      <button id="singlePlayBtn" type="button">シングルプレイ</button>
+      <button id="multiPlayBtn" type="button" disabled aria-disabled="true">マルチプレイ <span>準備中</span></button>
+    </div>
+    <button id="menuLogout" type="button">ログアウト</button>
+  </div>
+</div>
 <div id="worldCover">
   <div class="world-panel">
     <div class="world-head">
@@ -34,7 +45,7 @@
         <h2>ワールドを選択</h2>
         <p>1アカウントにつき最大5個まで保存できます。</p>
       </div>
-      <button id="worldLogout" type="button">ログアウト</button>
+      <div class="world-header-actions"><button id="worldBack" type="button">戻る</button><button id="worldLogout" type="button">ログアウト</button></div>
     </div>
     <div id="worldGrid"></div>
   </div>
@@ -159,6 +170,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261009e"></script>
+<script type="module" src="app.js?v=20261009menu1"></script>
 </body>
 </html>

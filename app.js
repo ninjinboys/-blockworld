@@ -3,6 +3,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 const $=id=>document.getElementById(id);
 const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill'),heartsEl=$('hearts'),deathScreen=$('deathScreen'),respawnBtn=$('respawnBtn');
 const authCover=$('authCover'),authForm=$('authForm'),authName=$('authName'),authPassword=$('authPassword'),authSubmit=$('authSubmit'),authError=$('authError'),authModeText=$('authModeText'),showLogin=$('showLogin'),showCreate=$('showCreate'),accountNameEl=$('accountName'),saveStatusEl=$('saveStatus'),saveNowBtn=$('saveNow'),logoutBtn=$('logoutBtn');
+const menuCover=$('menuCover'),menuAccountName=$('menuAccountName'),singlePlayBtn=$('singlePlayBtn'),menuLogout=$('menuLogout'),worldBack=$('worldBack');
 const worldCover=$('worldCover'),worldGrid=$('worldGrid'),worldAccountName=$('worldAccountName'),worldLogout=$('worldLogout'),worldListBtn=$('worldListBtn'),accountBox=$('accountBox');
 const inventoryScreen=$('inventoryScreen'),inventoryMainGrid=$('inventoryMainGrid'),inventoryHotbarGrid=$('inventoryHotbarGrid'),inventoryClose=$('inventoryClose'),inventoryDetail=$('inventoryDetail'),inventoryDetailIcon=$('inventoryDetailIcon'),inventoryDetailName=$('inventoryDetailName'),inventoryDetailQty=$('inventoryDetailQty'),inventoryMove=$('inventoryMove'),inventorySplit=$('inventorySplit'),inventoryDrop=$('inventoryDrop');
 
@@ -366,11 +367,7 @@ function restoreSession(){
     if(!acc){clearSession();return false}
     currentAccount={key:saved.key,name:acc.name||saved.key};
     setSaveStatus('ワールド未選択');
-    authCover.style.display='none';
-    cover.style.display='none';
-    accountBox.style.display='none';
-    worldCover.style.display='flex';
-    renderWorldSelection();
+    showMainMenu();
     return true;
   }catch{
     clearSession();
@@ -513,7 +510,7 @@ function freshSeed(){
   try{return crypto.getRandomValues(new Uint32Array(1))[0]>>>0}catch{return Date.now()>>>0}
 }
 async function initializeAccountWorld(save,slot){
-  currentWorldSlot=slot;worldReady=false;worldCover.style.display='none';cover.style.display='flex';
+  currentWorldSlot=slot;worldReady=false;menuCover.style.display='none';worldCover.style.display='none';cover.style.display='flex';
   accountBox.style.display='block';
   loading.textContent='セーブデータを読み込み中...';resetWorldRuntime();
   let hasSavedPos=false;
@@ -575,12 +572,24 @@ function renderWorldSelection(){
     card.append(info,actions);worldGrid.appendChild(card);
   }
 }
+function showMainMenu(){
+  if(!currentAccount)return;
+  if(worldReady){
+    saveCurrentGame(false);
+    clearInterval(saveInterval);saveInterval=null;
+    resetWorldRuntime();worldReady=false;currentWorldSlot=null;
+  }
+  authCover.style.display='none';cover.style.display='none';accountBox.style.display='none';
+  worldCover.style.display='none';menuAccountName.textContent=currentAccount.name;
+  menuCover.style.display='flex';
+  document.exitPointerLock?.();
+}
 function showWorldSelection(){
   if(!currentAccount)return;
   if(worldReady)saveCurrentGame(false);
   clearInterval(saveInterval);saveInterval=null;
   resetWorldRuntime();worldReady=false;currentWorldSlot=null;
-  cover.style.display='none';accountBox.style.display='none';worldCover.style.display='flex';
+  cover.style.display='none';accountBox.style.display='none';menuCover.style.display='none';worldCover.style.display='flex';
   document.exitPointerLock?.();renderWorldSelection();
 }
 function setAuthMode(mode){
@@ -610,8 +619,8 @@ async function submitAuth(e){
       if(!safeEqual(hash,acc.hash)){authError.textContent='パスワードが違います';return}
       currentAccount={key,name:acc.name||name};rememberSession(key);setSaveStatus('ワールド未選択');
     }
-    authPassword.value='';authCover.style.display='none';cover.style.display='none';accountBox.style.display='none';
-    worldCover.style.display='flex';renderWorldSelection();
+    authPassword.value='';
+    showMainMenu();
   }catch(err){
     authError.textContent='アカウント処理に失敗しました';console.warn?.('auth failed',err);
   }finally{
@@ -2908,6 +2917,9 @@ showCreate.addEventListener('click',()=>setAuthMode('create'));
 authForm.addEventListener('submit',submitAuth);
 setAuthMode('login');
 
+singlePlayBtn.addEventListener('click',showWorldSelection);
+worldBack.addEventListener('click',showMainMenu);
+menuLogout.addEventListener('click',()=>{clearSession();location.reload()});
 saveNowBtn.addEventListener('click',()=>saveCurrentGame(true));
 worldListBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
