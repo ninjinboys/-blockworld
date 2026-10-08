@@ -52,7 +52,7 @@
     <div id="xpTrack"><div id="xpFill"></div></div>
     <div id="blueprintText">次の設計図：木材（LV 2）</div>
   </div>
-  <div id="hint">WASD 移動 / Space ジャンプ / 左クリック長押し 攻撃/採掘 / 右クリック 設置 / C クラフト / R 雨 / V・F5 視点</div>
+  <div id="hint">WASD 移動 / Space ジャンプ / 左クリック長押し 攻撃/採掘/食事 / 右クリック 設置 / C クラフト / R 雨 / V・F5 視点</div>
   <div id="message"></div>
   <div id="healthHud" aria-label="体力"><div id="hearts"></div></div>
   <div id="staminaHud" role="img" aria-label="スタミナ 10 / 10（表示のみ）"><div id="staminaIcons"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"></div></div>
@@ -61,7 +61,7 @@
 <div id="mobile">
   <div class="pad"><button class="up">▲</button><button class="left">◀</button><button class="down">▼</button><button class="right">▶</button></div>
   <button class="jump">JUMP</button>
-  <div id="tapbar"><button id="tapMine">長押し採掘</button><button id="tapPlace">設置</button><button id="tapInventory">持ち物</button><button id="tapCraft">CRAFT</button></div>
+  <div id="tapbar"><button id="tapMine" aria-label="長押しで採掘または肉を食べる">長押し<br>採掘・食事</button><button id="tapPlace">設置</button><button id="tapInventory">持ち物</button><button id="tapCraft">CRAFT</button></div>
 </div>
 <div id="deathScreen" aria-hidden="true">
   <div class="death-panel">
@@ -159,6 +159,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261008x"></script>
+<script type="module" src="app.js?v=20261008y"></script>
 </body>
 </html>
