@@ -13,7 +13,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 #message{position:absolute;left:50%;bottom:88px;transform:translateX(-50%);background:rgba(0,0,0,.52);padding:6px 10px;border-radius:6px;font-size:12px;opacity:0;transition:opacity .2s}
 #mobile{position:fixed;inset:0;pointer-events:none;display:none}.pad{position:absolute;left:18px;bottom:92px;width:174px;height:174px;pointer-events:auto}
 .pad button,.jump{position:absolute;width:56px;height:56px;border-radius:14px;border:1px solid rgba(255,255,255,.34);background:rgba(0,0,0,.36);color:#fff;font-size:22px;backdrop-filter:blur(3px);touch-action:none}
-.pad .up{left:59px;top:0}.pad .left{left:0;top:59px}.pad .down{left:59px;top:59px}.pad .right{right:0;top:59px}
+.pad .up{left:59px;top:0}.pad .up.running{background:rgba(10,107,220,.72);border-color:#91ddff;box-shadow:0 0 0 2px rgba(91,198,255,.25)}.pad .left{left:0;top:59px}.pad .down{left:59px;top:59px}.pad .right{right:0;top:59px}
 .jump{right:24px;bottom:122px;width:82px;height:82px;border-radius:50%;font-size:15px;pointer-events:auto}
 #tapbar{position:absolute;right:16px;bottom:24px;display:flex;gap:8px;pointer-events:auto}#tapbar button{height:46px;min-width:74px;border:1px solid rgba(255,255,255,.34);background:rgba(0,0,0,.42);color:#fff;border-radius:11px;font:inherit}
 #startCover{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(#7fb4df,#aacd8c 65%,#6f8d58);z-index:20;color:#fff;text-align:center}
