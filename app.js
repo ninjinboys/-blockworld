@@ -494,7 +494,8 @@ function resetWorldRuntime(){
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
-  meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
+  for(const c of chunks.values())removeChunkMeshes(c);
+  meshes=[];lookup.clear();pendingChunkLoads.length=0;pendingChunkJob=null;dirtyMeshKeys.clear();
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i];
     if(m.userData.type==='zombie')removeZombie(m);
@@ -533,7 +534,7 @@ async function initializeAccountWorld(save,slot){
   renderHotbar();updateProgress();renderHealth();renderStamina();updateViewLabel();
   loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
-  clearInterval(saveInterval);saveInterval=setInterval(()=>saveCurrentGame(false),10000);
+  clearInterval(saveInterval);saveInterval=setInterval(()=>saveCurrentGame(false),20000);
 }
 function formatSavedAt(ms){
   if(!Number.isFinite(ms))return '保存日時不明';
@@ -1032,7 +1033,7 @@ function writeGenerated(data,cx,cz,x,y,z,id){
   if(y<Y_MIN||y>WORLD_TOP||chunkCoord(x)!==cx||chunkCoord(z)!==cz)return;
   data[cIndex(localCoord(x),y,localCoord(z))]=id;
 }
-function generateChunk(cx,cz){
+function* generateChunkSteps(cx,cz){
   const data=new Uint8Array(CHUNK*HEIGHT*CHUNK);
   const x0=cx*CHUNK,z0=cz*CHUNK;
   const infoCache=new Map();
@@ -1044,14 +1045,18 @@ function generateChunk(cx,cz){
   };
 
   // Compute each column once; richer terrain stays fast enough for streaming.
-  for(let lx=0;lx<CHUNK;lx++)for(let lz=0;lz<CHUNK;lz++){
-    const x=x0+lx,z=z0+lz,info=getInfo(x,z);
-    for(let y=Y_MIN;y<=WORLD_TOP;y++)data[cIndex(lx,y,lz)]=blockFromInfo(x,y,z,info);
+  for(let lx=0;lx<CHUNK;lx++){
+    for(let lz=0;lz<CHUNK;lz++){
+      const x=x0+lx,z=z0+lz,info=getInfo(x,z);
+      for(let y=Y_MIN;y<=WORLD_TOP;y++)data[cIndex(lx,y,lz)]=blockFromInfo(x,y,z,info);
+    }
+    yield; // Pause after each terrain slice when streaming.
   }
 
   // Natural surface features are generated from deterministic roots with margins,
   // so they line up across chunk boundaries.
-  for(let x=x0-3;x<x0+CHUNK+3;x++)for(let z=z0-3;z<z0+CHUNK+3;z++){
+  for(let x=x0-3;x<x0+CHUNK+3;x++){
+    for(let z=z0-3;z<z0+CHUNK+3;z++){
     const info=getInfo(x,z),h=info.h;
 
     if(isTreeRoot(x,z,info)&&blockFromInfo(x,h,z,info)!==B.SAND){
@@ -1102,11 +1107,18 @@ function generateChunk(cx,cz){
       if(hash2(x,z,seed+772)>.50)writeGenerated(data,cx,cz,x,h+1,z+1,rock);
       if(hash2(x,z,seed+773)>.67)writeGenerated(data,cx,cz,x,h+2,z,rock);
     }
+    }
+    yield; // Pause after each surface feature slice.
   }
 
   const edits=editChunks.get(chunkKey(cx,cz));
   if(edits)for(const [i,v] of edits)data[i]=v;
   return {cx,cz,data};
+}
+function generateChunk(cx,cz){
+  const iter=generateChunkSteps(cx,cz);
+  let n=iter.next();while(!n.done)n=iter.next();
+  return n.value;
 }
 function ensureChunk(cx,cz){
   const k=chunkKey(cx,cz);
@@ -1141,17 +1153,73 @@ function set(x,y,z,v){
   edits.set(i,v);
   markSaveDirty();
 }
+// Outer terrain is streamed across frames instead of blocking input.
+const pendingChunkLoads=[],dirtyMeshKeys=new Set();
+let pendingChunkJob=null,wantedChunkKeys=new Set();
+function queueMeshNear(cx,cz){
+  for(const [dx,dz] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]){
+    const k=chunkKey(cx+dx,cz+dz);
+    if(chunks.has(k))dirtyMeshKeys.add(k);
+  }
+}
 function streamChunks(force=false){
   const cx=chunkCoord(Math.floor(player.pos.x)),cz=chunkCoord(Math.floor(player.pos.z));
   if(!force&&cx===streamCX&&cz===streamCZ)return false;
   streamCX=cx;streamCZ=cz;
-  const wanted=new Set();
-  for(let dx=-RENDER_RADIUS;dx<=RENDER_RADIUS;dx++)for(let dz=-RENDER_RADIUS;dz<=RENDER_RADIUS;dz++){
-    const x=cx+dx,z=cz+dz,k=chunkKey(x,z);wanted.add(k);ensureChunk(x,z);
+  const wanted=new Set(),missing=[];
+  for(let dx=-RENDER_RADIUS;dx<=RENDER_RADIUS;dx++)for(let dz=-RENDER_RADIUS;dz<=RENDER_RADIUS;dz++)
+    wanted.add(chunkKey(cx+dx,cz+dz));
+  wantedChunkKeys=wanted;
+  for(const [k,c] of [...chunks]){
+    if(wanted.has(k))continue;
+    removeChunkMeshes(c);chunks.delete(k);dirtyMeshKeys.delete(k);
+    queueMeshNear(c.cx,c.cz);
   }
-  for(const k of [...chunks.keys()])if(!wanted.has(k))chunks.delete(k);
-  rebuild();
+  if(pendingChunkJob&&!wanted.has(chunkKey(pendingChunkJob.cx,pendingChunkJob.cz)))pendingChunkJob=null;
+  if(force){
+    // Initial world / respawn: nearby 3x3 is needed immediately for collision.
+    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+      ensureChunk(cx+dx,cz+dz);dirtyMeshKeys.add(chunkKey(cx+dx,cz+dz));
+    }
+    for(const k of [...dirtyMeshKeys]){
+      const c=chunks.get(k);if(c)rebuildChunkMesh(c);dirtyMeshKeys.delete(k);
+    }
+  }
+  for(let dx=-RENDER_RADIUS;dx<=RENDER_RADIUS;dx++)for(let dz=-RENDER_RADIUS;dz<=RENDER_RADIUS;dz++){
+    const x=cx+dx,z=cz+dz,k=chunkKey(x,z);
+    if(!chunks.has(k)&&(!pendingChunkJob||chunkKey(pendingChunkJob.cx,pendingChunkJob.cz)!==k))
+      missing.push({cx:x,cz:z,distance:dx*dx+dz*dz});
+  }
+  missing.sort((a,b)=>a.distance-b.distance);
+  pendingChunkLoads.length=0;pendingChunkLoads.push(...missing);
   return true;
+}
+function processChunkStreaming(){
+  if(dirtyMeshKeys.size){
+    const k=dirtyMeshKeys.values().next().value;dirtyMeshKeys.delete(k);
+    const c=chunks.get(k);if(c)rebuildChunkMesh(c);
+    return;
+  }
+  if(!pendingChunkJob){
+    while(pendingChunkLoads.length){
+      const task=pendingChunkLoads.shift(),k=chunkKey(task.cx,task.cz);
+      if(!wantedChunkKeys.has(k)||chunks.has(k))continue;
+      pendingChunkJob={...task,steps:generateChunkSteps(task.cx,task.cz)};
+      break;
+    }
+  }
+  if(!pendingChunkJob)return;
+  const job=pendingChunkJob,now=performance.now();
+  do{
+    const next=job.steps.next();
+    if(next.done){
+      const k=chunkKey(job.cx,job.cz);
+      if(wantedChunkKeys.has(k)&&!chunks.has(k)){
+        chunks.set(k,next.value);queueMeshNear(job.cx,job.cz);
+      }
+      pendingChunkJob=null;break;
+    }
+  }while(performance.now()-now<3);
 }
 
 function tex(rgb,noise=.12,pattern=''){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');for(let y=0;y<16;y++)for(let x=0;x<16;x++){const n=(hash3(x,y,pattern.length,12345)-.5)*noise*255;g.fillStyle=`rgb(${Math.max(0,Math.min(255,rgb[0]+n))|0},${Math.max(0,Math.min(255,rgb[1]+n))|0},${Math.max(0,Math.min(255,rgb[2]+n))|0})`;g.fillRect(x,y,1,1)}if(pattern==='grassSide'){g.fillStyle='#43883d';g.fillRect(0,0,16,4)}if(pattern==='log'){g.fillStyle='rgba(60,35,18,.3)';for(let x=2;x<16;x+=4)g.fillRect(x,0,1,16)}if(pattern.startsWith('ore')){const color=pattern==='oreC'?'#222':pattern==='oreI'?'#b78669':pattern==='oreG'?'#e4b935':'#43cad0';g.fillStyle=color;[[3,4],[11,3],[7,8],[13,11],[4,13]].forEach(([x,y])=>g.fillRect(x,y,2,2))}if(pattern==='plank'){g.fillStyle='rgba(70,43,20,.32)';for(let y=3;y<16;y+=4)g.fillRect(0,y,16,1)}if(pattern==='cobble'){g.strokeStyle='rgba(20,20,20,.28)';g.strokeRect(1.5,1.5,6,5);g.strokeRect(8.5,2.5,6,5);g.strokeRect(4.5,8.5,8,6)}
@@ -1204,30 +1272,60 @@ const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
 const M={[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
 let meshes=[],lookup=new Map();
-function rebuild(){
-  meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
-  const groups={};Object.keys(M).forEach(k=>groups[k]=[]);
-  const nb=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-  for(const c of chunks.values()){
-    const x0=c.cx*CHUNK,z0=c.cz*CHUNK;
-    for(let y=Y_MIN;y<=WORLD_TOP;y++)for(let lz=0;lz<CHUNK;lz++)for(let lx=0;lx<CHUNK;lx++){
-      const id=c.data[cIndex(lx,y,lz)];if(id===B.AIR)continue;
-      const x=x0+lx,z=z0+lz;let vis=false;
-      for(const[dX,dY,dZ]of nb){
-        const n=getLoaded(x+dX,y+dY,z+dZ);
-        if(id===B.WATER?n!==B.WATER:n===B.AIR||n===B.WATER||n===B.GLASS){vis=true;break}
-      }
-      if(vis)groups[id].push({x,y,z});
-    }
+const neighborVectors=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+function removeChunkMeshes(c){
+  if(!c.renderMeshes?.length)return;
+  const removed=new Set(c.renderMeshes);
+  for(const m of removed){
+    scene.remove(m);lookup.delete(m.uuid);m.dispose();
   }
-  const dummy=new THREE.Object3D();
+  meshes=meshes.filter(m=>!removed.has(m));c.renderMeshes=[];
+}
+function rebuildChunkMesh(c){
+  removeChunkMeshes(c);
+  const groups={};Object.keys(M).forEach(k=>groups[k]=[]);
+  const data=c.data,x0=c.cx*CHUNK,z0=c.cz*CHUNK;
+  for(let y=Y_MIN;y<=WORLD_TOP;y++)for(let lz=0;lz<CHUNK;lz++)for(let lx=0;lx<CHUNK;lx++){
+    const id=data[cIndex(lx,y,lz)];if(id===B.AIR)continue;
+    const x=x0+lx,z=z0+lz;let visible=false;
+    for(const [dx,dy,dz] of neighborVectors){
+      const nx=lx+dx,ny=y+dy,nz=lz+dz;
+      const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
+        ?data[cIndex(nx,ny,nz)]:getLoaded(x+dx,ny,z+dz);
+      if(id===B.WATER?b!==B.WATER:b===B.AIR||b===B.WATER||b===B.GLASS){visible=true;break}
+    }
+    if(visible)groups[id].push({x,y,z});
+  }
+  const dummy=new THREE.Object3D(),built=[];
   for(const key in groups){
-    const id=+key,a=groups[id];if(!a.length)continue;
-    const geom=(id===B.BED||id===B.BED_HEAD)?bedBox:box;
-    const m=new THREE.InstancedMesh(geom,M[id],a.length);
-    m.userData.id=id;m.castShadow=id!==B.WATER&&id!==B.GLASS;m.receiveShadow=id!==B.WATER;
-    a.forEach((p,i)=>{dummy.position.set(p.x,(id===B.BED||id===B.BED_HEAD)?p.y-.25:p.y,p.z);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix)});
-    scene.add(m);meshes.push(m);lookup.set(m.uuid,a);
+    const id=+key,p=groups[id];if(!p.length)continue;
+    const geo=(id===B.BED||id===B.BED_HEAD)?bedBox:box;
+    const m=new THREE.InstancedMesh(geo,M[id],p.length);
+    m.userData.id=id;
+    // Shadows are expensive on mobile. Nearby terrain keeps its shadows.
+    m.castShadow=id!==B.WATER&&id!==B.GLASS&&Math.abs(c.cx-streamCX)<=1&&Math.abs(c.cz-streamCZ)<=1;
+    m.receiveShadow=id!==B.WATER;
+    p.forEach((v,i)=>{
+      dummy.position.set(v.x,(id===B.BED||id===B.BED_HEAD)?v.y-.25:v.y,v.z);
+      dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);
+    });
+    scene.add(m);meshes.push(m);lookup.set(m.uuid,p);built.push(m);
+  }
+  c.renderMeshes=built;
+}
+function rebuildEdited(...positions){
+  const affected=new Set();
+  for(const {x,z} of positions){
+    const cx=chunkCoord(x),cz=chunkCoord(z),lx=localCoord(x),lz=localCoord(z);
+    affected.add(chunkKey(cx,cz));
+    if(lx===0)affected.add(chunkKey(cx-1,cz));
+    if(lx===CHUNK-1)affected.add(chunkKey(cx+1,cz));
+    if(lz===0)affected.add(chunkKey(cx,cz-1));
+    if(lz===CHUNK-1)affected.add(chunkKey(cx,cz+1));
+  }
+  for(const k of affected){
+    dirtyMeshKeys.delete(k);
+    const c=chunks.get(k);if(c)rebuildChunkMesh(c);
   }
 }
 
@@ -1924,7 +2022,16 @@ function spawn(useBed=false){
 }
 
 const ray=new THREE.Raycaster();ray.far=6;
-function target(){aimPlayerRay();const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
+function target(){
+  aimPlayerRay();
+  const cx=chunkCoord(Math.floor(player.pos.x)),cz=chunkCoord(Math.floor(player.pos.z)),nearby=[];
+  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+    const c=chunks.get(chunkKey(cx+dx,cz+dz));
+    if(c?.renderMeshes)nearby.push(...c.renderMeshes);
+  }
+  const hits=ray.intersectObjects(nearby,false);
+  return hits.find(v=>v.object.userData.id!==B.WATER)||hits[0]||null;
+}
 function flash(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(flash.t);flash.t=setTimeout(()=>msgEl.style.opacity=0,1200)}
 function renderHealth(){
   heartsEl.innerHTML='';
@@ -2316,7 +2423,7 @@ function finishMine(x,y,z,id){
     const spawnAt=minedDropPosition(x,y,z);
     spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{pickupDelay:.45});
   }
-  rebuild();gainXP(blockXP[id]||1,names[id]||'採掘');
+  rebuildEdited({x,z},...(bedOther?[bedOther]:[]));gainXP(blockXP[id]||1,names[id]||'採掘');
   if(brokeRespawnBed)flash('ベッドが壊れたため初期スポーンに戻りました');
 }
 
@@ -2386,10 +2493,10 @@ function place(){
     set(x,y,z,B.BED);
     set(x2,y,z2,B.BED_HEAD);
     if(blocked(player.pos.x,player.pos.y,player.pos.z)){
-      set(x,y,z,B.AIR);set(x2,y,z2,B.AIR);rebuild();
+      set(x,y,z,B.AIR);set(x2,y,z2,B.AIR);rebuildEdited({x,z},{x:x2,z:z2});
       return;
     }
-    consumeSelected(1);rebuild();renderHotbar();flash('ベッドを設置');
+    consumeSelected(1);rebuildEdited({x,z},{x:x2,z:z2});renderHotbar();flash('ベッドを設置');
     return;
   }
 
@@ -2397,7 +2504,7 @@ function place(){
   if(blockId==null){flash((names[selected]||'このアイテム')+'は設置できません');return}
   set(x,y,z,blockId);
   if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}
-  const placedName=names[selected]||names[blockId]||'ブロック';consumeSelected(1);rebuild();renderHotbar();flash(placedName+'を設置')
+  const placedName=names[selected]||names[blockId]||'ブロック';consumeSelected(1);rebuildEdited({x,z});renderHotbar();flash(placedName+'を設置')
 }
 
 function prepareMobHitMaterials(root){
@@ -2849,6 +2956,7 @@ function loop(now){
 
     if(player.pos.y<Y_MIN-5&&!dead){health=0;showDeathScreen()}
     streamChunks();
+    processChunkStreaming();
     updatePlayerAvatar(now);
     updateGameCamera();
 
