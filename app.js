@@ -1597,6 +1597,10 @@ function buildPlayerAvatar(){
     g.add(leg);limbs[name+'Leg']=leg;
   }
   g.userData.limbs=limbs;
+  // Slimmer silhouette: original arm-to-arm width 0.982 blocks -> 0.707 blocks.
+  // Only the horizontal axis is scaled; height and animation remain unchanged.
+  g.scale.x=.72;
+  g.scale.z=.88;
   g.visible=false;
   scene.add(g);
   return g;
