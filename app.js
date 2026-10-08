@@ -2550,35 +2550,28 @@ function setCraftOpen(v){
 const keys={};
 const MAX_STAMINA=20,STAMINA_SECONDS_PER_HALF=5;
 let stamina=MAX_STAMINA,staminaRunSeconds=0,staminaRegenSeconds=0;
-const DOUBLE_TAP_FORWARD_MS=400,SPRINT_SPEED=7.2,WALK_SPEED=4.5;
-let sprinting=false,forwardPressStarted=0,lastQuickForwardRelease=-Infinity;
+const SPRINT_SPEED=7.2,WALK_SPEED=4.5;
+let sprinting=false;
 function showSprintState(){
-  const forwardButton=document.querySelector('.pad .up');
-  if(forwardButton)forwardButton.classList.toggle('running',sprinting);
+  const sprintButton=document.querySelector('.pad .sprint');
+  if(sprintButton)sprintButton.classList.toggle('running',sprinting);
 }
-function beginForwardPress(){
-  const now=performance.now();
-  sprinting=stamina>0&&now-lastQuickForwardRelease<=DOUBLE_TAP_FORWARD_MS;
-  forwardPressStarted=now;
-  lastQuickForwardRelease=-Infinity;
-  showSprintState();
-  if(sprinting)flash('ダッシュ！');
+function isForwardHeld(){
+  return !!(keys.w||keys.arrowup||keys.mobileWalk||keys.mobileSprint);
 }
-function endForwardPress(){
-  const now=performance.now();
-  lastQuickForwardRelease=!sprinting&&forwardPressStarted>0&&now-forwardPressStarted<=400
-    ?now:-Infinity;
-  forwardPressStarted=0;
-  sprinting=false;
+// The top touch arrow always runs; the original arrow always walks.
+// Desktop players can hold Shift with W or Up to run. No double-tap detection.
+function updateSprintIntent(){
+  const wantsSprint=!!(keys.mobileSprint||(keys.shift&&(keys.w||keys.arrowup)));
+  const next=stamina>0&&wantsSprint;
+  if(next&&!sprinting)flash('ダッシュ！');
+  sprinting=next;
   showSprintState();
 }
 function resetSprint(){
   sprinting=false;
-  forwardPressStarted=0;
-  lastQuickForwardRelease=-Infinity;
   showSprintState();
 }
-function isForwardHeld(){return !!(keys.w||keys.arrowup)}
 addEventListener('blur',()=>{
   Object.keys(keys).forEach(k=>keys[k]=false);
   resetSprint();
@@ -2591,19 +2584,16 @@ addEventListener('keydown',e=>{
   if(k==='e'&&started){e.preventDefault();setInventoryOpen(!inventoryOpen);return}
   if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}
   if(craftOpen||inventoryOpen||sleeping)return;
-  if((k==='w'||k==='arrowup')&&!e.repeat&&!keys[k]&&!isForwardHeld()&&started)beginForwardPress();
   keys[k]=true;
+  if((k==='w'||k==='arrowup'||k==='shift')&&started)updateSprintIntent();
   if(e.code==='Space'){e.preventDefault();jump()}
   if(/^[1-9]$/.test(e.key))selectHotbar(+e.key-1);
   if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}
 });
 addEventListener('keyup',e=>{
   const k=e.key.toLowerCase();
-  if(k==='w'||k==='arrowup'){
-    const wasForward=isForwardHeld();
-    keys[k]=false;
-    if(wasForward&&!isForwardHeld())endForwardPress();
-  }else keys[k]=false;
+  keys[k]=false;
+  if(k==='w'||k==='arrowup'||k==='shift')updateSprintIntent();
 });
 function blockAtPoint(x,y,z){return get(Math.floor(x+0.5),Math.floor(y+0.5),Math.floor(z+0.5))}
 function playerInWater(){
@@ -2638,23 +2628,31 @@ renderer.domElement.addEventListener('pointermove',e=>{if(touchLook&&e.pointerTy
 renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 
 function hold(q,k){const b=document.querySelector(q),on=e=>{e.preventDefault();keys[k]=true},off=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',on);['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,off))}
+// Mobile uses independent forward inputs so releasing Run while holding Walk
+// (or vice versa) never interrupts the other touch.
 const mobileForwardButton=document.querySelector('.pad .up');
-mobileForwardButton.addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  if(!started||dead||craftOpen||inventoryOpen||sleeping)return;
-  if(!keys.w){
-    if(!isForwardHeld())beginForwardPress();
-    keys.w=true;
-  }
-});
-const mobileForwardRelease=e=>{
-  e.preventDefault();
-  if(keys.w){
-    keys.w=false;
-    if(!isForwardHeld())endForwardPress();
-  }
-};
-['pointerup','pointercancel','pointerleave'].forEach(t=>mobileForwardButton.addEventListener(t,mobileForwardRelease));
+const mobileSprintButton=document.querySelector('.pad .sprint');
+function bindMobileForward(button,key){
+  button.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    if(!started||dead||craftOpen||inventoryOpen||sleeping)return;
+    keys[key]=true;
+    try{button.setPointerCapture?.(e.pointerId)}catch{}
+    updateSprintIntent();
+  });
+  const release=e=>{
+    e.preventDefault();
+    if(!keys[key])return;
+    keys[key]=false;
+    updateSprintIntent();
+  };
+  ['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(
+    name=>button.addEventListener(name,release)
+  );
+  button.addEventListener('contextmenu',e=>e.preventDefault());
+}
+bindMobileForward(mobileForwardButton,'mobileWalk');
+bindMobileForward(mobileSprintButton,'mobileSprint');
 hold('.pad .down','s');hold('.pad .left','a');hold('.pad .right','d');
 const jumpBtn=document.querySelector('.jump');
 jumpBtn.addEventListener('pointerdown',e=>{e.preventDefault();keys.swimup=true;jump()});
@@ -2735,7 +2733,7 @@ function loop(now){
     updateZombieSpawning(dt);
     const inWater=playerInWater();
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
-    if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
+    if(isForwardHeld())move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
     const running=sprinting&&stamina>0&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!inWater;
     if(running)updateStaminaDuringSprint(dt);
     if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:(running&&stamina>0?SPRINT_SPEED:WALK_SPEED));
