@@ -464,6 +464,7 @@ function applySaveData(data){
   return false;
 }
 function resetWorldRuntime(){
+  resetSprint();
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
   mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
@@ -1536,6 +1537,7 @@ function renderHealth(){
 function showDeathScreen(){
   dead=true;health=0;renderHealth();primaryActionStop();
   Object.keys(keys).forEach(k=>keys[k]=false);
+  resetSprint();
   craftOpen=false;inventoryOpen=false;
   crafting.classList.remove('open');inventoryScreen.classList.remove('open');
   crafting.setAttribute('aria-hidden','true');inventoryScreen.setAttribute('aria-hidden','true');
@@ -1809,6 +1811,7 @@ function renderInventoryUI(){
 function setInventoryOpen(v){
   inventoryOpen=v;inventoryScreen.classList.toggle('open',v);inventoryScreen.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
+  resetSprint();
   if(v){
     if(craftOpen)setCraftOpen(false);
     primaryActionStop();document.exitPointerLock?.();inventorySelectedSlot=null;renderInventoryUI();
@@ -2086,6 +2089,7 @@ function craftRecipe(i){
 function setCraftOpen(v){
   craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
+  resetSprint();
   if(v){
     if(inventoryOpen)setInventoryOpen(false);
     craftMode=chooseCraftMode();
@@ -2095,18 +2099,55 @@ function setCraftOpen(v){
 }
 
 const keys={};
+const DOUBLE_TAP_FORWARD_MS=400,SPRINT_SPEED=7.2,WALK_SPEED=4.5;
+let sprinting=false,forwardPressStarted=0,lastQuickForwardRelease=-Infinity;
+function showSprintState(){
+  const forwardButton=document.querySelector('.pad .up');
+  if(forwardButton)forwardButton.classList.toggle('running',sprinting);
+}
+function beginForwardPress(){
+  const now=performance.now();
+  sprinting=now-lastQuickForwardRelease<=DOUBLE_TAP_FORWARD_MS;
+  forwardPressStarted=now;
+  lastQuickForwardRelease=-Infinity;
+  showSprintState();
+  if(sprinting)flash('ダッシュ！');
+}
+function endForwardPress(){
+  const now=performance.now();
+  lastQuickForwardRelease=!sprinting&&forwardPressStarted>0&&now-forwardPressStarted<=400
+    ?now:-Infinity;
+  forwardPressStarted=0;
+  sprinting=false;
+  showSprintState();
+}
+function resetSprint(){
+  sprinting=false;
+  forwardPressStarted=0;
+  lastQuickForwardRelease=-Infinity;
+  showSprintState();
+}
+function isForwardHeld(){return !!(keys.w||keys.arrowup)}
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(dead)return;
   if(k==='e'&&started){e.preventDefault();setInventoryOpen(!inventoryOpen);return}
   if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}
-  if(craftOpen||inventoryOpen)return;
+  if(craftOpen||inventoryOpen||sleeping)return;
+  if((k==='w'||k==='arrowup')&&!e.repeat&&!keys[k]&&!isForwardHeld()&&started)beginForwardPress();
   keys[k]=true;
   if(e.code==='Space'){e.preventDefault();jump()}
   if(/^[1-9]$/.test(e.key))selectHotbar(+e.key-1);
   if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}
 });
-addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+addEventListener('keyup',e=>{
+  const k=e.key.toLowerCase();
+  if(k==='w'||k==='arrowup'){
+    const wasForward=isForwardHeld();
+    keys[k]=false;
+    if(wasForward&&!isForwardHeld())endForwardPress();
+  }else keys[k]=false;
+});
 function blockAtPoint(x,y,z){return get(Math.floor(x+0.5),Math.floor(y+0.5),Math.floor(z+0.5))}
 function playerInWater(){
   const x=player.pos.x,z=player.pos.z;
@@ -2140,7 +2181,24 @@ renderer.domElement.addEventListener('pointermove',e=>{if(touchLook&&e.pointerTy
 renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 
 function hold(q,k){const b=document.querySelector(q),on=e=>{e.preventDefault();keys[k]=true},off=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',on);['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,off))}
-hold('.pad .up','w');hold('.pad .down','s');hold('.pad .left','a');hold('.pad .right','d');
+const mobileForwardButton=document.querySelector('.pad .up');
+mobileForwardButton.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  if(!started||dead||craftOpen||inventoryOpen||sleeping)return;
+  if(!keys.w){
+    if(!isForwardHeld())beginForwardPress();
+    keys.w=true;
+  }
+});
+const mobileForwardRelease=e=>{
+  e.preventDefault();
+  if(keys.w){
+    keys.w=false;
+    if(!isForwardHeld())endForwardPress();
+  }
+};
+['pointerup','pointercancel','pointerleave'].forEach(t=>mobileForwardButton.addEventListener(t,mobileForwardRelease));
+hold('.pad .down','s');hold('.pad .left','a');hold('.pad .right','d');
 const jumpBtn=document.querySelector('.jump');
 jumpBtn.addEventListener('pointerdown',e=>{e.preventDefault();keys.swimup=true;jump()});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>jumpBtn.addEventListener(t,e=>{e.preventDefault();keys.swimup=false}));
@@ -2168,6 +2226,7 @@ function sleepInBed(){
   sleeping=true;
   primaryActionStop();
   Object.keys(keys).forEach(k=>keys[k]=false);
+  resetSprint();
 
   const veil=document.createElement('div');
   veil.setAttribute('role','status');
@@ -2214,7 +2273,8 @@ function loop(now){
     const inWater=playerInWater();
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
     if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
-    if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:4.5);
+    const running=sprinting&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!inWater;
+    if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:(running?SPRINT_SPEED:WALK_SPEED));
     player.vel.x+=(move.x-player.vel.x)*Math.min(1,dt*(inWater?7:11));
     player.vel.z+=(move.z-player.vel.z)*Math.min(1,dt*(inWater?7:11));
     if(inWater){
