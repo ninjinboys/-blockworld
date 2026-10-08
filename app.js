@@ -1731,12 +1731,54 @@ function makeDropSprite(id){
   const mat=new THREE.SpriteMaterial({map:dropTexture(id),transparent:true,depthTest:true});
   const sp=new THREE.Sprite(mat);sp.scale.set(.58,.58,.58);sp.renderOrder=2;return sp;
 }
+// Each block occupies [coordinate - .5, coordinate + .5] on every axis.
+// Dropped sprites are 0.58 blocks wide; prevent the item center from
+// entering solid neighbors even if the mined cavity has a low ceiling.
+const DROP_COLLISION_RADIUS=.27;
+function dropSpaceFree(x,y,z){
+  const r=DROP_COLLISION_RADIUS,eps=1e-5;
+  const minX=Math.ceil(x-r-.5+eps),maxX=Math.floor(x+r+.5-eps);
+  const minY=Math.ceil(y-r-.5+eps),maxY=Math.floor(y+r+.5-eps);
+  const minZ=Math.ceil(z-r-.5+eps),maxZ=Math.floor(z+r+.5-eps);
+  for(let bx=minX;bx<=maxX;bx++)for(let by=minY;by<=maxY;by++)for(let bz=minZ;bz<=maxZ;bz++)
+    if(solid(get(bx,by,bz)))return false;
+  return true;
+}
+function moveWorldDropAxis(d,axis,delta){
+  if(!delta)return;
+  const count=Math.max(1,Math.ceil(Math.abs(delta)/.13));
+  const step=delta/count;
+  for(let i=0;i<count;i++){
+    const nx=d.x+(axis==='x'?step:0);
+    const ny=d.y+(axis==='y'?step:0);
+    const nz=d.z+(axis==='z'?step:0);
+    if(dropSpaceFree(nx,ny,nz))d[axis]+=step;
+    else{
+      d['v'+axis]=0;
+      break;
+    }
+  }
+}
+function unburyWorldDrop(d){
+  if(dropSpaceFree(d.x,d.y,d.z))return;
+  // Relocate old saved drops that were launched into the block above them.
+  const bx=Math.round(d.x),by=Math.round(d.y),bz=Math.round(d.z);
+  const offsets=[[0,-1,0],[0,0,0],[0,1,0],[-1,0,0],[1,0,0],[0,0,-1],[0,0,1],
+    [0,-2,0],[-1,-1,0],[1,-1,0],[0,-1,-1],[0,-1,1]];
+  for(const [dx,dy,dz] of offsets){
+    if(!dropSpaceFree(bx+dx,by+dy,bz+dz))continue;
+    d.x=bx+dx;d.y=by+dy;d.z=bz+dz;
+    d.vx=d.vy=d.vz=0;
+    return;
+  }
+}
 function spawnWorldDrop(id,qty,x,y,z,opts={}){
   qty=Math.max(1,Math.floor(qty||1));
   const sprite=makeDropSprite(id);
   const d={id,qty,x,y,z,vx:Number(opts.vx)||0,vy:Number(opts.vy)||0,vz:Number(opts.vz)||0,age:Number(opts.age)||0,pickupDelay:Number.isFinite(Number(opts.pickupDelay))?Number(opts.pickupDelay):.45,sprite,phase:Math.random()*Math.PI*2};
   if(opts.scatter){d.vx+=(Math.random()-.5)*1.4;d.vz+=(Math.random()-.5)*1.4;d.vy+=1.7+Math.random()*.7}
-  sprite.position.set(x,y,z);scene.add(sprite);worldDrops.push(d);markSaveDirty();return d;
+  unburyWorldDrop(d);
+  sprite.position.set(d.x,d.y,d.z);scene.add(sprite);worldDrops.push(d);markSaveDirty();return d;
 }
 function removeWorldDrop(d){
   scene.remove(d.sprite);d.sprite.material.dispose();
@@ -1753,22 +1795,21 @@ function restoreWorldDrops(raw){
   if(!Array.isArray(raw))return;
   for(const d of raw){
     if(!d||!Number.isFinite(Number(d.id))||!(Number(d.qty)>0))continue;
-    spawnWorldDrop(Number(d.id),Number(d.qty),Number(d.x)||0,Number(d.y)||1,Number(d.z)||0,{age:Number(d.age)||0,pickupDelay:.25});
+    spawnWorldDrop(Number(d.id),Number(d.qty),Number(d.x)||0,Number.isFinite(Number(d.y))?Number(d.y):1,Number(d.z)||0,{age:Number(d.age)||0,pickupDelay:.25});
   }
 }
 function updateWorldDrops(dt,now){
   for(let i=worldDrops.length-1;i>=0;i--){
     const d=worldDrops[i];d.age+=dt;
     if(d.age>300){removeWorldDrop(d);continue}
-    d.vy-=11*dt;
-    d.x+=d.vx*dt;d.z+=d.vz*dt;d.y+=d.vy*dt;
-    d.vx*=Math.pow(.86,dt*60);d.vz*=Math.pow(.86,dt*60);
-
-    const bx=Math.floor(d.x+.5),bz=Math.floor(d.z+.5),foot=d.y-.24;
-    const by=Math.floor(foot+.5);
-    if(d.vy<=0&&solid(get(bx,by,bz))&&foot<=by+.5){
-      d.y=by+.74;d.vy=0;d.vx*=.55;d.vz*=.55;
-    }
+    // Step along each axis; ceilings, walls and floors all block movement.
+    // Cap fall speed so fast drops cannot skip a thin ground layer.
+    d.vy=Math.max(-18,d.vy-11*dt);
+    moveWorldDropAxis(d,'x',d.vx*dt);
+    moveWorldDropAxis(d,'z',d.vz*dt);
+    moveWorldDropAxis(d,'y',d.vy*dt);
+    d.vx*=Math.pow(.86,dt*60);
+    d.vz*=Math.pow(.86,dt*60);
     d.sprite.position.set(d.x,d.y+Math.sin(now*.004+d.phase)*.06,d.z);
     d.sprite.material.rotation=Math.sin(now*.0015+d.phase)*.22;
 
@@ -2253,7 +2294,7 @@ function finishMine(x,y,z,id){
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
   if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED)){
-    spawnWorldDrop(drop,1,x,y+.75,z,{scatter:true,pickupDelay:.45});
+    spawnWorldDrop(drop,1,x,y,z,{scatter:true,pickupDelay:.45});
   }
   rebuild();gainXP(blockXP[id]||1,names[id]||'採掘');
   if(brokeRespawnBed)flash('ベッドが壊れたため初期スポーンに戻りました');
