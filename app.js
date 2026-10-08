@@ -398,7 +398,7 @@ function restoreEdits(raw){
 function makeSaveData(){
   return {
     version:3,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
-    level,xp,weather,dayTime,health,stamina,staminaRunSeconds,
+    level,xp,weather,dayTime,health,stamina,staminaRunSeconds,staminaRegenSeconds,
     initialSpawn:initialSpawn?{x:initialSpawn.x,y:initialSpawn.y,z:initialSpawn.z}:null,
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
@@ -437,6 +437,7 @@ function applySaveData(data){
   dead=health<=0;
   stamina=Number.isFinite(data.stamina)?Math.max(0,Math.min(MAX_STAMINA,Math.floor(data.stamina))):MAX_STAMINA;
   staminaRunSeconds=Number.isFinite(data.staminaRunSeconds)?Math.max(0,Math.min(STAMINA_SECONDS_PER_HALF-.0001,data.staminaRunSeconds)):0;
+  staminaRegenSeconds=Number.isFinite(data.staminaRegenSeconds)?Math.max(0,Math.min(STAMINA_SECONDS_PER_HALF-.0001,data.staminaRegenSeconds)):0;
   initialSpawn=(data.initialSpawn&&Number.isFinite(data.initialSpawn.x)&&Number.isFinite(data.initialSpawn.y)&&Number.isFinite(data.initialSpawn.z))
     ?{x:Number(data.initialSpawn.x),y:Number(data.initialSpawn.y),z:Number(data.initialSpawn.z)}:null;
   bedSpawn=(data.bedSpawn&&Number.isFinite(data.bedSpawn.x)&&Number.isFinite(data.bedSpawn.y)&&Number.isFinite(data.bedSpawn.z))
@@ -467,7 +468,7 @@ function applySaveData(data){
 }
 function resetWorldRuntime(){
   resetSprint();
-  stamina=MAX_STAMINA;staminaRunSeconds=0;
+  stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
   mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
@@ -487,7 +488,7 @@ async function initializeAccountWorld(save,slot){
   if(save)hasSavedPos=applySaveData(save);
   else{
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
-    stamina=MAX_STAMINA;staminaRunSeconds=0;
+    stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
     editChunks.clear();clearWorldDrops();
@@ -1570,6 +1571,30 @@ function updateStaminaDuringSprint(dt){
     }
   }
 }
+function updateStaminaRecovery(dt,isRunning){
+  // Recovery starts after a full five seconds without sprinting.
+  // Pausing to craft or walk still allows natural recovery.
+  if(isRunning){
+    staminaRegenSeconds=0;
+    return;
+  }
+  if(stamina>=MAX_STAMINA){
+    staminaRegenSeconds=0;
+    return;
+  }
+  staminaRegenSeconds+=dt;
+  let recovered=false;
+  while(staminaRegenSeconds>=STAMINA_SECONDS_PER_HALF&&stamina<MAX_STAMINA){
+    staminaRegenSeconds-=STAMINA_SECONDS_PER_HALF;
+    stamina++;
+    recovered=true;
+  }
+  if(recovered){
+    renderStamina();
+    markSaveDirty();
+    if(stamina>=MAX_STAMINA)staminaRegenSeconds=0;
+  }
+}
 function showDeathScreen(){
   dead=true;health=0;renderHealth();primaryActionStop();
   Object.keys(keys).forEach(k=>keys[k]=false);
@@ -1604,7 +1629,7 @@ function updateHealthRegen(dt){
 }
 function respawnPlayer(){
   health=MAX_HEALTH;dead=false;fallOriginY=null;healthRegenTimer=0;
-  stamina=MAX_STAMINA;staminaRunSeconds=0;
+  stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
   spawn(true);streamChunks(true);
   player.yaw=0;player.pitch=0;renderHealth();renderStamina();markSaveDirty();saveCurrentGame(false);
@@ -2137,7 +2162,7 @@ function setCraftOpen(v){
 
 const keys={};
 const MAX_STAMINA=20,STAMINA_SECONDS_PER_HALF=5;
-let stamina=MAX_STAMINA,staminaRunSeconds=0;
+let stamina=MAX_STAMINA,staminaRunSeconds=0,staminaRegenSeconds=0;
 const DOUBLE_TAP_FORWARD_MS=400,SPRINT_SPEED=7.2,WALK_SPEED=4.5;
 let sprinting=false,forwardPressStarted=0,lastQuickForwardRelease=-Infinity;
 function showSprintState(){
@@ -2309,7 +2334,11 @@ function advanceDayTime(dt){
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
-  if(started&&!dead&&!sleeping){updateWorldDrops(dt,now);updatePassiveSpawning(dt);updateHealthRegen(dt)}
+  if(started&&!dead&&!sleeping){
+    updateWorldDrops(dt,now);updatePassiveSpawning(dt);updateHealthRegen(dt);
+    const activelySprinting=!craftOpen&&!inventoryOpen&&sprinting&&stamina>0&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!playerInWater();
+    updateStaminaRecovery(dt,activelySprinting);
+  }
   if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
     advanceDayTime(dt);
