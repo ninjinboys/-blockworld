@@ -1358,8 +1358,18 @@ function updatePassiveSpawning(dt){
   for(let i=0;i<attempts;i++)spawnPassiveMob();
 }
 
+// Clouds float well above the tallest terrain (world height is 48 blocks).
+const CLOUD_BASE_Y=55,CLOUD_HEIGHT_RANGE=4;
 const clouds=[];
-for(let i=0;i<10;i++){const g=new THREE.Group(),mat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.75,depthWrite:false});for(let j=0;j<3;j++){const m=new THREE.Mesh(new THREE.BoxGeometry(6+j*1.4,.55,3),mat);m.position.x=j*4;g.add(m)}g.position.set(-40+hash3(i,2,3,44)*80,25+hash3(i,3,4,55)*4,-35+hash3(i,4,5,66)*70);scene.add(g);clouds.push(g)}
+for(let i=0;i<10;i++){
+  const g=new THREE.Group(),mat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.75,depthWrite:false});
+  for(let j=0;j<3;j++){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(6+j*1.4,.55,3),mat);
+    m.position.x=j*4;g.add(m);
+  }
+  g.position.set(-40+hash3(i,2,3,44)*80,CLOUD_BASE_Y+hash3(i,3,4,55)*CLOUD_HEIGHT_RANGE,-35+hash3(i,4,5,66)*70);
+  scene.add(g);clouds.push(g);
+}
 
 const rainN=500,rainA=new Float32Array(rainN*3);
 for(let i=0;i<rainN;i++){rainA[i*3]=(Math.random()-.5)*44;rainA[i*3+1]=5+Math.random()*28;rainA[i*3+2]=(Math.random()-.5)*44}
@@ -2388,7 +2398,13 @@ function loop(now){
     sunBox.position.set(player.pos.x+Math.cos(ang)*48,Math.sin(ang)*48,player.pos.z+13);moonBox.position.set(player.pos.x-Math.cos(ang)*48,-Math.sin(ang)*48,player.pos.z-13);sun.position.copy(sunBox.position);
     sun.intensity=.14+2.2*day;hemi.intensity=.25+1.15*day;
     const sky=new THREE.Color().setHSL(.57,.48,.08+.56*day);scene.background.copy(sky);scene.fog.color.copy(sky);
-    clouds.forEach((c,i)=>{c.position.x+=dt*(.5+i*.01);if(c.position.x>player.pos.x+50)c.position.x=player.pos.x-50;if(Math.abs(c.position.z-player.pos.z)>45)c.position.z=player.pos.z+(hash3(i,7,9,seed)-.5)*70});
+    clouds.forEach((c,i)=>{
+      c.position.x+=dt*(.5+i*.01);
+      // Wrap in both horizontal directions so the sky stays populated while exploring.
+      if(c.position.x>player.pos.x+50)c.position.x=player.pos.x-50;
+      else if(c.position.x<player.pos.x-50)c.position.x=player.pos.x+50;
+      if(Math.abs(c.position.z-player.pos.z)>45)c.position.z=player.pos.z+(hash3(i,7,9,seed)-.5)*70;
+    });
 
     if(weather==='rain'){const a=rain.geometry.attributes.position.array;for(let i=0;i<rainN;i++){a[i*3+1]-=dt*19;if(a[i*3+1]<0){a[i*3+1]=25+Math.random()*9;a[i*3]=(Math.random()-.5)*44;a[i*3+2]=(Math.random()-.5)*44}}rain.position.set(player.pos.x,0,player.pos.z);rain.geometry.attributes.position.needsUpdate=true}
 
