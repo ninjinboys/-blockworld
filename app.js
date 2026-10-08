@@ -1602,9 +1602,8 @@ function buildPlayerAvatar(){
   return g;
 }
 const playerAvatar=buildPlayerAvatar();
-const VIEW_LABELS=['一人称','三人称','正面'];
+const VIEW_LABELS=['一人称','三人称（背面）','二人称風（正面）'];
 let cameraMode=0;
-const cameraCollisionRay=new THREE.Raycaster();
 const cameraEye=new THREE.Vector3(),cameraWanted=new THREE.Vector3(),cameraVector=new THREE.Vector3(),cameraLook=new THREE.Vector3();
 const gameplayAimDirection=new THREE.Vector3(),gameplayAimOrigin=new THREE.Vector3();
 function updateViewLabel(){
@@ -1663,17 +1662,21 @@ function updateGameCamera(){
     cameraWanted.set(cameraEye.x-sy*3.6,cameraEye.y+.65,cameraEye.z-cy*3.6);
     cameraLook.set(cameraEye.x,cameraEye.y-.15,cameraEye.z);
   }
-  // Keep the camera outside terrain. Meshes are instanced blocks; avatar is excluded.
+  // Fast voxel sampling avoids a costly instance-mesh raycast every frame on iPads.
   cameraVector.copy(cameraWanted).sub(cameraEye);
   const wantedDistance=cameraVector.length();
   cameraVector.normalize();
-  cameraCollisionRay.set(cameraEye,cameraVector);
-  cameraCollisionRay.near=0;
-  cameraCollisionRay.far=wantedDistance;
-  const obstruction=cameraCollisionRay.intersectObjects(meshes,false).find(h=>
-    h.object.userData.id!==B.WATER&&h.object.userData.id!==B.GLASS
-  );
-  const distance=obstruction?Math.max(.3,obstruction.distance-.28):wantedDistance;
+  let distance=wantedDistance;
+  for(let t=.3;t<=wantedDistance;t+=.14){
+    const bx=Math.floor(cameraEye.x+cameraVector.x*t+.5);
+    const by=Math.floor(cameraEye.y+cameraVector.y*t+.5);
+    const bz=Math.floor(cameraEye.z+cameraVector.z*t+.5);
+    const block=get(bx,by,bz);
+    if(solid(block)&&block!==B.GLASS){
+      distance=Math.max(.27,t-.18);
+      break;
+    }
+  }
   camera.position.copy(cameraEye).addScaledVector(cameraVector,distance);
   // Hide the body if there is no room for the camera to pull out.
   if(distance<.8)playerAvatar.visible=false;
