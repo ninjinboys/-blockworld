@@ -1885,8 +1885,13 @@ function place(){
       return;
     }
     bedSpawn={x:foot.x,y:foot.y,z:foot.z};
-    markSaveDirty();saveCurrentGame(false);
-    flash('リスポーン地点をベッドに設定しました');
+    markSaveDirty();
+    if(isNightTime()){
+      sleepInBed();
+    }else{
+      saveCurrentGame(false);
+      flash('リスポーン地点を設定しました。夜になると眠れます');
+    }
     return;
   }
 
@@ -2154,6 +2159,46 @@ crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(
 
 let last=performance.now(),dayTime=.24;
 const DAY_START=.25,DAY_END=.75,DAY_REAL_SECONDS=15*60,NIGHT_REAL_SECONDS=5*60;
+let sleeping=false;
+function isNightTime(){
+  return dayTime<DAY_START||dayTime>=DAY_END;
+}
+function sleepInBed(){
+  if(sleeping||dead||!started)return;
+  sleeping=true;
+  primaryActionStop();
+  Object.keys(keys).forEach(k=>keys[k]=false);
+
+  const veil=document.createElement('div');
+  veil.setAttribute('role','status');
+  veil.textContent='眠っています…';
+  Object.assign(veil.style,{
+    position:'fixed',inset:'0',zIndex:'55',
+    background:'rgba(0,0,0,.97)',color:'#ffffff',
+    font:'bold 22px monospace',display:'flex',
+    alignItems:'center',justifyContent:'center',
+    opacity:'0',transition:'opacity .4s ease',
+    pointerEvents:'auto',textAlign:'center'
+  });
+  document.body.appendChild(veil);
+  requestAnimationFrame(()=>{veil.style.opacity='1'});
+
+  setTimeout(()=>{
+    // The night is skipped; resume shortly after sunrise.
+    dayTime=DAY_START+.02;
+    markSaveDirty();
+    saveCurrentGame(false);
+    sleeping=false;
+    veil.textContent='朝になりました';
+    setTimeout(()=>{
+      veil.style.opacity='0';
+      setTimeout(()=>{
+        veil.remove();
+        flash('朝になりました！ リスポーン地点も設定しました');
+      },420);
+    },400);
+  },650);
+}
 function advanceDayTime(dt){
   const isDay=dayTime>=DAY_START&&dayTime<DAY_END;
   const halfCycleSeconds=isDay?DAY_REAL_SECONDS:NIGHT_REAL_SECONDS;
@@ -2162,8 +2207,8 @@ function advanceDayTime(dt){
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
-  if(started&&!dead){updateWorldDrops(dt,now);updatePassiveSpawning(dt);updateHealthRegen(dt)}
-  if(started&&!dead&&!craftOpen&&!inventoryOpen){
+  if(started&&!dead&&!sleeping){updateWorldDrops(dt,now);updatePassiveSpawning(dt);updateHealthRegen(dt)}
+  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
     advanceDayTime(dt);
     const inWater=playerInWater();
