@@ -582,3 +582,69 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   outline:3px solid #ecf8af;
   outline-offset:2px;
 }
+
+
+/* Separate run-arrow above the existing walk arrow: never double-tap to sprint. */
+@media (max-width:760px),(pointer:coarse){
+  .pad{overflow:visible}
+  .pad .sprint{
+    position:absolute;
+    left:calc(var(--dpad-size) + var(--dpad-gap));
+    top:calc(-1 * (var(--dpad-size) + var(--dpad-gap)));
+    right:auto;
+    bottom:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:1px;
+    width:var(--dpad-size);
+    height:var(--dpad-size);
+    padding:0;
+    border:3px solid #294a84;
+    border-radius:14px;
+    background:#527ec4;
+    color:#fff;
+    font:900 28px/1 ui-monospace,monospace;
+    text-shadow:0 2px 1px #1e3762;
+    box-shadow:inset 2px 2px 0 #a0bbed,inset -2px -2px 0 #2d5097,0 3px 0 rgba(0,0,0,.38);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    pointer-events:auto;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .pad .sprint .run-label{
+    display:block;
+    font:900 10px/1.1 ui-monospace,monospace;
+    letter-spacing:.07em;
+    pointer-events:none;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .pad .sprint.running,
+  .pad .sprint:active{
+    background:#31589e;
+    border-color:#24395e;
+    box-shadow:inset 2px 2px 0 #223b6a,inset -2px -2px 0 #87a8df,0 1px 0 rgba(0,0,0,.35);
+    transform:translateY(2px);
+  }
+}
+@media (pointer:coarse) and (max-width:600px) and (orientation:portrait){
+  .pad .sprint{border-radius:12px;font-size:25px}
+  .pad .sprint .run-label{font-size:9px}
+}
+/* Prevent iPadOS text selection/copy overlays when tapping game controls. */
+@media (pointer:coarse){
+  #mobile,#mobile button,#hud,#hud *,#crosshair{
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #mobile button{touch-action:none}
+  #hotbar .slot{touch-action:manipulation}
+}
