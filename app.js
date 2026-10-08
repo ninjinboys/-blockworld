@@ -471,10 +471,11 @@ function resetWorldRuntime(){
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
-  mobs.forEach(m=>{
+  for(let i=mobs.length-1;i>=0;i--){
+    const m=mobs[i];
     if(m.userData.type==='zombie')removeZombie(m);
     else scene.remove(m);
-  });
+  }
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=3;
   clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
