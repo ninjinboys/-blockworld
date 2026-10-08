@@ -2128,6 +2128,10 @@ function resetSprint(){
   showSprintState();
 }
 function isForwardHeld(){return !!(keys.w||keys.arrowup)}
+addEventListener('blur',()=>{
+  Object.keys(keys).forEach(k=>keys[k]=false);
+  resetSprint();
+});
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(dead)return;
