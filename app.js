@@ -2275,34 +2275,14 @@ function setInventoryOpen(v){
 // Eject mined items from the face the player is mining, not into the middle
 // of the one-block cavity. In a low-ceiling tunnel, drops must be visible
 // and reachable without mining the block above them.
-function minedDropPosition(x,y,z,faceNormal){
-  const faces=[];
-  const addFace=(dx,dy,dz)=>{
-    if(Math.abs(dx)+Math.abs(dy)+Math.abs(dz)!==1)return;
-    if(faces.some(a=>a[0]===dx&&a[1]===dy&&a[2]===dz))return;
-    faces.push([dx,dy,dz]);
-  };
-  if(faceNormal){
-    addFace(Math.round(faceNormal.x||0),Math.round(faceNormal.y||0),Math.round(faceNormal.z||0));
-  }
-  // Fallback for old callers or an obstructed hit face: try the player-facing
-  // sides first, then all remaining open sides. Never put it in solid stone.
-  const towards=[
-    [Math.abs(player.pos.x-x),Math.sign(player.pos.x-x),0,0],
-    [Math.abs(player.pos.y+1-y),0,Math.sign(player.pos.y+1-y),0],
-    [Math.abs(player.pos.z-z),0,0,Math.sign(player.pos.z-z)]
-  ].sort((a,b)=>b[0]-a[0]);
-  for(const [,dx,dy,dz] of towards)addFace(dx,dy,dz);
-  for(const [dx,dy,dz] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]])
-    addFace(dx,dy,dz);
-  for(const [dx,dy,dz] of faces){
-    // .86 clears the opened face of a block (surface at .5, sprite r=.27).
-    const px=x+dx*.86,py=y+dy*.86,pz=z+dz*.86;
-    if(dropSpaceFree(px,py,pz))return {x:px,y:py,z:pz};
-  }
-  return {x,y,z}; // sealed cavity: wait until the player opens a side
+function minedDropPosition(x,y,z){
+  // The mined block has just become AIR. Its original center is guaranteed to
+  // be free of adjacent solid voxels, even in a one-block-deep tunnel.
+  // Spawning outside the hit face with an upward scatter impulse could send
+  // ore into the block ABOVE the cavity, hiding it until that block was mined.
+  return {x,y,z};
 }
-function finishMine(x,y,z,id,faceNormal=null){
+function finishMine(x,y,z,id){
   if(get(x,y,z)!==id)return;
 
   const bedFoot=isBedBlock(id)?canonicalBedFoot(x,y,z):null;
@@ -2324,8 +2304,8 @@ function finishMine(x,y,z,id,faceNormal=null){
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
   if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED)){
-    const spawnAt=minedDropPosition(x,y,z,faceNormal);
-    spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{scatter:true,pickupDelay:.45});
+    const spawnAt=minedDropPosition(x,y,z);
+    spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{pickupDelay:.45});
   }
   rebuild();gainXP(blockXP[id]||1,names[id]||'採掘');
   if(brokeRespawnBed)flash('ベッドが壊れたため初期スポーンに戻りました');
@@ -2356,7 +2336,7 @@ function updateMining(dt){
   breakLabel.textContent=(names[id]||'ブロック')+' '+Math.floor(pct)+'%';
   breakFill.style.width=pct+'%';breakMeter.classList.add('active');
   if(miningElapsed>=need){
-    finishMine(p.x,p.y,p.z,id,h.face?.normal);
+    finishMine(p.x,p.y,p.z,id);
     miningElapsed=0;miningKey=null;miningId=null;
     breakFill.style.width='0%';
   }
