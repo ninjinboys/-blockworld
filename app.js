@@ -476,7 +476,7 @@ function resetWorldRuntime(){
     if(m.userData.type==='zombie')removeZombie(m);
     else scene.remove(m);
   }
-  mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=3;
+  mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;nightZombieWaveStarted=false;
   clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
   health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
@@ -1320,7 +1320,7 @@ function buildCow(){
 
 // Night-time hostile mob: an original blocky green zombie.
 const ZOMBIE_LIMIT=7,ZOMBIE_AGGRO_RANGE=28,ZOMBIE_ATTACK_RANGE=1.35;
-let zombieSpawnCooldown=3;
+let zombieSpawnCooldown=1,nightZombieWaveStarted=false;
 function buildZombie(){
   const g=new THREE.Group();
   const skin=0x78ad63,skinLight=0x94c47c,skinDark=0x4b753d;
@@ -1360,7 +1360,7 @@ function buildZombie(){
 }
 function isZombieGround(x,z){
   const y=surfaceAt(x,z);
-  return y>SEA&&y<HEIGHT-3&&solid(get(x,y,z))&&
+  return y>=SEA&&y<HEIGHT-3&&solid(get(x,y,z))&&
     get(x,y+1,z)===B.AIR&&get(x,y+2,z)===B.AIR;
 }
 function removeZombie(m){
@@ -1373,17 +1373,25 @@ function removeZombie(m){
     if(o.userData.mobOwnMaterial)o.material?.dispose();
   });
 }
+function countZombies(){
+  return mobs.reduce((sum,m)=>sum+(m.userData.type==='zombie'?1:0),0);
+}
 function spawnZombie(){
-  if(mobs.filter(m=>m.userData.type==='zombie').length>=ZOMBIE_LIMIT)return false;
-  for(let attempt=0;attempt<12;attempt++){
-    const angle=Math.random()*Math.PI*2,dist=14+Math.random()*14;
+  if(countZombies()>=ZOMBIE_LIMIT)return false;
+  // Search around the player, not beyond normal sight distance.
+  // The evenly spread angles cover both sides of the player even when
+  // the random direction happens to face water or mountain terrain.
+  const phase=Math.random()*Math.PI*2;
+  for(let attempt=0;attempt<64;attempt++){
+    const ring=attempt<48?0:1;
+    const angle=phase+attempt*Math.PI*(3-Math.sqrt(5));
+    const dist=ring?19+Math.random()*12:9+Math.random()*9;
     const x=Math.round(player.pos.x+Math.cos(angle)*dist);
     const z=Math.round(player.pos.z+Math.sin(angle)*dist);
     if(!isZombieGround(x,z))continue;
     const y=surfaceAt(x,z);
-    // Spawn at comparable height to the player, not on a distant mountain.
-    if(Math.abs(y+.5-player.pos.y)>6)continue;
-    if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<3))continue;
+    if(Math.abs(y+.51-player.pos.y)>5.5)continue;
+    if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<3.5))continue;
     const g=buildZombie();
     g.position.set(x,y+.51,z);
     g.userData={...g.userData,type:'zombie',name:'ゾンビ',hp:10,xp:24,
@@ -1396,19 +1404,32 @@ function spawnZombie(){
 }
 function updateZombieSpawning(dt){
   if(!isNightTime()){
-    zombieSpawnCooldown=3;
-    // Zombies do not survive daylight. Clear them at sunrise.
-    for(let i=mobs.length-1;i>=0;i--)if(mobs[i].userData.type==='zombie')removeZombie(mobs[i]);
+    zombieSpawnCooldown=1;
+    nightZombieWaveStarted=false;
+    // Zombies disappear at sunrise, regardless of the player's location.
+    for(let i=mobs.length-1;i>=0;i--)
+      if(mobs[i].userData.type==='zombie')removeZombie(mobs[i]);
     return;
   }
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i];
-    if(m.userData.type==='zombie'&&Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>75)removeZombie(m);
+    if(m.userData.type==='zombie'&&Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>75)
+      removeZombie(m);
+  }
+  if(!nightZombieWaveStarted){
+    nightZombieWaveStarted=true;
+    zombieSpawnCooldown=4;
+    // An opening wave makes the enemies easy to spot at the start of night.
+    spawnZombie();spawnZombie();
+    if(dayTime>=DAY_END)flash('夜になった！ ゾンビに注意！');
+    return;
   }
   zombieSpawnCooldown-=dt;
   if(zombieSpawnCooldown>0)return;
-  zombieSpawnCooldown=6+Math.random()*4;
-  spawnZombie();
+  const nearby=mobs.filter(m=>m.userData.type==='zombie'&&Math.hypot(
+    m.position.x-player.pos.x,m.position.z-player.pos.z)<38).length;
+  zombieSpawnCooldown=nearby<2?3:nearby<4?5:8;
+  if(nearby<5)spawnZombie();
 }
 function zombieStep(m,angle,step){
   const nx=m.position.x+Math.sin(angle)*step;
@@ -2592,7 +2613,8 @@ function loop(now){
 
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
-    const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');clockEl.textContent=(day>.2?'☀':'☾')+' '+hh+':'+mm;
+    const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');
+    clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm+(isNightTime()?'  🧟 '+countZombies():'');
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
   renderer.render(scene,camera);
