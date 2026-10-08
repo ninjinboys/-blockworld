@@ -398,7 +398,7 @@ function restoreEdits(raw){
 function makeSaveData(){
   return {
     version:3,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
-    level,xp,weather,dayTime,health,stamina,staminaRunSeconds,staminaRegenSeconds,
+    level,xp,weather,dayTime,health,stamina,staminaRunSeconds,staminaRegenSeconds,cameraMode,
     initialSpawn:initialSpawn?{x:initialSpawn.x,y:initialSpawn.y,z:initialSpawn.z}:null,
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
@@ -435,6 +435,8 @@ function applySaveData(data){
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
   health=Number.isFinite(Number(data.health))?Math.max(0,Math.min(MAX_HEALTH,Math.floor(Number(data.health)))):MAX_HEALTH;
   dead=health<=0;
+  cameraMode=Number.isInteger(data.cameraMode)?Math.max(0,Math.min(2,data.cameraMode)):0;
+  updateViewLabel();
   stamina=Number.isFinite(data.stamina)?Math.max(0,Math.min(MAX_STAMINA,Math.floor(data.stamina))):MAX_STAMINA;
   staminaRunSeconds=Number.isFinite(data.staminaRunSeconds)?Math.max(0,Math.min(STAMINA_SECONDS_PER_HALF-.0001,data.staminaRunSeconds)):0;
   staminaRegenSeconds=Number.isFinite(data.staminaRegenSeconds)?Math.max(0,Math.min(STAMINA_SECONDS_PER_HALF-.0001,data.staminaRegenSeconds)):0;
@@ -468,6 +470,7 @@ function applySaveData(data){
 }
 function resetWorldRuntime(){
   resetSprint();
+  cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
@@ -506,7 +509,7 @@ async function initializeAccountWorld(save,slot){
   for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
   rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
   accountNameEl.textContent=currentAccount.name+' · W'+slot+' · GEN'+generatorVersion;
-  renderHotbar();updateProgress();renderHealth();renderStamina();
+  renderHotbar();updateProgress();renderHealth();renderStamina();updateViewLabel();
   loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
   clearInterval(saveInterval);saveInterval=setInterval(()=>saveCurrentGame(false),10000);
@@ -1546,6 +1549,137 @@ const rain=new THREE.Points(rainG,new THREE.PointsMaterial({color:0xb8d7f0,size:
 rain.visible=false;scene.add(rain);
 
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
+
+/* Original voxel explorer model: teal coat, amber pack, denim trousers. */
+function buildPlayerAvatar(){
+  const g=new THREE.Group(),limbs={};
+  const skin=0xd4a078,skinShade=0xb98059,hair=0x392921,hairLight=0x53392c;
+  const jacket=0x247f9b,jacketLight=0x38a5b6,jacketDark=0x185569;
+  const pants=0x34466b,pantsShade=0x25334f,boots=0x332d2e,sole=0x18191c;
+  const pack=0xc08a46,packTrim=0xe4b76d,eye=0x24242a;
+
+  // The model's feet stand at y=0, and its face points along local -Z.
+  cube(g,.66,.66,.53,skin,0,1.49,0);
+  cube(g,.68,.18,.55,hair,0,1.81,.005);
+  cube(g,.69,.13,.34,hair,-.005,1.72,-.155);
+  cube(g,.17,.13,.10,hairLight,-.24,1.72,-.290);
+  cube(g,.13,.14,.09,hair,.17,1.72,-.295);
+  cube(g,.08,.11,.022,eye,-.16,1.51,-.279);
+  cube(g,.08,.11,.022,eye,.16,1.51,-.279);
+  cube(g,.16,.047,.025,skinShade,0,1.35,-.281);
+  cube(g,.075,.13,.055,skinShade,-.335,1.50,.01);
+  cube(g,.075,.13,.055,skinShade,.335,1.50,.01);
+
+  cube(g,.74,.69,.42,jacket,0,1.00,0);
+  cube(g,.69,.10,.44,jacketLight,0,1.32,0);
+  cube(g,.12,.52,.025,jacketDark,0,1.03,-.224);
+  cube(g,.20,.16,.04,jacketLight,0,1.22,-.234);
+  cube(g,.11,.07,.035,packTrim,.17,.97,-.231);
+  // Backpack remains visible from the rear camera.
+  cube(g,.53,.53,.19,pack,0,1.02,.31);
+  cube(g,.51,.11,.205,packTrim,0,1.21,.32);
+  cube(g,.13,.38,.035,packTrim,-.21,1.05,.427);
+  cube(g,.13,.38,.035,packTrim,.21,1.05,.427);
+
+  for(const [name,side] of [['left',-1],['right',1]]){
+    const arm=new THREE.Group();
+    arm.position.set(side*.48,1.30,0);
+    cube(arm,.255,.45,.35,jacket,0,-.22,0);
+    cube(arm,.262,.12,.36,jacketDark,0,-.47,0);
+    cube(arm,.225,.18,.29,skin,0,-.61,0);
+    g.add(arm);limbs[name+'Arm']=arm;
+    const leg=new THREE.Group();
+    leg.position.set(side*.20,.69,0);
+    cube(leg,.29,.54,.34,pants,0,-.24,0);
+    cube(leg,.29,.11,.345,pantsShade,0,-.51,0);
+    cube(leg,.32,.14,.43,boots,0,-.61,-.04);
+    cube(leg,.325,.055,.45,sole,0,-.69,-.045);
+    g.add(leg);limbs[name+'Leg']=leg;
+  }
+  g.userData.limbs=limbs;
+  g.visible=false;
+  scene.add(g);
+  return g;
+}
+const playerAvatar=buildPlayerAvatar();
+const VIEW_LABELS=['一人称','三人称','正面'];
+let cameraMode=0;
+const cameraCollisionRay=new THREE.Raycaster();
+const cameraEye=new THREE.Vector3(),cameraWanted=new THREE.Vector3(),cameraVector=new THREE.Vector3(),cameraLook=new THREE.Vector3();
+const gameplayAimDirection=new THREE.Vector3(),gameplayAimOrigin=new THREE.Vector3();
+function updateViewLabel(){
+  const button=document.getElementById('viewModeButton');
+  if(button){
+    button.textContent='視点：'+VIEW_LABELS[cameraMode];
+    button.setAttribute('aria-label','視点切り替え。現在：'+VIEW_LABELS[cameraMode]);
+  }
+  document.getElementById('crosshair')?.classList.toggle('view-front',cameraMode===2);
+}
+function cycleCameraMode(){
+  if(!started||dead||sleeping||craftOpen||inventoryOpen)return;
+  cameraMode=(cameraMode+1)%3;
+  updateViewLabel();
+  markSaveDirty();
+  flash('視点：'+VIEW_LABELS[cameraMode]);
+}
+function aimPlayerRay(){
+  const cp=Math.cos(player.pitch);
+  gameplayAimDirection.set(-Math.sin(player.yaw)*cp,Math.sin(player.pitch),-Math.cos(player.yaw)*cp).normalize();
+  gameplayAimOrigin.set(player.pos.x,player.pos.y+EYE,player.pos.z);
+  ray.set(gameplayAimOrigin,gameplayAimDirection);
+}
+function updatePlayerAvatar(now){
+  playerAvatar.visible=started&&!dead&&!sleeping&&cameraMode!==0;
+  if(!playerAvatar.visible)return;
+  playerAvatar.position.copy(player.pos);
+  playerAvatar.rotation.y=player.yaw;
+  const moving=Math.hypot(player.vel.x,player.vel.z);
+  const stride=moving>.3?Math.sin(now*.009*(moving>5.2?1.45:1))*(Math.min(.58,moving*.12)):0;
+  const limbs=playerAvatar.userData.limbs;
+  limbs.leftLeg.rotation.x=stride;
+  limbs.rightLeg.rotation.x=-stride;
+  limbs.leftArm.rotation.x=-stride*.8;
+  limbs.rightArm.rotation.x=stride*.8;
+  if(!player.onGround){
+    limbs.leftLeg.rotation.x=.15;
+    limbs.rightLeg.rotation.x=-.15;
+  }
+}
+function updateGameCamera(){
+  cameraEye.set(player.pos.x,player.pos.y+EYE,player.pos.z);
+  camera.rotation.order='YXZ';
+  if(cameraMode===0){
+    camera.position.copy(cameraEye);
+    camera.rotation.y=player.yaw;
+    camera.rotation.x=player.pitch;
+    return;
+  }
+  const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);
+  if(cameraMode===1){
+    cameraWanted.set(cameraEye.x+sy*4.2,cameraEye.y+1.0-Math.sin(player.pitch)*1.0,cameraEye.z+cy*4.2);
+    const cp=Math.cos(player.pitch);
+    cameraLook.set(cameraEye.x-sy*cp*5,cameraEye.y+Math.sin(player.pitch)*5,cameraEye.z-cy*cp*5);
+  }else{
+    cameraWanted.set(cameraEye.x-sy*3.6,cameraEye.y+.65,cameraEye.z-cy*3.6);
+    cameraLook.set(cameraEye.x,cameraEye.y-.15,cameraEye.z);
+  }
+  // Keep the camera outside terrain. Meshes are instanced blocks; avatar is excluded.
+  cameraVector.copy(cameraWanted).sub(cameraEye);
+  const wantedDistance=cameraVector.length();
+  cameraVector.normalize();
+  cameraCollisionRay.set(cameraEye,cameraVector);
+  cameraCollisionRay.near=0;
+  cameraCollisionRay.far=wantedDistance;
+  const obstruction=cameraCollisionRay.intersectObjects(meshes,false).find(h=>
+    h.object.userData.id!==B.WATER&&h.object.userData.id!==B.GLASS
+  );
+  const distance=obstruction?Math.max(.3,obstruction.distance-.28):wantedDistance;
+  camera.position.copy(cameraEye).addScaledVector(cameraVector,distance);
+  // Hide the body if there is no room for the camera to pull out.
+  if(distance<.8)playerAvatar.visible=false;
+  camera.lookAt(cameraLook);
+}
+
 const MAX_HEALTH=20,HEALTH_REGEN_SECONDS=5;
 let health=MAX_HEALTH,dead=false,fallOriginY=null,initialSpawn=null,bedSpawn=null,healthRegenTimer=0;
 const worldDrops=[],dropTextures=new Map();
@@ -1702,7 +1836,7 @@ function spawn(useBed=false){
 }
 
 const ray=new THREE.Raycaster();ray.far=6;
-function target(){ray.setFromCamera(new THREE.Vector2(0,0),camera);const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
+function target(){aimPlayerRay();const h=ray.intersectObjects(meshes,false);return h.find(v=>v.object.userData.id!==B.WATER)||h[0]||null}
 function flash(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(flash.t);flash.t=setTimeout(()=>msgEl.style.opacity=0,1200)}
 function renderHealth(){
   heartsEl.innerHTML='';
@@ -2208,7 +2342,7 @@ function dropMobLoot(root){
   }
 }
 function attackMob(){
-  ray.setFromCamera(new THREE.Vector2(0,0),camera);
+  aimPlayerRay();
   const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
   if(!hits.length)return false;
   let root=hits[0].object;
@@ -2379,6 +2513,7 @@ addEventListener('blur',()=>{
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(dead)return;
+  if((k==='v'||e.code==='F5')&&started){e.preventDefault();if(!e.repeat)cycleCameraMode();return}
   if(k==='e'&&started){e.preventDefault();setInventoryOpen(!inventoryOpen);return}
   if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}
   if(craftOpen||inventoryOpen||sleeping)return;
@@ -2563,7 +2698,8 @@ function loop(now){
 
     if(player.pos.y<-5&&!dead){health=0;showDeathScreen()}
     streamChunks();
-    camera.position.set(player.pos.x,player.pos.y+EYE,player.pos.z);camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
+    updatePlayerAvatar(now);
+    updateGameCamera();
 
     const ang=dayTime*Math.PI*2-Math.PI/2,day=Math.max(0,Math.sin(ang));
     sunBox.position.set(player.pos.x+Math.cos(ang)*48,Math.sin(ang)*48,player.pos.z+13);moonBox.position.set(player.pos.x-Math.cos(ang)*48,-Math.sin(ang)*48,player.pos.z-13);sun.position.copy(sunBox.position);
@@ -2617,6 +2753,7 @@ function loop(now){
     clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm+(isNightTime()?'  🧟 '+countZombies():'');
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
+  if(!started||dead||sleeping)playerAvatar.visible=false;
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
 }
@@ -2646,6 +2783,8 @@ addEventListener('pagehide',()=>saveCurrentGame(false));
 
 respawnBtn.addEventListener('click',()=>respawnPlayer());
 
+$('viewModeButton').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();cycleCameraMode()});
+updateViewLabel();
 $('startBtn').addEventListener('click',()=>{
   if(!worldReady||!currentAccount)return;
   started=true;cover.style.display='none';last=performance.now();renderHealth();
