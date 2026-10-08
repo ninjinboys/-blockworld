@@ -431,3 +431,70 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   .stamina-img{width:20px;height:19px}
   #staminaIcons{gap:1px}
 }
+
+
+/* Large, spacious D-pad: 4 directions around a genuinely empty center. */
+@media (max-width:760px),(pointer:coarse){
+  .pad{
+    --dpad-size:76px;
+    --dpad-gap:8px;
+    position:absolute;
+    left:16px;
+    bottom:calc(84px + env(safe-area-inset-bottom));
+    width:calc(3 * var(--dpad-size) + 2 * var(--dpad-gap));
+    height:calc(3 * var(--dpad-size) + 2 * var(--dpad-gap));
+    pointer-events:none;
+    z-index:6;
+  }
+  .pad button{
+    position:absolute;
+    width:var(--dpad-size);
+    height:var(--dpad-size);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    font-size:32px;
+    font-weight:900;
+    line-height:1;
+    border-radius:18px;
+    pointer-events:auto;
+    touch-action:none;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .pad .up{
+    left:calc(var(--dpad-size) + var(--dpad-gap));
+    top:0;right:auto;bottom:auto;
+  }
+  .pad .left{
+    left:0;
+    top:calc(var(--dpad-size) + var(--dpad-gap));
+    right:auto;bottom:auto;
+  }
+  .pad .right{
+    left:calc(2 * (var(--dpad-size) + var(--dpad-gap)));
+    top:calc(var(--dpad-size) + var(--dpad-gap));
+    right:auto;bottom:auto;
+  }
+  .pad .down{
+    left:calc(var(--dpad-size) + var(--dpad-gap));
+    top:calc(2 * (var(--dpad-size) + var(--dpad-gap)));
+    right:auto;bottom:auto;
+  }
+}
+@media (pointer:coarse) and (max-width:600px) and (orientation:portrait){
+  .pad{
+    --dpad-size:62px;
+    --dpad-gap:7px;
+    left:10px;
+    bottom:calc(84px + env(safe-area-inset-bottom));
+  }
+  .pad button{font-size:28px;border-radius:15px}
+  /* Keep jump on the right and away from the larger D-pad and action bar. */
+  .jump{
+    right:12px !important;
+    bottom:calc(236px + env(safe-area-inset-bottom)) !important;
+  }
+}
