@@ -441,8 +441,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
     position:absolute;
     left:16px;
     bottom:calc(84px + env(safe-area-inset-bottom));
-    width:calc(3 * var(--dpad-size) + 2 * var(--dpad-gap));
-    height:calc(3 * var(--dpad-size) + 2 * var(--dpad-gap));
+    width:calc(var(--dpad-size) + var(--dpad-size) + var(--dpad-size) + var(--dpad-gap) + var(--dpad-gap));
+    height:calc(var(--dpad-size) + var(--dpad-size) + var(--dpad-size) + var(--dpad-gap) + var(--dpad-gap));
     pointer-events:none;
     z-index:6;
   }
@@ -474,13 +474,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
     right:auto;bottom:auto;
   }
   .pad .right{
-    left:calc(2 * (var(--dpad-size) + var(--dpad-gap)));
+    left:calc(var(--dpad-size) + var(--dpad-size) + var(--dpad-gap) + var(--dpad-gap));
     top:calc(var(--dpad-size) + var(--dpad-gap));
     right:auto;bottom:auto;
   }
   .pad .down{
     left:calc(var(--dpad-size) + var(--dpad-gap));
-    top:calc(2 * (var(--dpad-size) + var(--dpad-gap)));
+    top:calc(var(--dpad-size) + var(--dpad-size) + var(--dpad-gap) + var(--dpad-gap));
     right:auto;bottom:auto;
   }
 }
