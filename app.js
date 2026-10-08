@@ -29,7 +29,9 @@ const sunBox=new THREE.Mesh(new THREE.BoxGeometry(2.1,2.1,.5),new THREE.MeshBasi
 const moonBox=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.7,.5),new THREE.MeshBasicMaterial({color:0xe5edf5}));
 scene.add(sunBox,moonBox);
 
-const CHUNK=16,RENDER_RADIUS=3,HEIGHT=48,SEA=11;
+const CHUNK=16,RENDER_RADIUS=3,Y_MIN=-80,WORLD_TOP=47,HEIGHT=WORLD_TOP-Y_MIN+1,SEA=11;
+// Terrain height uses the old 48-block world cap so existing landscapes stay unchanged.
+const TERRAIN_HEIGHT=48;
 const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22};
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
@@ -332,11 +334,11 @@ let streamCX=NaN,streamCZ=NaN;
 let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=5;
 const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SESSION_KEY='blockworld_session_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
-const inside=(x,y,z)=>y>=0&&y<HEIGHT;
+const inside=(x,y,z)=>y>=Y_MIN&&y<=WORLD_TOP;
 const chunkCoord=v=>Math.floor(v/CHUNK);
 const localCoord=v=>((v%CHUNK)+CHUNK)%CHUNK;
 const chunkKey=(cx,cz)=>cx+','+cz;
-const cIndex=(lx,y,lz)=>(y*CHUNK+lz)*CHUNK+lx;
+const cIndex=(lx,y,lz)=>((y-Y_MIN)*CHUNK+lz)*CHUNK+lx;
 const solid=id=>id!==B.AIR&&id!==B.WATER;
 
 
@@ -398,19 +400,28 @@ function migrateLegacySave(key){
 function setSaveStatus(text){saveStatusEl.textContent=text}
 function markSaveDirty(){if(currentAccount&&currentWorldSlot){saveDirty=true;setSaveStatus('未保存')}}
 function serializeEdits(){return [...editChunks.entries()].map(([k,m])=>[k,[...m.entries()]])}
-function restoreEdits(raw){
+function restoreEdits(raw,saveVersion=3){
   editChunks.clear();
   if(!Array.isArray(raw))return;
+  // Saves made before deeper terrain stored y=0..47 directly in the chunk index.
+  // Shift only those old indices; new-world edits already use y=-80..47.
+  const oldYOffset=saveVersion<4?(-Y_MIN*CHUNK*CHUNK):0;
   for(const row of raw){
     if(!Array.isArray(row)||row.length!==2||!Array.isArray(row[1]))continue;
     const m=new Map();
-    for(const pair of row[1])if(Array.isArray(pair)&&pair.length===2)m.set(Number(pair[0]),Number(pair[1]));
-    editChunks.set(String(row[0]),m);
+    for(const pair of row[1]){
+      if(!Array.isArray(pair)||pair.length!==2)continue;
+      const oldIndex=Number(pair[0]),block=Number(pair[1]);
+      const i=oldIndex+oldYOffset;
+      if(Number.isInteger(i)&&i>=0&&i<CHUNK*HEIGHT*CHUNK&&Number.isInteger(block))
+        m.set(i,block);
+    }
+    if(m.size)editChunks.set(String(row[0]),m);
   }
 }
 function makeSaveData(){
   return {
-    version:3,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
+    version:4,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
     level,xp,weather,dayTime,health,stamina,staminaRunSeconds,staminaRegenSeconds,cameraMode,
     initialSpawn:initialSpawn?{x:initialSpawn.x,y:initialSpawn.y,z:initialSpawn.z}:null,
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
@@ -473,7 +484,7 @@ function applySaveData(data){
     if(idx>=0)selectedHotbarIndex=idx;
   }
   syncDerivedInventory();
-  restoreEdits(data.edits);
+  restoreEdits(data.edits,Number(data.version)||3);
   restoreWorldDrops(data.worldDrops);
 
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
@@ -644,7 +655,7 @@ function terrainProfileV1(x,z){
   if(plateau>.48&&continent>.02&&y>SEA+7){
     const stepped=Math.round(y/3)*3;y=lerp(y,stepped,.62);
   }
-  const h=Math.max(3,Math.min(HEIGHT-6,Math.floor(y)));
+  const h=Math.max(3,Math.min(TERRAIN_HEIGHT-6,Math.floor(y)));
   return {h,continent,regional,rugged:Math.max(0,(ridge-.43)/.57)*mountainMask};
 }
 function chooseBiomeV1(h,temp,moist,river,rugged){
@@ -723,7 +734,7 @@ function terrainProfileV2(x,z){
     y=lerp(y,stepped,Math.min(.58,shelf*.62));
   }
 
-  const h=Math.max(3,Math.min(HEIGHT-5,Math.floor(y)));
+  const h=Math.max(3,Math.min(TERRAIN_HEIGHT-5,Math.floor(y)));
   return {h,bio,continental:c.continental,rugged:mountainStrength,temp:c.temp,moist:c.moist,X:c.X,Z:c.Z};
 }
 function columnInfoV2(x,z){
@@ -805,7 +816,7 @@ function terrainProfileV3(x,z){
   const valley=Math.max(0,(-c.erosion-.28)/.72);
   if(bio!==6)y-=valley*(bio===5?1.0:2.3);
 
-  const h=Math.max(3,Math.min(HEIGHT-5,Math.floor(y)));
+  const h=Math.max(3,Math.min(TERRAIN_HEIGHT-5,Math.floor(y)));
   return {h,bio,continental:c.continental,rugged:mountain,temp:c.temp,moist:c.moist,X:c.X,Z:c.Z};
 }
 function columnInfoV3(x,z){
@@ -877,7 +888,7 @@ function terrainProfileV4(x,z){
   const valley=Math.max(0,(-c.valley-.30)/.70);
   if(bio!==6)y-=valley*(bio===5?.8:2.0);
 
-  const h=Math.max(3,Math.min(HEIGHT-5,Math.floor(y)));
+  const h=Math.max(3,Math.min(TERRAIN_HEIGHT-5,Math.floor(y)));
   return {h,bio,continental:c.continental,rugged:mountain,temp:c.temp,moist:c.moist,X:c.X,Z:c.Z};
 }
 function columnInfoV4(x,z){
@@ -913,9 +924,9 @@ const biomeAt=(x,z)=>columnInfo(x,z).bio;
 
 function blockFromInfo(x,y,z,info){
   const {h,bio,river,riverBank,rugged}=info;
-  if(y<0||y>=HEIGHT)return B.AIR;
+  if(y<Y_MIN||y>WORLD_TOP)return B.AIR;
   if(y>h)return y<=SEA?B.WATER:B.AIR;
-  if(y===0)return B.BEDROCK;
+  if(y===Y_MIN)return B.BEDROCK;
 
   let id=B.STONE;
   const beach=h<=SEA+1;
@@ -940,9 +951,11 @@ function blockFromInfo(x,y,z,info){
   }
   if(id===B.STONE){
     const r=hash3(x,y,z,seed+5100);
-    if(y<8&&r>.986)id=B.DIAMOND;
-    else if(y<15&&r>.974)id=B.GOLD;
-    else if(y<27&&r>.955)id=B.IRON;
+    // Deep mining now matters: diamond near bedrock, gold at middle-deep
+    // levels, and iron underground. Above-ground ore no longer appears.
+    if(y<=-56&&r>.986)id=B.DIAMOND;
+    else if(y<=-25&&r>.974)id=B.GOLD;
+    else if(y<=8&&r>.955)id=B.IRON;
     else if(r>.932)id=B.COAL;
     else if(r<.018)id=B.GRAVEL;
   }
@@ -1007,7 +1020,7 @@ function isBoulderRoot(x,z,info){
 }
 
 function writeGenerated(data,cx,cz,x,y,z,id){
-  if(y<0||y>=HEIGHT||chunkCoord(x)!==cx||chunkCoord(z)!==cz)return;
+  if(y<Y_MIN||y>WORLD_TOP||chunkCoord(x)!==cx||chunkCoord(z)!==cz)return;
   data[cIndex(localCoord(x),y,localCoord(z))]=id;
 }
 function generateChunk(cx,cz){
@@ -1024,7 +1037,7 @@ function generateChunk(cx,cz){
   // Compute each column once; richer terrain stays fast enough for streaming.
   for(let lx=0;lx<CHUNK;lx++)for(let lz=0;lz<CHUNK;lz++){
     const x=x0+lx,z=z0+lz,info=getInfo(x,z);
-    for(let y=0;y<HEIGHT;y++)data[cIndex(lx,y,lz)]=blockFromInfo(x,y,z,info);
+    for(let y=Y_MIN;y<=WORLD_TOP;y++)data[cIndex(lx,y,lz)]=blockFromInfo(x,y,z,info);
   }
 
   // Natural surface features are generated from deterministic roots with margins,
@@ -1045,7 +1058,7 @@ function generateChunk(cx,cz){
           for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
             if(Math.abs(dx)+Math.abs(dz)>radius+1)continue;
             const tx=x+dx,ty=h+dy,tz=z+dz;
-            if(chunkCoord(tx)===cx&&chunkCoord(tz)===cz&&ty>=0&&ty<HEIGHT){
+            if(chunkCoord(tx)===cx&&chunkCoord(tz)===cz&&inside(tx,ty,tz)){
               const i=cIndex(localCoord(tx),ty,localCoord(tz));
               if(data[i]===B.AIR)data[i]=B.LEAF;
             }
@@ -1057,7 +1070,7 @@ function generateChunk(cx,cz){
           const wobble=hash3(x+dx,dy,z+dz,seed+806)>.12;
           if(!wobble||Math.abs(dx)+Math.abs(dz)+(dy===tall+2?2:0)>5)continue;
           const tx=x+dx,ty=h+dy,tz=z+dz;
-          if(chunkCoord(tx)===cx&&chunkCoord(tz)===cz&&ty>=0&&ty<HEIGHT){
+          if(chunkCoord(tx)===cx&&chunkCoord(tz)===cz&&inside(tx,ty,tz)){
             const i=cIndex(localCoord(tx),ty,localCoord(tz));
             if(data[i]===B.AIR)data[i]=B.LEAF;
           }
@@ -1093,12 +1106,14 @@ function ensureChunk(cx,cz){
   return c;
 }
 function getLoaded(x,y,z){
-  if(y<0||y>=HEIGHT)return B.AIR;
+  if(y<Y_MIN)return B.BEDROCK;
+  if(y>WORLD_TOP)return B.AIR;
   const c=chunks.get(chunkKey(chunkCoord(x),chunkCoord(z)));
   return c?c.data[cIndex(localCoord(x),y,localCoord(z))]:B.AIR;
 }
 function get(x,y,z){
-  if(y<0||y>=HEIGHT)return B.AIR;
+  if(y<Y_MIN)return B.BEDROCK;
+  if(y>WORLD_TOP)return B.AIR;
   const cx=chunkCoord(x),cz=chunkCoord(z),c=chunks.get(chunkKey(cx,cz));
   if(c)return c.data[cIndex(localCoord(x),y,localCoord(z))];
   const edits=editChunks.get(chunkKey(cx,cz)),i=cIndex(localCoord(x),y,localCoord(z));
@@ -1106,7 +1121,7 @@ function get(x,y,z){
   return baseBlockAt(x,y,z);
 }
 function set(x,y,z,v){
-  if(y<0||y>=HEIGHT)return;
+  if(!inside(x,y,z))return;
   const cx=chunkCoord(x),cz=chunkCoord(z),c=ensureChunk(cx,cz),i=cIndex(localCoord(x),y,localCoord(z));
   c.data[i]=v;
   const k=chunkKey(cx,cz);
@@ -1184,7 +1199,7 @@ function rebuild(){
   const nb=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
   for(const c of chunks.values()){
     const x0=c.cx*CHUNK,z0=c.cz*CHUNK;
-    for(let y=0;y<HEIGHT;y++)for(let lz=0;lz<CHUNK;lz++)for(let lx=0;lx<CHUNK;lx++){
+    for(let y=Y_MIN;y<=WORLD_TOP;y++)for(let lz=0;lz<CHUNK;lz++)for(let lx=0;lx<CHUNK;lx++){
       const id=c.data[cIndex(lx,y,lz)];if(id===B.AIR)continue;
       const x=x0+lx,z=z0+lz;let vis=false;
       for(const[dX,dY,dZ]of nb){
@@ -1376,7 +1391,7 @@ function buildZombie(){
 }
 function isZombieGround(x,z){
   const y=surfaceAt(x,z);
-  return y>=SEA&&y<HEIGHT-3&&solid(get(x,y,z))&&
+  return y>=SEA&&y<WORLD_TOP-2&&solid(get(x,y,z))&&
     get(x,y+1,z)===B.AIR&&get(x,y+2,z)===B.AIR;
 }
 function removeZombie(m){
@@ -2769,7 +2784,7 @@ function loop(now){
       fallOriginY=preVerticalY;
     }
 
-    if(player.pos.y<-5&&!dead){health=0;showDeathScreen()}
+    if(player.pos.y<Y_MIN-5&&!dead){health=0;showDeathScreen()}
     streamChunks();
     updatePlayerAvatar(now);
     updateGameCamera();
