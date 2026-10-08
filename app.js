@@ -42,7 +42,8 @@ const I={
   GOLD_HELMET:130,GOLD_CHEST:131,GOLD_LEGS:132,GOLD_BOOTS:133,
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
-  WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143
+  WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
+  COOKED_PORK:144,COOKED_BEEF:145
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -57,6 +58,7 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
+  144:'焼き豚肉',145:'ステーキ',
   21:'ベッド',22:'ベッド'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
@@ -75,7 +77,8 @@ const inventory={
   [I.GOLD_HELMET]:0,[I.GOLD_CHEST]:0,[I.GOLD_LEGS]:0,[I.GOLD_BOOTS]:0,
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
-  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.BED]:0
+  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.BED]:0,
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
@@ -92,7 +95,8 @@ const itemGlyphs={
   [I.GOLD_HELMET]:'金頭',[I.GOLD_CHEST]:'金胴',[I.GOLD_LEGS]:'金脚',[I.GOLD_BOOTS]:'金靴',
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
-  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.BED]:'床'
+  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.BED]:'床',
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛'
 };
 
 const ICON_MAT={
@@ -203,10 +207,16 @@ function mobDropIcon(g,id){
     ir(g,4,4,8,8,'#f4f1e9');ir(g,3,6,2,5,'#ded9cf');ir(g,11,5,2,6,'#ffffff');
     ir(g,5,3,3,2,'#ffffff');ir(g,8,3,3,2,'#e7e2d8');ir(g,6,11,5,2,'#c9c4bb');return;
   }
-  if(id===I.RAW_PORK||id===I.RAW_BEEF){
-    const main=id===I.RAW_PORK?'#d8737d':'#a84448',light=id===I.RAW_PORK?'#f3a2aa':'#d8666b',dark=id===I.RAW_PORK?'#9e4f58':'#6f2b30';
+  if(id===I.RAW_PORK||id===I.RAW_BEEF||id===I.COOKED_PORK||id===I.COOKED_BEEF){
+    const cooked=id===I.COOKED_PORK||id===I.COOKED_BEEF;
+    const pork=id===I.RAW_PORK||id===I.COOKED_PORK;
+    const main=cooked?(pork?'#b96a35':'#824326'):(pork?'#d8737d':'#a84448');
+    const light=cooked?(pork?'#e39a4d':'#b8773e'):(pork?'#f3a2aa':'#d8666b');
+    const dark=cooked?(pork?'#70371e':'#532919'):(pork?'#9e4f58':'#6f2b30');
     poly(g,[[3,6],[6,3],[11,4],[13,7],[11,12],[6,13],[3,10]],main);
-    ir(g,6,5,4,2,light);ir(g,4,8,2,2,dark);ir(g,9,10,2,2,dark);return;
+    ir(g,6,5,4,2,light);ir(g,4,8,2,2,dark);ir(g,9,10,2,2,dark);
+    if(cooked){ir(g,9,5,2,1,'#f2c475');ir(g,6,11,3,1,dark)}
+    return;
   }
   if(id===I.LEATHER){
     poly(g,[[4,3],[7,4],[9,3],[12,5],[11,8],[13,11],[10,13],[7,12],[4,13],[3,9],[4,7],[3,5]],'#8a5533');
@@ -215,7 +225,8 @@ function mobDropIcon(g,id){
 }
 function drawItemIcon(g,id){
   g.clearRect(0,0,16,16);
-  if(id===I.WOOL||id===I.RAW_PORK||id===I.RAW_BEEF||id===I.LEATHER)return mobDropIcon(g,id);
+  if(id===I.WOOL||id===I.RAW_PORK||id===I.RAW_BEEF||id===I.LEATHER||
+    id===I.COOKED_PORK||id===I.COOKED_BEEF)return mobDropIcon(g,id);
   if(id===B.GRASS)return blockIcon(g,'#78b85c','#785032','#5f4028','grass');
   if(id===B.DIRT)return blockIcon(g,'#98643c','#7c4e31','#684029','plain');
   if(id===B.STONE)return blockIcon(g,'#a3a7aa','#888d91','#6f7478','stone');
@@ -302,7 +313,9 @@ const workbenchRecipes=[
 ];
 const furnaceRecipes=[
   {name:'鉄インゴット',out:I.IRON_INGOT,qty:1,needs:[[I.RAW_IRON,1],[B.COAL,1]],unlockLevel:7,xp:4},
-  {name:'金インゴット',out:I.GOLD_INGOT,qty:1,needs:[[I.RAW_GOLD,1],[B.COAL,1]],unlockLevel:7,xp:6}
+  {name:'金インゴット',out:I.GOLD_INGOT,qty:1,needs:[[I.RAW_GOLD,1],[B.COAL,1]],unlockLevel:7,xp:6},
+  {name:'焼き豚肉',out:I.COOKED_PORK,qty:1,needs:[[I.RAW_PORK,1],[B.COAL,1]],unlockLevel:7,xp:2},
+  {name:'ステーキ',out:I.COOKED_BEEF,qty:1,needs:[[I.RAW_BEEF,1],[B.COAL,1]],unlockLevel:7,xp:3}
 ];
 const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
 const hardness={
@@ -2112,6 +2125,7 @@ function removeFromSlot(index,qty=1){
 }
 function consumeSelected(qty=1){return removeFromSlot(selectedHotbarIndex,qty)}
 function selectHotbar(index){
+  if(eatingHeld)resetEating();
   selectedHotbarIndex=Math.max(0,Math.min(8,index));syncDerivedInventory();renderHotbar();
   if(inventoryOpen)renderInventoryUI();
 }
@@ -2374,11 +2388,59 @@ function attackMob(){
   return true;
 }
 
+// Food is eaten with a deliberate one-second hold on the attack/mine action.
+const FOOD_EAT_SECONDS=1;
+const FOOD_HEAL_POINTS={
+  [I.RAW_PORK]:4,[I.COOKED_PORK]:4, // 2 hearts
+  [I.RAW_BEEF]:6,[I.COOKED_BEEF]:6  // 3 hearts
+};
+let eatingHeld=false,eatingElapsed=0,eatingSlot=-1,eatingItem=null;
+function resetEating(){
+  eatingHeld=false;eatingElapsed=0;eatingSlot=-1;eatingItem=null;
+  if(!miningHeld)clearMining();
+}
+function startEating(){
+  if(!started||dead||sleeping||craftOpen||inventoryOpen)return false;
+  if(!Object.hasOwn(FOOD_HEAL_POINTS,selected))return false;
+  miningHeld=false;clearMining();
+  if(health>=MAX_HEALTH){flash('体力満タン：肉は食べられません');return true}
+  const stack=inventorySlots[selectedHotbarIndex];
+  if(!stack||stack.id!==selected||stack.qty<1)return true;
+  eatingHeld=true;eatingElapsed=0;eatingSlot=selectedHotbarIndex;eatingItem=selected;
+  breakLabel.textContent=(names[selected]||'肉')+' を食べる';
+  breakFill.style.width='0%';breakMeter.classList.add('active');
+  return true;
+}
+function updateEating(dt){
+  if(!eatingHeld)return;
+  const stack=inventorySlots[eatingSlot];
+  if(dead||sleeping||craftOpen||inventoryOpen||eatingSlot!==selectedHotbarIndex||
+     !stack||stack.id!==eatingItem||stack.qty<1){
+    resetEating();return;
+  }
+  if(health>=MAX_HEALTH){resetEating();return}
+  eatingElapsed+=dt;
+  const pct=Math.min(100,eatingElapsed/FOOD_EAT_SECONDS*100);
+  breakLabel.textContent=(names[eatingItem]||'肉')+' '+Math.floor(pct)+'%';
+  breakFill.style.width=pct+'%';
+  if(eatingElapsed<FOOD_EAT_SECONDS)return;
+  const item=eatingItem;
+  // Exactly one portion per continuous hold; release and hold again for another.
+  resetEating();
+  const consumed=removeFromSlot(selectedHotbarIndex,1);
+  if(consumed!==1)return;
+  const restored=Math.min(MAX_HEALTH-health,FOOD_HEAL_POINTS[item]);
+  health=Math.min(MAX_HEALTH,health+FOOD_HEAL_POINTS[item]);
+  healthRegenTimer=0;renderHealth();markSaveDirty();
+  flash((names[item]||'肉')+'を食べた　♥+'+(restored/2));
+}
 function primaryActionStart(){
+  if(!started||dead||sleeping||craftOpen||inventoryOpen)return;
+  if(startEating())return;
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
 }
-function primaryActionStop(){miningHeld=false;clearMining()}
+function primaryActionStop(){eatingHeld=false;eatingElapsed=0;eatingSlot=-1;eatingItem=null;miningHeld=false;clearMining()}
 
 function renderHotbar(){
   syncDerivedInventory();hotbarEl.innerHTML='';
@@ -2423,7 +2485,7 @@ function currentRecipeList(){
 function renderCrafting(){
   const title=document.querySelector('.craft-title'),sub=document.querySelector('.craft-sub');
   if(craftMode==='workbench'){title.textContent='WORKBENCH';sub.textContent='作業台専用：ツール・防具・設備'}
-  else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭を燃料に原石を精錬'}
+  else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭で原石を精錬・生肉を調理'}
   else {title.textContent='CRAFTING';sub.textContent='インベントリで作れる基本アイテム'}
   const ids=Object.keys(inventory).map(Number);
   const owned=ids.filter(id=>(inventory[id]||0)>0);
@@ -2445,7 +2507,7 @@ function renderCrafting(){
     const locked=level<r.unlockLevel,can=!locked&&hasNeeds(r);
     const d=document.createElement('div');d.className='recipe'+(locked?' locked':'');
     const needText=r.needs.map(([id,n])=>`${names[id]} ×${n}`).join(' ＋ ');
-    const verb=craftMode==='furnace'?'精錬':'作る';
+    const verb=craftMode==='furnace'?'焼く':'作る';
 
     const main=document.createElement('div');main.className='recipe-main';
     main.appendChild(itemCanvas(r.out,'item-icon recipe-icon'));
@@ -2468,7 +2530,7 @@ function craftRecipe(i){
   r.needs.forEach(([id,n])=>removeItem(id,n));
   addItem(r.out,r.qty);
   if(craftMode==='furnace'&&r.xp)gainXP(r.xp,r.name+'を精錬');
-  renderHotbar();renderCrafting();flash(r.name+(craftMode==='furnace'?'を精錬':'をクラフト'));
+  renderHotbar();renderCrafting();flash(r.name+(craftMode==='furnace'?'が完成！':'をクラフト'));
 }
 function setCraftOpen(v){
   craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
@@ -2664,6 +2726,7 @@ function loop(now){
   }
   if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
+    updateEating(dt);
     advanceDayTime(dt);
     updateZombieSpawning(dt);
     const inWater=playerInWater();
