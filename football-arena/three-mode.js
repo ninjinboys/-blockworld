@@ -283,7 +283,7 @@ export function enable3D(api) {
     const aspect=innerWidth/Math.max(1,innerHeight);
     const landscape=aspect>=1;
     target.set(cameraX,0,cameraZ);
-    camera.position.set(cameraX+(landscape?9:5),landscape?29:43, cameraZ+(landscape?51:61));
+    camera.position.set(cameraX,landscape?30:43,cameraZ+(landscape?54:63));
     camera.lookAt(target);
     renderer.render(scene,camera);
     // Preserve charge bar and goal/kick-off announcements from the original HUD.
