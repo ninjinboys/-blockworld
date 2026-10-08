@@ -1192,6 +1192,13 @@ function streamChunks(force=false){
   }
   missing.sort((a,b)=>a.distance-b.distance);
   pendingChunkLoads.length=0;pendingChunkLoads.push(...missing);
+  // An already-rendered chunk can move into shadow range as the player walks.
+  // Reflagging existing meshes is cheap; no geometry rebuild is needed.
+  for(const c of chunks.values()){
+    const near=Math.abs(c.cx-cx)<=1&&Math.abs(c.cz-cz)<=1;
+    for(const m of c.renderMeshes||[])
+      m.castShadow=near&&m.userData.id!==B.WATER&&m.userData.id!==B.GLASS;
+  }
   return true;
 }
 function processChunkStreaming(){
