@@ -471,7 +471,11 @@ function resetWorldRuntime(){
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
-  mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
+  mobs.forEach(m=>{
+    if(m.userData.type==='zombie')removeZombie(m);
+    else scene.remove(m);
+  });
+  mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=3;
   clearWorldDrops();
   chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
   health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
@@ -1313,6 +1317,148 @@ function buildCow(){
   return g;
 }
 
+// Night-time hostile mob: an original blocky green zombie.
+const ZOMBIE_LIMIT=7,ZOMBIE_AGGRO_RANGE=28,ZOMBIE_ATTACK_RANGE=1.35;
+let zombieSpawnCooldown=3;
+function buildZombie(){
+  const g=new THREE.Group();
+  const skin=0x78ad63,skinLight=0x94c47c,skinDark=0x4b753d;
+  const shirt=0x377e8b,shirtLight=0x4395a2,shirtDark=0x225965;
+  const pants=0x303957,boots=0x262c39,eyes=0xece9b0,eyeDark=0x2d372a;
+
+  // Blocky humanoid, roughly two blocks tall. Local -Z is the face/front.
+  cube(g,.72,.68,.40,shirt,0,1.17,0);
+  cube(g,.60,.13,.41,shirtLight,0,1.53,0);
+  cube(g,.62,.56,.59,skin,0,1.82,-.025);
+  cube(g,.62,.12,.59,skinLight,0,2.12,-.025);
+  cube(g,.15,.12,.035,eyes,-.16,1.92,-.338);
+  cube(g,.15,.12,.035,eyes,.16,1.92,-.338);
+  cube(g,.075,.08,.038,eyeDark,-.16,1.92,-.360);
+  cube(g,.075,.08,.038,eyeDark,.16,1.92,-.360);
+  cube(g,.24,.055,.04,skinDark,0,1.70,-.341);
+  cube(g,.14,.07,.04,skinDark,-.24,1.65,-.341);
+
+  const leftArm=new THREE.Group(),rightArm=new THREE.Group();
+  leftArm.position.set(-.49,1.43,0);
+  rightArm.position.set(.49,1.43,0);
+  cube(leftArm,.25,.50,.30,shirtDark,0,-.24,-.03);
+  cube(rightArm,.25,.50,.30,shirt,0,-.24,-.03);
+  cube(leftArm,.24,.24,.28,skinDark,0,-.59,-.03);
+  cube(rightArm,.24,.24,.28,skin,0,-.59,-.03);
+  g.add(leftArm,rightArm);
+
+  const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();
+  for(const [leg,x] of [[leftLeg,-.19],[rightLeg,.19]]){
+    leg.position.set(x,.83,0);
+    cube(leg,.29,.70,.33,pants,0,-.36,0);
+    cube(leg,.30,.19,.41,boots,0,-.75,-.065);
+    g.add(leg);
+  }
+  g.userData.parts={leftArm,rightArm,leftLeg,rightLeg};
+  return g;
+}
+function isZombieGround(x,z){
+  const y=surfaceAt(x,z);
+  return y>SEA&&y<HEIGHT-3&&solid(get(x,y,z))&&
+    get(x,y+1,z)===B.AIR&&get(x,y+2,z)===B.AIR;
+}
+function removeZombie(m){
+  const i=mobs.indexOf(m);
+  if(i>=0)mobs.splice(i,1);
+  scene.remove(m);
+  m.traverse(o=>{
+    if(!o.isMesh)return;
+    o.geometry?.dispose();
+    if(o.userData.mobOwnMaterial)o.material?.dispose();
+  });
+}
+function spawnZombie(){
+  if(mobs.filter(m=>m.userData.type==='zombie').length>=ZOMBIE_LIMIT)return false;
+  for(let attempt=0;attempt<12;attempt++){
+    const angle=Math.random()*Math.PI*2,dist=14+Math.random()*14;
+    const x=Math.round(player.pos.x+Math.cos(angle)*dist);
+    const z=Math.round(player.pos.z+Math.sin(angle)*dist);
+    if(!isZombieGround(x,z))continue;
+    const y=surfaceAt(x,z);
+    // Spawn at comparable height to the player, not on a distant mountain.
+    if(Math.abs(y+.5-player.pos.y)>6)continue;
+    if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<3))continue;
+    const g=buildZombie();
+    g.position.set(x,y+.51,z);
+    g.userData={...g.userData,type:'zombie',name:'ゾンビ',hp:10,xp:24,
+      angle:Math.random()*Math.PI*2,speed:1.45,
+      attackCooldown:.8,hitFlash:0,phase:Math.random()*Math.PI*2};
+    scene.add(g);mobs.push(g);
+    return true;
+  }
+  return false;
+}
+function updateZombieSpawning(dt){
+  if(!isNightTime()){
+    zombieSpawnCooldown=3;
+    // Zombies do not survive daylight. Clear them at sunrise.
+    for(let i=mobs.length-1;i>=0;i--)if(mobs[i].userData.type==='zombie')removeZombie(mobs[i]);
+    return;
+  }
+  for(let i=mobs.length-1;i>=0;i--){
+    const m=mobs[i];
+    if(m.userData.type==='zombie'&&Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>75)removeZombie(m);
+  }
+  zombieSpawnCooldown-=dt;
+  if(zombieSpawnCooldown>0)return;
+  zombieSpawnCooldown=6+Math.random()*4;
+  spawnZombie();
+}
+function zombieStep(m,angle,step){
+  const nx=m.position.x+Math.sin(angle)*step;
+  const nz=m.position.z+Math.cos(angle)*step;
+  const x=Math.round(nx),z=Math.round(nz);
+  if(!isZombieGround(x,z))return false;
+  const groundY=surfaceAt(x,z)+.51;
+  if(Math.abs(groundY-m.position.y)>1.18)return false;
+  m.position.x=nx;m.position.z=nz;
+  m.position.y+=(groundY-m.position.y)*.25;
+  return true;
+}
+function updateZombie(m,dt,now){
+  const dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
+  const distance=Math.hypot(dx,dz);
+  const ud=m.userData;
+  ud.attackCooldown=Math.max(0,ud.attackCooldown-dt);
+  if(distance<ZOMBIE_AGGRO_RANGE&&Math.abs(player.pos.y-m.position.y)<5){
+    ud.angle=Math.atan2(dx,dz);
+    if(distance>ZOMBIE_ATTACK_RANGE*.75){
+      const step=ud.speed*dt;
+      if(!zombieStep(m,ud.angle,step)){
+        // Try a short sidestep around uneven ground or trees.
+        if(!zombieStep(m,ud.angle+Math.PI/2,step))
+          zombieStep(m,ud.angle-Math.PI/2,step);
+      }
+    }
+    m.rotation.y=ud.angle+Math.PI;
+    if(distance<ZOMBIE_ATTACK_RANGE&&Math.abs(player.pos.y-m.position.y)<1.8&&ud.attackCooldown<=0){
+      ud.attackCooldown=1.8;
+      damagePlayer(1,'ゾンビの攻撃');
+    }
+  }else{
+    // Distant zombies idle; only nearby enemies seek the player.
+    ud.angle+=Math.sin(now*.00055+ud.phase)*dt*.18;
+    m.rotation.y=ud.angle+Math.PI;
+  }
+  const parts=ud.parts;
+  if(parts){
+    const stride=Math.sin(now*.007+ud.phase);
+    parts.leftLeg.rotation.x=stride*.38;
+    parts.rightLeg.rotation.x=-stride*.38;
+    parts.leftArm.rotation.x=-1.12-stride*.14;
+    parts.rightArm.rotation.x=-1.12+stride*.14;
+    if(distance<ZOMBIE_ATTACK_RANGE+.35){
+      parts.leftArm.rotation.x=-1.5+Math.sin(now*.016)*.35;
+      parts.rightArm.rotation.x=-1.5-Math.sin(now*.016)*.35;
+    }
+  }
+}
+
 let passiveSpawnCooldown=20;
 function spawnPassiveMob(){
   if(mobs.length>=20)return false;
@@ -2029,6 +2175,7 @@ function makeMobFlee(root){
 function dropMobLoot(root){
   const x=root.position.x,y=root.position.y+.75,z=root.position.z;
   const type=root.userData.type;
+  if(type==='zombie')return; // Zombie kills grant XP; no animal meat drops.
   if(type===0){
     spawnWorldDrop(I.WOOL,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
   }else if(type===1){
@@ -2049,12 +2196,13 @@ function attackMob(){
   const damage=selected===I.DIAMOND_SWORD?4:selected===I.IRON_SWORD?3:selected===I.GOLD_SWORD?2:selected===I.STONE_SWORD?2:1;
   root.userData.hp-=damage;
   setMobHitFlash(root);
-  makeMobFlee(root);
+  if(root.userData.type!=='zombie')makeMobFlee(root);
 
   if(root.userData.hp<=0){
     const earned=root.userData.xp||12,name=root.userData.name||'動物';
     dropMobLoot(root);
-    scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1);
+    if(root.userData.type==='zombie')removeZombie(root);
+    else {scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1)}
     gainXP(earned,name+'を倒した');
   }else{
     flash((root.userData.name||'動物')+'に攻撃　HP '+root.userData.hp);
@@ -2352,6 +2500,7 @@ function loop(now){
   if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
     advanceDayTime(dt);
+    updateZombieSpawning(dt);
     const inWater=playerInWater();
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
     if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
@@ -2412,6 +2561,10 @@ function loop(now){
       if(m.userData.hitFlash>0){
         m.userData.hitFlash-=dt;
         if(m.userData.hitFlash<=0)restoreMobColors(m);
+      }
+      if(m.userData.type==='zombie'){
+        updateZombie(m,dt,now);
+        return;
       }
       if(m.userData.fleeTime>0){
         m.userData.fleeTime-=dt;
