@@ -1583,7 +1583,7 @@ function buildPlayerAvatar(){
 
   for(const [name,side] of [['left',-1],['right',1]]){
     const arm=new THREE.Group();
-    arm.position.set(side*.48,1.30,0);
+    arm.position.set(side*.36,1.30,0);
     cube(arm,.255,.45,.35,jacket,0,-.22,0);
     cube(arm,.262,.12,.36,jacketDark,0,-.47,0);
     cube(arm,.225,.18,.29,skin,0,-.61,0);
