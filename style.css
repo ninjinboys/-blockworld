@@ -498,3 +498,36 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
     bottom:calc(236px + env(safe-area-inset-bottom)) !important;
   }
 }
+
+/* Camera view switch: anchored below the coordinates, clear of the movement pad. */
+#viewModeButton{
+  position:absolute;
+  top:115px;
+  left:12px;
+  min-height:40px;
+  padding:7px 11px;
+  border:2px solid rgba(230,246,255,.55);
+  border-radius:8px;
+  background:rgba(12,35,50,.78);
+  color:#fff;
+  font:800 12px ui-monospace,monospace;
+  text-shadow:0 1px 1px #000;
+  pointer-events:auto;
+  touch-action:manipulation;
+  cursor:pointer;
+  z-index:9;
+}
+#viewModeButton:active{background:rgba(32,111,144,.93);transform:translateY(1px)}
+#crosshair.view-front{display:none}
+@media(max-width:760px),(pointer:coarse){
+  #viewModeButton{
+    top:98px;
+    left:10px;
+    min-height:45px;
+    min-width:126px;
+    padding:9px 11px;
+    font-size:11px;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+}
