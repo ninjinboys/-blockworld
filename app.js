@@ -398,7 +398,7 @@ function restoreEdits(raw){
 function makeSaveData(){
   return {
     version:3,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
-    level,xp,weather,dayTime,health,
+    level,xp,weather,dayTime,health,stamina,staminaRunSeconds,
     initialSpawn:initialSpawn?{x:initialSpawn.x,y:initialSpawn.y,z:initialSpawn.z}:null,
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
@@ -435,6 +435,8 @@ function applySaveData(data){
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
   health=Number.isFinite(Number(data.health))?Math.max(0,Math.min(MAX_HEALTH,Math.floor(Number(data.health)))):MAX_HEALTH;
   dead=health<=0;
+  stamina=Number.isFinite(data.stamina)?Math.max(0,Math.min(MAX_STAMINA,Math.floor(data.stamina))):MAX_STAMINA;
+  staminaRunSeconds=Number.isFinite(data.staminaRunSeconds)?Math.max(0,Math.min(STAMINA_SECONDS_PER_HALF-.0001,data.staminaRunSeconds)):0;
   initialSpawn=(data.initialSpawn&&Number.isFinite(data.initialSpawn.x)&&Number.isFinite(data.initialSpawn.y)&&Number.isFinite(data.initialSpawn.z))
     ?{x:Number(data.initialSpawn.x),y:Number(data.initialSpawn.y),z:Number(data.initialSpawn.z)}:null;
   bedSpawn=(data.bedSpawn&&Number.isFinite(data.bedSpawn.x)&&Number.isFinite(data.bedSpawn.y)&&Number.isFinite(data.bedSpawn.z))
@@ -465,6 +467,7 @@ function applySaveData(data){
 }
 function resetWorldRuntime(){
   resetSprint();
+  stamina=MAX_STAMINA;staminaRunSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   meshes.forEach(m=>scene.remove(m));meshes=[];lookup.clear();
   mobs.forEach(m=>scene.remove(m));mobs.length=0;passiveSpawnCooldown=20;
@@ -484,6 +487,7 @@ async function initializeAccountWorld(save,slot){
   if(save)hasSavedPos=applySaveData(save);
   else{
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    stamina=MAX_STAMINA;staminaRunSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
     editChunks.clear();clearWorldDrops();
@@ -496,7 +500,7 @@ async function initializeAccountWorld(save,slot){
   for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
   rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
   accountNameEl.textContent=currentAccount.name+' · W'+slot+' · GEN'+generatorVersion;
-  renderHotbar();updateProgress();renderHealth();
+  renderHotbar();updateProgress();renderHealth();renderStamina();
   loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
   clearInterval(saveInterval);saveInterval=setInterval(()=>saveCurrentGame(false),10000);
@@ -1534,6 +1538,38 @@ function renderHealth(){
   }
   heartsEl.parentElement?.setAttribute('aria-label','体力 '+(health/2)+' / 10');
 }
+function renderStamina(){
+  const hud=document.getElementById('staminaHud');
+  const icons=document.querySelectorAll('#staminaIcons .stamina-img');
+  if(!hud||icons.length!==10)return;
+  for(let i=0;i<10;i++){
+    const remaining=stamina-i*2;
+    const kind=remaining>=2?'full':remaining===1?'half':'empty';
+    const img=icons[i];
+    if(!img.getAttribute('src')?.includes('stamina-'+kind+'.svg'))
+      img.setAttribute('src','assets/stamina-'+kind+'.svg?v=20261008n');
+  }
+  hud.setAttribute('aria-label','スタミナ '+(stamina/2)+' / 10');
+}
+function updateStaminaDuringSprint(dt){
+  if(stamina<=0)return;
+  staminaRunSeconds+=dt;
+  let spent=false;
+  while(staminaRunSeconds>=STAMINA_SECONDS_PER_HALF&&stamina>0){
+    staminaRunSeconds-=STAMINA_SECONDS_PER_HALF;
+    stamina--;
+    spent=true;
+  }
+  if(spent){
+    renderStamina();
+    markSaveDirty();
+    if(stamina===0){
+      staminaRunSeconds=0;
+      resetSprint();
+      flash('スタミナ切れ！ 走れません');
+    }
+  }
+}
 function showDeathScreen(){
   dead=true;health=0;renderHealth();primaryActionStop();
   Object.keys(keys).forEach(k=>keys[k]=false);
@@ -1568,9 +1604,10 @@ function updateHealthRegen(dt){
 }
 function respawnPlayer(){
   health=MAX_HEALTH;dead=false;fallOriginY=null;healthRegenTimer=0;
+  stamina=MAX_STAMINA;staminaRunSeconds=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
   spawn(true);streamChunks(true);
-  player.yaw=0;player.pitch=0;renderHealth();markSaveDirty();saveCurrentGame(false);
+  player.yaw=0;player.pitch=0;renderHealth();renderStamina();markSaveDirty();saveCurrentGame(false);
   last=performance.now();
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
 }
@@ -2099,6 +2136,8 @@ function setCraftOpen(v){
 }
 
 const keys={};
+const MAX_STAMINA=20,STAMINA_SECONDS_PER_HALF=5;
+let stamina=MAX_STAMINA,staminaRunSeconds=0;
 const DOUBLE_TAP_FORWARD_MS=400,SPRINT_SPEED=7.2,WALK_SPEED=4.5;
 let sprinting=false,forwardPressStarted=0,lastQuickForwardRelease=-Infinity;
 function showSprintState(){
@@ -2107,7 +2146,7 @@ function showSprintState(){
 }
 function beginForwardPress(){
   const now=performance.now();
-  sprinting=now-lastQuickForwardRelease<=DOUBLE_TAP_FORWARD_MS;
+  sprinting=stamina>0&&now-lastQuickForwardRelease<=DOUBLE_TAP_FORWARD_MS;
   forwardPressStarted=now;
   lastQuickForwardRelease=-Infinity;
   showSprintState();
@@ -2277,8 +2316,9 @@ function loop(now){
     const inWater=playerInWater();
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
     if(keys.w||keys.arrowup)move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
-    const running=sprinting&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!inWater;
-    if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:(running?SPRINT_SPEED:WALK_SPEED));
+    const running=sprinting&&stamina>0&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!inWater;
+    if(running)updateStaminaDuringSprint(dt);
+    if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:(running&&stamina>0?SPRINT_SPEED:WALK_SPEED));
     player.vel.x+=(move.x-player.vel.x)*Math.min(1,dt*(inWater?7:11));
     player.vel.z+=(move.z-player.vel.z)*Math.min(1,dt*(inWater?7:11));
     if(inWater){
