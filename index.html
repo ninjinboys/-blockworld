@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261008r">
+<link rel="stylesheet" href="style.css?v=20261008u">
 </head>
 <body>
 <div id="game"></div>
@@ -42,6 +42,7 @@
 <div id="crosshair"></div><div id="breakMeter"><div id="breakLabel"></div><div id="breakTrack"><div id="breakFill"></div></div></div>
 <div id="hud">
   <div id="stats"><div id="coords">X 0 Y 0 Z 0</div><div id="biome">Plains</div><div id="clock">☀ 06:00</div><div id="weather">Clear</div></div>
+  <button id="viewModeButton" type="button" aria-label="視点切り替え">視点：一人称</button>
   <div id="accountBox">
     <div><strong id="accountName">---</strong><span id="saveStatus">未ログイン</span></div>
     <div class="account-actions"><button id="saveNow" type="button">保存</button><button id="worldListBtn" type="button">ワールド</button><button id="logoutBtn" type="button">ログアウト</button></div>
@@ -51,7 +52,7 @@
     <div id="xpTrack"><div id="xpFill"></div></div>
     <div id="blueprintText">次の設計図：木材（LV 2）</div>
   </div>
-  <div id="hint">WASD 移動 / Space ジャンプ / 左クリック長押し 攻撃/採掘 / 右クリック 設置 / C クラフト / R 雨</div>
+  <div id="hint">WASD 移動 / Space ジャンプ / 左クリック長押し 攻撃/採掘 / 右クリック 設置 / C クラフト / R 雨 / V・F5 視点</div>
   <div id="message"></div>
   <div id="healthHud" aria-label="体力"><div id="hearts"></div></div>
   <div id="staminaHud" role="img" aria-label="スタミナ 10 / 10（表示のみ）"><div id="staminaIcons"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"></div></div>
@@ -158,6 +159,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261008t"></script>
+<script type="module" src="app.js?v=20261008u"></script>
 </body>
 </html>
