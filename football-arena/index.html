@@ -66,7 +66,7 @@ body{ overscroll-behavior:none; }
 </div>
 <div id="menuScreen"><div class="menuShell"><div>
   <div class="eyebrow">THE NEXT LEVEL OF FOOTBALL</div><div class="logo"><div class="light">FOOTBALL</div><div class="accent">ARENA<span style="color:#fff;font-size:.43em;vertical-align:top;margin-left:6px">26</span></div></div>
-  <div class="lead">左スティックで移動。端まで倒せばダッシュ。<br>右でパス・シュート。守備は「プレス」を長押し！</div>
+  <div class="lead">味方が自動で走り込む11対11の3Dサッカー。<br>左で移動、右でパス・シュート。守備は「プレス」を長押し！</div>
   <div class="chips"><span>🏟️ 3D スタジアム</span><span>⚽ 11 vs 11</span><span>🤖 CPU対戦</span><span>📱 タッチ操作・横画面推奨</span><span>🎮 キーボード対応</span></div>
 </div><div class="panel"><h2>EXHIBITION MATCH</h2><div class="matchup">
  <div class="club"><div class="crest b">B</div><strong>BLUE COMETS</strong><small>PLAYER</small></div><div class="versus">VS</div><div class="club"><div class="crest r">R</div><strong>RED PHOENIX</strong><small>CPU</small></div>
@@ -228,18 +228,121 @@ function calcInput(){
  input.dash=!!dashPointer||keys.has('shift')||(len>.91&&hypot(input.stickX,input.stickY)>.9);
 }
 function moveTo(p,tx,ty,dt,speed){let dx=tx-p.x,dy=ty-p.y,d=hypot(dx,dy);if(d<5){p.vx*=.7;p.vy*=.7;return;}let rate=Math.min(speed,d*6);p.vx=dx/d*rate;p.vy=dy/d*rate;p.x+=p.vx*dt;p.y+=p.vy*dt;p.dir=Math.atan2(p.vy,p.vx);p.run+=dt*rate*.042;}
-function aiTarget(p){let side=p.team===0?1:-1,owner=ball.owner, bx=ball.x,by=ball.y;
- if(p.index===0){return {x:side===1?-781:781,y:clamp(by*.48,-112,112),speed:220};}
- let teamHas=owner&&owner.team===p.team,enemyHas=owner&&owner.team!==p.team;
- let line=teamHas?110:enemyHas?-80:0;
- let x=clamp(p.homeX+line*side+(bx*.13),-735,735),y=clamp(p.homeY+by*.10,-440,440);
- let arr=p.team?red:blue;
- let near=arr.filter(q=>q.index!==0 && q!==owner).sort((a,b)=>hypot(a.x-bx,a.y-by)-hypot(b.x-bx,b.y-by));
- let r=near.indexOf(p);
- if((enemyHas||!owner)&&r<(p.team===1?2:2)){return {x:bx,y:by,speed:240};}
- if(teamHas){if(p.role==='FW'){x+=side*80;y+=Math.sin(elapsed*.1+p.index)*25;}}
- return {x,y,speed:p.role==='FW'?205:186};
+// Dynamic off-ball football AI: runs in behind, supporting triangles,
+// fullback overlaps, tracking, marking, and interception runs.
+function aiTarget(p){
+ const side=p.team===0?1:-1; // +1 BLUE attacks right, -1 RED attacks left
+ const own=p.team===0?blue:red,opponents=p.team===0?red:blue;
+ const owner=ball.owner,hasBall=owner&&owner.team===p.team;
+ const enemyBall=owner&&owner.team!==p.team;
+ const bx=ball.x,by=ball.y;
+ const front=(n)=>side*n;
+ const boundX=x=>clamp(x,-L+35,L-35);
+ const boundY=y=>clamp(y,-H+40,H-40);
+ const fwd=(a,b)=>side*a>side*b?a:b;
+ if(p.index===0) {
+   // Keepers track play, sweep up loose balls close to their own goal.
+   const home=side===1?-L+57:L-57;
+   const nearOwnEnd=side===1?bx<-570:bx>570;
+   if(!owner&&nearOwnEnd&&hypot(p.x-bx,p.y-by)<165){
+     return {x:boundX(bx),y:boundY(by),speed:255};
+   }
+   return {x:home+front(enemyBall?-22:13),y:clamp(by*.32,-111,111),speed:205};
+ }
+ const role=p.role;
+ const progress=side*(bx-(side===1?-180:180));
+ let x=p.homeX+progress*(role==='FW'?.56:role==='MF'?.46:.32);
+ let y=p.homeY+by*(role==='FW'?.29:role==='MF'?.25:.13);
+ // Periodic overlapping and diagonal runs, not random jitter every frame.
+ const cycle=Math.floor((elapsed+p.index*1.14)/4.3);
+ const run=(cycle%2)===0;
+ const wing=p.index===8||p.index===10;
+ const fullback=p.index===1||p.index===4;
+ const laneSign=p.homeY>0?1:-1;
+ if(hasBall){
+   // Our midfield and strikers advance with the ball rather than stand in formation.
+   x+=front(role==='FW'?105:role==='MF'?90:55);
+   if(role==='FW'){
+     const gap=wing?(run?202:138):(run?185:130);
+     x=fwd(x,bx+front(gap));
+     if(wing){
+       y=laneSign*(run?205:121)+by*.26;
+       if(Math.abs(by)>200 && Math.sign(by)===laneSign) y=laneSign*(run?135:225)+by*.10;
+     }else{
+       // Central striker alternates between running behind and checking toward the ball.
+       y=clamp(by*.17+(run?0:laneSign*65),-160,160);
+       if(!run && Math.abs(bx)<570)x=bx+front(95);
+     }
+   }else if(role==='MF'){
+     if(p.index===6){
+       // Central midfielder stays available behind the carrier for an easy pass.
+       x=bx-front(run?123:87);y=clamp(by+(run?85:-85),-265,265);
+     }else{
+       // Wide midfielders offer both an overlap and a square passing option.
+       const closeToBall=Math.sign(by)===laneSign;
+       x=fwd(x,bx+front(closeToBall?(run?98:25):run?122:-65));
+       y=laneSign*(run?255:177)+by*.22;
+     }
+   }else if(fullback){
+     const overlaps=side*bx>80;
+     x+=front(overlaps?(run?190:95):65);
+     y=laneSign*(overlaps?(run?315:275):315)+by*.10;
+   }else{
+     // Centre backs push together but stay behind the attacking midfield.
+     x=Math.min(side===1?x:-x,side===1?bx-185:-bx-185)*(side===1?1:-1);
+     y=p.homeY*.74+by*.14;
+   }
+   // Players cut into space when their intended run is already occupied.
+   const neighbors=own.filter(q=>q!==p&&q.index!==0&&q!==owner);
+   for(const q of neighbors){
+     if(hypot(x-q.x,y-q.y)<72){
+       y+=((p.index+q.index)%2?1:-1)*26;
+       x-=front(14);
+     }
+   }
+   const urgency=role==='FW'?250:role==='MF'?238:fullback?230:198;
+   return {x:boundX(x),y:boundY(y),speed:urgency};
+ }
+ // When out of possession, at least two defenders actively close the ball.
+ // Interception destination is projected slightly ahead when the ball is free.
+ const fx=!owner?clamp(bx+ball.vx*.18,-L+35,L-35):bx;
+ const fy=!owner?clamp(by+ball.vy*.18,-H+38,H-38):by;
+ const challengers=own.filter(q=>q.index!==0).sort(
+   (a,b)=>hypot(a.x-fx,a.y-fy)-hypot(b.x-fx,b.y-fy));
+ const rank=challengers.indexOf(p);
+ if(rank===0)return {x:boundX(fx),y:boundY(fy),speed:268};
+ if(rank===1){
+   // Second man cuts off the owner's route back toward our goal.
+   const blockX=enemyBall?fx-front(90):fx-front(42);
+   const blockY=fy+(Math.sign(p.homeY-fy)|| (p.index%2?1:-1))*51;
+   return {x:boundX(blockX),y:boundY(blockY),speed:250};
+ }
+ if(rank===2&&!owner){
+   return {x:boundX(fx-front(118)),y:boundY(fy+Math.sign(p.homeY-fy)*88),speed:231};
+ }
+ // Other teammates compress play and track an opponent in their lane.
+ x-=front(enemyBall?(role==='DF'?25:85):16);
+ x+=(bx-x)*(role==='DF'?.25:role==='MF'?.29:.18);
+ y+=(by-y)*(role==='DF'?.19:.30);
+ if(role==='FW')x-=front(80); // forwards retreat to offer a counter-attacking outlet
+ if(fullback)y=laneSign*clamp(Math.abs(y),185,345);
+ const candidates=opponents.filter(q=>q.index!==0&&q!==owner);
+ let mark=null,score=Infinity;
+ for(const q of candidates){
+   const dx=q.x-x,dy=q.y-y,d=hypot(dx,dy);
+   // Prefer covering a nearby attacker, not leaving the defensive line entirely.
+   if(d>260)continue;
+   const k=d+Math.abs(q.y-p.homeY)*.12;
+   if(k<score){score=k;mark=q;}
+ }
+ if(mark){
+   const tracking=role==='DF'?.58:role==='MF'?.38:.22;
+   x+=(mark.x-x)*tracking;y+=(mark.y-y)*tracking;
+   if(role==='DF')x-=front(29); // goal-side marking
+ }
+ return {x:boundX(x),y:boundY(y),speed:role==='DF'?232:220};
 }
+  // When our teammates are off the ball they create active passing lanes and press the opponent.
 function update(dt){frame++;if(mode!=='play')return;
  if(delayedRestart>0){delayedRestart-=dt;if(delayedRestart<=0){resetBall(kickoffTeam);showNotice('KICK OFF','試合再開',.75)}return;}
  elapsed+=dt;let minute=Math.min(90,Math.floor(elapsed/matchDuration*90));$('clock').textContent=String(minute).padStart(2,'0')+"'";if(elapsed>=matchDuration){finish();return;}
