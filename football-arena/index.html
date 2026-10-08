@@ -37,6 +37,16 @@ body.defending #btn-through{background:linear-gradient(145deg,#b0c7e7,#335073);b
 @media(max-width:760px){#stickArea{width:136px;height:136px;left:11px;bottom:calc(17px + env(safe-area-inset-bottom))}#stickThumb{width:59px;height:59px}#actionGroup{right:calc(8px + env(safe-area-inset-right));bottom:calc(6px + env(safe-area-inset-bottom));transform:none;width:220px;height:223px}#btn-shoot{right:0;bottom:99px;width:90px;height:90px}#btn-pass{right:100px;bottom:35px;width:83px;height:83px}#btn-through{right:105px;bottom:134px;width:74px;height:74px}#btn-dash{right:6px;bottom:3px;width:73px;height:73px}#quickHelp{bottom:224px;max-width:84%;font-size:11px}#chargeBar{bottom:202px;right:18px}}
 @media(max-width:430px){#stickArea{width:123px;height:123px;left:10px;bottom:19px}#stickThumb{width:54px;height:54px}#actionGroup{width:194px;height:206px;right:5px;bottom:8px}#btn-shoot{right:0;bottom:97px;width:79px;height:79px}#btn-pass{right:86px;bottom:32px;width:75px;height:75px}#btn-through{right:88px;bottom:126px;width:67px;height:67px}#btn-dash{right:6px;bottom:0;width:71px;height:71px}#actionGroup button{font-size:11px}#quickHelp{bottom:205px}#chargeBar{bottom:185px}}
 @media(max-height:430px) and (min-width:700px){#stickArea{width:132px;height:132px}#stickThumb{width:58px;height:58px}#quickHelp{bottom:207px}#chargeBar{bottom:201px}}
+
+/* Prevent Safari/Chrome's rapid-tap smart zoom while retaining game actions. */
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; overscroll-behavior:none; }
+body{ overscroll-behavior:none; }
+#controls, #controls *, #field, #field3d, #gameHud, #vignette{
+  touch-action:none!important;
+  -webkit-user-select:none;
+  user-select:none;
+}
+#controls button{ -webkit-touch-callout:none; }
 </style>
 </head>
 <body>
@@ -75,6 +85,37 @@ let blue=[],red=[],players=[],selected=null,ball={x:0,y:0,z:0,vx:0,vy:0,vz:0,own
 let input={vx:0,vy:0,stickX:0,stickY:0,dash:false,pressHeld:false,shootStart:0,charging:false},keys=new Set(),stickPointer=null,dashPointer=null,shotPointer=null;
 let defending=false,autoSwitchTimer=0,pressCooldown=0,helpTimeout=null;
 let soundCtx=null;
+
+// iOS Safari / Chrome: repeated taps are game input, never a browser zoom gesture.
+// Action buttons run from Pointer Events, so preventing a second touchend still
+// allows quick consecutive passes, shots and tackles.
+(function lockGameZoom(){
+  const stop=e=>{ if(e.cancelable)e.preventDefault(); };
+  for(const type of ['gesturestart','gesturechange','gestureend']){
+    document.addEventListener(type,stop,{passive:false});
+  }
+  document.addEventListener('touchstart',e=>{
+    if(e.touches.length>1)stop(e);
+  },{passive:false,capture:true});
+  document.addEventListener('touchmove',e=>{
+    if(e.touches.length>1)stop(e);
+  },{passive:false,capture:true});
+  let previousTime=0,previousX=0,previousY=0;
+  document.addEventListener('touchend',e=>{
+    if(mode!=='play'||e.changedTouches.length!==1)return;
+    // Keep pause and menu buttons' native click behaviour.
+    if(e.target instanceof Element && e.target.closest('#topLeft, #pauseScreen, #finishScreen, #menuScreen'))return;
+    const touch=e.changedTouches[0],time=performance.now();
+    if(time-previousTime<375&&Math.hypot(touch.clientX-previousX,touch.clientY-previousY)<110){
+      stop(e);
+    }
+    previousTime=time;previousX=touch.clientX;previousY=touch.clientY;
+  },{passive:false,capture:true});
+  document.addEventListener('dblclick',e=>{
+    if(mode==='play'&&!(e.target instanceof Element&&e.target.closest('#topLeft')))stop(e);
+  },{passive:false});
+})();
+
 const namesBlue=['SORA','KAITO','SHIN','REO','HIKARU','YUTO','HARU','KEN','RYU','AO','TAKUMI'];
 const namesRed=['MARCO','ALAN','JACK','MATEO','DIEGO','LUCA','ALEX','NOAH','NICO','ELI','LEON'];
 const positions=[[-778,0],[-600,-350],[-620,-115],[-620,115],[-600,350],[-255,-305],[-300,0],[-255,305],[90,-250],[40,0],[90,250]];
