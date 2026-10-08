@@ -1558,28 +1558,29 @@ function buildPlayerAvatar(){
   const pants=0x34466b,pantsShade=0x25334f,boots=0x332d2e,sole=0x18191c;
   const pack=0xc08a46,packTrim=0xe4b76d,eye=0x24242a;
 
+  // Shorter head and taller torso, preserving the character's overall height.
   // The model's feet stand at y=0, and its face points along local -Z.
-  cube(g,.66,.66,.53,skin,0,1.49,0);
-  cube(g,.68,.18,.55,hair,0,1.81,.005);
-  cube(g,.69,.13,.34,hair,-.005,1.72,-.155);
-  cube(g,.17,.13,.10,hairLight,-.24,1.72,-.290);
-  cube(g,.13,.14,.09,hair,.17,1.72,-.295);
-  cube(g,.08,.11,.022,eye,-.16,1.51,-.279);
-  cube(g,.08,.11,.022,eye,.16,1.51,-.279);
-  cube(g,.16,.047,.025,skinShade,0,1.35,-.281);
-  cube(g,.075,.13,.055,skinShade,-.335,1.50,.01);
-  cube(g,.075,.13,.055,skinShade,.335,1.50,.01);
+  cube(g,.66,.52,.53,skin,0,1.53,0);
+  cube(g,.68,.16,.55,hair,0,1.77,.005);
+  cube(g,.69,.11,.34,hair,-.005,1.69,-.155);
+  cube(g,.17,.11,.10,hairLight,-.24,1.69,-.290);
+  cube(g,.13,.12,.09,hair,.17,1.69,-.295);
+  cube(g,.08,.10,.022,eye,-.16,1.53,-.279);
+  cube(g,.08,.10,.022,eye,.16,1.53,-.279);
+  cube(g,.15,.04,.025,skinShade,0,1.40,-.281);
+  cube(g,.07,.11,.055,skinShade,-.335,1.52,.01);
+  cube(g,.07,.11,.055,skinShade,.335,1.52,.01);
 
-  cube(g,.74,.69,.42,jacket,0,1.00,0);
-  cube(g,.69,.10,.44,jacketLight,0,1.32,0);
-  cube(g,.12,.52,.025,jacketDark,0,1.03,-.224);
-  cube(g,.20,.16,.04,jacketLight,0,1.22,-.234);
-  cube(g,.11,.07,.035,packTrim,.17,.97,-.231);
-  // Backpack remains visible from the rear camera.
-  cube(g,.53,.53,.19,pack,0,1.02,.31);
-  cube(g,.51,.11,.205,packTrim,0,1.21,.32);
-  cube(g,.13,.38,.035,packTrim,-.21,1.05,.427);
-  cube(g,.13,.38,.035,packTrim,.21,1.05,.427);
+  cube(g,.74,.85,.42,jacket,0,1.00,0);
+  cube(g,.69,.10,.44,jacketLight,0,1.37,0);
+  cube(g,.12,.64,.025,jacketDark,0,1.00,-.224);
+  cube(g,.20,.18,.04,jacketLight,0,1.24,-.234);
+  cube(g,.11,.07,.035,packTrim,.17,.99,-.231);
+  // The backpack also extends to match the longer torso.
+  cube(g,.53,.67,.19,pack,0,1.01,.31);
+  cube(g,.51,.11,.205,packTrim,0,1.29,.32);
+  cube(g,.13,.47,.035,packTrim,-.21,1.02,.427);
+  cube(g,.13,.47,.035,packTrim,.21,1.02,.427);
 
   for(const [name,side] of [['left',-1],['right',1]]){
     const arm=new THREE.Group();
