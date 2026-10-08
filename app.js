@@ -1109,7 +1109,9 @@ function getLoaded(x,y,z){
   if(y<Y_MIN)return B.BEDROCK;
   if(y>WORLD_TOP)return B.AIR;
   const c=chunks.get(chunkKey(chunkCoord(x),chunkCoord(z)));
-  return c?c.data[cIndex(localCoord(x),y,localCoord(z))]:B.AIR;
+  // Avoid drawing entire -80..-1 stone cliffs at the edge of loaded chunks.
+  // An unloaded neighboring underground chunk is solid until streamed in.
+  return c?c.data[cIndex(localCoord(x),y,localCoord(z))]:(y<0?B.STONE:B.AIR);
 }
 function get(x,y,z){
   if(y<Y_MIN)return B.BEDROCK;
