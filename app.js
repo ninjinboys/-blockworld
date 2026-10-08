@@ -2394,9 +2394,9 @@ const FOOD_HEAL_POINTS={
   [I.RAW_PORK]:4,[I.COOKED_PORK]:4, // 2 hearts
   [I.RAW_BEEF]:6,[I.COOKED_BEEF]:6  // 3 hearts
 };
-let eatingHeld=false,eatingElapsed=0,eatingSlot=-1,eatingItem=null;
+let eatingHeld=false,eatingElapsed=0,eatingStartedAt=0,eatingSlot=-1,eatingItem=null;
 function resetEating(){
-  eatingHeld=false;eatingElapsed=0;eatingSlot=-1;eatingItem=null;
+  eatingHeld=false;eatingElapsed=0;eatingStartedAt=0;eatingSlot=-1;eatingItem=null;
   if(!miningHeld)clearMining();
 }
 function startEating(){
@@ -2406,7 +2406,8 @@ function startEating(){
   if(health>=MAX_HEALTH){flash('体力満タン：肉は食べられません');return true}
   const stack=inventorySlots[selectedHotbarIndex];
   if(!stack||stack.id!==selected||stack.qty<1)return true;
-  eatingHeld=true;eatingElapsed=0;eatingSlot=selectedHotbarIndex;eatingItem=selected;
+  eatingHeld=true;eatingElapsed=0;eatingStartedAt=performance.now();
+  eatingSlot=selectedHotbarIndex;eatingItem=selected;
   breakLabel.textContent=(names[selected]||'肉')+' を食べる';
   breakFill.style.width='0%';breakMeter.classList.add('active');
   return true;
@@ -2419,7 +2420,7 @@ function updateEating(dt){
     resetEating();return;
   }
   if(health>=MAX_HEALTH){resetEating();return}
-  eatingElapsed+=dt;
+  eatingElapsed=(performance.now()-eatingStartedAt)/1000;
   const pct=Math.min(100,eatingElapsed/FOOD_EAT_SECONDS*100);
   breakLabel.textContent=(names[eatingItem]||'肉')+' '+Math.floor(pct)+'%';
   breakFill.style.width=pct+'%';
@@ -2440,7 +2441,7 @@ function primaryActionStart(){
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
 }
-function primaryActionStop(){eatingHeld=false;eatingElapsed=0;eatingSlot=-1;eatingItem=null;miningHeld=false;clearMining()}
+function primaryActionStop(){eatingHeld=false;eatingElapsed=0;eatingStartedAt=0;eatingSlot=-1;eatingItem=null;miningHeld=false;clearMining()}
 
 function renderHotbar(){
   syncDerivedInventory();hotbarEl.innerHTML='';
@@ -2579,6 +2580,7 @@ function isForwardHeld(){return !!(keys.w||keys.arrowup)}
 addEventListener('blur',()=>{
   Object.keys(keys).forEach(k=>keys[k]=false);
   resetSprint();
+  primaryActionStop();
 });
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
