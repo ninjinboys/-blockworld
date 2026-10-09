@@ -1525,6 +1525,119 @@ function buildCow(){
   return g;
 }
 
+
+// Expanded wildlife. All models face local -Z and use the same blocky
+// primitives as cows, pigs and sheep. No texture downloads are required.
+function createMobLegs(g,positions,color,hoof,thickness,height){
+  const legs=[];
+  for(const [x,z] of positions){
+    const pivot=new THREE.Group();pivot.position.set(x,.91,z);
+    cube(pivot,thickness,height,thickness*1.08,color,0,-height*.49,0);
+    cube(pivot,thickness+.065,.18,thickness*1.26,hoof,0,-height+.075,-.045);
+    g.add(pivot);legs.push(pivot);
+  }
+  g.userData.walkLegs=legs;
+}
+function buildHorse(){
+  const g=new THREE.Group();
+  const coat=0xad6834,shaded=0x8e5129,bright=0xc98548,cream=0xddb38a;
+  const mane=0x35251f,maneHi=0x4e3329,hoof=0x373331,eye=0x181716,white=0xfbf7ec;
+  // Just under one block wide, with the height and back length for riding.
+  cube(g,.92,.86,1.65,coat,0,1.35,.05);
+  cube(g,.80,.19,1.55,bright,0,1.81,.06);
+  cube(g,.71,.23,.76,shaded,0,.94,.52);
+  // Strong neck, elongated head, muzzle and ears.
+  cube(g,.57,1.13,.60,coat,0,1.85,-.67,-.14);
+  cube(g,.61,.59,.75,coat,0,2.26,-1.05,.10);
+  cube(g,.52,.27,.40,cream,0,2.03,-1.42);
+  cube(g,.53,.13,.40,shaded,0,1.90,-1.42);
+  for(const x of[-.23,.23]){
+    cube(g,.12,.32,.16,coat,x,2.68,-.94);
+    cube(g,.075,.20,.16,cream,x,2.70,-1.025);
+    cube(g,.12,.15,.039,white,x*.82,2.33,-1.446);
+    cube(g,.075,.10,.044,eye,x*.82,2.32,-1.473);
+    cube(g,.064,.055,.05,mane,x*.76,2.035,-1.636);
+  }
+  // Layered dark mane falling down the back of the neck.
+  for(let i=0;i<6;i++){
+    cube(g,.65,.19,.25,i%2?mane:maneHi,0,2.56-i*.17,-.61+i*.045);
+  }
+  cube(g,.50,.15,.29,mane,0,2.58,-1.07);
+  // Dark trailing tail with a long flowing end.
+  cube(g,.21,.18,.46,shaded,0,1.67,1.03,-.23);
+  cube(g,.29,.65,.30,mane,0,1.28,1.22,-.15);
+  cube(g,.30,.34,.28,maneHi,0,.90,1.31);
+  createMobLegs(g,[[-.28,-.55],[.28,-.55],[-.28,.63],[.28,.63]],coat,hoof,.235,.75);
+  return g;
+}
+function buildBison(){
+  const g=new THREE.Group();
+  const brown=0x764728,back=0x95603b,dark=0x4d2e21,deep=0x352219;
+  const fur=0x593623,furLite=0x9b6940,horn=0xcfc2a0,tip=0xf0e5cb;
+  const nose=0x6b5b4c,nostril=0x211e1c,eye=0x181616;
+  // Front-heavy powerful body with a high shoulder hump.
+  cube(g,1.52,1.16,2.07,brown,0,1.13,.15);
+  cube(g,1.47,.28,1.73,back,0,1.76,.40);
+  cube(g,1.61,1.42,1.19,fur,0,1.67,-.45);
+  cube(g,1.48,.39,1.05,furLite,0,2.34,-.39);
+  for(const x of[-.59,-.30,0,.30,.59])for(const z of[-.94,-.64,-.34]){
+    cube(g,.30,.17,.32,(Math.abs(x)<.3?fur:dark),x,2.35-Math.abs(x)*.12,z);
+  }
+  // Rough block fur on chest and cheeks.
+  for(const x of[-.62,-.34,0,.34,.62]){
+    cube(g,.24,.51,.30,x===0?deep:fur,x,.79,-.98);
+    cube(g,.24,.40,.29,fur,x,1.47,-1.08);
+  }
+  cube(g,1.07,.80,.79,dark,0,1.65,-1.13);
+  cube(g,.79,.43,.51,nose,0,1.36,-1.57);
+  for(const x of[-.25,.25]){
+    cube(g,.12,.085,.04,nostril,x,1.36,-1.848);
+    cube(g,.12,.12,.05,eye,x*1.55,1.77,-1.51);
+    cube(g,.16,.12,.14,tip,x*1.49,2.05,-1.29);
+    const side=Math.sign(x);
+    cube(g,.38,.21,.29,horn,side*.67,2.01,-1.18,0,0,side*.14);
+    cube(g,.22,.38,.21,tip,side*.86,2.23,-1.14,0,0,side*.28);
+  }
+  cube(g,.34,.43,.37,deep,0,.93,-1.39);
+  cube(g,.16,.28,.20,deep,0,1.12,1.26,.16);
+  cube(g,.24,.28,.17,fur,0,.92,1.32);
+  createMobLegs(g,[[-.55,-.56],[.55,-.56],[-.53,.77],[.53,.77]],brown,deep,.34,.73);
+  return g;
+}
+function buildLion(){
+  const g=new THREE.Group();
+  const gold=0xc68d4d,light=0xe2ac65,brown=0x874c2b,mane=0x684027;
+  const deep=0x442719,cream=0xeac895,eye=0xe5bc43,black=0x251c16,tooth=0xfff3dd;
+  cube(g,1.38,.88,1.86,gold,0,1.17,.13);
+  cube(g,1.25,.16,1.45,light,0,1.62,.22);
+  cube(g,1.56,1.38,1.11,mane,0,1.57,-.73);
+  for(const x of[-.65,-.35,0,.35,.65]){
+    cube(g,.33,.39,.34,x===0?brown:deep,x,1.10,-1.07);
+    cube(g,.28,.25,.36,brown,x,2.23-Math.abs(x)*.25,-.79);
+  }
+  // Squared muzzle, watchful yellow eyes and toothy mouth.
+  cube(g,.90,.70,.74,gold,0,1.67,-1.25);
+  cube(g,.89,.19,.20,cream,0,1.43,-1.68);
+  cube(g,.46,.26,.33,cream,0,1.50,-1.66);
+  cube(g,.35,.14,.20,deep,0,1.27,-1.72);
+  cube(g,.29,.17,.17,black,0,1.64,-1.83);
+  for(const x of[-.35,.35]){
+    cube(g,.20,.24,.16,light,x,2.12,-1.16);
+    cube(g,.15,.10,.035,black,x*.74,1.83,-1.661);
+    cube(g,.105,.11,.04,eye,x*.74,1.72,-1.677);
+    cube(g,.06,.11,.05,black,x*.74,1.72,-1.704);
+    cube(g,.085,.14,.09,tooth,x*.70,1.29,-1.79);
+    cube(g,.28,.12,.13,brown,x,1.88,-1.62);
+  }
+  cube(g,.15,.16,.14,tooth,0,1.24,-1.77);
+  // Tail with the recognisable dark tuft.
+  cube(g,.17,.16,.56,gold,0,1.35,1.24,-.19);
+  cube(g,.22,.18,.42,brown,0,1.29,1.66,.07);
+  cube(g,.30,.27,.35,deep,0,1.32,1.88);
+  createMobLegs(g,[[-.51,-.58],[.51,-.58],[-.51,.71],[.51,.71]],gold,brown,.33,.70);
+  return g;
+}
+
 // Night-time hostile mob: a green version of the player silhouette.
 // Face points along local -Z. Both arms are kept in front, even while moving.
 const ZOMBIE_LIMIT=7,ZOMBIE_AGGRO_RANGE=28,ZOMBIE_ATTACK_RANGE=1.35;
@@ -1577,17 +1690,23 @@ function buildZombie(){
 // surfaceAt() describes generated ground only. Placed blocks and removed
 // blocks live in get(), so height checks alone let mobs pass through walls.
 function mobCollisionShape(m,x,z,angle=m.userData.angle){
-  if(m.userData.type==='zombie')return [[x,z,.34]];
-  // Quadrupeds have a body and a protruding head. Test both so the nose
-  // doesn't walk into a wall before the body's center reaches it.
+  const type=m.userData.type;
+  if(type==='zombie')return [[x,z,.34]];
   const direction=Number.isFinite(angle)?angle:0;
-  return [[x,z,.46],[x+Math.sin(direction)*.72,z+Math.cos(direction)*.72,.33]];
+  const fx=Math.sin(direction),fz=Math.cos(direction);
+  if(type==='horse')return [[x,z,.46],[x+fx*.96,z+fz*.96,.36],[x-fx*.60,z-fz*.60,.40]];
+  if(type==='bison')return [[x,z,.76],[x+fx*.84,z+fz*.84,.65],[x-fx*.65,z-fz*.65,.62]];
+  if(type==='lion')return [[x,z,.67],[x+fx*.95,z+fz*.95,.49],[x-fx*.73,z-fz*.73,.58]];
+  // Body and projecting head of the three original farm animals.
+  return [[x,z,.46],[x+fx*.72,z+fz*.72,.33]];
 }
 function mobVerticalBounds(m,rootY=m.position.y){
-  // Root origins differ: animal meshes sink slightly below the terrain's
-  // top face; zombies stand at the terrain's top. Never collide with floor.
-  const foot=rootY+(m.userData.type==='zombie'?.025:.50);
-  return [foot,foot+(m.userData.type==='zombie'?1.74:1.14)];
+  const type=m.userData.type;
+  // Unlike feet, the larger animals' ears/hump/mane reach well above 2 blocks.
+  const foot=rootY+(type==='zombie'?.025:.50);
+  const height=type==='zombie'?1.74:type==='horse'?2.40:
+    type==='bison'?2.11:type==='lion'?1.98:1.14;
+  return [foot,foot+height];
 }
 function mobCircleTouchesBlock(x,z,r,bx,bz){
   const dx=Math.max(Math.abs(x-bx)-.5,0),dz=Math.max(Math.abs(z-bz)-.5,0);
@@ -1757,7 +1876,65 @@ function updateZombie(m,dt,now){
   }
 }
 
+// Bison are neutral until struck; lions notice players within six blocks.
+// Both deal five health points (2.5 hearts) per hit and never clip through walls.
+function updateDangerousMob(m,dt,now){
+  const d=m.userData,dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
+  const dist=Math.hypot(dx,dz),heightDiff=Math.abs(player.pos.y-m.position.y);
+  d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
+  if(d.type==='lion'&&dist<=6&&heightDiff<3)d.hostile=true;
+  if(!d.hostile)return false;
+  const chaseRadius=d.type==='lion'?17:24;
+  if(dist>chaseRadius||heightDiff>4){
+    // Remain angry if a bison was hit, but wait for a reachable player.
+    // Lions eventually calm down after a long escape.
+    if(d.type==='lion'&&dist>chaseRadius)d.hostile=false;
+    return false;
+  }
+  d.angle=Math.atan2(dx,dz);
+  m.rotation.y=d.angle+Math.PI;
+  const reach=d.type==='bison'?1.60:1.45;
+  if(dist>reach*.79){
+    const speed=d.type==='bison'?3.3:4.5;
+    if(!mobWalkStep(m,d.angle,speed*dt)){
+      // Don't walk through a house wall: skirt around it instead.
+      if(!mobWalkStep(m,d.angle+Math.PI/2,speed*dt))
+        mobWalkStep(m,d.angle-Math.PI/2,speed*dt);
+    }
+  }
+  if(dist<=reach&&heightDiff<2.1&&d.attackCooldown<=0){
+    d.attackCooldown=d.type==='bison'?1.5:1.3;
+    damagePlayer(5,d.type==='bison'?'バイソンの突進':'ライオンの攻撃');
+  }
+  return true;
+}
+function animateWildMob(m,dt,now,moving){
+  const legs=m.userData.walkLegs;
+  if(!legs?.length)return;
+  const speed=m.userData.fleeTime>0?2.1:m.userData.hostile?1.9:1;
+  const swing=moving?Math.sin(now*.009*speed+m.userData.phase)*(.23*speed):0;
+  for(let i=0;i<legs.length;i++){
+    const sign=(i===0||i===3)?1:-1;
+    legs[i].rotation.x+=(swing*sign-legs[i].rotation.x)*Math.min(1,dt*12);
+  }
+}
 let passiveSpawnCooldown=20;
+const MOB_SPAWN_WEIGHTS=[
+  {type:0,weight:24},      // sheep: common
+  {type:1,weight:24},      // pig: common
+  {type:2,weight:24},      // cow: common
+  {type:'horse',weight:18},// horse: a little rarer than normal farm animals
+  {type:'bison',weight:5}, // bison: rare, dangerous if provoked
+  {type:'lion',weight:5}   // lion: rare, attacks within six blocks
+];
+function chooseWildMob(){
+  let roll=Math.random()*100;
+  for(const entry of MOB_SPAWN_WEIGHTS){
+    roll-=entry.weight;
+    if(roll<0)return entry.type;
+  }
+  return 2;
+}
 function spawnPassiveMob(){
   if(mobs.length>=20)return false;
   const angle=Math.random()*Math.PI*2;
@@ -1768,18 +1945,27 @@ function spawnPassiveMob(){
   if(h<=SEA||bio===2||bio===6||bio===7)return false;
   if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<5))return false;
 
-  const type=Math.floor(Math.random()*3);
-  const g=type===0?buildSheep():type===1?buildPig():buildCow();
+  const type=chooseWildMob();
+  const g=type===0?buildSheep():type===1?buildPig():type===2?buildCow():
+    type==='horse'?buildHorse():type==='bison'?buildBison():buildLion();
   g.position.set(x,h+.04,z);
   g.userData={
+    ...g.userData,
     angle:hash2(x,z)*Math.PI*2,
     t:2+hash2(z,x)*3,
-    speed:.22+hash2(x+4,z+2)*.24,
-    hp:type===2?5:3,
-    xp:type===2?18:type===1?14:12,
-    name:type===0?'ヒツジ':type===1?'ブタ':'ウシ',
-    type
+    speed:type==='horse'?.70:type==='bison'?.28:type==='lion'?.38:.22+hash2(x+4,z+2)*.24,
+    hp:type==='horse'?10:type==='bison'||type==='lion'?30:type===2?5:3,
+    xp:type==='horse'?24:type==='bison'?85:type==='lion'?90:type===2?18:type===1?14:12,
+    name:type===0?'ヒツジ':type===1?'ブタ':type===2?'ウシ':
+      type==='horse'?'馬':type==='bison'?'バイソン':'ライオン',
+    type,
+    hostile:false,attackCooldown:0,chaseTime:0,phase:Math.random()*Math.PI*2
   };
+  // An animal must not spawn inside a constructed home, wall or tree.
+  if(!mobSpaceFree(g,x,g.position.y,z,g.userData.angle)){
+    g.traverse(obj=>{if(obj.isMesh)obj.geometry.dispose()});
+    return false;
+  }
   scene.add(g);mobs.push(g);
   return true;
 }
@@ -2690,6 +2876,10 @@ function dropMobLoot(root){
   const x=root.position.x,y=root.position.y+.75,z=root.position.z;
   const type=root.userData.type;
   if(type==='zombie')return; // Zombie kills grant XP; no animal meat drops.
+  if(type==='horse'||type==='lion'){
+    spawnWorldDrop(I.LEATHER,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
+    return;
+  }
   if(type===0){
     spawnWorldDrop(I.WOOL,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
   }else if(type===1){
@@ -2710,7 +2900,10 @@ function attackMob(){
   const damage=selected===I.DIAMOND_SWORD?4:selected===I.IRON_SWORD?3:selected===I.GOLD_SWORD?2:selected===I.STONE_SWORD?2:1;
   root.userData.hp-=damage;
   setMobHitFlash(root);
-  if(root.userData.type!=='zombie')makeMobFlee(root);
+  if(root.userData.type==='bison'||root.userData.type==='lion'){
+    root.userData.hostile=true;
+    root.userData.attackCooldown=Math.max(root.userData.attackCooldown||0,.45);
+  }else if(root.userData.type!=='zombie')makeMobFlee(root);
 
   if(root.userData.hp<=0){
     const earned=root.userData.xp||12,name=root.userData.name||'動物';
@@ -3134,6 +3327,10 @@ function loop(now){
         updateZombie(m,dt,now);
         return;
       }
+      if((m.userData.type==='lion'||m.userData.type==='bison')&&updateDangerousMob(m,dt,now)){
+        animateWildMob(m,dt,now,true);
+        return;
+      }
       if(m.userData.fleeTime>0){
         m.userData.fleeTime-=dt;
         const dx=m.position.x-player.pos.x,dz=m.position.z-player.pos.z;
@@ -3145,14 +3342,16 @@ function loop(now){
           m.userData.angle+=(hash3(i,4,Math.floor(now/900),seed)-.5)*2.4;
         }
       }
-      const fleeMult=m.userData.fleeTime>0?3.4:1;
+      const fleeMult=m.userData.fleeTime>0?(m.userData.type==='horse'?9:3.4):1;
       const speed=m.userData.speed*fleeMult;
       if(mobWalkStep(m,m.userData.angle,speed*dt)){
         m.rotation.y=m.userData.angle+Math.PI;
+        animateWildMob(m,dt,now,true);
       }else{
         // Don't keep pushing into the same wall; choose another direction.
         m.userData.angle+=(m.userData.fleeTime>0?Math.PI*.65:Math.PI*.56);
         m.userData.t=Math.min(m.userData.t||1,1);
+        animateWildMob(m,dt,now,false);
       }
     });
 
