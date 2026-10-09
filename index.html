@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261009multi1">
+<link rel="stylesheet" href="style.css?v=20261009singleshare1">
 </head>
 <body>
 <div id="game"></div>
@@ -69,7 +69,7 @@
       <button id="friendRefresh" type="button">オンライン状況を更新</button>
     </div>
     <div id="multiLobby" class="multi-section" hidden>
-      <div class="multi-room"><span>参加コード</span><strong id="multiRoomCode">------</strong></div>
+      <div class="multi-room"><span>参加コード</span><strong id="multiRoomCode">------</strong><button id="multiRoomCopy" type="button">コピー</button></div>
       <p id="multiRoomTip">友達にコードを教えると参加できます。作成者が退出しても引き継がれます。</p>
       <div id="multiPeople" class="multi-people">参加人数：1/4人</div>
       <button id="multiEnter" class="multi-primary" type="button">ワールドに入る</button>
@@ -83,7 +83,7 @@
       <div>
         <div class="world-kicker">PLAYER <strong id="worldAccountName">---</strong></div>
         <h2>ワールドを選択</h2>
-        <p>1アカウントにつき最大5個まで保存できます。</p>
+        <p>最大5個。既存のワールドをそのまま友達と共有できます。</p>
       </div>
       <div class="world-header-actions"><button id="worldBack" type="button">戻る</button><button id="worldLogout" type="button">ログアウト</button></div>
     </div>
@@ -96,7 +96,7 @@
   <button id="viewModeButton" type="button" aria-label="視点切り替え">視点：一人称</button>
   <div id="accountBox">
     <div><strong id="accountName">---</strong><span id="saveStatus">未ログイン</span></div>
-    <div class="account-actions"><button id="saveNow" type="button">保存</button><button id="worldListBtn" type="button">ワールド</button><button id="logoutBtn" type="button">ログアウト</button></div>
+    <div class="account-actions"><button id="inviteFriendsBtn" type="button">友達招待</button><button id="saveNow" type="button">保存</button><button id="worldListBtn" type="button">ワールド</button><button id="logoutBtn" type="button">ログアウト</button></div>
   </div>
   <div id="progress">
     <div class="xp-row"><strong id="levelText">LV 1</strong><span id="xpText">0 / 20 XP</span></div>
@@ -210,6 +210,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261009handoff1"></script>
+<script type="module" src="app.js?v=20261009singleshare1"></script>
 </body>
 </html>

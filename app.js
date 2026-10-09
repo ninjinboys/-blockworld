@@ -337,7 +337,8 @@ let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null
 let multiRole=null,multiHostSlot=null,multiHostId='',multiBusy=false,multiApplying=false,multiMembers={};
 const multiGuestRecords=new Map(),multiAvatars=new Map(),multiFriendsOnline=new Map();
 let multiLastPose=0,multiLastProfile=0,multiPendingTimer=null,multiClosing=false,multiProfileSaveTimer=null;
-let multiOriginName='',multiMigration=null,multiCheckpoint=null,multiRoster=[];
+let multiOriginName='',multiMigration=null,multiCheckpoint=null,multiRoster=[],multiWorldKind='multi';
+let singleWorldMembers={};
 let multiLastCheckpoint=0,multiMigrationGeneration=0;
 const MULTI_HOST='blockworld_multi_host_v1:',MULTI_MEMBER='blockworld_multi_member_v1:';
 const MULTI_HANDOFF='blockworld_multi_handoff_v1:';
@@ -454,11 +455,12 @@ function saveCurrentGame(showMessage=false){
       const profile=multiProfile();
       localStorage.setItem(multiGuestSaveKey(),JSON.stringify(profile));
       if(multiHostId===multiOwnId()){
-        // If the original creator rejoins a migrated room, recover its latest
-        // shared world back into its own multi-world slot automatically.
+        // Recover the original owner's own slot on rejoining a transferred room.
         const restored={...makeSaveData(),members:multiCheckpoint?.world?.members||{},
-          originName:multiOriginName||currentAccount.name};
-        localStorage.setItem(multiWorldKey(currentWorldSlot),JSON.stringify(restored));
+          originName:multiOriginName||currentAccount.name,worldKind:multiWorldKind};
+        const ownerKey=multiWorldKind==='single'
+          ?saveKeyForAccount(currentAccount.key,currentWorldSlot):multiWorldKey(currentWorldSlot);
+        localStorage.setItem(ownerKey,JSON.stringify(restored));
       }
       if(multiplayerNetwork.connected)multiplayerNetwork.send({t:'profile',profile});
       saveDirty=false;setSaveStatus('マルチ：持ち物保存済み');
@@ -466,12 +468,21 @@ function saveCurrentGame(showMessage=false){
       return true;
     }
     const key=multiRole==='host'
-      ?(multiHostId===multiOwnId()?multiWorldKey(currentWorldSlot):multiHandoffSaveKey(multiHostId,currentWorldSlot))
+      ?(multiHostId===multiOwnId()
+        ?(multiWorldKind==='single'?saveKeyForAccount(currentAccount.key,currentWorldSlot):multiWorldKey(currentWorldSlot))
+        :multiHandoffSaveKey(multiHostId,currentWorldSlot))
       :saveKeyForAccount(currentAccount.key,currentWorldSlot);
     const payload=makeSaveData();
     if(multiRole==='host'){
       payload.members=multiMembers;
       payload.originName=multiOriginName||currentAccount.name;
+      payload.worldKind=multiWorldKind;
+    }else if(!multiRole&&Object.keys(singleWorldMembers).length){
+      // Preserve friend's profile without re-parsing the entire world on each
+      // autosave, which previously caused brief stalls on large worlds.
+      payload.members=singleWorldMembers;
+      payload.worldKind='single';
+      payload.originName=currentAccount.name;
     }
     localStorage.setItem(key,JSON.stringify(payload));
     saveDirty=false;
@@ -555,6 +566,7 @@ async function initializeAccountWorld(save,slot){
   currentWorldSlot=slot;worldReady=false;menuCover.style.display='none';worldCover.style.display='none';cover.style.display='flex';
   accountBox.style.display='block';
   loading.textContent='セーブデータを読み込み中...';resetWorldRuntime();
+  singleWorldMembers=save?.members&&typeof save.members==='object'?{...save.members}:{};
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
   else{
@@ -602,6 +614,10 @@ function renderWorldSelection(){
     const actions=document.createElement('div');actions.className='world-slot-actions';
     const play=document.createElement('button');play.type='button';play.textContent=save?'続きから':'新しく作る';
     play.addEventListener('click',()=>initializeAccountWorld(save,slot));actions.appendChild(play);
+    const share=document.createElement('button');share.type='button';
+    share.className='share-world';share.textContent='フレンドと遊ぶ';
+    share.addEventListener('click',()=>multiHostSingleWorld(slot,save));
+    actions.appendChild(share);
     if(save){
       const del=document.createElement('button');del.type='button';del.className='delete-world';del.textContent='削除';
       del.addEventListener('click',()=>{
@@ -3099,8 +3115,12 @@ const multiplayerNetwork=createBlockworldNetwork(multiEvent,()=>({
 const multiViews=['multiHome','multiSlots','multiJoin','multiFriends','multiLobby'];
 let multiViewId='multiHome',multiPresenceBusy=false,friendRefreshBusy=false;
 function multiWorldKey(slot){return MULTI_HOST+currentAccount.key+':'+slot}
-function multiHandoffSaveKey(originId,slot){return MULTI_HANDOFF+currentAccount.key+':'+originId+':'+slot}
-function multiGuestSaveKey(){return MULTI_MEMBER+currentAccount.key+':'+multiHostId+':'+multiHostSlot}
+function multiHandoffSaveKey(originId,slot){
+  return MULTI_HANDOFF+currentAccount.key+':'+(multiWorldKind==='single'?'single:':'')+originId+':'+slot;
+}
+function multiGuestSaveKey(){
+  return MULTI_MEMBER+(multiWorldKind==='single'?'single:':'')+currentAccount.key+':'+multiHostId+':'+multiHostSlot;
+}
 function multiOwnId(){
   const key=FRIEND_ID+currentAccount.key;let id=localStorage.getItem(key);
   if(!id||!/^[A-Z2-9]{10}$/.test(id)){
@@ -3165,6 +3185,7 @@ function multiLobby(code,host){
   $('multiRoomCode').textContent=code;
   $('multiRoomTip').textContent=host?'このコードを友達に教えてください。ホストが退出しても残った人は続行できます。':'ワールドに接続しました。';
   $('multiEnter').hidden=!host;
+  $('multiEnter').textContent=started?'ゲームに戻る':'ワールドに入る';
   $('multiLeave').textContent='ワールドから退出';
   multiView('multiLobby');multiPeople();$('multiCover').style.display='flex';
 }
@@ -3196,10 +3217,13 @@ function multiRenderSlots(){
     if(!key?.startsWith(prefix))continue;
     let saved=null;try{saved=JSON.parse(localStorage.getItem(key)||'null')}catch{}
     if(!saved||!Number.isInteger(saved.worldSlot))continue;
-    const origin=key.slice(prefix.length).split(':')[0],slot=saved.worldSlot;
+    const parts=key.slice(prefix.length).split(':');
+    const kind=parts[0]==='single'?'single':'multi';
+    const origin=kind==='single'?parts[1]:parts[0],slot=saved.worldSlot;
     if(!/^[A-Z2-9]{10}$/.test(origin)||slot<1||slot>5)continue;
     const card=document.createElement('div');card.className='multi-slot';
-    const name=document.createElement('strong');name.textContent='引き継いだ WORLD '+slot;
+    const name=document.createElement('strong');
+    name.textContent=(kind==='single'?'引き継いだシングル WORLD ':'引き継いだ WORLD ')+slot;
     const desc=document.createElement('span');desc.textContent='元の作成者：'+(saved.originName||origin)+' · '+formatSavedAt(saved.savedAt);
     const buttons=document.createElement('div');buttons.className='multi-slot-actions';
     const play=document.createElement('button');play.type='button';play.textContent='続きから開く';
@@ -3209,9 +3233,70 @@ function multiRenderSlots(){
     buttons.append(play,del);card.append(name,desc,buttons);grid.append(card);
   }
 }
+
+async function multiOpenRoom(){
+  for(let tries=0;tries<4;tries++){
+    const code=multiCode();
+    try{await multiplayerNetwork.host(code);return code}
+    catch(error){if(tries===3)throw error}
+  }
+}
+function multiSetSingleHost(slot,saved){
+  multiRole='host';multiWorldKind='single';multiHostSlot=slot;multiHostId=multiOwnId();
+  multiOriginName=currentAccount.name;
+  multiMigration=null;multiCheckpoint=null;multiRoster=[];multiLastCheckpoint=0;
+  multiGuestRecords.clear();
+  multiMembers=saved?.members&&typeof saved.members==='object'?{...saved.members}:{};
+}
+async function multiHostSingleWorld(slot,save=null,alreadyPlaying=false){
+  if(multiBusy)return;
+  if(multiRole){flash('すでに共有中のワールドです');return}
+  if(!currentAccount||!Number.isInteger(slot)||slot<1||slot>MAX_WORLDS)return;
+  if(alreadyPlaying&&(!worldReady||currentWorldSlot!==slot))return;
+  multiBusy=true;
+  const wasInGame=alreadyPlaying&&started;
+  multiSetSingleHost(slot,save||readSaveForAccount(currentAccount.key,slot));
+  if(!wasInGame)multiShow('multiLobby');
+  multiStatus('シングルワールドを共有する準備をしています…');
+  try{
+    if(!alreadyPlaying)await initializeAccountWorld(save,slot);
+    const code=await multiOpenRoom();
+    multiRoster=[{id:multiOwnId(),name:currentAccount.name,player:multiCurrentPose()}];
+    multiLobby(code,true);
+    $('multiRoomTip').textContent='シングル WORLD '+slot+' を共有中。コードやフレンド一覧から参加できます。';
+    $('multiEnter').textContent=wasInGame?'ゲームに戻る':'ワールドに入る';
+    multiStatus('シングル WORLD '+slot+' を公開しました。元のワールド・持ち物をそのまま使えます。');
+    saveCurrentGame(false);
+  }catch(error){
+    console.warn('Single-world sharing failed',error);
+    multiplayerNetwork.leaveRoom();
+    if(worldReady)saveCurrentGame(false);
+    multiRole=null;multiWorldKind='multi';multiHostId='';multiHostSlot=null;
+    multiGuestRecords.clear();multiMembers={};
+    if(wasInGame){
+      $('multiCover').style.display='none';cover.style.display='none';
+      flash('招待を開始できません：'+error.message);
+    }else{
+      if(worldReady){resetWorldRuntime();worldReady=false;currentWorldSlot=null}
+      multiShow('multiHome');multiStatus('共有できませんでした：'+error.message);
+    }
+  }finally{multiBusy=false}
+}
+async function multiInviteFromGame(){
+  if(!currentAccount||!worldReady)return;
+  if(multiRole==='guest'){flash('他の人のワールドでは招待できません');return}
+  if(multiRole==='host'&&multiplayerNetwork.connected){
+    multiLobby(multiplayerNetwork.code,true);
+    $('multiEnter').textContent='ゲームに戻る';
+    multiStatus('このコードを送るか、フレンド一覧から参加してもらってください。');
+    return;
+  }
+  await multiHostSingleWorld(currentWorldSlot,readSaveForAccount(currentAccount.key,currentWorldSlot),true);
+}
 async function multiHost(slot,save,originId=null){
   if(multiBusy)return;
   multiBusy=true;multiRole='host';multiHostSlot=slot;multiHostId=originId||multiOwnId();
+  multiWorldKind=save?.worldKind==='single'?'single':'multi';
   multiOriginName=save?.originName||currentAccount.name;
   multiMigration=null;multiCheckpoint=null;multiRoster=[];multiLastCheckpoint=0;
   multiGuestRecords.clear();multiMembers=save?.members&&typeof save.members==='object'?save.members:{};
@@ -3219,12 +3304,7 @@ async function multiHost(slot,save,originId=null){
   try{
     await initializeAccountWorld(save,slot);
     multiStatus('部屋を作成しています…');
-    let code;
-    for(let i=0;i<4;i++){
-      code=multiCode();
-      try{await multiplayerNetwork.host(code);break}
-      catch(e){if(i===3)throw e}
-    }
+    const code=await multiOpenRoom();
     multiRoster=[{id:multiOwnId(),name:currentAccount.name,player:multiCurrentPose()}];
     multiLobby(code,true);multiStatus('部屋を作成しました！');
   }catch(e){multiLeave(true);multiShow('multiSlots');multiStatus('部屋を作れません：'+e.message)}
@@ -3333,9 +3413,10 @@ function multiApplyDrop(message){
 }
 async function multiWelcome(message){
   if(multiRole!=='guest'||!message.world)return;
+  multiWorldKind=message.worldKind==='single'?'single':'multi';
   if(worldReady){
     multiCheckpoint={...message,t:'checkpoint',hostId:message.currentHostId||message.hostId,
-      originId:message.hostId,originName:message.originName||multiOriginName,
+      originId:message.hostId,originName:message.originName||multiOriginName,worldKind:multiWorldKind,
       world:{...message.world,members:message.members||{}},people:message.people||[]};
     if(Array.isArray(message.people))multiUpdateRoster(message.people);
     for(const p of message.people||[])multiShowAvatar(p.id,p.player);
@@ -3347,7 +3428,7 @@ async function multiWelcome(message){
   multiHostId=message.hostId;multiHostSlot=message.slot;
   multiOriginName=message.originName||multiOriginName||'プレイヤー';
   multiCheckpoint={...message,t:'checkpoint',hostId:message.currentHostId||message.hostId,
-    originId:message.hostId,originName:message.originName,
+    originId:message.hostId,originName:message.originName,worldKind:multiWorldKind,
     world:{...message.world,members:message.members||{}},people:message.people||[]};
   multiUpdateRoster(message.people);
   let backup=null;try{backup=JSON.parse(localStorage.getItem(multiGuestSaveKey())||'null')}catch{}
@@ -3375,7 +3456,7 @@ function multiRosterSnapshot(){
 function multiCheckpointNow(){
   return {
     t:'checkpoint',originId:multiHostId,originName:multiOriginName||currentAccount.name,
-    hostId:multiOwnId(),slot:currentWorldSlot,
+    worldKind:multiWorldKind,hostId:multiOwnId(),slot:currentWorldSlot,
     world:{...makeSaveData(),members:{...multiMembers}},
     people:multiRosterSnapshot()
   };
@@ -3458,6 +3539,7 @@ async function multiPromoteHost(job){
   }
   multiHostId=job.checkpoint.originId||multiHostId;
   multiHostSlot=job.checkpoint.slot||currentWorldSlot;
+  multiWorldKind=job.checkpoint.worldKind==='single'?'single':'multi';
   multiOriginName=job.checkpoint.originName||multiOriginName||'プレイヤー';
   multiMembers=multiMigrationMembers(job.checkpoint);
   // A successor must not retain another player's old saved host profile as
@@ -3553,7 +3635,8 @@ function multiRoomData(message,peerId){
       const people=multiRosterSnapshot();
       multiplayerNetwork.send({
         t:'welcome',world:makeSaveData(),hostId:multiHostId,
-        originName:multiOriginName,currentHostId:multiOwnId(),members:multiMembers,
+        originName:multiOriginName,worldKind:multiWorldKind,
+        currentHostId:multiOwnId(),members:multiMembers,
         slot:currentWorldSlot,member:multiMembers[record.id]||null,people
       },peerId);
       multiplayerNetwork.send({t:'roster',people});
@@ -3643,7 +3726,7 @@ function multiLeave(silent=false){
   clearTimeout(multiProfileSaveTimer);multiProfileSaveTimer=null;
   if(worldReady)saveCurrentGame(false);
   const handoff=multiHostExitSnapshot();
-  multiRole=null;multiHostSlot=null;multiHostId='';multiOriginName='';
+  multiRole=null;multiHostSlot=null;multiHostId='';multiOriginName='';multiWorldKind='multi';
   multiMigration=null;multiCheckpoint=null;multiRoster=[];
   multiplayerNetwork.leaveRoom({handoff});
   multiGuestRecords.clear();multiMembers={};multiClearAvatars();
@@ -3684,14 +3767,19 @@ $('multiHostBtn').addEventListener('click',()=>multiView('multiSlots'));
 $('multiJoinBtn').addEventListener('click',()=>multiView('multiJoin'));
 $('multiFriendsBtn').addEventListener('click',()=>multiView('multiFriends'));
 $('multiBack').addEventListener('click',()=>{
-  if(multiViewId==='multiLobby'){multiLeave();return}
+  if(multiViewId==='multiLobby'){
+    if(worldReady&&started){$('multiCover').style.display='none';cover.style.display='none';return}
+    multiLeave();return;
+  }
   if(multiViewId!=='multiHome'){multiView('multiHome');return}
   $('multiCover').style.display='none';menuCover.style.display='flex';
 });
 $('multiLeave').addEventListener('click',()=>multiLeave());
 $('multiEnter').addEventListener('click',()=>{
   if(multiRole!=='host'||!worldReady)return;
-  $('multiCover').style.display='none';$('startBtn').click();
+  $('multiCover').style.display='none';
+  if(started){cover.style.display='none';return}
+  $('startBtn').click();
 });
 $('multiJoinForm').addEventListener('submit',e=>{e.preventDefault();multiJoin($('multiCodeInput').value)});
 $('friendAddForm').addEventListener('submit',async e=>{
@@ -3701,6 +3789,11 @@ $('friendAddForm').addEventListener('submit',async e=>{
     await multiplayerNetwork.talkToFriend(id,{t:'friendRequest',friendId:multiOwnId(),name:currentAccount.name});
     multiStatus('フレンド申請を送りました。相手の承認を待ってください。');
   }catch(error){multiStatus('申請できません：'+error.message)}
+});
+$('multiRoomCopy').addEventListener('click',async()=>{
+  const code=multiplayerNetwork.code;if(!code)return;
+  try{await navigator.clipboard.writeText(code);multiStatus('参加コード '+code+' をコピーしました')}
+  catch{multiStatus('参加コード：'+code)}
 });
 $('friendCopy').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(multiOwnId());multiStatus('フレンドIDをコピーしました')}
@@ -3717,6 +3810,7 @@ singlePlayBtn.addEventListener('click',showWorldSelection);
 worldBack.addEventListener('click',showMainMenu);
 menuLogout.addEventListener('click',()=>{clearSession();location.reload()});
 saveNowBtn.addEventListener('click',()=>saveCurrentGame(true));
+$('inviteFriendsBtn').addEventListener('click',()=>multiInviteFromGame());
 worldListBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
   if(multiRole)multiLeave();else showWorldSelection();
