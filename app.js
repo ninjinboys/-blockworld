@@ -1584,34 +1584,49 @@ function createMobLegs(g,positions,color,hoof,thickness,height){
 }
 function buildHorse(){
   const g=new THREE.Group();
-  const coat=0xad6834,shaded=0x8e5129,bright=0xc98548,cream=0xddb38a;
-  const mane=0x35251f,maneHi=0x4e3329,hoof=0x373331,eye=0x181716,white=0xfbf7ec;
-  // Just under one block wide, with the height and back length for riding.
-  cube(g,.92,.86,1.65,coat,0,1.35,.05);
-  cube(g,.80,.19,1.55,bright,0,1.81,.06);
-  cube(g,.71,.23,.76,shaded,0,.94,.52);
-  // Strong neck, elongated head, muzzle and ears.
-  cube(g,.57,1.13,.60,coat,0,1.85,-.67,-.14);
-  cube(g,.61,.59,.75,coat,0,2.26,-1.05,.10);
-  cube(g,.52,.27,.40,cream,0,2.03,-1.42);
-  cube(g,.53,.13,.40,shaded,0,1.90,-1.42);
-  for(const x of[-.23,.23]){
-    cube(g,.12,.32,.16,coat,x,2.68,-.94);
-    cube(g,.075,.20,.16,cream,x,2.70,-1.025);
-    cube(g,.12,.15,.039,white,x*.82,2.33,-1.446);
-    cube(g,.075,.10,.044,eye,x*.82,2.32,-1.473);
-    cube(g,.064,.055,.05,mane,x*.76,2.035,-1.636);
+  // Lean riding-sized horse: long back, tapered forward neck, narrow muzzle,
+  // side-facing eyes and properly long hooved legs. < 1 block shoulder width.
+  const coat=0x93572f,chestnut=0xaa6b3a,highlight=0xb67b45;
+  const shade=0x78462a,cream=0xcfaa86,muzzle=0xb58d6a;
+  const mane=0x30241e,maneShade=0x483028,hooves=0x282522,eye=0x151311;
+  cube(g,.88,.74,1.90,coat,0,1.50,.14);
+  cube(g,.82,.14,1.78,chestnut,0,1.90,.13);
+  cube(g,.83,.64,.59,highlight,0,1.48,.76);
+  cube(g,.85,.75,.56,chestnut,0,1.53,-.56);
+  cube(g,.72,.13,1.50,shade,0,1.17,.12);
+  cube(g,.56,.19,.76,chestnut,0,1.97,-.43);
+  cube(g,.44,1.02,.49,coat,0,2.08,-.80,-.34);
+  cube(g,.37,.72,.40,chestnut,0,2.26,-1.04,-.29);
+  cube(g,.47,.42,.64,chestnut,0,2.46,-1.37,.13);
+  cube(g,.42,.23,.45,muzzle,0,2.29,-1.79,.14);
+  cube(g,.40,.12,.34,cream,0,2.18,-1.80,.05);
+  cube(g,.41,.07,.29,shade,0,2.12,-1.82);
+  for(const sign of [-1,1]){
+    const x=sign*.17;
+    cube(g,.14,.29,.18,coat,x,2.79,-1.14,0,0,sign*-.10);
+    cube(g,.07,.18,.14,muzzle,x,2.82,-1.25);
+    cube(g,.065,.12,.12,shade,sign*.24,2.52,-1.42);
+    cube(g,.044,.078,.082,eye,sign*.279,2.53,-1.43);
+    cube(g,.034,.042,.037,eye,sign*.13,2.33,-2.015);
   }
-  // Layered dark mane falling down the back of the neck.
-  for(let i=0;i<6;i++){
-    cube(g,.65,.19,.25,i%2?mane:maneHi,0,2.56-i*.17,-.61+i*.045);
+  // Short dark mane along the sloping back of the neck.
+  cube(g,.43,.15,.25,mane,0,2.72,-1.21);
+  for(let i=0;i<6;i++)
+    cube(g,.46-i*.013,.14,.20,i%2?maneShade:mane,0,2.65-i*.17,-1.10+i*.092,-.20);
+  // Slim tail at the rump (rather than a giant vertical appendage).
+  cube(g,.16,.16,.44,coat,0,1.64,1.17,-.29);
+  cube(g,.20,.49,.22,maneShade,0,1.27,1.42,-.26);
+  cube(g,.25,.35,.28,mane,0,1.00,1.49,-.13);
+  const legs=[];
+  for(const [x,z] of [[-.31,-.59],[.31,-.59],[-.31,.77],[.31,.77]]){
+    const joint=new THREE.Group();joint.position.set(x,1.23,z);
+    cube(joint,.20,.58,.25,chestnut,0,-.29,0);
+    cube(joint,.16,.52,.21,coat,0,-.80,-.025);
+    cube(joint,.26,.16,.34,hooves,0,-1.14,-.085);
+    cube(joint,.19,.085,.22,shade,0,-.58,.012);
+    g.add(joint);legs.push(joint);
   }
-  cube(g,.50,.15,.29,mane,0,2.58,-1.07);
-  // Dark trailing tail with a long flowing end.
-  cube(g,.21,.18,.46,shaded,0,1.67,1.03,-.23);
-  cube(g,.29,.65,.30,mane,0,1.28,1.22,-.15);
-  cube(g,.30,.34,.28,maneHi,0,.90,1.31);
-  createMobLegs(g,[[-.28,-.55],[.28,-.55],[-.28,.63],[.28,.63]],coat,hoof,.235,.75);
+  g.userData.walkLegs=legs;
   return g;
 }
 function buildBison(){
@@ -1738,7 +1753,10 @@ function mobCollisionShape(m,x,z,angle=m.userData.angle){
   if(type==='zombie')return [[x,z,.34]];
   const direction=Number.isFinite(angle)?angle:0;
   const fx=Math.sin(direction),fz=Math.cos(direction);
-  if(type==='horse')return [[x,z,.46],[x+fx*.96,z+fz*.96,.36],[x-fx*.60,z-fz*.60,.40]];
+  if(type==='horse')return [
+    [x,z,.45],[x+fx*.53,z+fz*.53,.42],[x-fx*.63,z-fz*.63,.40],
+    [x+fx*1.57,z+fz*1.57,.34,1.90,2.90]
+  ];
   if(type==='bison')return [[x,z,.76],[x+fx*.84,z+fz*.84,.65],[x-fx*.65,z-fz*.65,.62]];
   if(type==='lion')return [[x,z,.67],[x+fx*.95,z+fz*.95,.49],[x-fx*.73,z-fz*.73,.58]];
   // Body and projecting head of the three original farm animals.
@@ -1759,12 +1777,14 @@ function mobCircleTouchesBlock(x,z,r,bx,bz){
 function mobSpaceFree(m,x,rootY,z,angle=m.userData.angle){
   const [foot,top]=mobVerticalBounds(m,rootY),eps=1e-4;
   const fromY=Math.ceil(foot-.5+eps),toY=Math.floor(top+.5-eps);
-  for(const [cx,cz,r] of mobCollisionShape(m,x,z,angle)){
+  for(const [cx,cz,r,localBottom,localTop] of mobCollisionShape(m,x,z,angle)){
+    const bottom=localBottom==null?fromY:Math.ceil(rootY+localBottom-.5+eps);
+    const topY=localTop==null?toY:Math.floor(rootY+localTop+.5-eps);
     const fromX=Math.ceil(cx-r-.5+eps),toX=Math.floor(cx+r+.5-eps);
     const fromZ=Math.ceil(cz-r-.5+eps),toZ=Math.floor(cz+r+.5-eps);
     for(let bx=fromX;bx<=toX;bx++)for(let bz=fromZ;bz<=toZ;bz++){
       if(!mobCircleTouchesBlock(cx,cz,r,bx,bz))continue;
-      for(let by=fromY;by<=toY;by++){
+      for(let by=bottom;by<=topY;by++){
         if(solid(get(bx,by,bz)))return false;
       }
     }
@@ -1774,31 +1794,80 @@ function mobSpaceFree(m,x,rootY,z,angle=m.userData.angle){
 function mobOverlapsBlock(m,bx,by,bz){
   const [foot,top]=mobVerticalBounds(m);
   if(by+.5<=foot+.0001||by-.5>=top-.0001)return false;
-  return mobCollisionShape(m,m.position.x,m.position.z).some(([x,z,r])=>
-    mobCircleTouchesBlock(x,z,r,bx,bz));
+  return mobCollisionShape(m,m.position.x,m.position.z).some(([x,z,r,lower,upper])=>{
+    if(lower!=null&&by+.5<=m.position.y+lower+.0001)return false;
+    if(upper!=null&&by-.5>=m.position.y+upper-.0001)return false;
+    return mobCircleTouchesBlock(x,z,r,bx,bz);
+  });
 }
-// Small swept steps prevent high-speed fleeing animals from tunneling
-// through a one-block-thick barrier during slow frames.
+// Visual-only child rig: physics uses the new height immediately, while the
+// visible mob visibly hops up / drops down instead of teleporting a block.
+function setupMobStepAnimation(m){
+  const body=new THREE.Group();
+  for(const child of [...m.children])body.add(child);
+  m.add(body);
+  m.userData.stepVisual=body;
+}
+function animateMobStep(m,dt){
+  const model=m.userData.stepVisual;if(!model)return;
+  if(Math.abs(model.position.y)<.005){model.position.y=0;return}
+  model.position.y+=(0-model.position.y)*Math.min(1,dt*12);
+}
+// A long muzzle can hit a wall before the front legs reach it. Jump
+// decisions must only consider solid blocks at FOOT height, never the nose.
+function mobLowStepObstacle(m,x,rootY,z,angle){
+  const feet=mobVerticalBounds(m,rootY)[0];
+  const by=Math.ceil(feet-.5+1e-4);
+  for(const [cx,cz,r,lower] of mobCollisionShape(m,x,z,angle)){
+    if(lower!=null)continue; // a horse's high muzzle is not a hoof
+    const x1=Math.ceil(cx-r-.5),x2=Math.floor(cx+r+.5);
+    const z1=Math.ceil(cz-r-.5),z2=Math.floor(cz+r+.5);
+    for(let bx=x1;bx<=x2;bx++)for(let bz=z1;bz<=z2;bz++){
+      if(mobCircleTouchesBlock(cx,cz,r,bx,bz)&&solid(get(bx,by,bz)))return true;
+    }
+  }
+  return false;
+}
+// Swept movement for all animals and zombies. A one-block wall can be
+// climbed when the entire head/body clears it; higher walls stay blocked.
+// Always read placed/removed voxels through get(), never only surfaceAt().
 function mobWalkStep(m,angle,distance,isZombie=false){
   const steps=Math.max(1,Math.ceil(Math.abs(distance)/.09)),step=distance/steps;
+  const rootOffset=isZombie?.51:.04;
   let moved=false;
   for(let i=0;i<steps;i++){
     const nx=m.position.x+Math.sin(angle)*step;
     const nz=m.position.z+Math.cos(angle)*step;
     const bx=Math.round(nx),bz=Math.round(nz);
     const ground=surfaceAt(bx,bz);
-    if(isZombie){
-      if(!isZombieGround(bx,bz))break;
-    }else if(ground<=SEA||biomeAt(bx,bz)===6)break;
-    const targetY=ground+(isZombie?.51:.04);
-    if(Math.abs(targetY-m.position.y)>1.18)break;
-    // Step UP before moving horizontally: slowly sliding through a tall
-    // terrain ledge causes clipping even with a collision check.
-    const nextY=targetY>m.position.y+.06?targetY:m.position.y;
-    if(!mobSpaceFree(m,nx,nextY,nz,angle))break;
+    if(ground<(isZombie?SEA:SEA+1)||ground>WORLD_TOP-3)break;
+    if(!isZombie&&biomeAt(bx,bz)===6)break;
+    // Even a mined-away floor must be verified. A shallow hole can be walked into.
+    const floor=solid(get(bx,ground,bz))?ground:
+      solid(get(bx,ground-1,bz))?ground-1:null;
+    if(floor===null)break;
+    const naturalY=floor+rootOffset,oldY=m.position.y;
+    if(naturalY>oldY+1.15||naturalY<oldY-1.15)break;
+    let candidateY=oldY;
+    if(naturalY>oldY+.09)candidateY=naturalY;
+    else if(naturalY<oldY-.12&&mobSpaceFree(m,nx,naturalY,nz,angle))
+      candidateY=naturalY;
+    if(!mobSpaceFree(m,nx,candidateY,nz,angle)){
+      if(naturalY>oldY+.12)break; // terrain step already exhausted
+      if(!mobLowStepObstacle(m,nx,oldY,nz,angle))break;
+      const raisedY=oldY+1;
+      if(raisedY+mobVerticalBounds(m,0)[1]>WORLD_TOP+1.5||
+         !mobSpaceFree(m,nx,raisedY,nz,angle))break;
+      candidateY=raisedY;
+    }
     m.position.x=nx;m.position.z=nz;
-    if(nextY!==m.position.y)m.position.y=nextY;
-    else m.position.y+=(targetY-m.position.y)*(isZombie?.25:1);
+    if(Math.abs(candidateY-oldY)>.10){
+      m.position.y=candidateY;
+      if(m.userData.stepVisual){
+        const mesh=m.userData.stepVisual;
+        mesh.position.y=Math.max(-1.03,Math.min(1.03,mesh.position.y+oldY-candidateY));
+      }
+    }else m.position.y+=(candidateY-m.position.y)*(isZombie?.35:1);
     moved=true;
   }
   return moved;
@@ -1842,6 +1911,7 @@ function spawnZombie(){
     g.userData={...g.userData,type:'zombie',name:'ゾンビ',hp:10,xp:24,
       angle:Math.random()*Math.PI*2,speed:1.45,
       attackCooldown:.8,hitFlash:0,phase:Math.random()*Math.PI*2};
+    setupMobStepAnimation(g);
     scene.add(g);mobs.push(g);
     return true;
   }
@@ -2010,6 +2080,7 @@ function spawnPassiveMob(){
     g.traverse(obj=>{if(obj.isMesh)obj.geometry.dispose()});
     return false;
   }
+  setupMobStepAnimation(g);
   scene.add(g);mobs.push(g);
   return true;
 }
@@ -3546,6 +3617,7 @@ function loop(now){
     if(weather==='rain'){const a=rain.geometry.attributes.position.array;for(let i=0;i<rainN;i++){a[i*3+1]-=dt*19;if(a[i*3+1]<0){a[i*3+1]=25+Math.random()*9;a[i*3]=(Math.random()-.5)*44;a[i*3+2]=(Math.random()-.5)*44}}rain.position.set(player.pos.x,0,player.pos.z);rain.geometry.attributes.position.needsUpdate=true}
 
     mobs.forEach((m,i)=>{
+      animateMobStep(m,dt);
       if(m.userData.hitFlash>0){
         m.userData.hitFlash-=dt;
         if(m.userData.hitFlash<=0)restoreMobColors(m);
