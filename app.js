@@ -337,7 +337,10 @@ let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null
 let multiRole=null,multiHostSlot=null,multiHostId='',multiBusy=false,multiApplying=false,multiMembers={};
 const multiGuestRecords=new Map(),multiAvatars=new Map(),multiFriendsOnline=new Map();
 let multiLastPose=0,multiLastProfile=0,multiPendingTimer=null,multiClosing=false,multiProfileSaveTimer=null;
+let multiOriginName='',multiMigration=null,multiCheckpoint=null,multiRoster=[];
+let multiLastCheckpoint=0,multiMigrationGeneration=0;
 const MULTI_HOST='blockworld_multi_host_v1:',MULTI_MEMBER='blockworld_multi_member_v1:';
+const MULTI_HANDOFF='blockworld_multi_handoff_v1:';
 const FRIEND_ID='blockworld_friend_id_v1:',FRIENDS_KEY='blockworld_friends_v1:';
 const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SESSION_KEY='blockworld_session_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
@@ -450,14 +453,26 @@ function saveCurrentGame(showMessage=false){
     if(multiRole==='guest'){
       const profile=multiProfile();
       localStorage.setItem(multiGuestSaveKey(),JSON.stringify(profile));
+      if(multiHostId===multiOwnId()){
+        // If the original creator rejoins a migrated room, recover its latest
+        // shared world back into its own multi-world slot automatically.
+        const restored={...makeSaveData(),members:multiCheckpoint?.world?.members||{},
+          originName:multiOriginName||currentAccount.name};
+        localStorage.setItem(multiWorldKey(currentWorldSlot),JSON.stringify(restored));
+      }
       if(multiplayerNetwork.connected)multiplayerNetwork.send({t:'profile',profile});
       saveDirty=false;setSaveStatus('マルチ：持ち物保存済み');
       if(showMessage)flash('持ち物を保存しました');
       return true;
     }
-    const key=multiRole==='host'?multiWorldKey(currentWorldSlot):saveKeyForAccount(currentAccount.key,currentWorldSlot);
+    const key=multiRole==='host'
+      ?(multiHostId===multiOwnId()?multiWorldKey(currentWorldSlot):multiHandoffSaveKey(multiHostId,currentWorldSlot))
+      :saveKeyForAccount(currentAccount.key,currentWorldSlot);
     const payload=makeSaveData();
-    if(multiRole==='host')payload.members=multiMembers;
+    if(multiRole==='host'){
+      payload.members=multiMembers;
+      payload.originName=multiOriginName||currentAccount.name;
+    }
     localStorage.setItem(key,JSON.stringify(payload));
     saveDirty=false;
     const d=new Date(),hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');
@@ -3084,6 +3099,7 @@ const multiplayerNetwork=createBlockworldNetwork(multiEvent,()=>({
 const multiViews=['multiHome','multiSlots','multiJoin','multiFriends','multiLobby'];
 let multiViewId='multiHome',multiPresenceBusy=false,friendRefreshBusy=false;
 function multiWorldKey(slot){return MULTI_HOST+currentAccount.key+':'+slot}
+function multiHandoffSaveKey(originId,slot){return MULTI_HANDOFF+currentAccount.key+':'+originId+':'+slot}
 function multiGuestSaveKey(){return MULTI_MEMBER+currentAccount.key+':'+multiHostId+':'+multiHostSlot}
 function multiOwnId(){
   const key=FRIEND_ID+currentAccount.key;let id=localStorage.getItem(key);
@@ -3112,7 +3128,7 @@ function multiShow(v='multiHome'){
   menuCover.style.display='none';worldCover.style.display='none';
   $('multiCover').style.display='flex';multiView(v);
   cover.style.display=worldReady?'flex':'none';
-  multiStatus('最大4人。ホストが退出すると全員退出します。');
+  multiStatus('最大4人。作成者が退出しても、残った人にホストを引き継ぎます。');
   document.exitPointerLock?.();
 }
 function multiStartPresence(){
@@ -3147,9 +3163,9 @@ function multiPeople(){
 }
 function multiLobby(code,host){
   $('multiRoomCode').textContent=code;
-  $('multiRoomTip').textContent=host?'このコードを友達に教えてください。':'ホストのワールドに接続しました。';
+  $('multiRoomTip').textContent=host?'このコードを友達に教えてください。ホストが退出しても残った人は続行できます。':'ワールドに接続しました。';
   $('multiEnter').hidden=!host;
-  $('multiLeave').textContent=host?'部屋を閉じる':'部屋から退出';
+  $('multiLeave').textContent='ワールドから退出';
   multiView('multiLobby');multiPeople();$('multiCover').style.display='flex';
 }
 function multiRenderSlots(){
@@ -3172,10 +3188,32 @@ function multiRenderSlots(){
     }
     card.append(name,detail,actions);grid.append(card);
   }
+  // A player who takes over somebody else's room keeps an isolated local
+  // backup. It can be reopened without replacing their own five worlds.
+  const prefix=MULTI_HANDOFF+currentAccount.key+':';
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(!key?.startsWith(prefix))continue;
+    let saved=null;try{saved=JSON.parse(localStorage.getItem(key)||'null')}catch{}
+    if(!saved||!Number.isInteger(saved.worldSlot))continue;
+    const origin=key.slice(prefix.length).split(':')[0],slot=saved.worldSlot;
+    if(!/^[A-Z2-9]{10}$/.test(origin)||slot<1||slot>5)continue;
+    const card=document.createElement('div');card.className='multi-slot';
+    const name=document.createElement('strong');name.textContent='引き継いだ WORLD '+slot;
+    const desc=document.createElement('span');desc.textContent='元の作成者：'+(saved.originName||origin)+' · '+formatSavedAt(saved.savedAt);
+    const buttons=document.createElement('div');buttons.className='multi-slot-actions';
+    const play=document.createElement('button');play.type='button';play.textContent='続きから開く';
+    play.addEventListener('click',()=>multiHost(slot,saved,origin));
+    const del=document.createElement('button');del.type='button';del.className='multi-delete';del.textContent='削除';
+    del.addEventListener('click',()=>{if(confirm('引き継いだワールドの保存データを削除しますか？')){localStorage.removeItem(key);multiRenderSlots()}});
+    buttons.append(play,del);card.append(name,desc,buttons);grid.append(card);
+  }
 }
-async function multiHost(slot,save){
+async function multiHost(slot,save,originId=null){
   if(multiBusy)return;
-  multiBusy=true;multiRole='host';multiHostSlot=slot;multiHostId=multiOwnId();
+  multiBusy=true;multiRole='host';multiHostSlot=slot;multiHostId=originId||multiOwnId();
+  multiOriginName=save?.originName||currentAccount.name;
+  multiMigration=null;multiCheckpoint=null;multiRoster=[];multiLastCheckpoint=0;
   multiGuestRecords.clear();multiMembers=save?.members&&typeof save.members==='object'?save.members:{};
   multiStatus('ワールドを準備しています…');
   try{
@@ -3187,6 +3225,7 @@ async function multiHost(slot,save){
       try{await multiplayerNetwork.host(code);break}
       catch(e){if(i===3)throw e}
     }
+    multiRoster=[{id:multiOwnId(),name:currentAccount.name,player:multiCurrentPose()}];
     multiLobby(code,true);multiStatus('部屋を作成しました！');
   }catch(e){multiLeave(true);multiShow('multiSlots');multiStatus('部屋を作れません：'+e.message)}
   finally{multiBusy=false}
@@ -3293,9 +3332,24 @@ function multiApplyDrop(message){
   }finally{multiApplying=false}
 }
 async function multiWelcome(message){
-  if(multiRole!=='guest'||worldReady||!message.world)return;
+  if(multiRole!=='guest'||!message.world)return;
+  if(worldReady){
+    multiCheckpoint={...message,t:'checkpoint',hostId:message.currentHostId||message.hostId,
+      originId:message.hostId,originName:message.originName||multiOriginName,
+      world:{...message.world,members:message.members||{}},people:message.people||[]};
+    if(Array.isArray(message.people))multiUpdateRoster(message.people);
+    for(const p of message.people||[])multiShowAvatar(p.id,p.player);
+    // Rejoining an ongoing migrated room must not reset this player's items.
+    multiplayerNetwork.send({t:'profile',profile:multiProfile()});
+    return;
+  }
   clearTimeout(multiPendingTimer);multiPendingTimer=null;
   multiHostId=message.hostId;multiHostSlot=message.slot;
+  multiOriginName=message.originName||multiOriginName||'プレイヤー';
+  multiCheckpoint={...message,t:'checkpoint',hostId:message.currentHostId||message.hostId,
+    originId:message.hostId,originName:message.originName,
+    world:{...message.world,members:message.members||{}},people:message.people||[]};
+  multiUpdateRoster(message.people);
   let backup=null;try{backup=JSON.parse(localStorage.getItem(multiGuestSaveKey())||'null')}catch{}
   const stored=message.member;
   const who=backup&&(!stored||backup.savedAt>stored.savedAt)?backup:stored;
@@ -3308,11 +3362,181 @@ async function multiWelcome(message){
     await initializeAccountWorld(data,message.slot);
     $('multiCover').style.display='none';$('startBtn').click();
     for(const p of message.people||[])multiShowAvatar(p.id,p.player);
+    multiplayerNetwork.send({t:'profile',profile:multiProfile()});
   }catch(e){multiLeave(true);multiShow('multiJoin');multiStatus('読み込みに失敗：'+e.message)}
+}
+
+// Host migration (the URL stays static; remaining players claim the same
+// PeerJS room code). A checkpoint lets players recover from a sudden drop.
+function multiRosterSnapshot(){
+  return [{id:multiOwnId(),name:currentAccount.name,player:multiCurrentPose()},
+    ...[...multiGuestRecords.values()].map(p=>({id:p.id,name:p.name,player:p.player||null}))];
+}
+function multiCheckpointNow(){
+  return {
+    t:'checkpoint',originId:multiHostId,originName:multiOriginName||currentAccount.name,
+    hostId:multiOwnId(),slot:currentWorldSlot,
+    world:{...makeSaveData(),members:{...multiMembers}},
+    people:multiRosterSnapshot()
+  };
+}
+function multiUpdateRoster(people){
+  if(!Array.isArray(people))return;
+  const seen=new Set(),valid=[];
+  for(const p of people){
+    if(!p||typeof p.id!=='string'||!/^[A-Z2-9]{10}$/.test(p.id)||seen.has(p.id))continue;
+    seen.add(p.id);valid.push({id:p.id,name:String(p.name||'プレイヤー').slice(0,20),player:p.player||null});
+  }
+  multiRoster=valid;
+}
+function multiProfileFromWorld(world){
+  const fields=['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds',
+    'staminaRegenSeconds','cameraMode','player','bedSpawn'];
+  const p={savedAt:world.savedAt||Date.now()};
+  for(const k of fields)if(Object.hasOwn(world,k))p[k]=world[k];
+  return p;
+}
+function multiMigrationMembers(snapshot){
+  const members={...(snapshot.world?.members||{})};
+  if(snapshot.hostId&&snapshot.hostId!==multiOwnId())
+    members[snapshot.hostId]=multiProfileFromWorld(snapshot.world);
+  return members;
+}
+function multiRemoveAvatar(id){
+  const model=multiAvatars.get(id);
+  if(!model)return;
+  scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(id);
+}
+function multiPrepareMigration(checkpoint,plannedLeader=null){
+  if(multiRole!=='guest'||multiMigration||!worldReady)return;
+  const code=multiplayerNetwork.code;
+  if(!/^[A-Z0-9]{6}$/.test(code))return;
+  const knownPeople=plannedLeader&&Array.isArray(checkpoint?.people)
+    ?checkpoint.people:(multiRoster.length?multiRoster:(checkpoint.people||[]));
+  const participants=knownPeople
+    .filter(p=>p&&/^[A-Z2-9]{10}$/.test(p.id)&&p.id!==checkpoint.hostId);
+  // Only active participants can become successor. This order is deterministic
+  // on all clients; no master server or account-name search is required.
+  const candidates=[...new Set(participants.map(p=>p.id))].sort();
+  const leader=candidates.includes(plannedLeader)?plannedLeader:candidates[0];
+  if(!leader){multiLeave(true);multiShow();multiStatus('参加者がいないため部屋を終了しました');return}
+  multiMigration={
+    code,leader,checkpoint,people:participants,
+    generation:++multiMigrationGeneration
+  };
+  multiCheckpoint=checkpoint;
+  multiUpdateRoster(participants);
+  flash('ホストを引き継いでいます…');
+  if(leader===multiOwnId())setTimeout(()=>multiPromoteHost(multiMigration),1200);
+  else setTimeout(()=>multiReconnectHost(multiMigration),1400);
+}
+async function multiPromoteHost(job){
+  if(multiMigration!==job||multiRole!=='guest')return;
+  // Guests already own the latest blocks and world drops in memory.
+  // Merge the host checkpoint where this peer has not received an edit,
+  // without wiping its inventory, player position or ongoing gameplay.
+  const world=job.checkpoint.world||{};
+  if(Array.isArray(world.edits)){
+    for(const entry of world.edits){
+      if(!Array.isArray(entry)||typeof entry[0]!=='string'||!Array.isArray(entry[1]))continue;
+      let edits=editChunks.get(entry[0]);
+      if(!edits){edits=new Map();editChunks.set(entry[0],edits)}
+      const loaded=chunks.get(entry[0]);let changed=false;
+      for(const pair of entry[1]){
+        if(!Array.isArray(pair)||!Number.isInteger(pair[0])||!Number.isInteger(pair[1]))continue;
+        if(pair[0]<0||pair[0]>=CHUNK*HEIGHT*CHUNK)continue;
+        if(!edits.has(pair[0])){
+          edits.set(pair[0],pair[1]);
+          if(loaded){loaded.data[pair[0]]=pair[1];changed=true}
+        }
+      }
+      if(changed&&loaded)queueMeshNear(loaded.cx,loaded.cz);
+    }
+  }
+  multiHostId=job.checkpoint.originId||multiHostId;
+  multiHostSlot=job.checkpoint.slot||currentWorldSlot;
+  multiOriginName=job.checkpoint.originName||multiOriginName||'プレイヤー';
+  multiMembers=multiMigrationMembers(job.checkpoint);
+  // A successor must not retain another player's old saved host profile as
+  // its own inventory. Its own current inventory stays entirely untouched.
+  multiRole='host';multiGuestRecords.clear();
+  multiRemoveAvatar(job.checkpoint.hostId);
+  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  for(let attempt=0;attempt<12;attempt++){
+    if(multiMigration!==job||multiRole!=='host')return;
+    try{
+      await multiplayerNetwork.host(job.code);
+      if(multiMigration!==job){multiplayerNetwork.leaveRoom({handoff:true});return}
+      multiMigration=null;multiLastCheckpoint=0;
+      saveCurrentGame(false);
+      flash('ホストを引き継ぎました！このまま遊べます');
+      return;
+    }catch(e){
+      if(attempt===11){console.warn('Host migration failed',e);break}
+      await sleep(550+attempt*150);
+    }
+  }
+  if(multiMigration===job){
+    // If another participant claimed the code first, rejoin their session.
+    multiRole='guest';await multiReconnectHost(job);
+  }
+}
+async function multiReconnectHost(job){
+  if(multiMigration!==job)return;
+  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  for(let attempt=0;attempt<16;attempt++){
+    if(multiMigration!==job||!worldReady)return;
+    try{
+      await multiplayerNetwork.join(job.code);
+      if(multiMigration!==job)return;
+      multiRole='guest';
+      multiplayerNetwork.send({t:'hello',id:multiOwnId(),name:currentAccount.name,rejoining:true});
+      // Keep rendering and gameplay while the connection is restored.
+      multiMigration=null;
+      multiCheckpoint=job.checkpoint;
+      flash('新しいホストにつながりました');
+      return;
+    }catch(e){
+      if(attempt===15){console.warn('Rejoin after host migration failed',e);break}
+      await sleep(600+Math.min(attempt,8)*160);
+    }
+  }
+  if(multiMigration===job){
+    multiMigration=null;multiLeave(true);multiShow();
+    multiStatus('ホストの引き継ぎができませんでした。再度参加してください。');
+  }
+}
+function multiHostExitSnapshot(){
+  if(multiRole!=='host'||!multiplayerNetwork.connected||!multiGuestRecords.size)return false;
+  const snap=multiCheckpointNow();
+  // The creator remains in the members map so their inventory returns
+  // intact if they rejoin later.
+  const people=snap.people.filter(p=>p.id!==multiOwnId());
+  if(!people.length)return false;
+  const leader=[...people].sort((a,b)=>a.id.localeCompare(b.id))[0].id;
+  multiplayerNetwork.send({...snap,t:'handoff',leader});
+  return true;
 }
 function multiRoomData(message,peerId){
   if(message.t==='reject'){multiLeave(true);multiShow('multiJoin');multiStatus(message.reason||'参加できません');return}
-  if(message.t==='roomClosed'){multiLeave(true);multiShow('multiHome');multiStatus('ホストが退出しました');return}
+  if(message.t==='handoff'){
+    // Explicit departure: the latest complete world is delivered before close.
+    multiPrepareMigration({...message,t:'checkpoint'},message.leader);return;
+  }
+  if(message.t==='checkpoint'){
+    if(multiRole==='guest'&&!multiMigration){
+      multiCheckpoint=message;multiUpdateRoster(message.people);
+    }
+    return;
+  }
+  if(message.t==='roster'){
+    if(multiRole==='guest'&&!multiMigration)multiUpdateRoster(message.people);
+    return;
+  }
+  if(message.t==='roomClosed'){
+    if(multiRole==='guest'&&multiCheckpoint){multiPrepareMigration(multiCheckpoint);return}
+    multiLeave(true);multiShow('multiHome');multiStatus('部屋が終了しました');return;
+  }
   if(message.t==='welcome'){multiWelcome(message);return}
   if(!multiRole||!multiplayerNetwork.connected)return;
   if(multiRole==='host'){
@@ -3323,10 +3547,13 @@ function multiRoomData(message,peerId){
       }
       const record={id:message.id,name:message.name.slice(0,20)};
       multiGuestRecords.set(peerId,record);
-      const people=[{id:multiOwnId(),player:multiProfile().player},
-        ...[...multiGuestRecords.values()].map(x=>({id:x.id,player:x.player}))];
-      multiplayerNetwork.send({t:'welcome',world:makeSaveData(),hostId:multiOwnId(),
-        slot:currentWorldSlot,member:multiMembers[record.id]||null,people},peerId);
+      const people=multiRosterSnapshot();
+      multiplayerNetwork.send({
+        t:'welcome',world:makeSaveData(),hostId:multiHostId,
+        originName:multiOriginName,currentHostId:multiOwnId(),members:multiMembers,
+        slot:currentWorldSlot,member:multiMembers[record.id]||null,people
+      },peerId);
+      multiplayerNetwork.send({t:'roster',people});
       multiplayerNetwork.send({t:'joinNotice',name:record.name});
       multiPeople();return;
     }
@@ -3349,8 +3576,8 @@ function multiRoomData(message,peerId){
       }
     }
     if(message.t==='peerLeft'){
-      const avatar=multiAvatars.get(message.id);
-      if(avatar){scene.remove(avatar);avatar.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(message.id)}
+      multiRemoveAvatar(message.id);
+      multiRoster=multiRoster.filter(p=>p.id!==message.id);
     }
     if(message.t==='joinNotice')flash(message.name+' が参加しました');
   }
@@ -3363,12 +3590,20 @@ function multiEvent(e){
       multiGuestRecords.delete(e.peerId);
       const model=multiAvatars.get(guest.id);
       if(model){scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(guest.id)}
-      multiplayerNetwork.send({t:'peerLeft',id:guest.id});multiPeople();
+      multiplayerNetwork.send({t:'peerLeft',id:guest.id});
+      multiplayerNetwork.send({t:'roster',people:multiRosterSnapshot()});
+      multiPeople();
       if(worldReady)saveCurrentGame(false);
     }
   }
-  if(e.type==='roomLost'&&multiRole&&!multiClosing){multiLeave(true);multiShow();multiStatus(e.reason||'接続が切れました')}
-  if(e.type==='roomError')multiStatus(e.reason||'通信エラー');
+  if(e.type==='roomLost'&&multiRole&&!multiClosing){
+    if(multiMigration)return;
+    if(multiRole==='guest'&&multiCheckpoint&&worldReady){
+      multiPrepareMigration(multiCheckpoint);return;
+    }
+    multiLeave(true);multiShow();multiStatus(e.reason||'接続が切れました');
+  }
+  if(e.type==='roomError'&&!multiMigration)multiStatus(e.reason||'通信エラー');
   if(e.type==='friendRequest'){
     const pending=$('friendPending');pending.hidden=false;pending.replaceChildren();
     const span=document.createElement('span');span.textContent=e.name+' からフレンド申請が届きました。';
@@ -3388,6 +3623,11 @@ function multiTick(now){
       multiplayerNetwork.send({t:'pose',player:multiCurrentPose()});
       if(multiRole==='host'&&Math.floor(now/2200)!==Math.floor((now-150)/2200))
         multiplayerNetwork.send({t:'time',dayTime,weather});
+      // Periodic backup so a sudden tab closure also has a recovery path.
+      if(multiRole==='host'&&multiGuestRecords.size&&now-multiLastCheckpoint>40000){
+        multiLastCheckpoint=now;
+        multiplayerNetwork.send(multiCheckpointNow());
+      }
     }
   }
   if(multiRole==='guest'&&now-multiLastProfile>8000){multiLastProfile=now;saveCurrentGame(false)}
@@ -3399,8 +3639,11 @@ function multiLeave(silent=false){
   clearTimeout(multiPendingTimer);multiPendingTimer=null;
   clearTimeout(multiProfileSaveTimer);multiProfileSaveTimer=null;
   if(worldReady)saveCurrentGame(false);
-  multiRole=null;multiHostSlot=null;multiHostId='';
-  multiplayerNetwork.leaveRoom();multiGuestRecords.clear();multiMembers={};multiClearAvatars();
+  const handoff=multiHostExitSnapshot();
+  multiRole=null;multiHostSlot=null;multiHostId='';multiOriginName='';
+  multiMigration=null;multiCheckpoint=null;multiRoster=[];
+  multiplayerNetwork.leaveRoom({handoff});
+  multiGuestRecords.clear();multiMembers={};multiClearAvatars();
   clearInterval(saveInterval);saveInterval=null;
   if(worldReady){resetWorldRuntime();worldReady=false;currentWorldSlot=null}
   cover.style.display='none';accountBox.style.display='none';
@@ -3479,8 +3722,13 @@ worldLogout.addEventListener('click',()=>{clearSession();location.reload()});
 logoutBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
   if(confirm('セーブしてログアウトしますか？')){
-    saveCurrentGame(false);if(multiRole)multiLeave(true);
-    clearInterval(saveInterval);clearSession();location.reload();
+    saveCurrentGame(false);
+    const handoff=multiRole==='host'&&multiGuestRecords.size>0;
+    if(multiRole)multiLeave(true);
+    clearInterval(saveInterval);clearSession();
+    // A reload right away would abort in-flight WebRTC world migration.
+    if(handoff)setTimeout(()=>location.reload(),900);
+    else location.reload();
   }
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCurrentGame(false)});

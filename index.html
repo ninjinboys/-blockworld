@@ -40,14 +40,14 @@
 <div id="multiCover" aria-label="マルチプレイメニュー">
   <div class="multi-panel">
     <div class="multi-heading"><div><div class="multi-kicker">BLOCKWORLD</div><h2 id="multiTitle">マルチプレイ</h2></div><button id="multiBack" type="button">戻る</button></div>
-    <p id="multiStatus" role="status" aria-live="polite">最大4人。ホストが退出すると部屋が閉じます。</p>
+    <p id="multiStatus" role="status" aria-live="polite">最大4人。作成者が退出しても残った人は遊び続けられます。</p>
     <div id="multiHome" class="multi-section">
       <button id="multiHostBtn" class="multi-primary" type="button">ワールドを作る</button>
       <button id="multiJoinBtn" class="multi-primary" type="button">コードで参加</button>
       <button id="multiFriendsBtn" class="multi-primary" type="button">フレンド一覧</button>
     </div>
     <div id="multiSlots" class="multi-section" hidden>
-      <p>マルチプレイ専用のワールド（最大5個）。シングルのセーブは変更しません。</p>
+      <p>マルチ専用ワールドは最大5個。引き継いだワールドも下に表示されます。シングルのセーブは変更しません。</p>
       <div id="multiSlotGrid"></div>
     </div>
     <div id="multiJoin" class="multi-section" hidden>
@@ -70,10 +70,10 @@
     </div>
     <div id="multiLobby" class="multi-section" hidden>
       <div class="multi-room"><span>参加コード</span><strong id="multiRoomCode">------</strong></div>
-      <p id="multiRoomTip">友達にコードを教えると参加できます。</p>
+      <p id="multiRoomTip">友達にコードを教えると参加できます。作成者が退出しても引き継がれます。</p>
       <div id="multiPeople" class="multi-people">参加人数：1/4人</div>
       <button id="multiEnter" class="multi-primary" type="button">ワールドに入る</button>
-      <button id="multiLeave" class="multi-secondary" type="button">部屋を閉じる・退出</button>
+      <button id="multiLeave" class="multi-secondary" type="button">ワールドから退出</button>
     </div>
   </div>
 </div>
@@ -210,6 +210,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261009avatars1"></script>
+<script type="module" src="app.js?v=20261009handoff1"></script>
 </body>
 </html>

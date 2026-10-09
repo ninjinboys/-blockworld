@@ -1,6 +1,6 @@
 // BLOCKWORLD temporary host-to-guest transport over WebRTC data channels.
 // GitHub Pages stays static. Public PeerJS Cloud supplies signaling only;
-// the room exists only while the host browser remains connected.
+// remaining players can take over the room when the host leaves.
 const CLIENT_URL='https://cdn.jsdelivr.net/npm/peerjs@1.5.5/+esm';
 let peerConstructorPromise;
 async function loadPeer(){
@@ -84,7 +84,7 @@ export function createBlockworldNetwork(onEvent,getStatus){
       conn.on('close',()=>{clients.delete(conn.peer);emit('peerLeft',{peerId:conn.peer})});
       conn.on('open',()=>emit('peerOpen',{peerId:conn.peer}));
     });
-    p.on('disconnected',()=>emit('roomLost',{reason:'通信サーバーとの接続が切れました'}));
+    p.on('disconnected',()=>{if(role==='host'&&room===p)emit('roomLost',{reason:'通信サーバーとの接続が切れました'})});
     p.on('error',e=>emit('roomError',{reason:e.message||'部屋の作成に失敗しました'}));
     await waitForOpen(p);
     emit('hosting',{code});
@@ -94,13 +94,13 @@ export function createBlockworldNetwork(onEvent,getStatus){
     const Peer=await loadPeer();
     role='guest';roomCode=code;
     const p=new Peer();room=p;
-    p.on('disconnected',()=>emit('roomLost',{reason:'通信サーバーとの接続が切れました'}));
+    p.on('disconnected',()=>{if(role==='guest'&&room===p)emit('roomLost',{reason:'通信サーバーとの接続が切れました'})});
     p.on('error',e=>emit('roomError',{reason:e.message||'接続エラー'}));
     await waitForOpen(p);
     const conn=p.connect(roomId(code),{reliable:true}); // BinaryPack supports chunking large world saves.
     hostConnection=conn;
     openConnection(conn,(message)=>emit('roomData',{message,peerId:conn.peer}));
-    conn.on('close',()=>emit('roomLost',{reason:'ホストが退出したため切断されました'}));
+    conn.on('close',()=>{if(role==='guest'&&hostConnection===conn)emit('roomLost',{reason:'ホストとの接続が切れました'})});
     await new Promise((resolve,reject)=>{
       let settled=false;
       const timer=setTimeout(()=>{if(!settled){settled=true;reject(new Error('部屋が見つからないか、応答がありません'))}},12000);
@@ -115,20 +115,21 @@ export function createBlockworldNetwork(onEvent,getStatus){
       for(const c of clients.values())if(c.open)c.send(message);
     }else if(role==='guest'&&hostConnection?.open)hostConnection.send(message);
   }
-  function leaveRoom(){
+  function leaveRoom(options={}){
+    const handoff=options.handoff===true;
     const wasHost=role==='host',oldRoom=room,oldConnections=[...clients.values()];
-    if(wasHost)send({t:'roomClosed'});
+    if(wasHost&&!handoff)send({t:'roomClosed'});
     role=null;roomCode='';
     clients.clear();
     if(hostConnection)try{hostConnection.close()}catch{}
     hostConnection=null;room=null;
-    // A WebRTC send is asynchronous: allow roomClosed to reach all guests
-    // before tearing down the host's data channels.
     const finish=()=>{
       for(const c of oldConnections)try{c.close()}catch{}
       if(oldRoom)try{oldRoom.destroy()}catch{}
     };
-    if(wasHost)setTimeout(finish,350);
+    // Allow the full migration snapshot to reach guests before releasing the
+    // room ID so the elected successor can claim the same join code.
+    if(wasHost)setTimeout(finish,handoff?650:350);
     else finish();
   }
   return {
