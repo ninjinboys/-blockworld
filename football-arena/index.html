@@ -25,7 +25,7 @@ canvas{display:block;position:absolute;inset:0;width:100%;height:100%}#vignette{
  box-shadow:0 4px 14px #0009;touch-action:none;
 }
 #btn-switch:active,#btn-switch.pressed{background:#327bbb;transform:scale(.96)}
-@media(max-width:760px){#btn-switch{top:106px;left:11px;right:auto;height:44px;min-width:75px}}
+@media(max-width:760px){#btn-switch{top:126px;left:11px;right:auto;height:44px;min-width:75px}}
 @media(max-height:430px) and (min-width:700px){#btn-switch{top:62px;left:7px;right:auto;height:39px}}
 
 #stickArea{width:158px;height:158px;left:max(13px,env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));background:radial-gradient(circle,#0d3355aa,#0b1d31cc);border:3px solid #efffff90;box-shadow:inset 0 0 24px #0008,0 4px 18px #0009}
@@ -157,7 +157,7 @@ function updateHud(){
  }
  $('btn-pass').textContent=defensive?'タックル':'パス';
  $('btn-through').textContent=defensive?'切替':'スルー';
- $('btn-switch').classList.toggle('hidden',defensive);
+ $('btn-switch').classList.remove('hidden'); // Manual switch stays available in attack and defense.
  $('btn-shoot').textContent=defensive?'プレス':'シュート';
  $('btn-shoot').setAttribute('aria-label',defensive?'長押しで相手へ自動プレス':'シュート');
 }
@@ -168,7 +168,17 @@ function showHelp(){
  if(helpTimeout)clearTimeout(helpTimeout);
  helpTimeout=setTimeout(()=>hint.classList.add('hidden'),6500);
 }
-function setOwner(p){ball.owner=p;ball.vx=ball.vy=ball.vz=ball.z=0;ball.last=p.team;ball.shot=false;ball.grace=.24;p.cool=.35;updateHud();}
+function setOwner(p){
+  const changedOwner=ball.owner!==p;
+  ball.owner=p;
+  ball.vx=ball.vy=ball.vz=ball.z=0;
+  ball.last=p.team;ball.shot=false;ball.grace=.24;p.cool=.35;
+  // Only automatically change controlled players when a BLUE footballer
+  // actually WINS/RECEIVES the ball. Never switch merely because a rival
+  // moves closer or the ball changes position.
+  if(changedOwner&&p.team===0) selected=p;
+  updateHud();
+}
 function kick(p,vx,vy,power,lift=0,shot=false){if(ball.owner!==p)return;let d=hypot(vx,vy)||1;ball.owner=null;ball.vx=vx/d*power;ball.vy=vy/d*power;ball.vz=lift;ball.z=2;ball.grace=.26;ball.last=p.team;ball.shot=shot;p.cool=.35;beep(shot?230:420,.07,'triangle');}
 function pass(through=false){
  if(mode!=='play'||!selected)return;
@@ -373,7 +383,7 @@ function update(dt){frame++;if(mode!=='play')return;
    if(mag<48)pressure(false);
  } else if(!defensive)input.pressHeld=false;
  if(frame%8===0)updateHud();
- // Keep the manually chosen footballer selected, even when another teammate gains possession.
+ // Keep the selected player during free-ball movement and opponent possession; receiving the ball is the sole automatic switch.
  let redStrength=diff==='easy'?.78:diff==='hard'?1.25:1;
  for(const p of players){p.cool=Math.max(0,p.cool-dt);p.action=Math.max(0,p.action-dt);let owns=ball.owner===p;
   if(p===selected&&p.index!==0){let dx=input.vx,dy=input.vy,mag=hypot(dx,dy),sprint=input.dash&&p.stamina>.08;p.stamina=clamp(p.stamina+(sprint&&mag>.15?-.22:.08)*dt,0,1);
