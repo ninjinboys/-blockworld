@@ -1573,6 +1573,73 @@ function buildZombie(){
   g.scale.z=.88;
   return g;
 }
+// Solid block collision for every walking mob (cow/pig/sheep/zombie).
+// surfaceAt() describes generated ground only. Placed blocks and removed
+// blocks live in get(), so height checks alone let mobs pass through walls.
+function mobCollisionShape(m,x,z,angle=m.userData.angle){
+  if(m.userData.type==='zombie')return [[x,z,.34]];
+  // Quadrupeds have a body and a protruding head. Test both so the nose
+  // doesn't walk into a wall before the body's center reaches it.
+  const direction=Number.isFinite(angle)?angle:0;
+  return [[x,z,.46],[x+Math.sin(direction)*.72,z+Math.cos(direction)*.72,.33]];
+}
+function mobVerticalBounds(m,rootY=m.position.y){
+  // Root origins differ: animal meshes sink slightly below the terrain's
+  // top face; zombies stand at the terrain's top. Never collide with floor.
+  const foot=rootY+(m.userData.type==='zombie'?.025:.50);
+  return [foot,foot+(m.userData.type==='zombie'?1.74:1.14)];
+}
+function mobCircleTouchesBlock(x,z,r,bx,bz){
+  const dx=Math.max(Math.abs(x-bx)-.5,0),dz=Math.max(Math.abs(z-bz)-.5,0);
+  return dx*dx+dz*dz<r*r-1e-7;
+}
+function mobSpaceFree(m,x,rootY,z,angle=m.userData.angle){
+  const [foot,top]=mobVerticalBounds(m,rootY),eps=1e-4;
+  const fromY=Math.ceil(foot-.5+eps),toY=Math.floor(top+.5-eps);
+  for(const [cx,cz,r] of mobCollisionShape(m,x,z,angle)){
+    const fromX=Math.ceil(cx-r-.5+eps),toX=Math.floor(cx+r+.5-eps);
+    const fromZ=Math.ceil(cz-r-.5+eps),toZ=Math.floor(cz+r+.5-eps);
+    for(let bx=fromX;bx<=toX;bx++)for(let bz=fromZ;bz<=toZ;bz++){
+      if(!mobCircleTouchesBlock(cx,cz,r,bx,bz))continue;
+      for(let by=fromY;by<=toY;by++){
+        if(solid(get(bx,by,bz)))return false;
+      }
+    }
+  }
+  return true;
+}
+function mobOverlapsBlock(m,bx,by,bz){
+  const [foot,top]=mobVerticalBounds(m);
+  if(by+.5<=foot+.0001||by-.5>=top-.0001)return false;
+  return mobCollisionShape(m,m.position.x,m.position.z).some(([x,z,r])=>
+    mobCircleTouchesBlock(x,z,r,bx,bz));
+}
+// Small swept steps prevent high-speed fleeing animals from tunneling
+// through a one-block-thick barrier during slow frames.
+function mobWalkStep(m,angle,distance,isZombie=false){
+  const steps=Math.max(1,Math.ceil(Math.abs(distance)/.09)),step=distance/steps;
+  let moved=false;
+  for(let i=0;i<steps;i++){
+    const nx=m.position.x+Math.sin(angle)*step;
+    const nz=m.position.z+Math.cos(angle)*step;
+    const bx=Math.round(nx),bz=Math.round(nz);
+    const ground=surfaceAt(bx,bz);
+    if(isZombie){
+      if(!isZombieGround(bx,bz))break;
+    }else if(ground<=SEA||biomeAt(bx,bz)===6)break;
+    const targetY=ground+(isZombie?.51:.04);
+    if(Math.abs(targetY-m.position.y)>1.18)break;
+    // Step UP before moving horizontally: slowly sliding through a tall
+    // terrain ledge causes clipping even with a collision check.
+    const nextY=targetY>m.position.y+.06?targetY:m.position.y;
+    if(!mobSpaceFree(m,nx,nextY,nz,angle))break;
+    m.position.x=nx;m.position.z=nz;
+    if(nextY!==m.position.y)m.position.y=nextY;
+    else m.position.y+=(targetY-m.position.y)*(isZombie?.25:1);
+    moved=true;
+  }
+  return moved;
+}
 function isZombieGround(x,z){
   const y=surfaceAt(x,z);
   return y>=SEA&&y<WORLD_TOP-2&&solid(get(x,y,z))&&
@@ -1647,15 +1714,7 @@ function updateZombieSpawning(dt){
   if(nearby<5)spawnZombie();
 }
 function zombieStep(m,angle,step){
-  const nx=m.position.x+Math.sin(angle)*step;
-  const nz=m.position.z+Math.cos(angle)*step;
-  const x=Math.round(nx),z=Math.round(nz);
-  if(!isZombieGround(x,z))return false;
-  const groundY=surfaceAt(x,z)+.51;
-  if(Math.abs(groundY-m.position.y)>1.18)return false;
-  m.position.x=nx;m.position.z=nz;
-  m.position.y+=(groundY-m.position.y)*.25;
-  return true;
+  return mobWalkStep(m,angle,step,true);
 }
 function updateZombie(m,dt,now){
   const dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
@@ -2576,6 +2635,9 @@ function place(){
       flash('ベッドを置くには縦2マスの空きが必要です');
       return;
     }
+    if(mobs.some(m=>mobOverlapsBlock(m,x,y,z)||mobOverlapsBlock(m,x2,y,z2))){
+      flash('モブの中にはブロックを置けません');return;
+    }
     set(x,y,z,B.BED);
     set(x2,y,z2,B.BED_HEAD);
     if(blocked(player.pos.x,player.pos.y,player.pos.z)){
@@ -2588,6 +2650,9 @@ function place(){
 
   const blockId=buildable.includes(selected)?selected:placeableItemToBlock[selected];
   if(blockId==null){flash((names[selected]||'このアイテム')+'は設置できません');return}
+  if(mobs.some(m=>mobOverlapsBlock(m,x,y,z))){
+    flash('モブの中にはブロックを置けません');return;
+  }
   set(x,y,z,blockId);
   if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}
   const placedName=names[selected]||names[blockId]||'ブロック';consumeSelected(1);rebuildEdited({x,z});renderHotbar();flash(placedName+'を設置')
@@ -3082,13 +3147,12 @@ function loop(now){
       }
       const fleeMult=m.userData.fleeTime>0?3.4:1;
       const speed=m.userData.speed*fleeMult;
-      const x=m.position.x+Math.sin(m.userData.angle)*speed*dt;
-      const z=m.position.z+Math.cos(m.userData.angle)*speed*dt;
-      const ix=Math.round(x),iz=Math.round(z),h=surfaceAt(ix,iz),bio=biomeAt(ix,iz);
-      if(h>SEA&&bio!==6){
-        m.position.x=x;m.position.z=z;m.position.y=h+.05;m.rotation.y=m.userData.angle+Math.PI;
-      }else if(m.userData.fleeTime>0){
-        m.userData.angle+=Math.PI*.65;
+      if(mobWalkStep(m,m.userData.angle,speed*dt)){
+        m.rotation.y=m.userData.angle+Math.PI;
+      }else{
+        // Don't keep pushing into the same wall; choose another direction.
+        m.userData.angle+=(m.userData.fleeTime>0?Math.PI*.65:Math.PI*.56);
+        m.userData.t=Math.min(m.userData.t||1,1);
       }
     });
 
