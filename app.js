@@ -3144,6 +3144,18 @@ function aimedDoor(){
   }
   return null;
 }
+// Doors must stand on a solid floor. When the crosshair targets the upper
+// part of an empty doorway or the underside of a roof, find the actual
+// supported bottom cell instead of hanging a door in mid-air.
+function doorSupportedBaseY(x,aimY,z){
+  for(let baseY=aimY;baseY>=Math.max(Y_MIN+1,aimY-4);baseY--){
+    if(!inside(x,baseY,z)||get(x,baseY,z)!==B.AIR)break;
+    const upper=baseY+1;
+    if(inside(x,upper,z)&&get(x,upper,z)===B.AIR&&solid(get(x,baseY-1,z)))
+      return baseY;
+  }
+  return null;
+}
 function place(){
   if(startEating())return;
   const door=aimedDoor();if(door&&doorUse(door.x,door.y,door.z))return;
@@ -3174,19 +3186,21 @@ function place(){
   if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
 
   if(selected===I.DOOR){
-    const upper=y+1;
-    if(!inside(x,upper,z)||get(x,upper,z)!==B.AIR){
-      flash('ドアには縦2マスの空きが必要です');return;
+    const baseY=doorSupportedBaseY(x,y,z);
+    if(baseY===null){
+      flash('ドアは床の上に置いてください（上にも2マスの空きが必要）');
+      return;
     }
+    const upper=baseY+1;
     const touchesPlayer=Math.abs(player.pos.x-x)<PR+.5&&Math.abs(player.pos.z-z)<PR+.5&&
-      player.pos.y<upper+.5&&player.pos.y+PH>y-.5;
-    if(touchesPlayer||mobs.some(m=>mobOverlapsBlock(m,x,y,z)||mobOverlapsBlock(m,x,upper,z))){
-      flash('その場所にドアは置けません');return;
+      player.pos.y<upper+.5&&player.pos.y+PH>baseY-.5;
+    if(touchesPlayer||mobs.some(m=>mobOverlapsBlock(m,x,baseY,z)||mobOverlapsBlock(m,x,upper,z))){
+      flash('ドアの位置にプレイヤーかモブがいます');return;
     }
     const alongZ=Math.abs(Math.cos(player.yaw))>Math.abs(Math.sin(player.yaw));
     const bottom=alongZ?B.DOOR_X:B.DOOR_Z;
-    set(x,y,z,bottom);set(x,upper,z,bottom+1);
-    consumeSelected(1);rebuildEdited({x,z});flash('木のドアを設置');return;
+    set(x,baseY,z,bottom);set(x,upper,z,bottom+1);
+    consumeSelected(1);rebuildEdited({x,z});flash('床に木のドアを設置');return;
   }
   if(selected===I.BED){
     const dir=bedDirectionFromYaw(),x2=x+dir.dx,z2=z+dir.dz;
