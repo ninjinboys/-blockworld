@@ -2734,42 +2734,119 @@ function renderArmorUI(){
   }
   const def=$('armorDefense');if(def)def.textContent='防御 '+Math.round(armorReduction()*100)+'%';
 }
+// Layered voxel armor, not a painted texture. All armor plates are actual
+// 3-D meshes with their own depth, highlights, seams, trims and raised rivets.
+// Attach shoulder, leg and boot pieces to animated limb pivots so they walk.
 function applyArmorAppearance(model,armor){
   if(!model)return;
   const accepted=Array.isArray(armor)?armor:[];
-  const signature=accepted.map(id=>armorPartForId(id)>=0?id:0).join(',');
+  const signature=accepted.map((id,i)=>armorPartForId(Number(id))===i?Number(id):0).join(',');
   if(model.userData.armorSignature===signature)return;
   for(const {mesh,parent} of model.userData.armorMeshes||[]){
     parent.remove(mesh);mesh.geometry.dispose();
   }
-  const drawn=[];
-  function add(parent,sx,sy,sz,color,x,y,z){
-    const mesh=cube(parent,sx,sy,sz,color,x,y,z);
+  const drawn=[],limbs=model.userData.limbs;
+  function plate(parent,w,h,d,color,x,y,z,rx=0,ry=0,rz=0){
+    if(!parent)return;
+    const mesh=cube(parent,w,h,d,color,x,y,z,rx,ry,rz);
     drawn.push({mesh,parent});
+    return mesh;
   }
-  const limbs=model.userData.limbs;
+  const colorSchemes={
+    iron:{base:0xadb9c4,light:0xe4edf0,edge:0x566675,shade:0x8797a3,emblem:0x446c8c},
+    gold:{base:0xe4af33,light:0xffe18a,edge:0x805321,shade:0xb17c24,emblem:0xb75d31},
+    diamond:{base:0x42ced9,light:0xb0ffed,edge:0x226c89,shade:0x279baf,emblem:0x3160bc}
+  };
   for(let i=0;i<4;i++){
-    const id=Number(accepted[i]);if(armorPartForId(id)!==i)continue;
-    const color=armorColor(id);
+    const id=Number(accepted[i]);
+    if(armorPartForId(id)!==i)continue;
+    const p=id>=I.DIAMOND_HELMET?colorSchemes.diamond:
+      id>=I.GOLD_HELMET?colorSchemes.gold:colorSchemes.iron;
+    const {base,light,edge,shade,emblem}=p;
     if(i===0){
-      add(model,.73,.17,.59,color,0,1.81,0);
-      add(model,.085,.27,.51,color,-.35,1.64,0);
-      add(model,.085,.27,.51,color,.35,1.64,0);
-      add(model,.72,.055,.085,color,0,1.66,-.275);
+      // Helmet: thick crown, a raised ridge, broad brow, cheek/ear guards
+      // and an open-faced visor: both eyes remain fully visible.
+      plate(model,.83,.22,.70,base,0,1.78,0);
+      plate(model,.77,.08,.65,light,0,1.915,-.012);
+      plate(model,.18,.075,.71,shade,0,1.965,-.007);
+      plate(model,.84,.11,.15,edge,0,1.70,-.330);
+      plate(model,.69,.08,.075,light,0,1.728,-.412);
+      plate(model,.77,.25,.115,base,0,1.665,.326);
+      plate(model,.66,.08,.12,edge,0,1.53,.337);
+      for(const side of [-1,1]){
+        plate(model,.135,.38,.59,base,side*.398,1.61,0);
+        plate(model,.045,.27,.52,shade,side*.480,1.64,0);
+        plate(model,.15,.22,.17,edge,side*.399,1.470,-.252);
+        plate(model,.11,.13,.24,light,side*.425,1.825,-.24);
+        plate(model,.05,.055,.06,emblem,side*.476,1.63,-.18);
+      }
+      plate(model,.16,.085,.105,emblem,0,1.735,-.435);
+      plate(model,.11,.055,.115,light,0,1.786,-.432);
     }
     if(i===1){
-      add(model,.77,.73,.12,color,0,1.01,-.258);
-      add(model,.77,.73,.11,color,0,1.01,.265);
-      for(const part of [limbs?.leftArm,limbs?.rightArm])
-        if(part)add(part,.29,.28,.375,color,0,-.145,0);
+      // Cuirass: thick chest / back shells and chunky shoulder pauldrons.
+      // A separate raised breastplate and center boss give real depth.
+      plate(model,.83,.65,.23,base,0,1.09,-.265);
+      plate(model,.79,.60,.19,shade,0,1.11,.273);
+      plate(model,.70,.08,.34,light,0,1.435,-.05);
+      plate(model,.88,.12,.50,edge,0,.742,0);
+      plate(model,.73,.09,.42,base,0,.800,0);
+      plate(model,.69,.32,.14,light,0,1.235,-.411);
+      plate(model,.65,.30,.16,shade,0,.936,-.421);
+      plate(model,.20,.43,.13,base,0,1.070,-.486);
+      plate(model,.13,.33,.05,light,0,1.070,-.567);
+      plate(model,.24,.24,.14,edge,0,1.230,-.532,0,0,Math.PI/4);
+      plate(model,.135,.135,.08,emblem,0,1.230,-.640,0,0,Math.PI/4);
+      for(const side of [-1,1]){
+        plate(model,.14,.58,.39,base,side*.426,1.08,0);
+        plate(model,.075,.50,.12,edge,side*.496,1.10,-.187);
+        // A raised armour buckle on each side of the belt.
+        plate(model,.065,.075,.05,light,side*.348,.743,-.271);
+        const arm=side<0?limbs?.leftArm:limbs?.rightArm;
+        if(!arm)continue;
+        // Rounded-ish pauldrons are built from stepped 3D voxels.
+        plate(arm,.43,.24,.48,edge,side*.04,-.090,0,0,0,side*-.12);
+        plate(arm,.49,.19,.44,base,side*.067,-.125,-.023,0,0,side*-.12);
+        plate(arm,.34,.11,.39,light,side*.072,-.054,-.027);
+        plate(arm,.39,.24,.37,shade,side*.036,-.295,0);
+        plate(arm,.36,.095,.40,edge,side*.025,-.436,0);
+        plate(arm,.09,.14,.06,emblem,side*.086,-.282,-.217);
+      }
     }
     if(i===2){
-      for(const part of [limbs?.leftLeg,limbs?.rightLeg])
-        if(part)add(part,.31,.48,.38,color,0,-.27,0);
+      // Leggings: waist guard + separated plates per thigh, knee and calf.
+      plate(model,.76,.16,.52,edge,0,.68,0);
+      plate(model,.72,.13,.57,base,0,.645,-.025);
+      plate(model,.63,.06,.10,light,0,.720,-.280);
+      plate(model,.18,.19,.12,base,0,.589,-.293);
+      for(const side of [-1,1]){
+        const leg=side<0?limbs?.leftLeg:limbs?.rightLeg;
+        if(!leg)continue;
+        plate(leg,.38,.44,.43,edge,0,-.195,0);
+        plate(leg,.34,.40,.45,base,0,-.200,-.044);
+        plate(leg,.255,.33,.075,light,0,-.215,-.292);
+        plate(leg,.36,.18,.49,shade,0,-.440,-.018);
+        plate(leg,.33,.14,.52,base,0,-.489,-.083);
+        plate(leg,.17,.10,.06,emblem,0,-.476,-.375);
+        plate(leg,.10,.28,.08,shade,side*.154,-.235,-.105);
+      }
     }
     if(i===3){
-      for(const part of [limbs?.leftLeg,limbs?.rightLeg])
-        if(part)add(part,.35,.20,.48,color,0,-.60,-.04);
+      // Boots: tall raised shin plates, ankle cuff, wide metal toe cap,
+      // protruding heel and a dark sole. Entire boot follows each leg.
+      for(const side of [-1,1]){
+        const leg=side<0?limbs?.leftLeg:limbs?.rightLeg;
+        if(!leg)continue;
+        plate(leg,.375,.37,.415,edge,0,-.475,0);
+        plate(leg,.340,.36,.41,base,0,-.477,-.030);
+        plate(leg,.245,.24,.075,light,0,-.463,-.275);
+        plate(leg,.42,.105,.48,shade,0,-.559,-.045);
+        plate(leg,.43,.19,.60,base,0,-.621,-.092);
+        plate(leg,.37,.09,.18,light,0,-.606,-.389);
+        plate(leg,.435,.067,.61,edge,0,-.702,-.092);
+        plate(leg,.28,.13,.15,shade,0,-.615,.22);
+        plate(leg,.085,.095,.052,emblem,0,-.442,-.319);
+      }
     }
   }
   model.userData.armorMeshes=drawn;
