@@ -1734,7 +1734,7 @@ rain.visible=false;scene.add(rain);
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
 
 /* Original voxel explorer model: teal coat, amber pack, denim trousers. */
-function buildPlayerAvatar(){
+function createPlayerModel(){
   const g=new THREE.Group(),limbs={};
   const skin=0xd4a078,skinShade=0xb98059,hair=0x392921,hairLight=0x53392c;
   const jacket=0x247f9b,jacketLight=0x38a5b6,jacketDark=0x185569;
@@ -1785,6 +1785,10 @@ function buildPlayerAvatar(){
   // Only the horizontal axis is scaled; height and animation remain unchanged.
   g.scale.x=.72;
   g.scale.z=.88;
+  return g;
+}
+function buildPlayerAvatar(){
+  const g=createPlayerModel();
   g.visible=false;
   scene.add(g);
   return g;
@@ -3122,12 +3126,20 @@ function multiCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>chars[b%chars.length]).join('');
 }
+function multiCurrentPose(){
+  return {
+    x:player.pos.x,y:player.pos.y,z:player.pos.z,
+    yaw:player.yaw,pitch:player.pitch,
+    speed:Math.hypot(player.vel.x,player.vel.z),
+    onGround:player.onGround
+  };
+}
 function multiProfile(){
   return {name:currentAccount.name,savedAt:Date.now(),level,xp,health,stamina,staminaRunSeconds,
     staminaRegenSeconds,cameraMode,selectedHotbarIndex,
     inventorySlots:inventorySlots.map(s=>s?{id:s.id,qty:s.qty}:null),
     bedSpawn:bedSpawn?{...bedSpawn}:null,
-    player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch}};
+    player:multiCurrentPose()};
 }
 function multiPeople(){
   const names=[currentAccount.name+'（自分）',...[...multiGuestRecords.values()].map(r=>r.name)];
@@ -3195,26 +3207,68 @@ async function multiJoin(code){
   }catch(e){multiplayerNetwork.leaveRoom();multiRole=null;multiStatus('参加できません：'+e.message)}
   finally{multiBusy=false}
 }
+// Remote players use precisely the same detailed character mesh as this player:
+// hair, eyes, mouth, backpack, clothing details and pivoting arms/legs.
+let multiLastVisualFrame=0;
 function multiShowAvatar(id,pose){
   if(id===multiOwnId()||!pose||!Number.isFinite(pose.x)||!Number.isFinite(pose.y)||!Number.isFinite(pose.z))return;
-  if(Math.abs(pose.x)>1000000||Math.abs(pose.z)>1000000)return;
+  if(Math.abs(pose.x)>1000000||Math.abs(pose.y)>1000000||Math.abs(pose.z)>1000000)return;
+  const yaw=Number.isFinite(pose.yaw)?pose.yaw:0;
   let model=multiAvatars.get(id);
   if(!model){
-    model=new THREE.Group();
-    cube(model,.66,.8,.43,0x318ba1,0,1.0,0);
-    cube(model,.60,.53,.53,0xc99a70,0,1.70,0);
-    for(const x of[-.44,.44])cube(model,.23,.66,.32,0x24798b,x,1.05,0);
-    for(const x of[-.18,.18])cube(model,.29,.72,.35,0x35476c,x,.37,0);
-    model.scale.set(.78,1,.88);scene.add(model);multiAvatars.set(id,model);
+    model=createPlayerModel();
+    model.userData.multiMove={
+      target:new THREE.Vector3(pose.x,pose.y,pose.z),
+      yaw,speed:0,grounded:true,phase:0,swing:0,lastReceived:performance.now()
+    };
+    model.position.set(pose.x,pose.y,pose.z);
+    model.rotation.y=yaw;
+    model.visible=started;
+    scene.add(model);multiAvatars.set(id,model);
   }
-  model.position.set(pose.x,pose.y,pose.z);model.rotation.y=Number(pose.yaw)||0;
-  model.visible=started;
+  const motion=model.userData.multiMove;
+  motion.target.set(pose.x,pose.y,pose.z);
+  motion.yaw=yaw;
+  // Older clients only send a position; estimate speed as fallback.
+  const dt=Math.max(.05,(performance.now()-motion.lastReceived)/1000);
+  const sampledSpeed=model.position.distanceTo(motion.target)/dt;
+  motion.speed=Number.isFinite(pose.speed)?Math.max(0,Math.min(8,pose.speed)):Math.min(8,sampledSpeed);
+  motion.grounded=pose.onGround!==false;
+  motion.lastReceived=performance.now();
+}
+function multiAnimateAvatars(now){
+  const dt=multiLastVisualFrame?Math.max(0,Math.min(.05,(now-multiLastVisualFrame)/1000)):1/60;
+  multiLastVisualFrame=now;
+  const lerp=Math.min(1,dt*14),turnLerp=Math.min(1,dt*13),swingLerp=Math.min(1,dt*12);
+  for(const model of multiAvatars.values()){
+    model.visible=started;
+    if(!started)continue;
+    const m=model.userData.multiMove;
+    // Teleports/respawns should be instant; ordinary walking is smoothed.
+    if(model.position.distanceToSquared(m.target)>81)model.position.copy(m.target);
+    else model.position.lerp(m.target,lerp);
+    const turn=Math.atan2(Math.sin(m.yaw-model.rotation.y),Math.cos(m.yaw-model.rotation.y));
+    model.rotation.y+=turn*turnLerp;
+    const fresh=now-m.lastReceived<700;
+    const wantedSwing=fresh&&m.speed>.3?Math.min(.58,m.speed*.12):0;
+    m.swing+=(wantedSwing-m.swing)*swingLerp;
+    if(m.swing>.01&&fresh)m.phase+=dt*(m.speed>5.2?13.05:9);
+    const stride=Math.sin(m.phase)*m.swing,limbs=model.userData.limbs;
+    limbs.leftLeg.rotation.x=stride;
+    limbs.rightLeg.rotation.x=-stride;
+    limbs.leftArm.rotation.x=-stride*.8;
+    limbs.rightArm.rotation.x=stride*.8;
+    if(!m.grounded){
+      limbs.leftLeg.rotation.x=.15;
+      limbs.rightLeg.rotation.x=-.15;
+    }
+  }
 }
 function multiClearAvatars(){
   for(const model of multiAvatars.values()){
     scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});
   }
-  multiAvatars.clear();
+  multiAvatars.clear();multiLastVisualFrame=0;
 }
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
@@ -3331,13 +3385,13 @@ function multiTick(now){
   if(now-multiLastPose>150){
     multiLastPose=now;
     if(multiplayerNetwork.connected){
-      multiplayerNetwork.send({t:'pose',player:multiProfile().player});
+      multiplayerNetwork.send({t:'pose',player:multiCurrentPose()});
       if(multiRole==='host'&&Math.floor(now/2200)!==Math.floor((now-150)/2200))
         multiplayerNetwork.send({t:'time',dayTime,weather});
     }
   }
   if(multiRole==='guest'&&now-multiLastProfile>8000){multiLastProfile=now;saveCurrentGame(false)}
-  for(const model of multiAvatars.values())model.visible=started;
+  multiAnimateAvatars(now);
 }
 function multiLeave(silent=false){
   if(multiClosing)return;
