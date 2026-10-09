@@ -734,3 +734,67 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   .world-header-actions{flex-wrap:wrap;justify-content:flex-end}
   #worldBack{min-width:70px}
 }
+
+/* Multiplayer host / join / friends screens */
+#multiCover{
+  position:fixed;inset:0;z-index:39;display:none;align-items:center;justify-content:center;
+  background:linear-gradient(#6ea4d6,#a9c98b 67%,#688556);padding:16px;color:white;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+.multi-panel{
+  width:min(600px,96vw);max-height:min(92vh,850px);overflow-y:auto;overflow-x:hidden;
+  padding:20px;background:rgba(18,21,24,.94);border:2px solid rgba(255,255,255,.35);
+  border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.38);text-shadow:none;
+}
+.multi-heading{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.multi-kicker{font-size:11px;letter-spacing:.16em;color:#a9d4a1}
+.multi-heading h2{font-size:clamp(21px,5vw,29px);margin:4px 0}
+#multiStatus{font-size:12px;line-height:1.6;color:#e4e4e4;min-height:2.3em;margin:9px 0 17px}
+.multi-section{display:grid;gap:12px}
+.multi-section[hidden]{display:none!important}
+.multi-section p{font-size:12px;color:#dedede;line-height:1.6;margin:2px 0}
+.multi-section label{font-size:12px}
+.multi-section form{display:grid;gap:9px}
+.multi-section input{
+  box-sizing:border-box;width:100%;min-height:46px;padding:10px 12px;
+  border:2px solid #789877;border-radius:5px;background:#f5f8f3;
+  color:#191c19;font-size:17px;user-select:text;-webkit-user-select:text;
+}
+.multi-section button,.multi-heading button{
+  min-height:44px;padding:9px 15px;border:2px solid #4a4a4a;border-radius:5px;
+  font:800 13px ui-monospace,monospace;color:white;background:#777;
+  box-shadow:inset 2px 2px 0 rgba(255,255,255,.28),inset -2px -2px 0 rgba(0,0,0,.35);
+  cursor:pointer;touch-action:manipulation;
+}
+.multi-section button:disabled{opacity:.5;cursor:default}
+.multi-section .multi-primary{
+  font-size:clamp(15px,3.8vw,19px);min-height:55px;background:#569447;
+  border-color:#315c30;box-shadow:inset 3px 3px 0 #94c487,inset -3px -3px 0 #346d35;
+}
+#multiSlotGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.multi-slot{
+  border:2px solid #5a5a5a;background:#343c36;border-radius:6px;
+  padding:12px;display:flex;flex-direction:column;gap:7px;
+}
+.multi-slot strong{font-size:16px}.multi-slot span{font-size:11px;color:#c9d6cb}
+.multi-slot .multi-slot-actions{display:flex;gap:8px;flex-wrap:wrap}
+.multi-slot-actions button{background:#548746}
+.multi-slot-actions .multi-delete{background:#955b58}
+.multi-self,.multi-room{
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  padding:12px;border:2px solid #556b54;border-radius:6px;background:#273327;
+}
+.multi-self span,.multi-room span{font-size:11px;color:#cdd6cb}
+.multi-self strong,.multi-room strong{font:bold 23px ui-monospace,monospace;letter-spacing:.1em;color:#eaffaa}
+.multi-room{justify-content:center}.multi-room strong{font-size:clamp(26px,6vw,37px)}
+.friend-pending{border:2px solid #99b978;padding:12px;background:#314d32;border-radius:5px;font-size:12px}
+.friend-list{display:grid;gap:8px}
+.friend-card{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px;background:#333e34;border:1px solid #526351}
+.friend-card span{font-size:11px;color:#d7dfd7}
+.friend-card button{font-size:12px}
+.multi-people{border:1px solid #59695a;background:#273027;border-radius:5px;padding:12px;font-size:12px;line-height:1.9;white-space:pre-line}
+@media(max-width:600px),(pointer:coarse){
+  .multi-panel{padding:14px;max-height:87vh}
+  #multiSlotGrid{grid-template-columns:1fr}
+  .multi-section button,.multi-heading button{min-height:45px}
+}

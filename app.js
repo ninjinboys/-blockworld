@@ -1,4 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
+import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 
 const $=id=>document.getElementById(id);
 const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill'),heartsEl=$('hearts'),deathScreen=$('deathScreen'),respawnBtn=$('respawnBtn');
@@ -333,6 +334,11 @@ let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=
 const chunks=new Map(),editChunks=new Map();
 let streamCX=NaN,streamCZ=NaN;
 let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=5;
+let multiRole=null,multiHostSlot=null,multiHostId='',multiBusy=false,multiApplying=false,multiMembers={};
+const multiGuestRecords=new Map(),multiAvatars=new Map(),multiFriendsOnline=new Map();
+let multiLastPose=0,multiLastProfile=0,multiPendingTimer=null,multiClosing=false,multiProfileSaveTimer=null;
+const MULTI_HOST='blockworld_multi_host_v1:',MULTI_MEMBER='blockworld_multi_member_v1:';
+const FRIEND_ID='blockworld_friend_id_v1:',FRIENDS_KEY='blockworld_friends_v1:';
 const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SESSION_KEY='blockworld_session_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
 
 const inside=(x,y,z)=>y>=Y_MIN&&y<=WORLD_TOP;
@@ -395,7 +401,16 @@ function migrateLegacySave(key){
   }catch(e){console.warn?.('legacy save migration failed',e)}
 }
 function setSaveStatus(text){saveStatusEl.textContent=text}
-function markSaveDirty(){if(currentAccount&&currentWorldSlot){saveDirty=true;setSaveStatus('未保存')}}
+function markSaveDirty(){
+  if(!currentAccount||!currentWorldSlot)return;
+  saveDirty=true;setSaveStatus('未保存');
+  // Guest inventory updates should reach the host promptly, not only on the
+  // periodic save. Coalesce rapid mining/crafting updates into one message.
+  if(multiRole==='guest'&&worldReady&&!multiApplying){
+    clearTimeout(multiProfileSaveTimer);
+    multiProfileSaveTimer=setTimeout(()=>saveCurrentGame(false),700);
+  }
+}
 function serializeEdits(){return [...editChunks.entries()].map(([k,m])=>[k,[...m.entries()]])}
 function restoreEdits(raw,saveVersion=3){
   editChunks.clear();
@@ -432,7 +447,18 @@ function makeSaveData(){
 function saveCurrentGame(showMessage=false){
   if(!currentAccount||!currentWorldSlot||!worldReady)return false;
   try{
-    localStorage.setItem(saveKeyForAccount(currentAccount.key,currentWorldSlot),JSON.stringify(makeSaveData()));
+    if(multiRole==='guest'){
+      const profile=multiProfile();
+      localStorage.setItem(multiGuestSaveKey(),JSON.stringify(profile));
+      if(multiplayerNetwork.connected)multiplayerNetwork.send({t:'profile',profile});
+      saveDirty=false;setSaveStatus('マルチ：持ち物保存済み');
+      if(showMessage)flash('持ち物を保存しました');
+      return true;
+    }
+    const key=multiRole==='host'?multiWorldKey(currentWorldSlot):saveKeyForAccount(currentAccount.key,currentWorldSlot);
+    const payload=makeSaveData();
+    if(multiRole==='host')payload.members=multiMembers;
+    localStorage.setItem(key,JSON.stringify(payload));
     saveDirty=false;
     const d=new Date(),hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');
     setSaveStatus('W'+currentWorldSlot+' 保存済 '+hh+':'+mm);
@@ -575,6 +601,7 @@ function renderWorldSelection(){
 }
 function showMainMenu(){
   if(!currentAccount)return;
+  if(multiRole)multiLeave(true);
   if(worldReady){
     saveCurrentGame(false);
     clearInterval(saveInterval);saveInterval=null;
@@ -584,6 +611,7 @@ function showMainMenu(){
   worldCover.style.display='none';menuAccountName.textContent=currentAccount.name;
   menuCover.style.display='flex';
   document.exitPointerLock?.();
+  multiStartPresence();
 }
 function showWorldSelection(){
   if(!currentAccount)return;
@@ -1152,6 +1180,7 @@ function set(x,y,z,v){
   if(!edits){edits=new Map();editChunks.set(k,edits)}
   edits.set(i,v);
   markSaveDirty();
+  if(multiRole&&!multiApplying&&multiplayerNetwork.connected)multiplayerNetwork.send({t:'block',x,y,z,v});
 }
 // Outer terrain is streamed across frames instead of blocking input.
 const pendingChunkLoads=[],dirtyMeshKeys=new Set();
@@ -1899,27 +1928,32 @@ function unburyWorldDrop(d){
 function spawnWorldDrop(id,qty,x,y,z,opts={}){
   qty=Math.max(1,Math.floor(qty||1));
   const sprite=makeDropSprite(id);
-  const d={id,qty,x,y,z,vx:Number(opts.vx)||0,vy:Number(opts.vy)||0,vz:Number(opts.vz)||0,age:Number(opts.age)||0,pickupDelay:Number.isFinite(Number(opts.pickupDelay))?Number(opts.pickupDelay):.45,sprite,phase:Math.random()*Math.PI*2};
+  const uid=typeof opts.uid==='string'&&opts.uid.length<80?opts.uid:crypto.randomUUID();
+  const d={id,qty,x,y,z,uid,vx:Number(opts.vx)||0,vy:Number(opts.vy)||0,vz:Number(opts.vz)||0,age:Number(opts.age)||0,pickupDelay:Number.isFinite(Number(opts.pickupDelay))?Number(opts.pickupDelay):.45,sprite,phase:Math.random()*Math.PI*2};
   if(opts.scatter){d.vx+=(Math.random()-.5)*1.4;d.vz+=(Math.random()-.5)*1.4;d.vy+=1.7+Math.random()*.7}
   unburyWorldDrop(d);
-  sprite.position.set(d.x,d.y,d.z);scene.add(sprite);worldDrops.push(d);markSaveDirty();return d;
+  sprite.position.set(d.x,d.y,d.z);scene.add(sprite);worldDrops.push(d);markSaveDirty();
+  if(multiRole&&!multiApplying&&!opts.networkSilent&&multiplayerNetwork.connected)
+    multiplayerNetwork.send({t:'dropAdd',drop:{uid:d.uid,id:d.id,qty:d.qty,x:d.x,y:d.y,z:d.z,age:d.age}});
+  return d;
 }
 function removeWorldDrop(d){
   scene.remove(d.sprite);d.sprite.material.dispose();
   const i=worldDrops.indexOf(d);if(i>=0)worldDrops.splice(i,1);
+  if(multiRole&&!multiApplying&&multiplayerNetwork.connected)multiplayerNetwork.send({t:'dropRemove',uid:d.uid});
 }
 function clearWorldDrops(){
   for(const d of worldDrops){scene.remove(d.sprite);d.sprite.material.dispose()}
   worldDrops.length=0;
 }
 function serializeWorldDrops(){
-  return worldDrops.filter(d=>d.age<300).map(d=>({id:d.id,qty:d.qty,x:d.x,y:d.y,z:d.z,age:d.age}));
+  return worldDrops.filter(d=>d.age<300).map(d=>({uid:d.uid,id:d.id,qty:d.qty,x:d.x,y:d.y,z:d.z,age:d.age}));
 }
 function restoreWorldDrops(raw){
   if(!Array.isArray(raw))return;
   for(const d of raw){
     if(!d||!Number.isFinite(Number(d.id))||!(Number(d.qty)>0))continue;
-    spawnWorldDrop(Number(d.id),Number(d.qty),Number(d.x)||0,Number.isFinite(Number(d.y))?Number(d.y):1,Number(d.z)||0,{age:Number(d.age)||0,pickupDelay:.25});
+    spawnWorldDrop(Number(d.id),Number(d.qty),Number(d.x)||0,Number.isFinite(Number(d.y))?Number(d.y):1,Number(d.z)||0,{uid:d.uid,age:Number(d.age)||0,pickupDelay:.25,networkSilent:true});
   }
 }
 function updateWorldDrops(dt,now){
@@ -2931,7 +2965,7 @@ function loop(now){
   if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen){
     updateMining(dt);
     updateEating(dt);
-    advanceDayTime(dt);
+    if(multiRole!=='guest')advanceDayTime(dt);
     updateZombieSpawning(dt);
     const inWater=playerInWater();
     const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);forward.set(-sy,0,-cy);right.set(cy,0,-sy);move.set(0,0,0);
@@ -3029,6 +3063,7 @@ function loop(now){
     clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm+(isNightTime()?'  🧟 '+countZombies():'');
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
+  if(started&&multiRole)multiTick(now);
   if(!started||dead||sleeping)playerAvatar.visible=false;
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
@@ -3036,6 +3071,342 @@ function loop(now){
 
 function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
+
+
+/* Real-time, host-owned 4-player rooms. Single saves remain separate. */
+const multiplayerNetwork=createBlockworldNetwork(multiEvent,()=>({
+  roomCode:multiplayerNetwork.connected?multiplayerNetwork.code:''
+}));
+const multiViews=['multiHome','multiSlots','multiJoin','multiFriends','multiLobby'];
+let multiViewId='multiHome',multiPresenceBusy=false,friendRefreshBusy=false;
+function multiWorldKey(slot){return MULTI_HOST+currentAccount.key+':'+slot}
+function multiGuestSaveKey(){return MULTI_MEMBER+currentAccount.key+':'+multiHostId+':'+multiHostSlot}
+function multiOwnId(){
+  const key=FRIEND_ID+currentAccount.key;let id=localStorage.getItem(key);
+  if(!id||!/^[A-Z2-9]{10}$/.test(id)){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    id=Array.from(crypto.getRandomValues(new Uint8Array(10)),b=>chars[b%chars.length]).join('');
+    localStorage.setItem(key,id);
+  }
+  return id;
+}
+function multiGetFriends(){try{return JSON.parse(localStorage.getItem(FRIENDS_KEY+currentAccount.key)||'{}')}catch{return {}}}
+function multiSaveFriend(id,name){
+  if(!/^[A-Z2-9]{10}$/.test(id)||id===multiOwnId())return;
+  const friends=multiGetFriends();friends[id]=(name||'フレンド').slice(0,20);
+  localStorage.setItem(FRIENDS_KEY+currentAccount.key,JSON.stringify(friends));multiRenderFriends();
+}
+function multiStatus(s){$('multiStatus').textContent=s}
+function multiView(v){
+  multiViewId=v;
+  multiViews.forEach(id=>$(id).hidden=id!==v);
+  $('multiTitle').textContent=({multiHome:'マルチプレイ',multiSlots:'ワールドを作る',multiJoin:'コードで参加',multiFriends:'フレンド一覧',multiLobby:'マルチプレイの部屋'})[v];
+  if(v==='multiSlots')multiRenderSlots();
+  if(v==='multiFriends')multiRenderFriends();
+}
+function multiShow(v='multiHome'){
+  menuCover.style.display='none';worldCover.style.display='none';
+  $('multiCover').style.display='flex';multiView(v);
+  cover.style.display=worldReady?'flex':'none';
+  multiStatus('最大4人。ホストが退出すると全員退出します。');
+  document.exitPointerLock?.();
+}
+function multiStartPresence(){
+  if(!currentAccount||multiPresenceBusy)return;
+  multiPresenceBusy=true;
+  multiplayerNetwork.startPresence(multiOwnId(),currentAccount.name)
+    .catch(e=>console.warn('Friends are unavailable',e))
+    .finally(()=>multiPresenceBusy=false);
+}
+function multiCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>chars[b%chars.length]).join('');
+}
+function multiProfile(){
+  return {name:currentAccount.name,savedAt:Date.now(),level,xp,health,stamina,staminaRunSeconds,
+    staminaRegenSeconds,cameraMode,selectedHotbarIndex,
+    inventorySlots:inventorySlots.map(s=>s?{id:s.id,qty:s.qty}:null),
+    bedSpawn:bedSpawn?{...bedSpawn}:null,
+    player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch}};
+}
+function multiPeople(){
+  const names=[currentAccount.name+'（自分）',...[...multiGuestRecords.values()].map(r=>r.name)];
+  $('multiPeople').textContent='参加人数：'+names.length+'/4人\n'+names.map(n=>'・'+n).join('\n');
+}
+function multiLobby(code,host){
+  $('multiRoomCode').textContent=code;
+  $('multiRoomTip').textContent=host?'このコードを友達に教えてください。':'ホストのワールドに接続しました。';
+  $('multiEnter').hidden=!host;
+  $('multiLeave').textContent=host?'部屋を閉じる':'部屋から退出';
+  multiView('multiLobby');multiPeople();$('multiCover').style.display='flex';
+}
+function multiRenderSlots(){
+  const grid=$('multiSlotGrid');grid.replaceChildren();
+  for(let i=1;i<=5;i++){
+    let save=null;try{save=JSON.parse(localStorage.getItem(multiWorldKey(i))||'null')}catch{}
+    const card=document.createElement('div');card.className='multi-slot';
+    const name=document.createElement('strong');name.textContent='MULTI WORLD '+i;
+    const detail=document.createElement('span');detail.textContent=save?'保存済 · '+formatSavedAt(save.savedAt):'新規ワールド';
+    const actions=document.createElement('div');actions.className='multi-slot-actions';
+    const play=document.createElement('button');play.type='button';play.textContent=save?'続きを開く':'新しく作る';
+    play.addEventListener('click',()=>multiHost(i,save));actions.append(play);
+    if(save){
+      const del=document.createElement('button');del.type='button';del.className='multi-delete';del.textContent='削除';
+      del.addEventListener('click',()=>{
+        if(confirm('マルチワールド'+i+'を削除しますか？ 参加者の保存データも消えます。')){
+          localStorage.removeItem(multiWorldKey(i));multiRenderSlots();
+        }
+      });actions.append(del);
+    }
+    card.append(name,detail,actions);grid.append(card);
+  }
+}
+async function multiHost(slot,save){
+  if(multiBusy)return;
+  multiBusy=true;multiRole='host';multiHostSlot=slot;multiHostId=multiOwnId();
+  multiGuestRecords.clear();multiMembers=save?.members&&typeof save.members==='object'?save.members:{};
+  multiStatus('ワールドを準備しています…');
+  try{
+    await initializeAccountWorld(save,slot);
+    multiStatus('部屋を作成しています…');
+    let code;
+    for(let i=0;i<4;i++){
+      code=multiCode();
+      try{await multiplayerNetwork.host(code);break}
+      catch(e){if(i===3)throw e}
+    }
+    multiLobby(code,true);multiStatus('部屋を作成しました！');
+  }catch(e){multiLeave(true);multiShow('multiSlots');multiStatus('部屋を作れません：'+e.message)}
+  finally{multiBusy=false}
+}
+async function multiJoin(code){
+  code=code.toUpperCase().trim();
+  if(!/^[A-Z0-9]{6}$/.test(code)){multiStatus('6文字のコードを入力してください');return}
+  if(multiBusy)return;
+  multiBusy=true;multiStatus('ホストに接続しています…');
+  try{
+    await multiplayerNetwork.join(code);
+    multiRole='guest';
+    multiplayerNetwork.send({t:'hello',id:multiOwnId(),name:currentAccount.name});
+    multiStatus('ホストからワールドを受信しています…');
+    multiPendingTimer=setTimeout(()=>{
+      if(multiRole==='guest'&&!worldReady){multiLeave(true);multiShow('multiJoin');multiStatus('ワールドの受信がタイムアウトしました')}
+    },30000);
+  }catch(e){multiplayerNetwork.leaveRoom();multiRole=null;multiStatus('参加できません：'+e.message)}
+  finally{multiBusy=false}
+}
+function multiShowAvatar(id,pose){
+  if(id===multiOwnId()||!pose||!Number.isFinite(pose.x)||!Number.isFinite(pose.y)||!Number.isFinite(pose.z))return;
+  if(Math.abs(pose.x)>1000000||Math.abs(pose.z)>1000000)return;
+  let model=multiAvatars.get(id);
+  if(!model){
+    model=new THREE.Group();
+    cube(model,.66,.8,.43,0x318ba1,0,1.0,0);
+    cube(model,.60,.53,.53,0xc99a70,0,1.70,0);
+    for(const x of[-.44,.44])cube(model,.23,.66,.32,0x24798b,x,1.05,0);
+    for(const x of[-.18,.18])cube(model,.29,.72,.35,0x35476c,x,.37,0);
+    model.scale.set(.78,1,.88);scene.add(model);multiAvatars.set(id,model);
+  }
+  model.position.set(pose.x,pose.y,pose.z);model.rotation.y=Number(pose.yaw)||0;
+  model.visible=started;
+}
+function multiClearAvatars(){
+  for(const model of multiAvatars.values()){
+    scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});
+  }
+  multiAvatars.clear();
+}
+function multiApplyBlock(b){
+  if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.BED_HEAD||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(get(b.x,b.y,b.z)===b.v)return;
+  multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
+  finally{multiApplying=false}
+}
+function multiApplyDrop(message){
+  if(!worldReady)return;
+  multiApplying=true;
+  try{
+    if(message.t==='dropAdd'){
+      const d=message.drop;
+      if(!d||typeof d.uid!=='string'||d.uid.length>80||!Number.isFinite(d.x)||!Number.isFinite(d.y)||!Number.isFinite(d.z))return;
+      if(worldDrops.some(x=>x.uid===d.uid))return;
+      spawnWorldDrop(d.id,d.qty,d.x,d.y,d.z,{uid:d.uid,age:d.age,networkSilent:true});
+    }else{
+      const d=worldDrops.find(x=>x.uid===message.uid);
+      if(d)removeWorldDrop(d);
+    }
+  }finally{multiApplying=false}
+}
+async function multiWelcome(message){
+  if(multiRole!=='guest'||worldReady||!message.world)return;
+  clearTimeout(multiPendingTimer);multiPendingTimer=null;
+  multiHostId=message.hostId;multiHostSlot=message.slot;
+  let backup=null;try{backup=JSON.parse(localStorage.getItem(multiGuestSaveKey())||'null')}catch{}
+  const stored=message.member;
+  const who=backup&&(!stored||backup.savedAt>stored.savedAt)?backup:stored;
+  const data={...message.world,version:4,inventorySlots:Array(36).fill(null),
+    selectedHotbarIndex:0,level:1,xp:0,health:20,stamina:20,staminaRunSeconds:0,
+    staminaRegenSeconds:0,cameraMode:0,player:null,bedSpawn:null};
+  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn'])
+    if(Object.hasOwn(who,field))data[field]=who[field];
+  try{
+    await initializeAccountWorld(data,message.slot);
+    $('multiCover').style.display='none';$('startBtn').click();
+    for(const p of message.people||[])multiShowAvatar(p.id,p.player);
+  }catch(e){multiLeave(true);multiShow('multiJoin');multiStatus('読み込みに失敗：'+e.message)}
+}
+function multiRoomData(message,peerId){
+  if(message.t==='reject'){multiLeave(true);multiShow('multiJoin');multiStatus(message.reason||'参加できません');return}
+  if(message.t==='roomClosed'){multiLeave(true);multiShow('multiHome');multiStatus('ホストが退出しました');return}
+  if(message.t==='welcome'){multiWelcome(message);return}
+  if(!multiRole||!multiplayerNetwork.connected)return;
+  if(multiRole==='host'){
+    if(message.t==='hello'){
+      if(typeof message.name!=='string'||!/^[A-Z2-9]{10}$/.test(message.id||''))return;
+      if(multiGuestRecords.size>=3||[...multiGuestRecords.values()].some(p=>p.id===message.id)){
+        multiplayerNetwork.send({t:'reject',reason:'部屋は満員か、同じプレイヤーが参加しています'},peerId);return;
+      }
+      const record={id:message.id,name:message.name.slice(0,20)};
+      multiGuestRecords.set(peerId,record);
+      const people=[{id:multiOwnId(),player:multiProfile().player},
+        ...[...multiGuestRecords.values()].map(x=>({id:x.id,player:x.player}))];
+      multiplayerNetwork.send({t:'welcome',world:makeSaveData(),hostId:multiOwnId(),
+        slot:currentWorldSlot,member:multiMembers[record.id]||null,people},peerId);
+      multiplayerNetwork.send({t:'joinNotice',name:record.name});
+      multiPeople();return;
+    }
+    const from=multiGuestRecords.get(peerId);if(!from)return;
+    if(message.t==='pose'&&message.player&&Number.isFinite(message.player.x)){
+      from.player=message.player;multiShowAvatar(from.id,from.player);
+      multiplayerNetwork.send({t:'pose',id:from.id,player:from.player});
+    }else if(message.t==='profile'&&Array.isArray(message.profile?.inventorySlots)){
+      multiMembers[from.id]={...message.profile,name:from.name};markSaveDirty();
+    }else if(message.t==='block'){multiApplyBlock(message);multiplayerNetwork.send(message)}
+    else if(message.t==='dropAdd'||message.t==='dropRemove'){multiApplyDrop(message);multiplayerNetwork.send(message)}
+  }else{
+    if(message.t==='pose')multiShowAvatar(message.id,message.player);
+    if(message.t==='block')multiApplyBlock(message);
+    if(message.t==='dropAdd'||message.t==='dropRemove')multiApplyDrop(message);
+    if(message.t==='time'){
+      if(Number.isFinite(message.dayTime))dayTime=message.dayTime;
+      if(['clear','rain'].includes(message.weather)){
+        weather=message.weather;rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
+      }
+    }
+    if(message.t==='peerLeft'){
+      const avatar=multiAvatars.get(message.id);
+      if(avatar){scene.remove(avatar);avatar.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(message.id)}
+    }
+    if(message.t==='joinNotice')flash(message.name+' が参加しました');
+  }
+}
+function multiEvent(e){
+  if(e.type==='roomData'){multiRoomData(e.message,e.peerId);return}
+  if(e.type==='peerLeft'){
+    const guest=multiGuestRecords.get(e.peerId);
+    if(guest){
+      multiGuestRecords.delete(e.peerId);
+      const model=multiAvatars.get(guest.id);
+      if(model){scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(guest.id)}
+      multiplayerNetwork.send({t:'peerLeft',id:guest.id});multiPeople();
+      if(worldReady)saveCurrentGame(false);
+    }
+  }
+  if(e.type==='roomLost'&&multiRole&&!multiClosing){multiLeave(true);multiShow();multiStatus(e.reason||'接続が切れました')}
+  if(e.type==='roomError')multiStatus(e.reason||'通信エラー');
+  if(e.type==='friendRequest'){
+    const pending=$('friendPending');pending.hidden=false;pending.replaceChildren();
+    const span=document.createElement('span');span.textContent=e.name+' からフレンド申請が届きました。';
+    const accept=document.createElement('button');accept.type='button';accept.textContent='承認';
+    accept.onclick=async()=>{multiSaveFriend(e.id,e.name);pending.hidden=true;
+      try{await multiplayerNetwork.talkToFriend(e.id,{t:'friendAccepted',friendId:multiOwnId(),name:currentAccount.name})}catch{}
+    };
+    pending.append(span,accept);
+    if($('multiCover').style.display!=='flex')flash('フレンド申請が届きました');
+  }
+  if(e.type==='friendAccepted'){multiSaveFriend(e.id,e.name);multiStatus('フレンドになりました：'+e.name)}
+}
+function multiTick(now){
+  if(now-multiLastPose>150){
+    multiLastPose=now;
+    if(multiplayerNetwork.connected){
+      multiplayerNetwork.send({t:'pose',player:multiProfile().player});
+      if(multiRole==='host'&&Math.floor(now/2200)!==Math.floor((now-150)/2200))
+        multiplayerNetwork.send({t:'time',dayTime,weather});
+    }
+  }
+  if(multiRole==='guest'&&now-multiLastProfile>8000){multiLastProfile=now;saveCurrentGame(false)}
+  for(const model of multiAvatars.values())model.visible=started;
+}
+function multiLeave(silent=false){
+  if(multiClosing)return;
+  multiClosing=true;
+  clearTimeout(multiPendingTimer);multiPendingTimer=null;
+  clearTimeout(multiProfileSaveTimer);multiProfileSaveTimer=null;
+  if(worldReady)saveCurrentGame(false);
+  multiRole=null;multiHostSlot=null;multiHostId='';
+  multiplayerNetwork.leaveRoom();multiGuestRecords.clear();multiMembers={};multiClearAvatars();
+  clearInterval(saveInterval);saveInterval=null;
+  if(worldReady){resetWorldRuntime();worldReady=false;currentWorldSlot=null}
+  cover.style.display='none';accountBox.style.display='none';
+  document.exitPointerLock?.();
+  multiClosing=false;
+  if(!silent)multiShow();
+}
+function multiRenderFriends(){
+  if(!currentAccount)return;
+  $('friendSelfId').textContent=multiOwnId();
+  const list=$('friendList');list.replaceChildren();
+  const friends=multiGetFriends();
+  if(!Object.keys(friends).length){const p=document.createElement('p');p.textContent='フレンドはいません。IDを交換して申請できます。';list.append(p)}
+  for(const [id,name] of Object.entries(friends)){
+    const card=document.createElement('div');card.className='friend-card';
+    const text=document.createElement('div'),title=document.createElement('strong');title.textContent=name;
+    const sub=document.createElement('span');sub.textContent=' ID: '+id+' · ⚫ 確認中';
+    text.append(title,sub);card.append(text);
+    const button=document.createElement('button');button.type='button';button.textContent='削除';
+    button.onclick=()=>{const next=multiGetFriends();delete next[id];localStorage.setItem(FRIENDS_KEY+currentAccount.key,JSON.stringify(next));multiRenderFriends()};
+    card.append(button);list.append(card);
+    multiplayerNetwork.talkToFriend(id,{t:'status'},3000).then(data=>{
+      multiFriendsOnline.set(id,data);
+      sub.textContent=' ID: '+id+(data.roomCode?' · 🎮 プレイ中':' · 🟢 オンライン');
+      if(data.roomCode){
+        const join=document.createElement('button');join.type='button';join.textContent='参加';
+        join.onclick=()=>{multiView('multiJoin');$('multiCodeInput').value=data.roomCode;multiJoin(data.roomCode)};
+        card.insertBefore(join,button);
+      }
+    }).catch(()=>{multiFriendsOnline.delete(id);sub.textContent=' ID: '+id+' · ⚫ オフライン'});
+  }
+}
+$('multiPlayBtn').addEventListener('click',()=>multiShow());
+$('multiHostBtn').addEventListener('click',()=>multiView('multiSlots'));
+$('multiJoinBtn').addEventListener('click',()=>multiView('multiJoin'));
+$('multiFriendsBtn').addEventListener('click',()=>multiView('multiFriends'));
+$('multiBack').addEventListener('click',()=>{
+  if(multiViewId==='multiLobby'){multiLeave();return}
+  if(multiViewId!=='multiHome'){multiView('multiHome');return}
+  $('multiCover').style.display='none';menuCover.style.display='flex';
+});
+$('multiLeave').addEventListener('click',()=>multiLeave());
+$('multiEnter').addEventListener('click',()=>{
+  if(multiRole!=='host'||!worldReady)return;
+  $('multiCover').style.display='none';$('startBtn').click();
+});
+$('multiJoinForm').addEventListener('submit',e=>{e.preventDefault();multiJoin($('multiCodeInput').value)});
+$('friendAddForm').addEventListener('submit',async e=>{
+  e.preventDefault();const id=$('friendAddId').value.trim().toUpperCase();
+  if(!/^[A-Z2-9]{10}$/.test(id)||id===multiOwnId()){multiStatus('正しい10文字のフレンドIDを入力してください');return}
+  try{
+    await multiplayerNetwork.talkToFriend(id,{t:'friendRequest',friendId:multiOwnId(),name:currentAccount.name});
+    multiStatus('フレンド申請を送りました。相手の承認を待ってください。');
+  }catch(error){multiStatus('申請できません：'+error.message)}
+});
+$('friendCopy').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(multiOwnId());multiStatus('フレンドIDをコピーしました')}
+  catch{multiStatus('フレンドID：'+multiOwnId())}
+});
+$('friendRefresh').addEventListener('click',multiRenderFriends);
 
 showLogin.addEventListener('click',()=>setAuthMode('login'));
 showCreate.addEventListener('click',()=>setAuthMode('create'));
@@ -3048,13 +3419,14 @@ menuLogout.addEventListener('click',()=>{clearSession();location.reload()});
 saveNowBtn.addEventListener('click',()=>saveCurrentGame(true));
 worldListBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
-  showWorldSelection();
+  if(multiRole)multiLeave();else showWorldSelection();
 });
 worldLogout.addEventListener('click',()=>{clearSession();location.reload()});
 logoutBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
   if(confirm('セーブしてログアウトしますか？')){
-    saveCurrentGame(false);clearInterval(saveInterval);clearSession();location.reload();
+    saveCurrentGame(false);if(multiRole)multiLeave(true);
+    clearInterval(saveInterval);clearSession();location.reload();
   }
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCurrentGame(false)});

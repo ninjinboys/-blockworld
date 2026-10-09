@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261009menu1">
+<link rel="stylesheet" href="style.css?v=20261009multi1">
 </head>
 <body>
 <div id="game"></div>
@@ -32,9 +32,49 @@
     <div class="menu-kicker">PLAYER <strong id="menuAccountName">---</strong></div>
     <div class="menu-actions">
       <button id="singlePlayBtn" type="button">シングルプレイ</button>
-      <button id="multiPlayBtn" type="button" disabled aria-disabled="true">マルチプレイ <span>準備中</span></button>
+      <button id="multiPlayBtn" type="button">マルチプレイ</button>
     </div>
     <button id="menuLogout" type="button">ログアウト</button>
+  </div>
+</div>
+<div id="multiCover" aria-label="マルチプレイメニュー">
+  <div class="multi-panel">
+    <div class="multi-heading"><div><div class="multi-kicker">BLOCKWORLD</div><h2 id="multiTitle">マルチプレイ</h2></div><button id="multiBack" type="button">戻る</button></div>
+    <p id="multiStatus" role="status" aria-live="polite">最大4人。ホストが退出すると部屋が閉じます。</p>
+    <div id="multiHome" class="multi-section">
+      <button id="multiHostBtn" class="multi-primary" type="button">ワールドを作る</button>
+      <button id="multiJoinBtn" class="multi-primary" type="button">コードで参加</button>
+      <button id="multiFriendsBtn" class="multi-primary" type="button">フレンド一覧</button>
+    </div>
+    <div id="multiSlots" class="multi-section" hidden>
+      <p>マルチプレイ専用のワールド（最大5個）。シングルのセーブは変更しません。</p>
+      <div id="multiSlotGrid"></div>
+    </div>
+    <div id="multiJoin" class="multi-section" hidden>
+      <p>ホストから教えてもらった6文字のコードを入力してください。</p>
+      <form id="multiJoinForm"><label for="multiCodeInput">参加コード</label>
+        <input id="multiCodeInput" maxlength="6" minlength="6" pattern="[A-Za-z0-9]{6}" autocomplete="off" autocapitalize="characters" placeholder="A7K92B" required>
+        <button class="multi-primary" type="submit">参加する</button>
+      </form>
+    </div>
+    <div id="multiFriends" class="multi-section" hidden>
+      <div class="multi-self"><span>自分のフレンドID</span><strong id="friendSelfId">---</strong><button id="friendCopy" type="button">コピー</button></div>
+      <p>友達にこのIDを教えてください。相手がオンラインならフレンド申請できます。</p>
+      <form id="friendAddForm"><label for="friendAddId">友達のフレンドID</label>
+        <input id="friendAddId" maxlength="12" minlength="8" autocomplete="off" autocapitalize="characters" placeholder="友達のID" required>
+        <button type="submit">申請する</button>
+      </form>
+      <div id="friendPending" class="friend-pending" hidden></div>
+      <div id="friendList" class="friend-list"></div>
+      <button id="friendRefresh" type="button">オンライン状況を更新</button>
+    </div>
+    <div id="multiLobby" class="multi-section" hidden>
+      <div class="multi-room"><span>参加コード</span><strong id="multiRoomCode">------</strong></div>
+      <p id="multiRoomTip">友達にコードを教えると参加できます。</p>
+      <div id="multiPeople" class="multi-people">参加人数：1/4人</div>
+      <button id="multiEnter" class="multi-primary" type="button">ワールドに入る</button>
+      <button id="multiLeave" class="multi-secondary" type="button">部屋を閉じる・退出</button>
+    </div>
   </div>
 </div>
 <div id="worldCover">
@@ -170,6 +210,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261009zombie1"></script>
+<script type="module" src="app.js?v=20261009multi1"></script>
 </body>
 </html>
