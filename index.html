@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261009singleshare1">
+<link rel="stylesheet" href="style.css?v=20261009update1to4">
 </head>
 <body>
 <div id="game"></div>
@@ -103,7 +103,7 @@
     <div id="xpTrack"><div id="xpFill"></div></div>
     <div id="blueprintText">次の設計図：木材（LV 2）</div>
   </div>
-  <div id="hint">WASD 移動 / Shift+W ダッシュ / Space ジャンプ / 左クリック長押し 攻撃/採掘/食事 / 右クリック 設置 / C クラフト / R 雨 / V・F5 視点</div>
+  <div id="hint">WASD 移動 / Shift+W ダッシュ / Space ジャンプ / 左クリック 攻撃・長押し採掘 / 右クリック 設置・使用（食事／ドア開閉） / C クラフト / R 雨 / V・F5 視点</div>
   <div id="message"></div>
   <div id="healthHud" aria-label="体力"><div id="hearts"></div></div>
   <div id="staminaHud" role="img" aria-label="スタミナ 10 / 10（表示のみ）"><div id="staminaIcons"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"><img src="assets/stamina-full.svg?v=20261008n" alt="" class="stamina-img" draggable="false"></div></div>
@@ -112,7 +112,7 @@
 <div id="mobile">
   <div class="pad"><button class="sprint" type="button" aria-label="前に走る">▲<span class="run-label">RUN</span></button><button class="up" type="button" aria-label="前に歩く">▲</button><button class="left">◀</button><button class="down">▼</button><button class="right">▶</button></div>
   <button class="jump">ジャンプ</button>
-  <div id="tapbar"><button id="tapMine" aria-label="長押しで採掘または肉を食べる">長押し<br>採掘・食事</button><button id="tapPlace">設置</button><button id="tapInventory">持ち物</button><button id="tapCraft">CRAFT</button></div>
+  <div id="tapbar"><button id="tapMine" aria-label="攻撃。長押しで採掘">攻撃</button><button id="tapPlace" aria-label="ブロック設置・ドア開閉・食事">設置・使用</button><button id="tapInventory">持ち物</button><button id="tapCraft">CRAFT</button></div>
 </div>
 <div id="deathScreen" aria-hidden="true">
   <div class="death-panel">
@@ -130,6 +130,8 @@
       </div>
       <button id="inventoryClose" aria-label="閉じる">×</button>
     </div>
+    <div class="armor-title">装備 <span id="armorDefense">防御 0%</span></div>
+    <div id="inventoryArmor" class="armor-grid" aria-label="装備している防具。タップで外す"></div>
     <div id="inventoryMainGrid" class="inventory-grid main-grid"></div>
     <div class="inventory-hotbar-label">HOTBAR</div>
     <div id="inventoryHotbarGrid" class="inventory-grid hotbar-grid"></div>
@@ -143,9 +145,10 @@
         <button id="inventoryMove" type="button">ホットバーへ</button>
         <button id="inventorySplit" type="button">半分に分ける</button>
         <button id="inventoryDrop" type="button">捨てる</button>
+        <button id="inventoryEquip" type="button">装備</button>
       </div>
     </div>
-    <div class="inventory-help">アイテムをタップ → 移動先をタップ / Eキーで開閉</div>
+    <div class="inventory-help">防具を選んで「装備」／上の装備をタップで外す。アイテムの入れ替えも可能。</div>
   </div>
 </div>
 <div id="crafting" aria-hidden="true">
@@ -210,6 +213,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261009wildlife1"></script>
+<script type="module" src="app.js?v=20261009update1to4"></script>
 </body>
 </html>

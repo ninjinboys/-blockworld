@@ -34,7 +34,7 @@ scene.add(sunBox,moonBox);
 const CHUNK=16,RENDER_RADIUS=3,Y_MIN=-80,WORLD_TOP=47,HEIGHT=WORLD_TOP-Y_MIN+1,SEA=11;
 // Terrain height uses the old 48-block world cap so existing landscapes stay unchanged.
 const TERRAIN_HEIGHT=48;
-const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22};
+const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30};
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
   RAW_IRON:106,RAW_GOLD:107,IRON_INGOT:108,GOLD_INGOT:109,DIAMOND:110,
@@ -47,7 +47,7 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -62,12 +62,12 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',
-  21:'ベッド',22:'ベッド'
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',
+  21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
-const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED};
+const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X};
 const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED};
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
@@ -82,10 +82,11 @@ const inventory={
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
+const equippedArmor=[null,null,null,null]; // helmet / chest / legs / boots
 let selectedHotbarIndex=0,inventorySelectedSlot=null,inventoryOpen=false;
 const itemColors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',8:'#454545',9:'#b78770',10:'#d6b33d',11:'#4ccbd2',15:'#ad7b46',16:'#686c6c',17:'#ccebee'};
 const itemGlyphs={
@@ -100,7 +101,7 @@ const itemGlyphs={
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア'
 };
 
 const ICON_MAT={
@@ -263,6 +264,7 @@ function drawItemIcon(g,id){
     ir(g,1,8,14,1,'#8f1e25');
     return;
   }
+  if(id===I.DOOR){ir(g,5,1,7,14,'#57361e');ir(g,6,2,5,12,'#aa703a');ir(g,7,3,3,4,'#d2a06a');ir(g,7,8,3,4,'#835129');ir(g,10,8,1,1,'#ffdc83');return}
   if(id===I.STICK)return stickIcon(g);
   if(id===I.RAW_IRON)return rawChunkIcon(g,'#8e7569','#c79a81','#624f47');
   if(id===I.RAW_GOLD)return rawChunkIcon(g,'#a88d32','#f0ca45','#6d5a21');
@@ -282,6 +284,7 @@ const recipes=[
 ];
 const workbenchRecipes=[
   {name:'ベッド',out:I.BED,qty:1,needs:[[I.WOOL,3],[B.PLANK,3]],unlockLevel:6},
+  {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
   {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
   {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7},
   {name:'石の剣',out:I.STONE_SWORD,qty:1,needs:[[B.COBBLE,2],[I.STICK,1]],unlockLevel:6},
@@ -297,23 +300,23 @@ const workbenchRecipes=[
   {name:'鉄のレギンス',out:I.IRON_LEGS,qty:1,needs:[[I.IRON_INGOT,7]],unlockLevel:9},
   {name:'鉄のブーツ',out:I.IRON_BOOTS,qty:1,needs:[[I.IRON_INGOT,4]],unlockLevel:9},
 
-  {name:'金のツルハシ',out:I.GOLD_PICK,qty:1,needs:[[I.GOLD_INGOT,3],[I.STICK,2]],unlockLevel:10},
-  {name:'金の剣',out:I.GOLD_SWORD,qty:1,needs:[[I.GOLD_INGOT,2],[I.STICK,1]],unlockLevel:10},
-  {name:'金の斧',out:I.GOLD_AXE,qty:1,needs:[[I.GOLD_INGOT,3],[I.STICK,2]],unlockLevel:10},
-  {name:'金のシャベル',out:I.GOLD_SHOVEL,qty:1,needs:[[I.GOLD_INGOT,1],[I.STICK,2]],unlockLevel:10},
-  {name:'金のヘルメット',out:I.GOLD_HELMET,qty:1,needs:[[I.GOLD_INGOT,5]],unlockLevel:11},
-  {name:'金のチェストプレート',out:I.GOLD_CHEST,qty:1,needs:[[I.GOLD_INGOT,8]],unlockLevel:11},
-  {name:'金のレギンス',out:I.GOLD_LEGS,qty:1,needs:[[I.GOLD_INGOT,7]],unlockLevel:11},
-  {name:'金のブーツ',out:I.GOLD_BOOTS,qty:1,needs:[[I.GOLD_INGOT,4]],unlockLevel:11},
+  {name:'金のツルハシ',out:I.GOLD_PICK,qty:1,needs:[[I.GOLD_INGOT,3],[I.STICK,2]],unlockLevel:40},
+  {name:'金の剣',out:I.GOLD_SWORD,qty:1,needs:[[I.GOLD_INGOT,2],[I.STICK,1]],unlockLevel:40},
+  {name:'金の斧',out:I.GOLD_AXE,qty:1,needs:[[I.GOLD_INGOT,3],[I.STICK,2]],unlockLevel:40},
+  {name:'金のシャベル',out:I.GOLD_SHOVEL,qty:1,needs:[[I.GOLD_INGOT,1],[I.STICK,2]],unlockLevel:40},
+  {name:'金のヘルメット',out:I.GOLD_HELMET,qty:1,needs:[[I.GOLD_INGOT,5]],unlockLevel:40},
+  {name:'金のチェストプレート',out:I.GOLD_CHEST,qty:1,needs:[[I.GOLD_INGOT,8]],unlockLevel:40},
+  {name:'金のレギンス',out:I.GOLD_LEGS,qty:1,needs:[[I.GOLD_INGOT,7]],unlockLevel:40},
+  {name:'金のブーツ',out:I.GOLD_BOOTS,qty:1,needs:[[I.GOLD_INGOT,4]],unlockLevel:40},
 
-  {name:'ダイヤのツルハシ',out:I.DIAMOND_PICK,qty:1,needs:[[I.DIAMOND,3],[I.STICK,2]],unlockLevel:12},
-  {name:'ダイヤの剣',out:I.DIAMOND_SWORD,qty:1,needs:[[I.DIAMOND,2],[I.STICK,1]],unlockLevel:12},
-  {name:'ダイヤの斧',out:I.DIAMOND_AXE,qty:1,needs:[[I.DIAMOND,3],[I.STICK,2]],unlockLevel:12},
-  {name:'ダイヤのシャベル',out:I.DIAMOND_SHOVEL,qty:1,needs:[[I.DIAMOND,1],[I.STICK,2]],unlockLevel:12},
-  {name:'ダイヤのヘルメット',out:I.DIAMOND_HELMET,qty:1,needs:[[I.DIAMOND,5]],unlockLevel:13},
-  {name:'ダイヤのチェストプレート',out:I.DIAMOND_CHEST,qty:1,needs:[[I.DIAMOND,8]],unlockLevel:13},
-  {name:'ダイヤのレギンス',out:I.DIAMOND_LEGS,qty:1,needs:[[I.DIAMOND,7]],unlockLevel:13},
-  {name:'ダイヤのブーツ',out:I.DIAMOND_BOOTS,qty:1,needs:[[I.DIAMOND,4]],unlockLevel:13}
+  {name:'ダイヤのツルハシ',out:I.DIAMOND_PICK,qty:1,needs:[[I.DIAMOND,3],[I.STICK,2]],unlockLevel:100},
+  {name:'ダイヤの剣',out:I.DIAMOND_SWORD,qty:1,needs:[[I.DIAMOND,2],[I.STICK,1]],unlockLevel:100},
+  {name:'ダイヤの斧',out:I.DIAMOND_AXE,qty:1,needs:[[I.DIAMOND,3],[I.STICK,2]],unlockLevel:100},
+  {name:'ダイヤのシャベル',out:I.DIAMOND_SHOVEL,qty:1,needs:[[I.DIAMOND,1],[I.STICK,2]],unlockLevel:100},
+  {name:'ダイヤのヘルメット',out:I.DIAMOND_HELMET,qty:1,needs:[[I.DIAMOND,5]],unlockLevel:100},
+  {name:'ダイヤのチェストプレート',out:I.DIAMOND_CHEST,qty:1,needs:[[I.DIAMOND,8]],unlockLevel:100},
+  {name:'ダイヤのレギンス',out:I.DIAMOND_LEGS,qty:1,needs:[[I.DIAMOND,7]],unlockLevel:100},
+  {name:'ダイヤのブーツ',out:I.DIAMOND_BOOTS,qty:1,needs:[[I.DIAMOND,4]],unlockLevel:100}
 ];
 const furnaceRecipes=[
   {name:'鉄インゴット',out:I.IRON_INGOT,qty:1,needs:[[I.RAW_IRON,1],[B.COAL,1]],unlockLevel:7,xp:4},
@@ -326,6 +329,8 @@ const hardness={
   [B.GRASS]:0.55,[B.DIRT]:0.45,[B.SAND]:0.4,[B.LEAF]:0.22,[B.SNOW]:0.18,[B.GRAVEL]:0.75,[B.CACTUS]:0.65,
   [B.LOG]:1.55,[B.PLANK]:1.25,[B.GLASS]:0.3,[B.CRAFTING_TABLE]:2.0,[B.BED]:1.0,[B.BED_HEAD]:1.0,
   [B.STONE]:3.0,[B.COBBLE]:3.4,[B.COAL]:3.5,[B.IRON]:4.2,[B.GOLD]:4.0,[B.DIAMOND]:5.0,[B.FURNACE]:3.8,
+  [B.DOOR_X]:1.4,[B.DOOR_X_TOP]:1.4,[B.DOOR_X_OPEN]:1.4,[B.DOOR_X_OPEN_TOP]:1.4,
+  [B.DOOR_Z]:1.4,[B.DOOR_Z_TOP]:1.4,[B.DOOR_Z_OPEN]:1.4,[B.DOOR_Z_OPEN_TOP]:1.4,
   [B.BEDROCK]:Infinity
 };
 const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE]);
@@ -350,7 +355,11 @@ const chunkCoord=v=>Math.floor(v/CHUNK);
 const localCoord=v=>((v%CHUNK)+CHUNK)%CHUNK;
 const chunkKey=(cx,cz)=>cx+','+cz;
 const cIndex=(lx,y,lz)=>((y-Y_MIN)*CHUNK+lz)*CHUNK+lx;
-const solid=id=>id!==B.AIR&&id!==B.WATER;
+const DOOR_ALL=new Set([B.DOOR_X,B.DOOR_X_TOP,B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z,B.DOOR_Z_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_OPEN_TOP]);
+const DOOR_OPEN=new Set([B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_OPEN_TOP]);
+const DOOR_TOP=new Set([B.DOOR_X_TOP,B.DOOR_X_OPEN_TOP,B.DOOR_Z_TOP,B.DOOR_Z_OPEN_TOP]);
+const isDoor=id=>DOOR_ALL.has(id);
+const solid=id=>id!==B.AIR&&id!==B.WATER&&!DOOR_OPEN.has(id);
 
 
 function accountKey(name){return name.normalize('NFKC').trim().toLocaleLowerCase('ja-JP')}
@@ -443,6 +452,7 @@ function makeSaveData(){
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
     inventorySlots:inventorySlots.map(v=>v?{id:v.id,qty:v.qty}:null),selectedHotbarIndex,
+    equippedArmor:[...equippedArmor],
     worldDrops:serializeWorldDrops(),
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits()
@@ -533,6 +543,7 @@ function applySaveData(data){
     if(idx>=0)selectedHotbarIndex=idx;
   }
   syncDerivedInventory();
+  normalizeArmor(data.equippedArmor);applyArmorAppearance(playerAvatar,equippedArmor);
   restoreEdits(data.edits,Number(data.version)||3);
   restoreWorldDrops(data.worldDrops);
 
@@ -544,6 +555,7 @@ function applySaveData(data){
 function resetWorldRuntime(){
   resetSprint();
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
+  equippedArmor.fill(null);applyArmorAppearance(playerAvatar,equippedArmor);
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   for(const c of chunks.values())removeChunkMeshes(c);
@@ -1022,8 +1034,8 @@ function blockFromInfo(x,y,z,info){
     const r=hash3(x,y,z,seed+5100);
     // Deep mining now matters: diamond near bedrock, gold at middle-deep
     // levels, and iron underground. Above-ground ore no longer appears.
-    if(y<=-56&&r>.986)id=B.DIAMOND;
-    else if(y<=-25&&r>.974)id=B.GOLD;
+    if(y<=-56&&r>.9953333333333333)id=B.DIAMOND;
+    else if(y<=-25&&r>.9913333333333333)id=B.GOLD;
     else if(y<=8&&r>.955)id=B.IRON;
     else if(r>.932)id=B.COAL;
     else if(r<.018)id=B.GRAVEL;
@@ -1338,6 +1350,30 @@ const bedFootMaterials=[bedSide,bedSide,bedFootTop,bedBottom,bedEnd,bedEnd];
 const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
 const M={[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
+const doorBox=new THREE.BoxGeometry(.92,.99,.14);
+function doorTexture(top){
+  const canvas=document.createElement('canvas');canvas.width=16;canvas.height=16;
+  const g=canvas.getContext('2d');
+  g.fillStyle='#a36d3a';g.fillRect(0,0,16,16);
+  g.fillStyle='#5a371f';g.fillRect(0,0,2,16);g.fillRect(14,0,2,16);
+  g.fillRect(0,0,16,2);g.fillRect(0,14,16,2);
+  if(top){
+    g.fillStyle='#3d281b';g.fillRect(3,3,10,10);
+    g.fillStyle='#83bac7';g.fillRect(4,4,8,8);
+    g.fillStyle='#a8d5df';g.fillRect(5,4,2,4);g.fillRect(9,8,2,3);
+    g.fillStyle='#543925';g.fillRect(7,4,2,8);
+  }else{
+    g.fillStyle='#82532e';g.fillRect(3,3,10,11);
+    g.fillStyle='#c58b51';g.fillRect(4,4,8,9);
+    g.fillStyle='#8d5c33';g.fillRect(7,4,2,9);
+    g.fillStyle='#efcb69';g.fillRect(11,6,2,3);
+  }
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;
+  texture.colorSpace=THREE.SRGBColorSpace;return texture;
+}
+const doorTopMat=L(doorTexture(true)),doorBottomMat=L(doorTexture(false));
+for(const id of DOOR_ALL)M[id]=DOOR_TOP.has(id)?doorTopMat:doorBottomMat;
 let meshes=[],lookup=new Map();
 const neighborVectors=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 function removeChunkMeshes(c){
@@ -1359,21 +1395,29 @@ function rebuildChunkMesh(c){
       const nx=lx+dx,ny=y+dy,nz=lz+dz;
       const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
         ?data[cIndex(nx,ny,nz)]:getLoaded(x+dx,ny,z+dz);
-      if(id===B.WATER?b!==B.WATER:b===B.AIR||b===B.WATER||b===B.GLASS){visible=true;break}
+      if(id===B.WATER?b!==B.WATER:b===B.AIR||b===B.WATER||b===B.GLASS||DOOR_OPEN.has(b)){visible=true;break}
     }
     if(visible)groups[id].push({x,y,z});
   }
   const dummy=new THREE.Object3D(),built=[];
   for(const key in groups){
     const id=+key,p=groups[id];if(!p.length)continue;
-    const geo=(id===B.BED||id===B.BED_HEAD)?bedBox:box;
+    const geo=isDoor(id)?doorBox:(id===B.BED||id===B.BED_HEAD)?bedBox:box;
     const m=new THREE.InstancedMesh(geo,M[id],p.length);
     m.userData.id=id;
     // Shadows are expensive on mobile. Nearby terrain keeps its shadows.
     m.castShadow=id!==B.WATER&&id!==B.GLASS&&Math.abs(c.cx-streamCX)<=1&&Math.abs(c.cz-streamCZ)<=1;
     m.receiveShadow=id!==B.WATER;
     p.forEach((v,i)=>{
-      dummy.position.set(v.x,(id===B.BED||id===B.BED_HEAD)?v.y-.25:v.y,v.z);
+      dummy.rotation.set(0,0,0);
+      if(isDoor(id)){
+        const alongZ=id>=B.DOOR_Z,open=DOOR_OPEN.has(id);
+        dummy.rotation.y=alongZ?Math.PI/2:0;
+        if(open){
+          dummy.rotation.y=alongZ?0:Math.PI/2;
+          dummy.position.set(v.x+(alongZ?0:-.39),v.y,v.z+(alongZ?-.39:0));
+        }else dummy.position.set(v.x,v.y,v.z);
+      }else dummy.position.set(v.x,(id===B.BED||id===B.BED_HEAD)?v.y-.25:v.y,v.z);
       dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);
     });
     scene.add(m);meshes.push(m);lookup.set(m.uuid,p);built.push(m);
@@ -2096,6 +2140,7 @@ function aimPlayerRay(){
   ray.set(gameplayAimOrigin,gameplayAimDirection);
 }
 function updatePlayerAvatar(now){
+  applyArmorAppearance(playerAvatar,equippedArmor);
   playerAvatar.visible=started&&!dead&&!sleeping&&cameraMode!==0;
   if(!playerAvatar.visible)return;
   playerAvatar.position.copy(player.pos);
@@ -2446,9 +2491,10 @@ function showDeathScreen(){
 function damagePlayer(points,source='ダメージ'){
   if(dead||points<=0)return;
   healthRegenTimer=0;
-  health=Math.max(0,health-Math.floor(points));renderHealth();markSaveDirty();
+  const taken=Math.max(1,Math.ceil(points*(1-armorReduction())));
+  health=Math.max(0,health-taken);renderHealth();markSaveDirty();
   if(health<=0){showDeathScreen();return}
-  const heartsLost=points/2;
+  const heartsLost=taken/2;
   flash(source+' -'+heartsLost.toFixed(heartsLost%1?1:0)+'♥');
 }
 function applyFallDamage(distance){
@@ -2502,7 +2548,7 @@ function pickTier(){
   return 0;
 }
 function toolSpeed(id){
-  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE,B.BED,B.BED_HEAD]);
+  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE,B.BED,B.BED_HEAD,...DOOR_ALL]);
   const softLike=new Set([B.GRASS,B.DIRT,B.SAND,B.GRAVEL,B.SNOW]);
   const axeSpeed=selected===I.DIAMOND_AXE?6.5:selected===I.IRON_AXE?5:selected===I.GOLD_AXE?5.8:selected===I.STONE_AXE?3.2:selected===I.WOOD_AXE?2.1:1;
   const shovelSpeed=selected===I.DIAMOND_SHOVEL?6.5:selected===I.IRON_SHOVEL?5:selected===I.GOLD_SHOVEL?5.8:selected===I.STONE_SHOVEL?3.2:1;
@@ -2537,8 +2583,110 @@ const NON_STACKABLE=new Set([
   I.BED
 ]);
 function maxStackFor(id){return NON_STACKABLE.has(id)?1:64}
+const ARMOR_NAMES=['頭','胸','脚','足'];
+function armorPartForId(id){
+  return Number.isInteger(id)&&id>=I.IRON_HELMET&&id<=I.DIAMOND_BOOTS?(id-I.IRON_HELMET)%4:-1;
+}
+function armorColor(id){
+  if(id>=I.DIAMOND_HELMET)return 0x58d6e9;
+  if(id>=I.GOLD_HELMET)return 0xebc149;
+  return 0xabb6c1;
+}
+function armorReduction(){
+  let protection=0;
+  for(const id of equippedArmor){
+    if(armorPartForId(id)<0)continue;
+    protection+=id>=I.DIAMOND_HELMET?.12:id>=I.GOLD_HELMET?.07:.09;
+  }
+  return Math.min(.55,protection);
+}
+function normalizeArmor(raw){
+  equippedArmor.fill(null);
+  if(!Array.isArray(raw))return;
+  for(let i=0;i<4;i++){
+    const id=Number(raw[i]);
+    if(armorPartForId(id)===i)equippedArmor[i]=id;
+  }
+}
+function equipFromInventory(index){
+  const st=inventorySlots[index];if(!st)return;
+  const part=armorPartForId(st.id);
+  if(part<0){flash('防具を選択してください');return}
+  const previous=equippedArmor[part];
+  equippedArmor[part]=st.id;
+  inventorySlots[index]=previous==null?null:{id:previous,qty:1};
+  inventorySelectedSlot=null;syncDerivedInventory();
+  markSaveDirty();renderHotbar();renderInventoryUI();
+  applyArmorAppearance(playerAvatar,equippedArmor);
+  flash(names[st.id]+'を装備した');
+}
+function removeEquippedArmor(part){
+  const id=equippedArmor[part];if(id==null)return;
+  const empty=firstEmptySlot(0,36);
+  if(empty<0){flash('防具を外すには空きスロットが必要');return}
+  inventorySlots[empty]={id,qty:1};equippedArmor[part]=null;
+  syncDerivedInventory();markSaveDirty();renderHotbar();renderInventoryUI();
+  applyArmorAppearance(playerAvatar,equippedArmor);
+  flash(names[id]+'を外した');
+}
+function renderArmorUI(){
+  const box=$('inventoryArmor');if(!box)return;
+  box.replaceChildren();
+  for(let i=0;i<4;i++){
+    const id=equippedArmor[i],button=document.createElement('button');
+    button.type='button';button.className='armor-slot'+(id!=null?' wearing':'');
+    const label=document.createElement('span');label.textContent=ARMOR_NAMES[i];button.appendChild(label);
+    if(id!=null)button.appendChild(itemCanvas(id,'item-icon'));
+    else{const blank=document.createElement('strong');blank.textContent='＋';button.appendChild(blank)}
+    button.title=id!=null?'タップして'+names[id]+'を外す':'防具を選んで「装備」を押す';
+    button.addEventListener('click',()=>removeEquippedArmor(i));box.appendChild(button);
+  }
+  const def=$('armorDefense');if(def)def.textContent='防御 '+Math.round(armorReduction()*100)+'%';
+}
+function applyArmorAppearance(model,armor){
+  if(!model)return;
+  const accepted=Array.isArray(armor)?armor:[];
+  const signature=accepted.map(id=>armorPartForId(id)>=0?id:0).join(',');
+  if(model.userData.armorSignature===signature)return;
+  for(const {mesh,parent} of model.userData.armorMeshes||[]){
+    parent.remove(mesh);mesh.geometry.dispose();
+  }
+  const drawn=[];
+  function add(parent,sx,sy,sz,color,x,y,z){
+    const mesh=cube(parent,sx,sy,sz,color,x,y,z);
+    drawn.push({mesh,parent});
+  }
+  const limbs=model.userData.limbs;
+  for(let i=0;i<4;i++){
+    const id=Number(accepted[i]);if(armorPartForId(id)!==i)continue;
+    const color=armorColor(id);
+    if(i===0){
+      add(model,.73,.17,.59,color,0,1.81,0);
+      add(model,.085,.27,.51,color,-.35,1.64,0);
+      add(model,.085,.27,.51,color,.35,1.64,0);
+      add(model,.72,.055,.085,color,0,1.66,-.275);
+    }
+    if(i===1){
+      add(model,.77,.73,.12,color,0,1.01,-.258);
+      add(model,.77,.73,.11,color,0,1.01,.265);
+      for(const part of [limbs?.leftArm,limbs?.rightArm])
+        if(part)add(part,.29,.28,.375,color,0,-.145,0);
+    }
+    if(i===2){
+      for(const part of [limbs?.leftLeg,limbs?.rightLeg])
+        if(part)add(part,.31,.48,.38,color,0,-.27,0);
+    }
+    if(i===3){
+      for(const part of [limbs?.leftLeg,limbs?.rightLeg])
+        if(part)add(part,.35,.20,.48,color,0,-.60,-.04);
+    }
+  }
+  model.userData.armorMeshes=drawn;
+  model.userData.armorSignature=signature;
+}
+
 function clearInventorySlots(){
-  inventorySlots.fill(null);hotbarSlots.fill(null);acquiredOrder.length=0;
+  inventorySlots.fill(null);equippedArmor.fill(null);hotbarSlots.fill(null);acquiredOrder.length=0;
   for(const k of Object.keys(inventory))inventory[k]=0;
   selected=null;inventorySelectedSlot=null;
 }
@@ -2702,12 +2850,15 @@ function renderInventoryUI(){
   inventoryDetailIcon.innerHTML='';
   if(!st){
     inventoryDetail.classList.add('empty');inventoryDetailName.textContent='アイテムを選択';inventoryDetailQty.textContent='';
-    inventoryMove.disabled=true;inventorySplit.disabled=true;inventoryDrop.disabled=true;return;
+    inventoryMove.disabled=true;inventorySplit.disabled=true;inventoryDrop.disabled=true;
+    $('inventoryEquip').disabled=true;renderArmorUI();return;
   }
   inventoryDetail.classList.remove('empty');inventoryDetailIcon.appendChild(itemCanvas(st.id,'item-icon'));
   inventoryDetailName.textContent=names[st.id]||'ITEM';inventoryDetailQty.textContent='× '+st.qty;
   inventoryMove.disabled=false;inventoryMove.textContent=inventorySelectedSlot<9?'インベントリへ':'ホットバーへ';
   inventorySplit.disabled=st.qty<2;inventoryDrop.disabled=false;
+  $('inventoryEquip').disabled=armorPartForId(st.id)<0;
+  renderArmorUI();
 }
 function setInventoryOpen(v){
   inventoryOpen=v;inventoryScreen.classList.toggle('open',v);inventoryScreen.setAttribute('aria-hidden',String(!v));
@@ -2732,12 +2883,15 @@ function minedDropPosition(x,y,z){
 function finishMine(x,y,z,id){
   if(get(x,y,z)!==id)return;
 
+  const doorOther=isDoor(id)?{x,y:y+(DOOR_TOP.has(id)?-1:1),z}:null;
   const bedFoot=isBedBlock(id)?canonicalBedFoot(x,y,z):null;
   const bedOther=isBedBlock(id)?findBedOtherHalf(x,y,z,id):null;
   const brokeRespawnBed=!!(bedFoot&&bedSpawn&&bedSpawn.x===bedFoot.x&&bedSpawn.y===bedFoot.y&&bedSpawn.z===bedFoot.z);
 
   set(x,y,z,B.AIR);
   if(bedOther)set(bedOther.x,bedOther.y,bedOther.z,B.AIR);
+  if(doorOther&&isDoor(get(doorOther.x,doorOther.y,doorOther.z)))
+    set(doorOther.x,doorOther.y,doorOther.z,B.AIR);
   if(brokeRespawnBed)bedSpawn=null;
 
   let drop=specialBlockDrops[id]??id;
@@ -2747,14 +2901,15 @@ function finishMine(x,y,z,id){
   if(id===B.GOLD)drop=I.RAW_GOLD;
   if(id===B.DIAMOND)drop=I.DIAMOND;
   if(isBedBlock(id))drop=I.BED;
+  if(isDoor(id))drop=I.DOOR;
 
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
-  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED)){
+  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR)){
     const spawnAt=minedDropPosition(x,y,z);
     spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{pickupDelay:.45});
   }
-  rebuildEdited({x,z},...(bedOther?[bedOther]:[]));gainXP(blockXP[id]||1,names[id]||'採掘');
+  rebuildEdited({x,z},...(bedOther?[bedOther]:[]),...(doorOther?[doorOther]:[]));gainXP(blockXP[id]||1,names[id]||'採掘');
   if(brokeRespawnBed)flash('ベッドが壊れたため初期スポーンに戻りました');
 }
 
@@ -2788,7 +2943,42 @@ function updateMining(dt){
     breakFill.style.width='0%';
   }
 }
+// The door consists of two stacked block IDs. Open/closed state lives in
+// the world grid, so existing saves and multiplayer block replication handle it.
+function doorCounterpart(id){return DOOR_TOP.has(id)?id-1:id+1}
+function doorUse(x,y,z){
+  const id=get(x,y,z);if(!isDoor(id))return false;
+  const bottomY=DOOR_TOP.has(id)?y-1:y;
+  const base=get(x,bottomY,z);
+  if(!isDoor(base)||DOOR_TOP.has(base)||get(x,bottomY+1,z)!==doorCounterpart(base)){
+    flash('ドアが壊れています');return true;
+  }
+  const next=base+(DOOR_OPEN.has(base)?-2:2),upper=next+1;
+  if(!DOOR_OPEN.has(next)){
+    const touchingPlayer=Math.abs(player.pos.x-x)<PR+.5&&Math.abs(player.pos.z-z)<PR+.5&&
+      player.pos.y<bottomY+1.5&&player.pos.y+PH>bottomY-.5;
+    if(touchingPlayer||mobs.some(m=>mobOverlapsBlock(m,x,bottomY,z)||mobOverlapsBlock(m,x,bottomY+1,z))){
+      flash('ドアの中に誰かがいます');return true;
+    }
+  }
+  set(x,bottomY,z,next);set(x,bottomY+1,z,upper);
+  rebuildEdited({x,z});flash(DOOR_OPEN.has(next)?'ドアを開けた':'ドアを閉めた');return true;
+}
+function aimedDoor(){
+  aimPlayerRay();
+  const hit=target();
+  const maxDist=Math.min(5,hit?.distance==null?5:hit.distance+.18);
+  for(let d=.25;d<=maxDist;d+=.12){
+    const x=Math.round(ray.ray.origin.x+ray.ray.direction.x*d);
+    const y=Math.round(ray.ray.origin.y+ray.ray.direction.y*d);
+    const z=Math.round(ray.ray.origin.z+ray.ray.direction.z*d);
+    if(isDoor(get(x,y,z)))return {x,y,z};
+  }
+  return null;
+}
 function place(){
+  if(startEating())return;
+  const door=aimedDoor();if(door&&doorUse(door.x,door.y,door.z))return;
   const h=target();if(!h||!h.face)return;
   const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;
   const targetId=get(p.x,p.y,p.z);
@@ -2815,6 +3005,21 @@ function place(){
   const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);
   if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
 
+  if(selected===I.DOOR){
+    const upper=y+1;
+    if(!inside(x,upper,z)||get(x,upper,z)!==B.AIR){
+      flash('ドアには縦2マスの空きが必要です');return;
+    }
+    const touchesPlayer=Math.abs(player.pos.x-x)<PR+.5&&Math.abs(player.pos.z-z)<PR+.5&&
+      player.pos.y<upper+.5&&player.pos.y+PH>y-.5;
+    if(touchesPlayer||mobs.some(m=>mobOverlapsBlock(m,x,y,z)||mobOverlapsBlock(m,x,upper,z))){
+      flash('その場所にドアは置けません');return;
+    }
+    const alongZ=Math.abs(Math.cos(player.yaw))>Math.abs(Math.sin(player.yaw));
+    const bottom=alongZ?B.DOOR_X:B.DOOR_Z;
+    set(x,y,z,bottom);set(x,upper,z,bottom+1);
+    consumeSelected(1);rebuildEdited({x,z});flash('木のドアを設置');return;
+  }
   if(selected===I.BED){
     const dir=bedDirectionFromYaw(),x2=x+dir.dx,z2=z+dir.dz;
     if(!inside(x2,y,z2)||get(x2,y,z2)!==B.AIR){
@@ -2917,7 +3122,7 @@ function attackMob(){
   return true;
 }
 
-// Food is eaten with a deliberate one-second hold on the attack/mine action.
+// Food is used with the place/use button, one portion per tap. The old hold timers stay inert for legacy input compatibility.
 const FOOD_EAT_SECONDS=1;
 const FOOD_HEAL_POINTS={
   [I.RAW_PORK]:4,     // 2 hearts
@@ -2937,10 +3142,12 @@ function startEating(){
   if(health>=MAX_HEALTH){flash('体力満タン：肉は食べられません');return true}
   const stack=inventorySlots[selectedHotbarIndex];
   if(!stack||stack.id!==selected||stack.qty<1)return true;
-  eatingHeld=true;eatingElapsed=0;eatingStartedAt=performance.now();
-  eatingSlot=selectedHotbarIndex;eatingItem=selected;
-  breakLabel.textContent=(names[selected]||'肉')+' を食べる';
-  breakFill.style.width='0%';breakMeter.classList.add('active');
+  const food=selected;
+  if(removeFromSlot(selectedHotbarIndex,1)!==1)return true;
+  const recovered=Math.min(MAX_HEALTH-health,FOOD_HEAL_POINTS[food]);
+  health=Math.min(MAX_HEALTH,health+FOOD_HEAL_POINTS[food]);
+  healthRegenTimer=0;renderHealth();markSaveDirty();
+  flash((names[food]||'肉')+'を食べた ♥+'+(recovered/2));
   return true;
 }
 function updateEating(dt){
@@ -2968,7 +3175,6 @@ function updateEating(dt){
 }
 function primaryActionStart(){
   if(!started||dead||sleeping||craftOpen||inventoryOpen)return;
-  if(startEating())return;
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
 }
@@ -3196,6 +3402,7 @@ inventoryScreen.addEventListener('pointerdown',e=>{if(e.target===inventoryScreen
 inventoryMove.addEventListener('click',()=>{if(inventorySelectedSlot!=null)moveInventoryStack(inventorySelectedSlot)});
 inventorySplit.addEventListener('click',()=>{if(inventorySelectedSlot!=null)splitInventoryStack(inventorySelectedSlot)});
 inventoryDrop.addEventListener('click',()=>{if(inventorySelectedSlot!=null)dropInventoryStack(inventorySelectedSlot)});
+$('inventoryEquip').addEventListener('click',()=>{if(inventorySelectedSlot!=null)equipFromInventory(inventorySelectedSlot)});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
 crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
 
@@ -3430,13 +3637,14 @@ function multiCurrentPose(){
     x:player.pos.x,y:player.pos.y,z:player.pos.z,
     yaw:player.yaw,pitch:player.pitch,
     speed:Math.hypot(player.vel.x,player.vel.z),
-    onGround:player.onGround
+    onGround:player.onGround,armor:[...equippedArmor]
   };
 }
 function multiProfile(){
   return {name:currentAccount.name,savedAt:Date.now(),level,xp,health,stamina,staminaRunSeconds,
     staminaRegenSeconds,cameraMode,selectedHotbarIndex,
     inventorySlots:inventorySlots.map(s=>s?{id:s.id,qty:s.qty}:null),
+    equippedArmor:[...equippedArmor],
     bedSpawn:bedSpawn?{...bedSpawn}:null,
     player:multiCurrentPose()};
 }
@@ -3609,6 +3817,7 @@ function multiShowAvatar(id,pose){
     scene.add(model);multiAvatars.set(id,model);
   }
   const motion=model.userData.multiMove;
+  if(Array.isArray(pose.armor))applyArmorAppearance(model,pose.armor);
   motion.target.set(pose.x,pose.y,pose.z);
   motion.yaw=yaw;
   // Older clients only send a position; estimate speed as fallback.
@@ -3698,9 +3907,10 @@ async function multiWelcome(message){
   const stored=message.member;
   const who=backup&&(!stored||backup.savedAt>stored.savedAt)?backup:stored;
   const data={...message.world,version:4,inventorySlots:Array(36).fill(null),
+    equippedArmor:[null,null,null,null],
     selectedHotbarIndex:0,level:1,xp:0,health:20,stamina:20,staminaRunSeconds:0,
     staminaRegenSeconds:0,cameraMode:0,player:null,bedSpawn:null};
-  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn'])
+  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor'])
     if(Object.hasOwn(who,field))data[field]=who[field];
   try{
     await initializeAccountWorld(data,message.slot);
@@ -3735,7 +3945,7 @@ function multiUpdateRoster(people){
 }
 function multiProfileFromWorld(world){
   const fields=['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds',
-    'staminaRegenSeconds','cameraMode','player','bedSpawn'];
+    'staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor'];
   const p={savedAt:world.savedAt||Date.now()};
   for(const k of fields)if(Object.hasOwn(world,k))p[k]=world[k];
   return p;
