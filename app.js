@@ -444,6 +444,54 @@ function restoreEdits(raw,saveVersion=3){
     if(m.size)editChunks.set(String(row[0]),m);
   }
 }
+// Fix doors that were placed in mid-air by older BLOCKWORLD versions.
+// Work on the saved edits BEFORE chunks load, so meshes never show their
+// obsolete positions. Preserve open/closed state and the original facing.
+function repairFloatingDoorsOnLoad(){
+  // The host owns shared world edits; guest clients must never rewrite them.
+  if(multiRole==='guest')return 0;
+  const candidateDoors=[];
+  for(const [key,edits] of editChunks){
+    const [cx,cz]=key.split(',').map(Number);
+    if(!Number.isInteger(cx)||!Number.isInteger(cz))continue;
+    for(const [index,id] of edits){
+      if(!isDoor(id)||DOOR_TOP.has(id))continue;
+      const localX=index%CHUNK,localZ=Math.floor(index/CHUNK)%CHUNK;
+      const y=Math.floor(index/(CHUNK*CHUNK))+Y_MIN;
+      if(y<Y_MIN+1||y+1>WORLD_TOP)continue;
+      candidateDoors.push({x:cx*CHUNK+localX,y,z:cz*CHUNK+localZ,id});
+    }
+  }
+  function editDoorCell(x,y,z,id){
+    const key=chunkKey(chunkCoord(x),chunkCoord(z));
+    let chunkEdits=editChunks.get(key);
+    if(!chunkEdits){chunkEdits=new Map();editChunks.set(key,chunkEdits)}
+    const index=cIndex(localCoord(x),y,localCoord(z));
+    chunkEdits.set(index,id);
+    const chunk=chunks.get(key);
+    if(chunk)chunk.data[index]=id;
+  }
+  let repairs=0;
+  for(const {x,y,z,id} of candidateDoors){
+    if(get(x,y,z)!==id||get(x,y+1,z)!==id+1)continue;
+    if(solid(get(x,y-1,z)))continue; // already standing on a floor
+    let newY=null;
+    // Don't pass through intermediate walls, roofs or existing buildings.
+    // The old bottom/top already occupy y and y+1.
+    for(let scan=y-1;scan>=Math.max(Y_MIN+1,y-12);scan--){
+      if(get(x,scan,z)!==B.AIR)break;
+      if(get(x,scan+1,z)!==B.AIR)continue;
+      if(solid(get(x,scan-1,z))){newY=scan;break}
+    }
+    if(newY===null)continue; // don't destroy unsupported user structures
+    editDoorCell(x,y,z,B.AIR);
+    editDoorCell(x,y+1,z,B.AIR);
+    editDoorCell(x,newY,z,id);
+    editDoorCell(x,newY+1,z,id+1);
+    repairs++;
+  }
+  return repairs;
+}
 function makeSaveData(){
   return {
     version:4,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
@@ -545,10 +593,25 @@ function applySaveData(data){
   syncDerivedInventory();
   normalizeArmor(data.equippedArmor);applyArmorAppearance(playerAvatar,equippedArmor);
   restoreEdits(data.edits,Number(data.version)||3);
+  const correctedDoors=repairFloatingDoorsOnLoad();
+  if(correctedDoors)console.info('BLOCKWORLD: corrected '+correctedDoors+' floating door(s) in saved world.');
   restoreWorldDrops(data.worldDrops);
 
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
-    player.pos.set(data.player.x,data.player.y,data.player.z);player.yaw=Number(data.player.yaw)||0;player.pitch=Number(data.player.pitch)||0;return true;
+    player.pos.set(data.player.x,data.player.y,data.player.z);
+    player.yaw=Number(data.player.y)||0;player.pitch=Number(data.player.pitch)||0;
+    // The player may have saved right below an old floating door. Once
+    // that door is anchored, move them sideways rather than teleporting
+    // them through the house roof in the blocked-spawn recovery loop.
+    if(correctedDoors>0&&blocked(player.pos.x,player.pos.y,player.pos.z)){
+      for(const [dx,dz] of [[1.1,0],[-1.1,0],[0,1.1],[0,-1.1],[1.1,1.1],[-1.1,1.1],[1.1,-1.1],[-1.1,-1.1]]){
+        const nx=player.pos.x+dx,nz=player.pos.z+dz,ny=player.pos.y;
+        if(!blocked(nx,ny,nz)&&blocked(nx,ny-.12,nz)){
+          player.pos.set(nx,ny,nz);break;
+        }
+      }
+    }
+    return true;
   }
   return false;
 }
