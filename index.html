@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261009update1to4">
+<link rel="stylesheet" href="style.css?v=20261009armorTap1">
 </head>
 <body>
 <div id="game"></div>
@@ -131,7 +131,7 @@
       <button id="inventoryClose" aria-label="閉じる">×</button>
     </div>
     <div class="armor-title">装備 <span id="armorDefense">防御 0%</span></div>
-    <div id="inventoryArmor" class="armor-grid" aria-label="装備している防具。タップで外す"></div>
+    <div id="inventoryArmor" class="armor-grid" aria-label="装備欄。防具を選んで対応する場所をタップすると装備、選択していなければ装備中の防具をタップで外せます"></div>
     <div id="inventoryMainGrid" class="inventory-grid main-grid"></div>
     <div class="inventory-hotbar-label">HOTBAR</div>
     <div id="inventoryHotbarGrid" class="inventory-grid hotbar-grid"></div>
@@ -148,7 +148,7 @@
         <button id="inventoryEquip" type="button">装備</button>
       </div>
     </div>
-    <div class="inventory-help">防具を選んで「装備」／上の装備をタップで外す。アイテムの入れ替えも可能。</div>
+    <div class="inventory-help">防具をタップして、上の対応する装備欄をタップでも装着できます。「装備」ボタンも使用可能。選択していない場合は、装備欄をタップすると外せます。</div>
   </div>
 </div>
 <div id="crafting" aria-hidden="true">
@@ -213,6 +213,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261009update1to4b"></script>
+<script type="module" src="app.js?v=20261009armorTap1"></script>
 </body>
 </html>

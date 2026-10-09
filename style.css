@@ -826,3 +826,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   .inventory-actions button{font-size:9px;min-width:0;padding:2px}
   #tapbar button{font-size:12px}
 }
+
+/* Tap inventory armor, then the highlighted equipment destination. */
+.armor-slot.equip-target{background:#d3efc2;border-color:#467e39;box-shadow:inset 2px 2px 0 #efffe3,inset -2px -2px 0 #7caa65,0 0 0 2px #6fc64d}
+.armor-slot.equip-target:active{background:#b2dba0}

@@ -2629,17 +2629,37 @@ function removeEquippedArmor(part){
   applyArmorAppearance(playerAvatar,equippedArmor);
   flash(names[id]+'を外した');
 }
+function onArmorSlotTap(part){
+  const index=inventorySelectedSlot;
+  const selectedStack=index==null?null:inventorySlots[index];
+  const chosenPart=selectedStack?armorPartForId(selectedStack.id):-1;
+  if(chosenPart>=0){
+    if(chosenPart!==part){
+      flash(names[selectedStack.id]+'は「'+ARMOR_NAMES[chosenPart]+'」に装備できます');
+      return;
+    }
+    equipFromInventory(index);
+    return;
+  }
+  removeEquippedArmor(part);
+}
 function renderArmorUI(){
   const box=$('inventoryArmor');if(!box)return;
   box.replaceChildren();
+  const stack=inventorySelectedSlot==null?null:inventorySlots[inventorySelectedSlot];
+  const selectedPart=stack?armorPartForId(stack.id):-1;
   for(let i=0;i<4;i++){
     const id=equippedArmor[i],button=document.createElement('button');
-    button.type='button';button.className='armor-slot'+(id!=null?' wearing':'');
+    button.type='button';
+    button.className='armor-slot'+(id!=null?' wearing':'')+(selectedPart===i?' equip-target':'');
     const label=document.createElement('span');label.textContent=ARMOR_NAMES[i];button.appendChild(label);
     if(id!=null)button.appendChild(itemCanvas(id,'item-icon'));
     else{const blank=document.createElement('strong');blank.textContent='＋';button.appendChild(blank)}
-    button.title=id!=null?'タップして'+names[id]+'を外す':'防具を選んで「装備」を押す';
-    button.addEventListener('click',()=>removeEquippedArmor(i));box.appendChild(button);
+    button.title=selectedPart===i?'タップして'+names[stack.id]+'を装備'
+      :selectedPart>=0?'選択中の防具とは異なる部位です'
+      :id!=null?'タップして'+names[id]+'を外す'
+      :'防具を選んで装備欄をタップ';
+    button.addEventListener('click',()=>onArmorSlotTap(i));box.appendChild(button);
   }
   const def=$('armorDefense');if(def)def.textContent='防御 '+Math.round(armorReduction()*100)+'%';
 }
