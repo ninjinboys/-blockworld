@@ -169,14 +169,12 @@ function showHelp(){
  helpTimeout=setTimeout(()=>hint.classList.add('hidden'),6500);
 }
 function setOwner(p){
-  const changedOwner=ball.owner!==p;
   ball.owner=p;
   ball.vx=ball.vy=ball.vz=ball.z=0;
   ball.last=p.team;ball.shot=false;ball.grace=.24;p.cool=.35;
-  // Only automatically change controlled players when a BLUE footballer
-  // actually WINS/RECEIVES the ball. Never switch merely because a rival
-  // moves closer or the ball changes position.
-  if(changedOwner&&p.team===0) selected=p;
+  // Only a BLUE footballer actually receiving/winning the ball triggers
+  // automatic selection. Do not switch based on proximity.
+  if(p.team===0) selected=p;
   updateHud();
 }
 function kick(p,vx,vy,power,lift=0,shot=false){if(ball.owner!==p)return;let d=hypot(vx,vy)||1;ball.owner=null;ball.vx=vx/d*power;ball.vy=vy/d*power;ball.vz=lift;ball.z=2;ball.grace=.26;ball.last=p.team;ball.shot=shot;p.cool=.35;beep(shot?230:420,.07,'triangle');}
@@ -208,17 +206,22 @@ function shoot(force=1){if(mode!=='play')return;let p=ball.owner&&ball.owner.tea
 }
 function switchPlayer(){
  if(mode!=='play')return;
- // The sole in-play function authorized to switch the manually controlled player.
- if(ball.owner&&ball.owner.team===0&&selected!==ball.owner) {
+ // Never switch AWAY from a BLUE player carrying the ball.
+ // That puts the carrier on formation AI, which retreats and stops.
+ if(ball.owner&&ball.owner.team===0) {
    selected=ball.owner;
- } else {
-   const focus=(ball.owner&&ball.owner.team===1)?ball.owner:ball;
-   const order=blue.filter(p=>p.index!==0)
-     .sort((a,b)=>hypot(a.x-focus.x,a.y-focus.y)-hypot(b.x-focus.x,b.y-focus.y));
-   const count=Math.min(5,order.length);
-   const ix=order.slice(0,count).indexOf(selected);
-   selected=order[(ix+1)%count];
+   updateHud();
+   return;
  }
+ // Defending or chasing a loose ball: explicit button cycles candidates.
+ const focus=(ball.owner&&ball.owner.team===1)?ball.owner:ball;
+ const order=blue.filter(p=>p.index!==0)
+  .sort((a,b)=>hypot(a.x-focus.x,a.y-focus.y)-hypot(b.x-focus.x,b.y-focus.y));
+ const count=Math.min(5,order.length);
+ if(!count)return;
+ const ix=order.slice(0,count).indexOf(selected);
+ selected=order[(ix+1)%count];
+ input.pressHeld=false;
  updateHud();
 }
 function pressure(tackle=false){
@@ -374,6 +377,12 @@ function update(dt){frame++;if(mode!=='play')return;
  if(delayedRestart>0){delayedRestart-=dt;if(delayedRestart<=0){resetBall(kickoffTeam);showNotice('KICK OFF','試合再開',.75)}return;}
  elapsed+=dt;let minute=Math.min(90,Math.floor(elapsed/matchDuration*90));$('clock').textContent=String(minute).padStart(2,'0')+"'";if(elapsed>=matchDuration){finish();return;}
  calcInput();ball.grace=Math.max(0,ball.grace-dt);pressCooldown=Math.max(0,pressCooldown-dt);
+ // Every frame ensure BLUE ball owner is manually controlled, before AI runs.
+ if(ball.owner&&ball.owner.team===0&&selected!==ball.owner){
+   selected=ball.owner;
+   input.pressHeld=false;
+   updateHud();
+ }
  const defensive=!(ball.owner&&ball.owner.team===0);
  if(defensive&&input.pressHeld&&selected&&selected.index!==0){
    const target=ball.owner&&ball.owner.team===1?ball.owner:ball;
@@ -386,7 +395,7 @@ function update(dt){frame++;if(mode!=='play')return;
  // Keep the selected player during free-ball movement and opponent possession; receiving the ball is the sole automatic switch.
  let redStrength=diff==='easy'?.78:diff==='hard'?1.25:1;
  for(const p of players){p.cool=Math.max(0,p.cool-dt);p.action=Math.max(0,p.action-dt);let owns=ball.owner===p;
-  if(p===selected&&p.index!==0){let dx=input.vx,dy=input.vy,mag=hypot(dx,dy),sprint=input.dash&&p.stamina>.08;p.stamina=clamp(p.stamina+(sprint&&mag>.15?-.22:.08)*dt,0,1);
+  if((p===selected&&p.index!==0)||(owns&&p.team===0)){let dx=input.vx,dy=input.vy,mag=hypot(dx,dy),sprint=input.dash&&p.stamina>.08;p.stamina=clamp(p.stamina+(sprint&&mag>.15?-.22:.08)*dt,0,1);
    let speed=(sprint?270:205)*p.speed;if(mag>.02){p.vx=dx*speed;p.vy=dy*speed;p.x+=p.vx*dt;p.y+=p.vy*dt;p.dir=Math.atan2(dy,dx);p.run+=dt*speed*.047;}else{p.vx*=.76;p.vy*=.76;}
   }else if(owns&&p.team===1&&p.index===0){if(p.cool<=0){let q=red[2];kick(p,q.x-p.x,q.y-p.y,590,35);p.cool=1.2;}
   }else if(owns&&p.team===1){p.stamina=clamp(p.stamina+.06*dt,0,1);const dx=-L-p.x,dy=clamp(-p.y*.35,-130,130);let targetY=p.y+dy*.65;moveTo(p,p.x-280*dt,targetY,dt,195*redStrength*p.speed);
