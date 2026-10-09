@@ -1413,7 +1413,7 @@ const bedFootMaterials=[bedSide,bedSide,bedFootTop,bedBottom,bedEnd,bedEnd];
 const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
 const M={[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
-const doorBox=new THREE.BoxGeometry(.92,.99,.14);
+const doorBox=new THREE.BoxGeometry(.92,.998,.14);
 function doorTexture(top){
   const canvas=document.createElement('canvas');canvas.width=16;canvas.height=16;
   const g=canvas.getContext('2d');
@@ -1436,7 +1436,13 @@ function doorTexture(top){
   texture.colorSpace=THREE.SRGBColorSpace;return texture;
 }
 const doorTopMat=L(doorTexture(true)),doorBottomMat=L(doorTexture(false));
-for(const id of DOOR_ALL)M[id]=DOOR_TOP.has(id)?doorTopMat:doorBottomMat;
+const doorSideMat=L(T.plank);
+// BoxGeometry material order is right, left, top, bottom, front, back.
+// Only the broad front/back faces have a window/handle. Do not print the
+// whole door onto its narrow edge (previously looked like a third door).
+const doorFaceTop=[doorSideMat,doorSideMat,doorSideMat,doorSideMat,doorTopMat,doorTopMat];
+const doorFaceBottom=[doorSideMat,doorSideMat,doorSideMat,doorSideMat,doorBottomMat,doorBottomMat];
+for(const id of DOOR_ALL)M[id]=DOOR_TOP.has(id)?doorFaceTop:doorFaceBottom;
 let meshes=[],lookup=new Map();
 const neighborVectors=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 function removeChunkMeshes(c){
@@ -1453,12 +1459,21 @@ function rebuildChunkMesh(c){
   const data=c.data,x0=c.cx*CHUNK,z0=c.cz*CHUNK;
   for(let y=Y_MIN;y<=WORLD_TOP;y++)for(let lz=0;lz<CHUNK;lz++)for(let lx=0;lx<CHUNK;lx++){
     const id=data[cIndex(lx,y,lz)];if(id===B.AIR)continue;
-    const x=x0+lx,z=z0+lz;let visible=false;
-    for(const [dx,dy,dz] of neighborVectors){
+    const x=x0+lx,z=z0+lz;
+    // Door panels are THIN, unlike opaque terrain blocks. Both lower and
+    // upper halves MUST render even inside a tight wood/stone doorway.
+    // Previous terrain face-culling hid the bottom half when enclosed, so
+    // it looked like the door was floating. Opening the door accidentally
+    // made both halves render because the open IDs were treated as air.
+    let visible=isDoor(id);
+    if(!visible)for(const [dx,dy,dz] of neighborVectors){
       const nx=lx+dx,ny=y+dy,nz=lz+dz;
       const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
         ?data[cIndex(nx,ny,nz)]:getLoaded(x+dx,ny,z+dz);
-      if(id===B.WATER?b!==B.WATER:b===B.AIR||b===B.WATER||b===B.GLASS||DOOR_OPEN.has(b)){visible=true;break}
+      // Doors leave visible space beside their thin panel: render the
+      // neighbouring wall, floor and ceiling faces too.
+      if(id===B.WATER?b!==B.WATER:
+         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)){visible=true;break}
     }
     if(visible)groups[id].push({x,y,z});
   }
@@ -1477,8 +1492,10 @@ function rebuildChunkMesh(c){
         const alongZ=id>=B.DOOR_Z,open=DOOR_OPEN.has(id);
         dummy.rotation.y=alongZ?Math.PI/2:0;
         if(open){
+          // Rotate around the left jamb rather than spinning around the
+          // panel's center and shifting into the doorway.
           dummy.rotation.y=alongZ?0:Math.PI/2;
-          dummy.position.set(v.x+(alongZ?0:-.39),v.y,v.z+(alongZ?-.39:0));
+          dummy.position.set(v.x+(alongZ?.46:-.46),v.y,v.z+(alongZ?-.46:.46));
         }else dummy.position.set(v.x,v.y,v.z);
       }else dummy.position.set(v.x,(id===B.BED||id===B.BED_HEAD)?v.y-.25:v.y,v.z);
       dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);
@@ -3198,6 +3215,13 @@ function doorUse(x,y,z){
 function aimedDoor(){
   aimPlayerRay();
   const hit=target();
+  // An OPEN door's drawn panel swings into an adjacent physical block,
+  // while its stored voxel remains at the original doorway coordinate.
+  // Use the actual mesh instance's stored coordinates first.
+  if(hit&&hit.distance<=5){
+    const block=lookup.get(hit.object.uuid)?.[hit.instanceId];
+    if(block&&isDoor(get(block.x,block.y,block.z)))return block;
+  }
   const maxDist=Math.min(5,hit?.distance==null?5:hit.distance+.18);
   for(let d=.25;d<=maxDist;d+=.12){
     const x=Math.round(ray.ray.origin.x+ray.ray.direction.x*d);
