@@ -1465,44 +1465,52 @@ function buildCow(){
   return g;
 }
 
-// Night-time hostile mob: an original blocky green zombie.
+// Night-time hostile mob: a green version of the player silhouette.
+// Face points along local -Z. Both arms are kept in front, even while moving.
 const ZOMBIE_LIMIT=7,ZOMBIE_AGGRO_RANGE=28,ZOMBIE_ATTACK_RANGE=1.35;
 let zombieSpawnCooldown=1,nightZombieWaveStarted=false;
 function buildZombie(){
   const g=new THREE.Group();
-  const skin=0x78ad63,skinLight=0x94c47c,skinDark=0x4b753d;
-  const shirt=0x377e8b,shirtLight=0x4395a2,shirtDark=0x225965;
-  const pants=0x303957,boots=0x262c39,eyes=0xece9b0,eyeDark=0x2d372a;
+  const skin=0x6fbf5f,skinLight=0x8bd275,skinDark=0x447c3c;
+  const shirt=0x4e9848,shirtLight=0x69af60,shirtDark=0x397438;
+  const pants=0x386c3e,pantsShade=0x2a5732,boots=0x23492a,sole=0x1d3724;
+  const eyes=0xddebc9,eyeDark=0x202d20;
 
-  // Blocky humanoid, roughly two blocks tall. Local -Z is the face/front.
-  cube(g,.72,.68,.40,shirt,0,1.17,0);
-  cube(g,.60,.13,.41,shirtLight,0,1.53,0);
-  cube(g,.62,.56,.59,skin,0,1.82,-.025);
-  cube(g,.62,.12,.59,skinLight,0,2.12,-.025);
-  cube(g,.15,.12,.035,eyes,-.16,1.92,-.338);
-  cube(g,.15,.12,.035,eyes,.16,1.92,-.338);
-  cube(g,.075,.08,.038,eyeDark,-.16,1.92,-.360);
-  cube(g,.075,.08,.038,eyeDark,.16,1.92,-.360);
-  cube(g,.24,.055,.04,skinDark,0,1.70,-.341);
-  cube(g,.14,.07,.04,skinDark,-.24,1.65,-.341);
+  // Same short head / tall torso / blocky limbs as the player avatar.
+  cube(g,.66,.52,.53,skin,0,1.53,0);
+  cube(g,.66,.10,.53,skinLight,0,1.75,0);
+  cube(g,.08,.10,.027,eyes,-.16,1.53,-.281);
+  cube(g,.08,.10,.027,eyes,.16,1.53,-.281);
+  cube(g,.04,.06,.030,eyeDark,-.16,1.53,-.298);
+  cube(g,.04,.06,.030,eyeDark,.16,1.53,-.298);
+  cube(g,.18,.045,.03,skinDark,0,1.40,-.285);
+
+  cube(g,.74,.85,.42,shirt,0,1.00,0);
+  cube(g,.69,.10,.44,shirtLight,0,1.37,0);
+  cube(g,.12,.60,.025,shirtDark,0,1.00,-.224);
 
   const leftArm=new THREE.Group(),rightArm=new THREE.Group();
-  leftArm.position.set(-.49,1.43,0);
-  rightArm.position.set(.49,1.43,0);
-  cube(leftArm,.25,.50,.30,shirtDark,0,-.24,-.03);
-  cube(rightArm,.25,.50,.30,shirt,0,-.24,-.03);
-  cube(leftArm,.24,.24,.28,skinDark,0,-.59,-.03);
-  cube(rightArm,.24,.24,.28,skin,0,-.59,-.03);
-  g.add(leftArm,rightArm);
-
   const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();
-  for(const [leg,x] of [[leftLeg,-.19],[rightLeg,.19]]){
-    leg.position.set(x,.83,0);
-    cube(leg,.29,.70,.33,pants,0,-.36,0);
-    cube(leg,.30,.19,.41,boots,0,-.75,-.065);
+  for(const [side,arm,leg] of [[-1,leftArm,leftLeg],[1,rightArm,rightLeg]]){
+    arm.position.set(side*.36,1.30,0);
+    cube(arm,.255,.45,.35,shirt,0,-.22,0);
+    cube(arm,.262,.12,.36,shirtDark,0,-.47,0);
+    cube(arm,.225,.18,.29,skin,0,-.61,0);
+    // Positive X rotation brings a hanging arm toward local -Z (the front).
+    arm.rotation.x=1.38;
+    g.add(arm);
+
+    leg.position.set(side*.20,.69,0);
+    cube(leg,.29,.54,.34,pants,0,-.24,0);
+    cube(leg,.29,.11,.345,pantsShade,0,-.51,0);
+    cube(leg,.32,.14,.43,boots,0,-.61,-.04);
+    cube(leg,.325,.055,.45,sole,0,-.69,-.045);
     g.add(leg);
   }
   g.userData.parts={leftArm,rightArm,leftLeg,rightLeg};
+  // Match the compact player's overall proportions.
+  g.scale.x=.72;
+  g.scale.z=.88;
   return g;
 }
 function isZombieGround(x,z){
@@ -1619,11 +1627,13 @@ function updateZombie(m,dt,now){
     const stride=Math.sin(now*.007+ud.phase);
     parts.leftLeg.rotation.x=stride*.38;
     parts.rightLeg.rotation.x=-stride*.38;
-    parts.leftArm.rotation.x=-1.12-stride*.14;
-    parts.rightArm.rotation.x=-1.12+stride*.14;
+    // Hold both arms in front like a zombie, with a subtle walking sway.
+    // Local -Z is forward, so the X angle must be positive.
+    parts.leftArm.rotation.x=1.38+stride*.055;
+    parts.rightArm.rotation.x=1.38-stride*.055;
     if(distance<ZOMBIE_ATTACK_RANGE+.35){
-      parts.leftArm.rotation.x=-1.5+Math.sin(now*.016)*.35;
-      parts.rightArm.rotation.x=-1.5-Math.sin(now*.016)*.35;
+      parts.leftArm.rotation.x=1.48+Math.sin(now*.016)*.10;
+      parts.rightArm.rotation.x=1.48-Math.sin(now*.016)*.10;
     }
   }
 }
