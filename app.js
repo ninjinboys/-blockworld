@@ -3426,6 +3426,9 @@ function multiPrepareMigration(checkpoint,plannedLeader=null){
   };
   multiCheckpoint=checkpoint;
   multiUpdateRoster(participants);
+  // The departing host must disappear from *every* remaining player's
+  // screen, not only the guest who becomes the successor.
+  multiRemoveAvatar(checkpoint.hostId);
   flash('ホストを引き継いでいます…');
   if(leader===multiOwnId())setTimeout(()=>multiPromoteHost(multiMigration),1200);
   else setTimeout(()=>multiReconnectHost(multiMigration),1400);
