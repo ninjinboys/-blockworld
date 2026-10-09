@@ -34,7 +34,7 @@ scene.add(sunBox,moonBox);
 const CHUNK=16,RENDER_RADIUS=3,Y_MIN=-80,WORLD_TOP=47,HEIGHT=WORLD_TOP-Y_MIN+1,SEA=11;
 // Terrain height uses the old 48-block world cap so existing landscapes stay unchanged.
 const TERRAIN_HEIGHT=48;
-const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30};
+const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30,TORCH:31};
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
   RAW_IRON:106,RAW_GOLD:107,IRON_INGOT:108,GOLD_INGOT:109,DIAMOND:110,
@@ -47,7 +47,7 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -62,13 +62,13 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
-const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X};
-const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED};
+const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH};
+const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH};
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
   [I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0,
@@ -82,7 +82,7 @@ const inventory={
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
@@ -101,7 +101,7 @@ const itemGlyphs={
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明'
 };
 
 const ICON_MAT={
@@ -265,6 +265,7 @@ function drawItemIcon(g,id){
     return;
   }
   if(id===I.DOOR){ir(g,5,1,7,14,'#57361e');ir(g,6,2,5,12,'#aa703a');ir(g,7,3,3,4,'#d2a06a');ir(g,7,8,3,4,'#835129');ir(g,10,8,1,1,'#ffdc83');return}
+  if(id===I.TORCH){ir(g,7,6,3,9,'#58391e');ir(g,8,7,1,8,'#c59054');ir(g,6,3,5,5,'#ec7424');ir(g,7,1,3,6,'#ffb431');ir(g,8,0,1,6,'#fff2a1');return}
   if(id===I.STICK)return stickIcon(g);
   if(id===I.RAW_IRON)return rawChunkIcon(g,'#8e7569','#c79a81','#624f47');
   if(id===I.RAW_GOLD)return rawChunkIcon(g,'#a88d32','#f0ca45','#6d5a21');
@@ -280,7 +281,8 @@ const recipes=[
   {name:'棒 ×4',out:I.STICK,qty:4,needs:[[B.PLANK,2]],unlockLevel:3},
   {name:'作業台',out:I.CRAFTING_TABLE,qty:1,needs:[[B.PLANK,4]],unlockLevel:4},
   {name:'木のツルハシ',out:I.WOOD_PICK,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5},
-  {name:'木の斧',out:I.WOOD_AXE,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5}
+  {name:'木の斧',out:I.WOOD_AXE,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5},
+  {name:'松明 ×4',out:I.TORCH,qty:4,needs:[[B.COAL,1],[I.STICK,1]],unlockLevel:3}
 ];
 const workbenchRecipes=[
   {name:'ベッド',out:I.BED,qty:1,needs:[[I.WOOL,3],[B.PLANK,3]],unlockLevel:6},
@@ -331,6 +333,7 @@ const hardness={
   [B.STONE]:3.0,[B.COBBLE]:3.4,[B.COAL]:3.5,[B.IRON]:4.2,[B.GOLD]:4.0,[B.DIAMOND]:5.0,[B.FURNACE]:3.8,
   [B.DOOR_X]:1.4,[B.DOOR_X_TOP]:1.4,[B.DOOR_X_OPEN]:1.4,[B.DOOR_X_OPEN_TOP]:1.4,
   [B.DOOR_Z]:1.4,[B.DOOR_Z_TOP]:1.4,[B.DOOR_Z_OPEN]:1.4,[B.DOOR_Z_OPEN_TOP]:1.4,
+  [B.TORCH]:.15,
   [B.BEDROCK]:Infinity
 };
 const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE]);
@@ -359,7 +362,7 @@ const DOOR_ALL=new Set([B.DOOR_X,B.DOOR_X_TOP,B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.
 const DOOR_OPEN=new Set([B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_OPEN_TOP]);
 const DOOR_TOP=new Set([B.DOOR_X_TOP,B.DOOR_X_OPEN_TOP,B.DOOR_Z_TOP,B.DOOR_Z_OPEN_TOP]);
 const isDoor=id=>DOOR_ALL.has(id);
-const solid=id=>id!==B.AIR&&id!==B.WATER&&!DOOR_OPEN.has(id);
+const solid=id=>id!==B.AIR&&id!==B.WATER&&id!==B.TORCH&&!DOOR_OPEN.has(id);
 
 
 function accountKey(name){return name.normalize('NFKC').trim().toLocaleLowerCase('ja-JP')}
@@ -425,8 +428,41 @@ function markSaveDirty(){
   }
 }
 function serializeEdits(){return [...editChunks.entries()].map(([k,m])=>[k,[...m.entries()]])}
+// Torches are persisted as normal edited blocks (world id 31); this index is
+// rebuilt from old/new saves and maintained by set() for local + P2P edits.
+const TORCH_LIGHT_RADIUS=8,TORCH_LIGHT_COUNT=7;
+const torchLocations=new Map();
+const torchCellKey=(x,y,z)=>x+','+y+','+z;
+function indexTorchCell(x,y,z,id){
+  const key=torchCellKey(x,y,z);
+  if(id===B.TORCH)torchLocations.set(key,{x,y,z});
+  else torchLocations.delete(key);
+}
+function rebuildTorchIndex(){
+  torchLocations.clear();
+  for(const [key,entries] of editChunks){
+    const parts=key.split(',').map(Number);
+    if(parts.length!==2||!parts.every(Number.isInteger))continue;
+    for(const [i,id] of entries){
+      if(id!==B.TORCH||!Number.isInteger(i)||i<0||i>=CHUNK*HEIGHT*CHUNK)continue;
+      const x=parts[0]*CHUNK+(i%CHUNK);
+      const z=parts[1]*CHUNK+(Math.floor(i/CHUNK)%CHUNK);
+      const y=Y_MIN+Math.floor(i/(CHUNK*CHUNK));
+      indexTorchCell(x,y,z,id);
+    }
+  }
+}
+function torchProtectsSpawn(x,y,z){
+  const r2=TORCH_LIGHT_RADIUS*TORCH_LIGHT_RADIUS;
+  for(const t of torchLocations.values()){
+    const dx=t.x-x,dy=t.y+.5-y,dz=t.z-z;
+    if(dx*dx+dy*dy+dz*dz<=r2)return true;
+  }
+  return false;
+}
+
 function restoreEdits(raw,saveVersion=3){
-  editChunks.clear();
+  editChunks.clear();torchLocations.clear();
   if(!Array.isArray(raw))return;
   // Saves made before deeper terrain stored y=0..47 directly in the chunk index.
   // Shift only those old indices; new-world edits already use y=-80..47.
@@ -443,6 +479,7 @@ function restoreEdits(raw,saveVersion=3){
     }
     if(m.size)editChunks.set(String(row[0]),m);
   }
+  rebuildTorchIndex();
 }
 // Fix doors that were placed in mid-air by older BLOCKWORLD versions.
 // Work on the saved edits BEFORE chunks load, so meshes never show their
@@ -630,7 +667,7 @@ function resetWorldRuntime(){
   }
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;nightZombieWaveStarted=false;
   clearWorldDrops();
-  chunks.clear();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
+  chunks.clear();torchLocations.clear();clearTorchLights();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
   health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
 }
@@ -649,7 +686,7 @@ async function initializeAccountWorld(save,slot){
     stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
-    editChunks.clear();clearWorldDrops();
+    editChunks.clear();torchLocations.clear();clearWorldDrops();
   }
   await new Promise(r=>setTimeout(r,30));
   ensureInitialSpawn();
@@ -1285,6 +1322,7 @@ function set(x,y,z,v){
   let edits=editChunks.get(k);
   if(!edits){edits=new Map();editChunks.set(k,edits)}
   edits.set(i,v);
+  if(v===B.TORCH||torchLocations.has(torchCellKey(x,y,z)))indexTorchCell(x,y,z,v);
   markSaveDirty();
   if(multiRole&&!multiApplying&&multiplayerNetwork.connected)multiplayerNetwork.send({t:'block',x,y,z,v});
 }
@@ -1443,6 +1481,61 @@ const doorSideMat=L(T.plank);
 const doorFaceTop=[doorSideMat,doorSideMat,doorSideMat,doorSideMat,doorTopMat,doorTopMat];
 const doorFaceBottom=[doorSideMat,doorSideMat,doorSideMat,doorSideMat,doorBottomMat,doorBottomMat];
 for(const id of DOOR_ALL)M[id]=DOOR_TOP.has(id)?doorFaceTop:doorFaceBottom;
+// Lightweight 3D torch: narrow wooden stem and two emissive flame voxels.
+const torchStemGeometry=new THREE.BoxGeometry(.14,.55,.14);
+const torchFlameGeometry=new THREE.BoxGeometry(.19,.20,.19);
+const torchTipGeometry=new THREE.BoxGeometry(.105,.14,.105);
+const torchStemMaterial=new THREE.MeshLambertMaterial({color:0x916132});
+const torchFlameMaterial=new THREE.MeshBasicMaterial({color:0xffa629,toneMapped:false});
+const torchTipMaterial=new THREE.MeshBasicMaterial({color:0xffeaa5,toneMapped:false});
+M[B.TORCH]=torchStemMaterial;
+function buildTorchMeshes(p,sceneChunk,built){
+  const pieces=[
+    [torchStemGeometry,torchStemMaterial,-.17],
+    [torchFlameGeometry,torchFlameMaterial,.16],
+    [torchTipGeometry,torchTipMaterial,.26]
+  ];
+  const dummy=new THREE.Object3D();
+  for(const [geo,material,offset] of pieces){
+    const mesh=new THREE.InstancedMesh(geo,material,p.length);
+    mesh.userData.id=B.TORCH;
+    mesh.castShadow=false;mesh.receiveShadow=false;
+    for(let i=0;i<p.length;i++){
+      const t=p[i];
+      dummy.position.set(t.x,t.y+offset,t.z);dummy.rotation.set(0,0,0);
+      dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+    }
+    scene.add(mesh);meshes.push(mesh);lookup.set(mesh.uuid,p);built.push(mesh);
+  }
+}
+// Pool a small number of real point lights so iPads don't need one GPU
+// light per placed torch. All torches still block zombie spawning, lit or not.
+const torchLights=Array.from({length:TORCH_LIGHT_COUNT},()=>{
+  const light=new THREE.PointLight(0xffb76a,24,TORCH_LIGHT_RADIUS+1,1.25);
+  light.castShadow=false;light.visible=false;scene.add(light);return light;
+});
+let lastTorchLightUpdate=0;
+function clearTorchLights(){
+  for(const light of torchLights)light.visible=false;
+  lastTorchLightUpdate=0;
+}
+function updateTorchLights(now){
+  if(now-lastTorchLightUpdate<300)return;
+  lastTorchLightUpdate=now;
+  const eligible=[];
+  for(const t of torchLocations.values()){
+    const dx=t.x-player.pos.x,dy=t.y-player.pos.y,dz=t.z-player.pos.z;
+    const d2=dx*dx+dy*dy+dz*dz;
+    if(d2>25*25)continue;
+    eligible.push({t,d2});
+  }
+  eligible.sort((a,b)=>a.d2-b.d2);
+  for(let i=0;i<torchLights.length;i++){
+    const light=torchLights[i],match=eligible[i];
+    light.visible=!!match;
+    if(match)light.position.set(match.t.x,match.t.y+.32,match.t.z);
+  }
+}
 let meshes=[],lookup=new Map();
 const neighborVectors=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 function removeChunkMeshes(c){
@@ -1465,7 +1558,7 @@ function rebuildChunkMesh(c){
     // Previous terrain face-culling hid the bottom half when enclosed, so
     // it looked like the door was floating. Opening the door accidentally
     // made both halves render because the open IDs were treated as air.
-    let visible=isDoor(id);
+    let visible=isDoor(id)||id===B.TORCH;
     if(!visible)for(const [dx,dy,dz] of neighborVectors){
       const nx=lx+dx,ny=y+dy,nz=lz+dz;
       const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
@@ -1473,13 +1566,14 @@ function rebuildChunkMesh(c){
       // Doors leave visible space beside their thin panel: render the
       // neighbouring wall, floor and ceiling faces too.
       if(id===B.WATER?b!==B.WATER:
-         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)){visible=true;break}
+         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH){visible=true;break}
     }
     if(visible)groups[id].push({x,y,z});
   }
   const dummy=new THREE.Object3D(),built=[];
   for(const key in groups){
     const id=+key,p=groups[id];if(!p.length)continue;
+    if(id===B.TORCH){buildTorchMeshes(p,c,built);continue}
     const geo=isDoor(id)?doorBox:(id===B.BED||id===B.BED_HEAD)?bedBox:box;
     const m=new THREE.InstancedMesh(geo,M[id],p.length);
     m.userData.id=id;
@@ -1985,6 +2079,7 @@ function spawnZombie(){
     if(!isZombieGround(x,z))continue;
     const y=surfaceAt(x,z);
     if(Math.abs(y+.51-player.pos.y)>5.5)continue;
+    if(torchProtectsSpawn(x,y+1,z))continue;
     if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<3.5))continue;
     const g=buildZombie();
     g.position.set(x,y+.51,z);
@@ -3137,6 +3232,11 @@ function finishMine(x,y,z,id){
   const brokeRespawnBed=!!(bedFoot&&bedSpawn&&bedSpawn.x===bedFoot.x&&bedSpawn.y===bedFoot.y&&bedSpawn.z===bedFoot.z);
 
   set(x,y,z,B.AIR);
+  const torchOnTop=get(x,y+1,z)===B.TORCH;
+  if(torchOnTop){
+    set(x,y+1,z,B.AIR);
+    spawnWorldDrop(I.TORCH,1,x,y+1,z,{pickupDelay:.45});
+  }
   if(bedOther)set(bedOther.x,bedOther.y,bedOther.z,B.AIR);
   if(doorOther&&isDoor(get(doorOther.x,doorOther.y,doorOther.z)))
     set(doorOther.x,doorOther.y,doorOther.z,B.AIR);
@@ -3150,10 +3250,11 @@ function finishMine(x,y,z,id){
   if(id===B.DIAMOND)drop=I.DIAMOND;
   if(isBedBlock(id))drop=I.BED;
   if(isDoor(id))drop=I.DOOR;
+  if(id===B.TORCH)drop=I.TORCH;
 
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
-  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR)){
+  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH)){
     const spawnAt=minedDropPosition(x,y,z);
     spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{pickupDelay:.45});
   }
@@ -3272,6 +3373,13 @@ function place(){
   const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);
   if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
 
+  if(selected===I.TORCH){
+    if(!solid(get(x,y-1,z))){
+      flash('松明はブロックの上に設置してください');return;
+    }
+    set(x,y,z,B.TORCH);
+    consumeSelected(1);rebuildEdited({x,z});flash('松明を設置！ 周囲8ブロックが明るくなります');return;
+  }
   if(selected===I.DOOR){
     const baseY=doorSupportedBaseY(x,y,z);
     if(baseY===null){
@@ -3777,6 +3885,7 @@ function loop(now){
     if(player.pos.y<Y_MIN-5&&!dead){health=0;showDeathScreen()}
     streamChunks();
     processChunkStreaming();
+    updateTorchLights(now);
     updatePlayerAvatar(now);
     updateGameCamera();
 
@@ -4133,7 +4242,7 @@ function multiClearAvatars(){
 }
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
-  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.DOOR_Z_OPEN_TOP||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.TORCH||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
   if(get(b.x,b.y,b.z)===b.v)return;
   multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
   finally{multiApplying=false}
@@ -4280,6 +4389,7 @@ async function multiPromoteHost(job){
       if(changed&&loaded)queueMeshNear(loaded.cx,loaded.cz);
     }
   }
+  rebuildTorchIndex();
   multiHostId=job.checkpoint.originId||multiHostId;
   multiHostSlot=job.checkpoint.slot||currentWorldSlot;
   multiWorldKind=job.checkpoint.worldKind==='single'?'single':'multi';
