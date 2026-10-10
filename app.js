@@ -2083,8 +2083,10 @@ function updateRidingHorse(input,dt,running){
   player.vel.set((horse.position.x-prev.x)/Math.max(dt,.001),0,(horse.position.z-prev.z)/Math.max(dt,.001));
   syncRiderToHorse();
 }
+const LARGE_PREDATOR_SCALE=1.5; // Uniform size increase for bison and lions.
 function buildBison(){
   const g=new THREE.Group();
+  g.scale.setScalar(LARGE_PREDATOR_SCALE);
   const brown=0x764728,back=0x95603b,dark=0x4d2e21,deep=0x352219;
   const fur=0x593623,furLite=0x9b6940,horn=0xcfc2a0,tip=0xf0e5cb;
   const nose=0x6b5b4c,nostril=0x211e1c,eye=0x181616;
@@ -2119,6 +2121,7 @@ function buildBison(){
 }
 function buildLion(){
   const g=new THREE.Group();
+  g.scale.setScalar(LARGE_PREDATOR_SCALE);
   const gold=0xc68d4d,light=0xe2ac65,brown=0x874c2b,mane=0x684027;
   const deep=0x442719,cream=0xeac895,eye=0xe5bc43,black=0x251c16,tooth=0xfff3dd;
   cube(g,1.38,.88,1.86,gold,0,1.17,.13);
@@ -2211,8 +2214,17 @@ function mobCollisionShape(m,x,z,angle=m.userData.angle){
     [x,z,.45],[x+fx*.53,z+fz*.53,.42],[x-fx*.63,z-fz*.63,.40],
     [x+fx*1.57,z+fz*1.57,.34,1.90,2.90]
   ];
-  if(type==='bison')return [[x,z,.76],[x+fx*.84,z+fz*.84,.65],[x-fx*.65,z-fz*.65,.62]];
-  if(type==='lion')return [[x,z,.67],[x+fx*.95,z+fz*.95,.49],[x-fx*.73,z-fz*.73,.58]];
+  if(type==='bison'||type==='lion'){
+    const scale=LARGE_PREDATOR_SCALE;
+    // Preserve the original footprint shapes, uniformly scaled with the mesh.
+    const shape=type==='bison'
+      ?[[0,0,.76],[.84,.84,.65],[-.65,-.65,.62]]
+      :[[0,0,.67],[.95,.95,.49],[-.73,-.73,.58]];
+    return shape.map(([offset,unused,r],i)=>{
+      const forwardDistance=(i===0?0:i===1?offset:offset)*scale;
+      return [x+fx*forwardDistance,z+fz*forwardDistance,r*scale];
+    });
+  }
   // Body and projecting head of the three original farm animals.
   return [[x,z,.46],[x+fx*.72,z+fz*.72,.33]];
 }
@@ -2221,7 +2233,8 @@ function mobVerticalBounds(m,rootY=m.position.y){
   // Unlike feet, the larger animals' ears/hump/mane reach well above 2 blocks.
   const foot=rootY+(type==='zombie'?.025:.50);
   const height=type==='zombie'?1.74:type==='horse'?2.40:
-    type==='bison'?2.11:type==='lion'?1.98:1.14;
+    type==='bison'?2.11*LARGE_PREDATOR_SCALE:
+    type==='lion'?1.98*LARGE_PREDATOR_SCALE:1.14;
   return [foot,foot+height];
 }
 function mobCircleTouchesBlock(x,z,r,bx,bz){
@@ -2462,7 +2475,7 @@ function updateDangerousMob(m,dt,now){
   }
   d.angle=Math.atan2(dx,dz);
   m.rotation.y=d.angle+Math.PI;
-  const reach=d.type==='bison'?1.60:1.45;
+  const reach=(d.type==='bison'?1.60:1.45)*LARGE_PREDATOR_SCALE;
   if(dist>reach*.79){
     const speed=d.type==='bison'?3.3:4.5;
     if(!mobWalkStep(m,d.angle,speed*dt)){
