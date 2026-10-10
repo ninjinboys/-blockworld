@@ -2208,7 +2208,7 @@ function buildAnaconda(){
   const g=new THREE.Group();
   const green=0x526d31,dark=0x293b23,olive=0x6e8541;
   const belly=0xc6b783,eye=0xe9d05d,pupil=0x11170c,red=0xb8202b;
-  // Construct ONE water-tight, smooth-looking but low-poly body mesh.
+  // Construct ONE continuous, low-poly body mesh, without separate rings.
   // Vertex colors paint scales, belly and markings directly on the skin:
   // no raised bumps, joints, collars or cubes along the back.
   const vertices=[],colors=[],indices=[];
