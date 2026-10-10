@@ -2216,14 +2216,12 @@ function mobCollisionShape(m,x,z,angle=m.userData.angle){
   ];
   if(type==='bison'||type==='lion'){
     const scale=LARGE_PREDATOR_SCALE;
-    // Preserve the original footprint shapes, uniformly scaled with the mesh.
-    const shape=type==='bison'
-      ?[[0,0,.76],[.84,.84,.65],[-.65,-.65,.62]]
-      :[[0,0,.67],[.95,.95,.49],[-.73,-.73,.58]];
-    return shape.map(([offset,unused,r],i)=>{
-      const forwardDistance=(i===0?0:i===1?offset:offset)*scale;
-      return [x+fx*forwardDistance,z+fz*forwardDistance,r*scale];
-    });
+    // Each collision circle grows and moves along the same axis as the model.
+    const shape=type==='bison'?[[0,.76],[.84,.65],[-.65,.62]]
+      :[[0,.67],[.95,.49],[-.73,.58]];
+    return shape.map(([forwardOffset,r])=>[
+      x+fx*forwardOffset*scale,z+fz*forwardOffset*scale,r*scale
+    ]);
   }
   // Body and projecting head of the three original farm animals.
   return [[x,z,.46],[x+fx*.72,z+fz*.72,.33]];
