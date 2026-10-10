@@ -47,7 +47,7 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -62,7 +62,7 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
@@ -82,7 +82,7 @@ const inventory={
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
@@ -101,7 +101,7 @@ const itemGlyphs={
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢'
 };
 
 const ICON_MAT={
@@ -272,6 +272,17 @@ function drawItemIcon(g,id){
     ir(g,7,7,3,6,'#463c28');ir(g,8,8,1,4,'#f8d568');return;
   }
   if(id===I.TORCH){ir(g,7,6,3,9,'#58391e');ir(g,8,7,1,8,'#c59054');ir(g,6,3,5,5,'#ec7424');ir(g,7,1,3,6,'#ffb431');ir(g,8,0,1,6,'#fff2a1');return}
+  if(id===I.BOW){
+    // Dark curved wood with a taut pale string and grip.
+    pixelLine(g,11,1,5,4,'#58331b',2);pixelLine(g,5,4,4,11,'#a5713c',2);
+    pixelLine(g,4,11,10,15,'#683f21',2);
+    pixelLine(g,11,2,11,14,'#e8dcb6',1);ir(g,4,7,3,3,'#3c271d');return;
+  }
+  if(id===I.ARROW){
+    pixelLine(g,3,13,12,4,'#4b3424',3);pixelLine(g,3,13,12,4,'#af8453',2);
+    poly(g,[[11,1],[15,1],[15,5],[12,6]],'#aab8c4');
+    ir(g,2,10,2,4,'#ece0c0');ir(g,4,12,2,2,'#e6d5a4');return;
+  }
   if(id===I.STICK)return stickIcon(g);
   if(id===I.RAW_IRON)return rawChunkIcon(g,'#8e7569','#c79a81','#624f47');
   if(id===I.RAW_GOLD)return rawChunkIcon(g,'#a88d32','#f0ca45','#6d5a21');
@@ -288,12 +299,14 @@ const recipes=[
   {name:'作業台',out:I.CRAFTING_TABLE,qty:1,needs:[[B.PLANK,4]],unlockLevel:4},
   {name:'木のツルハシ',out:I.WOOD_PICK,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5},
   {name:'木の斧',out:I.WOOD_AXE,qty:1,needs:[[B.PLANK,3],[I.STICK,2]],unlockLevel:5},
-  {name:'松明 ×4',out:I.TORCH,qty:4,needs:[[B.COAL,1],[I.STICK,1]],unlockLevel:3}
+  {name:'松明 ×4',out:I.TORCH,qty:4,needs:[[B.COAL,1],[I.STICK,1]],unlockLevel:3},
+  {name:'矢 ×4',out:I.ARROW,qty:4,needs:[[B.COBBLE,1],[I.STICK,1]],unlockLevel:5}
 ];
 const workbenchRecipes=[
   {name:'ベッド',out:I.BED,qty:1,needs:[[I.WOOL,3],[B.PLANK,3]],unlockLevel:6},
   {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
   {name:'チェスト',out:I.CHEST,qty:1,needs:[[B.PLANK,8]],unlockLevel:6},
+  {name:'弓',out:I.BOW,qty:1,needs:[[I.STICK,3],[I.WOOL,3]],unlockLevel:7},
   {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
   {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7},
   {name:'石の剣',out:I.STONE_SWORD,qty:1,needs:[[B.COBBLE,2],[I.STICK,1]],unlockLevel:6},
@@ -724,6 +737,7 @@ function resetWorldRuntime(){
   resetSprint();
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   equippedArmor.fill(null);applyArmorAppearance(playerAvatar,equippedArmor);
+  clearFlyingArrows();
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   for(const c of chunks.values())removeChunkMeshes(c);
@@ -2932,7 +2946,7 @@ const NON_STACKABLE=new Set([
   I.IRON_HELMET,I.IRON_CHEST,I.IRON_LEGS,I.IRON_BOOTS,
   I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS,
   I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS,
-  I.BED
+  I.BED,I.BOW
 ]);
 function maxStackFor(id){return NON_STACKABLE.has(id)?1:64}
 const ARMOR_NAMES=['頭','胸','脚','足'];
@@ -3228,6 +3242,7 @@ function removeFromSlot(index,qty=1){
 function consumeSelected(qty=1){return removeFromSlot(selectedHotbarIndex,qty)}
 function selectHotbar(index){
   if(eatingHeld)resetEating();
+  if(bowDrawing)endBowDraw(false);
   selectedHotbarIndex=Math.max(0,Math.min(8,index));syncDerivedInventory();renderHotbar();
   if(inventoryOpen)renderInventoryUI();
 }
@@ -3734,6 +3749,112 @@ function dropMobLoot(root){
     spawnWorldDrop(I.LEATHER,1,x+.12,y,z+.08,{scatter:true,pickupDelay:.55});
   }
 }
+// Visual flight effects for the new bow item.
+const flyingArrows=[],BOW_DRAW_MS=900;
+let bowDrawing=false,bowDrawStart=0,bowLastShot=-1000;
+const arrowForward=new THREE.Vector3(0,0,-1);
+function arrowModel(){
+  const m=new THREE.Group();
+  cube(m,.045,.045,.7,0x986337,0,0,.04);
+  cube(m,.14,.13,.15,0xbec6cc,0,0,-.38);
+  cube(m,.13,.025,.17,0xe8e1c8,0,.06,.34);
+  cube(m,.025,.13,.17,0xdce0df,0,0,.34);
+  return m;
+}
+function removeFlyingArrow(index){
+  const shot=flyingArrows[index];if(!shot)return;
+  scene.remove(shot.model);
+  shot.model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});
+  flyingArrows.splice(index,1);
+}
+function clearFlyingArrows(){
+  while(flyingArrows.length)removeFlyingArrow(flyingArrows.length-1);
+  bowDrawing=false;bowDrawStart=0;
+}
+function spawnFlyingArrow(origin,direction,power=1,visualOnly=false){
+  const vec=new THREE.Vector3(direction.x,direction.y,direction.z);
+  if(![origin.x,origin.y,origin.z,vec.x,vec.y,vec.z,power].every(Number.isFinite)||vec.lengthSq()<.5)return false;
+  vec.normalize();if(flyingArrows.length>=36)removeFlyingArrow(0);
+  const model=arrowModel(),velocity=vec.multiplyScalar(14+17*Math.max(.15,Math.min(1,power)));
+  model.position.set(origin.x,origin.y,origin.z);
+  model.quaternion.setFromUnitVectors(arrowForward,velocity.clone().normalize());
+  scene.add(model);
+  flyingArrows.push({model,velocity,age:0,power,visualOnly});
+  return true;
+}
+function updateFlyingArrows(dt){
+  for(let i=flyingArrows.length-1;i>=0;i--){
+    const shot=flyingArrows[i];shot.age+=dt;
+    if(shot.age>5.5){removeFlyingArrow(i);continue}
+    shot.velocity.y-=10.5*dt;
+    const position=shot.model.position.clone();
+    const motion=shot.velocity.clone().multiplyScalar(dt);
+    const steps=Math.max(1,Math.ceil(motion.length()/.18));
+    const step=motion.divideScalar(steps);
+    let stopped=false;
+    for(let j=0;j<steps;j++){
+      position.add(step);
+      if(position.y<Y_MIN||position.y>WORLD_TOP+2){stopped=true;break}
+      if(solid(get(Math.round(position.x),Math.round(position.y),Math.round(position.z)))){stopped=true;break}
+      if(!shot.visualOnly&&arrowHitNearbyMob(position,shot.power)){stopped=true;break}
+    }
+    if(stopped){removeFlyingArrow(i);continue}
+    shot.model.position.copy(position);
+    shot.model.quaternion.setFromUnitVectors(arrowForward,shot.velocity.clone().normalize());
+  }
+}
+function arrowHitNearbyMob(point,power){
+  for(const m of mobs){
+    if(m.userData.hp<=0)continue;
+    const [bottom,top]=mobVerticalBounds(m);
+    if(point.y<bottom-.1||point.y>top+.1)continue;
+    for(const [x,z,r,low,high] of mobCollisionShape(m,m.position.x,m.position.z)){
+      if(low!=null&&point.y<m.position.y+low-.1)continue;
+      if(high!=null&&point.y>m.position.y+high+.1)continue;
+      const dx=point.x-x,dz=point.z-z;
+      if(dx*dx+dz*dz>(r+.10)*(r+.10))continue;
+      damageMob(m,Math.max(1,Math.round(2+4*power)));
+      return true;
+    }
+  }
+  return false;
+}
+function updateBowDraw(now){
+  if(!bowDrawing)return;
+  if(!started||dead||selected!==I.BOW){endBowDraw(false);return}
+  const pct=Math.min(100,(now-bowDrawStart)/BOW_DRAW_MS*100);
+  breakLabel.textContent='弓 '+Math.floor(pct)+'%（離すと発射）';
+  breakFill.style.width=pct+'%';
+  breakMeter.classList.add('active');
+}
+function startBowDraw(){
+  if(bowDrawing)return;
+  if((inventory[I.ARROW]||0)<1){flash('矢がありません。クラフトで作れます');return}
+  bowDrawing=true;bowDrawStart=performance.now();
+  updateBowDraw(bowDrawStart);
+}
+function endBowDraw(fire=false){
+  if(!bowDrawing)return;
+  const duration=performance.now()-bowDrawStart;
+  bowDrawing=false;bowDrawStart=0;
+  clearMining();
+  if(!fire||selected!==I.BOW||dead||!started||craftOpen||inventoryOpen||chestOpen)return;
+  const now=performance.now();
+  if(now-bowLastShot<230)return;
+  if((inventory[I.ARROW]||0)<1){flash('矢がありません');return}
+  aimPlayerRay();
+  const origin=gameplayAimOrigin.clone().addScaledVector(gameplayAimDirection,.65);
+  origin.y-=.08;
+  const power=Math.max(.2,Math.min(1,duration/BOW_DRAW_MS));
+  if(removeItem(I.ARROW,1)!==0){flash('矢がありません');return}
+  bowLastShot=now;
+  spawnFlyingArrow(origin,gameplayAimDirection,power);
+  if(multiRole&&multiplayerNetwork.connected){
+    multiplayerNetwork.send({t:'arrowShot',x:origin.x,y:origin.y,z:origin.z,
+      dx:gameplayAimDirection.x,dy:gameplayAimDirection.y,dz:gameplayAimDirection.z,
+      power,id:multiOwnId()});
+  }
+}
 function attackMob(){
   aimPlayerRay();
   const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
@@ -3743,6 +3864,11 @@ function attackMob(){
   if(!mobs.includes(root))return false;
 
   const damage=selected===I.DIAMOND_SWORD?4:selected===I.IRON_SWORD?3:selected===I.GOLD_SWORD?2:selected===I.STONE_SWORD?2:1;
+  damageMob(root,damage);
+  return true;
+}
+function damageMob(root,damage){
+  if(!root||!mobs.includes(root)||root.userData.hp<=0)return;
   root.userData.hp-=damage;
   setMobHitFlash(root);
   if(root.userData.type==='bison'||root.userData.type==='lion'){
@@ -3815,10 +3941,15 @@ function updateEating(dt){
 }
 function primaryActionStart(){
   if(!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
+  if(selected===I.BOW){startBowDraw();return}
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
 }
-function primaryActionStop(){eatingHeld=false;eatingElapsed=0;eatingStartedAt=0;eatingSlot=-1;eatingItem=null;miningHeld=false;clearMining()}
+function primaryActionStop(fire=false){
+  endBowDraw(fire);
+  eatingHeld=false;eatingElapsed=0;eatingStartedAt=0;eatingSlot=-1;eatingItem=null;
+  miningHeld=false;clearMining();
+}
 
 function renderHotbar(){
   syncDerivedInventory();hotbarEl.innerHTML='';
@@ -3995,7 +4126,7 @@ function jump(){
 renderer.domElement.addEventListener('click',()=>{if(!dead&&!craftOpen&&!inventoryOpen&&!chestOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
 renderer.domElement.addEventListener('mousedown',e=>{if(!started||dead||craftOpen||inventoryOpen||chestOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
-addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop()});
+addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop(true)});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 let touchLook=null;
@@ -4034,7 +4165,7 @@ const jumpBtn=document.querySelector('.jump');
 jumpBtn.addEventListener('pointerdown',e=>{e.preventDefault();keys.swimup=true;jump()});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>jumpBtn.addEventListener(t,e=>{e.preventDefault();keys.swimup=false}));
 $('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();primaryActionStart()});
-['pointerup','pointercancel','pointerleave'].forEach(t=>$('tapMine').addEventListener(t,e=>{e.preventDefault();primaryActionStop()}));
+['pointerup','pointercancel','pointerleave'].forEach(t=>$('tapMine').addEventListener(t,e=>{e.preventDefault();primaryActionStop(t==='pointerup')}));
 $('tapPlace').addEventListener('pointerdown',e=>{e.preventDefault();place()});
 $('tapInventory').addEventListener('pointerdown',e=>{e.preventDefault();setInventoryOpen(true)});
 $('tapCraft').addEventListener('pointerdown',e=>{e.preventDefault();setCraftOpen(true)});
@@ -4104,6 +4235,7 @@ function loop(now){
     updateStaminaRecovery(dt,activelySprinting);
   }
   if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen){
+    updateBowDraw(now);
     updateMining(dt);
     updateEating(dt);
     if(multiRole!=='guest')advanceDayTime(dt);
@@ -4205,6 +4337,7 @@ function loop(now){
       }
     });
 
+    updateFlyingArrows(dt);
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');
@@ -4544,6 +4677,16 @@ function handleGuestChestTransfer(message,peerId,from){
   multiplayerNetwork.send(result,peerId);
 }
 function chestValidItemId(id){return Number.isInteger(id)&&Object.hasOwn(inventory,id)}
+function validArrowPacket(p){
+  if(!p||![p.x,p.y,p.z,p.dx,p.dy,p.dz,p.power].every(Number.isFinite))return false;
+  if(Math.abs(p.x)>1000000||Math.abs(p.z)>1000000||p.y<Y_MIN-2||p.y>WORLD_TOP+5)return false;
+  const sq=p.dx*p.dx+p.dy*p.dy+p.dz*p.dz;
+  return sq>.8&&sq<1.2&&p.power>=.15&&p.power<=1;
+}
+function showRemoteArrow(p){
+  if(!validArrowPacket(p)||p.id===multiOwnId())return;
+  spawnFlyingArrow({x:p.x,y:p.y,z:p.z},{x:p.dx,y:p.dy,z:p.dz},p.power,true);
+}
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
   if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.CHEST||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
@@ -4816,11 +4959,18 @@ function multiRoomData(message,peerId){
       multiMembers[from.id]={...message.profile,name:from.name};markSaveDirty();
     }else if(message.t==='chestTransfer'){
       handleGuestChestTransfer(message,peerId,from);
+    }else if(message.t==='arrowShot'&&validArrowPacket(message)){
+      const p=from.player;
+      if(p&&Math.hypot(message.x-p.x,message.y-p.y,message.z-p.z)<5){
+        const event={...message,id:from.id};
+        showRemoteArrow(event);multiplayerNetwork.send(event);
+      }
     }else if(message.t==='block'){multiApplyBlock(message);multiplayerNetwork.send(message)}
     else if(message.t==='dropAdd'||message.t==='dropRemove'){multiApplyDrop(message);multiplayerNetwork.send(message)}
   }else{
     if(message.t==='pose')multiShowAvatar(message.id,message.player);
     if(message.t==='block')multiApplyBlock(message);
+    if(message.t==='arrowShot')showRemoteArrow(message);
     if(message.t==='chestState'&&[message.x,message.y,message.z].every(Number.isInteger))
       chestApplyState(message.x,message.y,message.z,message.slots);
     if(message.t==='chestResult')chestReceiveResult(message);
