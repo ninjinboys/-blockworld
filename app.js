@@ -2154,6 +2154,79 @@ function buildLion(){
   return g;
 }
 
+// A rare giant anaconda. Local -Z is the head; snout to tail measures
+// about eight blocks. Broad shoulders, flattened head, raised neck, olive
+// patchwork, pale belly, golden eyes and a short red forked tongue.
+const ANACONDA_BODY=[
+  // x (sideways S-curve), z (head to tail), width, height, depth, center Y
+  [-.03,-2.40,.86,.69,.92,1.23],
+  [-.11,-1.63,1.00,.85,.96,1.08],
+  [-.25,-.85,1.14,.98,.98,1.04],
+  [-.12,-.07,1.20,1.01,.99,1.04],
+  [ .17, .71,1.18,1.00,.98,1.01],
+  [ .28,1.49,1.12,.96,.96,.98],
+  [ .16,2.27,.92,.82,.90,.90],
+  [-.12,3.02,.70,.65,.76,.82],
+  [-.25,3.57,.45,.44,.61,.75],
+  [-.25,3.93,.22,.24,.48,.70]
+];
+function buildAnaconda(){
+  const g=new THREE.Group(),olive=0x4b6630,darkOlive=0x354a27;
+  const green=0x6b8541,highlights=0x8b9d57,belly=0xc3ab74;
+  const spot=0x27341f,eye=0xe8cd50,pupil=0x161d11,red=0x9d2427;
+  const segments=[];
+  ANACONDA_BODY.forEach(([x,z,w,h,depth,y],i)=>{
+    const piece=new THREE.Group();
+    piece.position.set(x,0,z);
+    const primary=i%3===0?darkOlive:i%3===1?olive:green;
+    cube(piece,w,h,depth,primary,0,y,0);
+    // Flat pale belly band and ridged olive-green back.
+    cube(piece,w*.83,.13,depth*.94,belly,0,y-h*.46,0);
+    cube(piece,w*.69,.075,depth*.74,highlights,0,y+h*.46,0);
+    if(i<9){
+      for(const side of [-1,1]){
+        cube(piece,w*(i<7?.28:.23),.09,depth*.31,spot,
+          side*w*.21,y+h*.50,(i%2?-.12:.12));
+        cube(piece,.075,Math.min(.30,h*.35),depth*.23,darkOlive,
+          side*w*.48,y+.04,(i%3-1)*.13);
+      }
+    }
+    g.add(piece);segments.push({mesh:piece,baseX:x,phase:i*.65});
+  });
+  // Rising neck and distinct wedge-shaped head with a lower jaw.
+  cube(g,.82,.84,.77,olive,-.04,1.35,-2.66,-.16);
+  cube(g,.85,.26,.66,belly,-.04,1.06,-2.70,-.14);
+  cube(g,.99,.60,1.13,darkOlive,0,1.79,-3.12);
+  cube(g,.93,.24,.83,belly,0,1.49,-3.28);
+  cube(g,.91,.24,.55,green,0,1.90,-3.45);
+  cube(g,.89,.075,.44,spot,0,1.64,-3.47);
+  // Yellow eyes with pupils visible from either side of the head.
+  for(const side of [-1,1]){
+    cube(g,.105,.19,.21,eye,side*.49,1.99,-3.24);
+    cube(g,.04,.115,.075,pupil,side*.551,2.00,-3.27);
+    cube(g,.09,.055,.08,spot,side*.23,1.90,-3.73);
+  }
+  // Forked red tongue does not change the overall eight-block silhouette.
+  cube(g,.10,.045,.20,red,0,1.63,-3.70);
+  cube(g,.052,.04,.13,red,-.075,1.63,-3.77,0,-.24);
+  cube(g,.052,.04,.13,red,.075,1.63,-3.77,0,.24);
+  g.userData.snakeSegments=segments;
+  return g;
+}
+function animateAnaconda(m,dt,now,moving){
+  const parts=m.userData.snakeSegments;
+  if(!parts)return;
+  const target=moving?.085:.014;
+  const intensity=m.userData.snakeSway||0;
+  m.userData.snakeSway=intensity+(target-intensity)*Math.min(1,dt*7);
+  for(let i=0;i<parts.length;i++){
+    const p=parts[i];
+    // Small visual-only undulation: body remains inside its collision rings.
+    const offset=Math.sin(now*.0065-p.phase+m.userData.phase)*(i/parts.length);
+    p.mesh.position.x=p.baseX+offset*m.userData.snakeSway;
+  }
+}
+
 // Night-time hostile mob: a green version of the player silhouette.
 // Face points along local -Z. Both arms are kept in front, even while moving.
 const ZOMBIE_LIMIT=7,ZOMBIE_AGGRO_RANGE=28,ZOMBIE_ATTACK_RANGE=1.35;
@@ -2214,6 +2287,23 @@ function mobCollisionShape(m,x,z,angle=m.userData.angle){
     [x,z,.45],[x+fx*.53,z+fz*.53,.42],[x-fx*.63,z-fz*.63,.40],
     [x+fx*1.57,z+fz*1.57,.34,1.90,2.90]
   ];
+  if(type==='anaconda'){
+    // Small oriented circles follow the complete eight-block S-shaped body.
+    // Local sideways offsets match the visual body; the added clearance
+    // covers its subtle animated sway. The taller head is a separate ring.
+    const rings=[
+      [3.15,0,.57,2.16],[2.67,-.04,.53,1.80],
+      ...ANACONDA_BODY.map(([side,z,width,height,depth,y])=>[
+        -z,side,Math.max(width*.5,depth*.5)+.13,y+height*.5+.04
+      ])
+    ];
+    const rx=Math.cos(direction);
+    return rings.map(([forwardOffset,sideOffset,r,top])=>[
+      x+fx*forwardOffset-rx*sideOffset,
+      z+fz*forwardOffset+fx*sideOffset,
+      r,undefined,top
+    ]);
+  }
   if(type==='bison'||type==='lion'){
     const scale=LARGE_PREDATOR_SCALE;
     // Each collision circle grows and moves along the same axis as the model.
@@ -2232,7 +2322,8 @@ function mobVerticalBounds(m,rootY=m.position.y){
   const foot=rootY+(type==='zombie'?.025:.50);
   const height=type==='zombie'?1.74:type==='horse'?2.40:
     type==='bison'?2.11*LARGE_PREDATOR_SCALE:
-    type==='lion'?1.98*LARGE_PREDATOR_SCALE:1.14;
+    type==='lion'?1.98*LARGE_PREDATOR_SCALE:
+    type==='anaconda'?1.67:1.14;
   return [foot,foot+height];
 }
 function mobCircleTouchesBlock(x,z,r,bx,bz){
@@ -2456,39 +2547,45 @@ function updateZombie(m,dt,now){
   }
 }
 
-// Bison are neutral until struck; lions notice players within six blocks.
-// Both deal five health points (2.5 hearts) per hit and never clip through walls.
+// Bison fight back; lions and giant anacondas actively hunt nearby players.
+// Anacondas bite using their raised HEAD, not their distant body center.
 function updateDangerousMob(m,dt,now){
   const d=m.userData,dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
   const dist=Math.hypot(dx,dz),heightDiff=Math.abs(player.pos.y-m.position.y);
+  const snake=d.type==='anaconda';
   d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
-  if(d.type==='lion'&&dist<=6&&heightDiff<3)d.hostile=true;
+  if((d.type==='lion'&&dist<=6&&heightDiff<3)||
+     (snake&&dist<=9&&heightDiff<2.8))d.hostile=true;
   if(!d.hostile)return false;
-  const chaseRadius=d.type==='lion'?17:24;
+  const chaseRadius=snake?22:d.type==='lion'?17:24;
   if(dist>chaseRadius||heightDiff>4){
-    // Remain angry if a bison was hit, but wait for a reachable player.
-    // Lions eventually calm down after a long escape.
-    if(d.type==='lion'&&dist>chaseRadius)d.hostile=false;
+    if((d.type==='lion'||snake)&&dist>chaseRadius)d.hostile=false;
     return false;
   }
   d.angle=Math.atan2(dx,dz);
   m.rotation.y=d.angle+Math.PI;
-  const reach=(d.type==='bison'?1.60:1.45)*LARGE_PREDATOR_SCALE;
-  if(dist>reach*.79){
-    const speed=d.type==='bison'?3.3:4.5;
+  const reach=snake?1.25:(d.type==='bison'?1.60:1.45)*LARGE_PREDATOR_SCALE;
+  // Only the head has fangs; the tail cannot deliver an attack.
+  const headDist=()=>snake?Math.hypot(
+    player.pos.x-(m.position.x+Math.sin(d.angle)*3.15),
+    player.pos.z-(m.position.z+Math.cos(d.angle)*3.15)
+  ):dist;
+  if(headDist()>reach*(snake?1:.79)){
+    const speed=snake?2.9:d.type==='bison'?3.3:4.5;
     if(!mobWalkStep(m,d.angle,speed*dt)){
-      // Don't walk through a house wall: skirt around it instead.
+      // Work around rocks and player-built walls; do not phase through them.
       if(!mobWalkStep(m,d.angle+Math.PI/2,speed*dt))
         mobWalkStep(m,d.angle-Math.PI/2,speed*dt);
     }
   }
-  if(dist<=reach&&heightDiff<2.1&&d.attackCooldown<=0){
-    d.attackCooldown=d.type==='bison'?1.5:1.3;
-    damagePlayer(5,d.type==='bison'?'バイソンの突進':'ライオンの攻撃');
+  if(headDist()<=reach&&heightDiff<(snake?2.65:2.1)&&d.attackCooldown<=0){
+    d.attackCooldown=snake?1.6:d.type==='bison'?1.5:1.3;
+    damagePlayer(5,snake?'オオアナコンダの噛みつき':d.type==='bison'?'バイソンの突進':'ライオンの攻撃');
   }
   return true;
 }
 function animateWildMob(m,dt,now,moving){
+  if(m.userData.type==='anaconda'){animateAnaconda(m,dt,now,moving);return}
   const legs=m.userData.walkLegs;
   if(!legs?.length)return;
   const speed=m.userData.fleeTime>0?2.1:m.userData.hostile?1.9:1;
@@ -2505,10 +2602,13 @@ const MOB_SPAWN_WEIGHTS=[
   {type:2,weight:24},      // cow: common
   {type:'horse',weight:18},// horse: a little rarer than normal farm animals
   {type:'bison',weight:5}, // bison: rare, dangerous if provoked
-  {type:'lion',weight:5}   // lion: rare, attacks within six blocks
+  {type:'lion',weight:5},  // lion: rare, attacks within six blocks
+  {type:'anaconda',weight:5} // giant anaconda: the same rare tier
 ];
 function chooseWildMob(){
-  let roll=Math.random()*100;
+  // Normalize against the actual total: adding a fifth-weight snake must
+  // never make the final entry unreachable (old hardcoded total was 100).
+  let roll=Math.random()*MOB_SPAWN_WEIGHTS.reduce((n,e)=>n+e.weight,0);
   for(const entry of MOB_SPAWN_WEIGHTS){
     roll-=entry.weight;
     if(roll<0)return entry.type;
@@ -2527,17 +2627,18 @@ function spawnPassiveMob(){
 
   const type=chooseWildMob();
   const g=type===0?buildSheep():type===1?buildPig():type===2?buildCow():
-    type==='horse'?buildHorse():type==='bison'?buildBison():buildLion();
+    type==='horse'?buildHorse():type==='bison'?buildBison():
+    type==='lion'?buildLion():buildAnaconda();
   g.position.set(x,h+.04,z);
   g.userData={
     ...g.userData,
     angle:hash2(x,z)*Math.PI*2,
     t:2+hash2(z,x)*3,
-    speed:type==='horse'?.70:type==='bison'?.28:type==='lion'?.38:.22+hash2(x+4,z+2)*.24,
-    hp:type==='horse'?10:type==='bison'||type==='lion'?30:type===2?5:3,
-    xp:type==='horse'?24:type==='bison'?85:type==='lion'?90:type===2?18:type===1?14:12,
+    speed:type==='horse'?.70:type==='bison'?.28:type==='lion'?.38:type==='anaconda'?.31:.22+hash2(x+4,z+2)*.24,
+    hp:type==='horse'?10:type==='bison'||type==='lion'||type==='anaconda'?30:type===2?5:3,
+    xp:type==='horse'?24:type==='bison'?85:type==='lion'?90:type==='anaconda'?90:type===2?18:type===1?14:12,
     name:type===0?'ヒツジ':type===1?'ブタ':type===2?'ウシ':
-      type==='horse'?'馬':type==='bison'?'バイソン':'ライオン',
+      type==='horse'?'馬':type==='bison'?'バイソン':type==='lion'?'ライオン':'オオアナコンダ',
     type,
     hostile:false,attackCooldown:0,chaseTime:0,phase:Math.random()*Math.PI*2
   };
@@ -3933,7 +4034,7 @@ function dropMobLoot(root){
   const x=root.position.x,y=root.position.y+.75,z=root.position.z;
   const type=root.userData.type;
   if(type==='zombie')return; // Zombie kills grant XP; no animal meat drops.
-  if(type==='horse'||type==='lion'){
+  if(type==='horse'||type==='lion'||type==='anaconda'){
     spawnWorldDrop(I.LEATHER,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
     return;
   }
@@ -4068,7 +4169,7 @@ function damageMob(root,damage){
   if(!root||!mobs.includes(root)||root.userData.hp<=0)return;
   root.userData.hp-=damage;
   setMobHitFlash(root);
-  if(root.userData.type==='bison'||root.userData.type==='lion'){
+  if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'){
     root.userData.hostile=true;
     root.userData.attackCooldown=Math.max(root.userData.attackCooldown||0,.45);
   }else if(root.userData.type!=='zombie')makeMobFlee(root);
@@ -4519,7 +4620,7 @@ function loop(now){
         animateWildMob(m,dt,now,m===ridingHorse&&!!m.userData.ridingMoved);
         return;
       }
-      if((m.userData.type==='lion'||m.userData.type==='bison')&&updateDangerousMob(m,dt,now)){
+      if((m.userData.type==='lion'||m.userData.type==='bison'||m.userData.type==='anaconda')&&updateDangerousMob(m,dt,now)){
         animateWildMob(m,dt,now,true);
         return;
       }
