@@ -830,3 +830,38 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 /* Tap inventory armor, then the highlighted equipment destination. */
 .armor-slot.equip-target{background:#d3efc2;border-color:#467e39;box-shadow:inset 2px 2px 0 #efffe3,inset -2px -2px 0 #7caa65,0 0 0 2px #6fc64d}
 .armor-slot.equip-target:active{background:#b2dba0}
+
+/* 27-slot world chest. Compact enough for landscape iPad Safari. */
+#chestScreen{position:fixed;inset:0;z-index:32;display:none;align-items:center;
+  justify-content:center;background:rgba(0,0,0,.62);padding:10px;pointer-events:auto}
+#chestScreen.open{display:flex}
+.chest-panel{width:min(675px,96vw);max-height:94dvh;overflow:auto;padding:12px;
+  background:#c5c5c5;color:#242424;border:4px solid #383838;
+  box-shadow:inset 3px 3px 0 #eee,inset -3px -3px 0 #777,0 14px 42px rgba(0,0,0,.5);
+  text-shadow:none}
+.chest-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.chest-title{font:900 23px/1.3 monospace;letter-spacing:.04em}
+.chest-sub{font:700 11px monospace;color:#555}
+#chestClose{width:38px;height:38px;flex:none;font:900 23px monospace;
+  border:3px solid #555;background:#9a9a9a;color:#292929;touch-action:manipulation}
+.chest-row-title{display:flex;justify-content:space-between;font:900 12px monospace;
+  margin:12px 0 5px;color:#454545}
+.chest-row-title span{color:#6b6b6b;font:700 10px monospace}
+.chest-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}
+.chest-grid .inv-slot{min-height:0;aspect-ratio:1/1}
+.chest-grid .inv-slot:disabled{opacity:1}
+.chest-grid .inv-slot.chest-busy{opacity:.55}
+.chest-grid .item-icon{image-rendering:pixelated}
+.chest-footer{display:flex;align-items:center;gap:12px;margin-top:12px}
+#chestSingle{flex:none;border:3px solid #555;background:#b7bd9b;color:#242424;
+  padding:9px 10px;font:900 11px monospace;touch-action:manipulation}
+#chestHint{font:700 11px monospace;color:#4d4d4d;line-height:1.45}
+@media(max-width:760px),(pointer:coarse){
+ .chest-panel{padding:9px}
+ .chest-grid{gap:3px}
+ .chest-grid .inv-slot{border-width:2px}
+ .chest-title{font-size:20px}
+ .chest-row-title{margin:8px 0 4px}
+ .chest-footer{gap:8px;margin-top:9px}
+ #chestHint{font-size:10px}
+}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78aee0">
 <title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261009armorTap1">
+<link rel="stylesheet" href="style.css?v=20261010chest1">
 </head>
 <body>
 <div id="game"></div>
@@ -151,6 +151,23 @@
     <div class="inventory-help">防具をタップして、上の対応する装備欄をタップでも装着できます。「装備」ボタンも使用可能。選択していない場合は、装備欄をタップすると外せます。</div>
   </div>
 </div>
+<div id="chestScreen" aria-hidden="true">
+  <div class="chest-panel" role="dialog" aria-label="チェスト収納">
+    <div class="chest-header">
+      <div><div class="chest-title">📦 CHEST</div>
+        <div class="chest-sub">チェスト：27マス ／ タップで収納・取り出し</div></div>
+      <button id="chestClose" type="button" aria-label="チェストを閉じる">×</button>
+    </div>
+    <div class="chest-row-title">チェストの中 <span>9 × 3</span></div>
+    <div id="chestGrid" class="chest-grid" aria-label="チェストの27スロット"></div>
+    <div class="chest-row-title">自分の持ち物 <span>9 × 4</span></div>
+    <div id="chestBagGrid" class="chest-grid chest-bag-grid" aria-label="プレイヤーの36スロット"></div>
+    <div class="chest-footer">
+      <button id="chestSingle" type="button">1個ずつ：OFF</button>
+      <span id="chestHint">持ち物をタップすると収納できます</span>
+    </div>
+  </div>
+</div>
 <div id="crafting" aria-hidden="true">
   <div class="craft-panel">
     <div class="craft-head">
@@ -213,6 +230,6 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261010torches1"></script>
+<script type="module" src="app.js?v=20261010chest1"></script>
 </body>
 </html>

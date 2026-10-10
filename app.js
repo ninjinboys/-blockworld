@@ -34,7 +34,7 @@ scene.add(sunBox,moonBox);
 const CHUNK=16,RENDER_RADIUS=3,Y_MIN=-80,WORLD_TOP=47,HEIGHT=WORLD_TOP-Y_MIN+1,SEA=11;
 // Terrain height uses the old 48-block world cap so existing landscapes stay unchanged.
 const TERRAIN_HEIGHT=48;
-const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30,TORCH:31};
+const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30,TORCH:31,CHEST:32};
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
   RAW_IRON:106,RAW_GOLD:107,IRON_INGOT:108,GOLD_INGOT:109,DIAMOND:110,
@@ -47,7 +47,7 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -62,13 +62,13 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
-const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH};
-const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH};
+const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH,[I.CHEST]:B.CHEST};
+const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST};
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
   [I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0,
@@ -82,7 +82,7 @@ const inventory={
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
@@ -101,7 +101,7 @@ const itemGlyphs={
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱'
 };
 
 const ICON_MAT={
@@ -265,6 +265,12 @@ function drawItemIcon(g,id){
     return;
   }
   if(id===I.DOOR){ir(g,5,1,7,14,'#57361e');ir(g,6,2,5,12,'#aa703a');ir(g,7,3,3,4,'#d2a06a');ir(g,7,8,3,4,'#835129');ir(g,10,8,1,1,'#ffdc83');return}
+  if(id===I.CHEST){
+    ir(g,2,5,12,9,'#352216');ir(g,3,6,10,7,'#9c632e');
+    ir(g,3,5,10,3,'#cb8c46');ir(g,4,6,8,1,'#edb66c');
+    ir(g,2,12,12,2,'#48301e');ir(g,3,9,10,1,'#6b411f');
+    ir(g,7,7,3,6,'#463c28');ir(g,8,8,1,4,'#f8d568');return;
+  }
   if(id===I.TORCH){ir(g,7,6,3,9,'#58391e');ir(g,8,7,1,8,'#c59054');ir(g,6,3,5,5,'#ec7424');ir(g,7,1,3,6,'#ffb431');ir(g,8,0,1,6,'#fff2a1');return}
   if(id===I.STICK)return stickIcon(g);
   if(id===I.RAW_IRON)return rawChunkIcon(g,'#8e7569','#c79a81','#624f47');
@@ -287,6 +293,7 @@ const recipes=[
 const workbenchRecipes=[
   {name:'ベッド',out:I.BED,qty:1,needs:[[I.WOOL,3],[B.PLANK,3]],unlockLevel:6},
   {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
+  {name:'チェスト',out:I.CHEST,qty:1,needs:[[B.PLANK,8]],unlockLevel:6},
   {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
   {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7},
   {name:'石の剣',out:I.STONE_SWORD,qty:1,needs:[[B.COBBLE,2],[I.STICK,1]],unlockLevel:6},
@@ -333,13 +340,73 @@ const hardness={
   [B.STONE]:3.0,[B.COBBLE]:3.4,[B.COAL]:3.5,[B.IRON]:4.2,[B.GOLD]:4.0,[B.DIAMOND]:5.0,[B.FURNACE]:3.8,
   [B.DOOR_X]:1.4,[B.DOOR_X_TOP]:1.4,[B.DOOR_X_OPEN]:1.4,[B.DOOR_X_OPEN_TOP]:1.4,
   [B.DOOR_Z]:1.4,[B.DOOR_Z_TOP]:1.4,[B.DOOR_Z_OPEN]:1.4,[B.DOOR_Z_OPEN_TOP]:1.4,
-  [B.TORCH]:.15,
+  [B.TORCH]:.15,[B.CHEST]:2.5,
   [B.BEDROCK]:Infinity
 };
 const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE]);
 
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
+// 27 slots per chest, indexed by world position and saved alongside edits.
+const CHEST_SIZE=27,chestContents=new Map();
+let chestOpen=false,chestLocation=null,chestOneAtATime=false,chestPending=null,chestRequestId=0;
+const chestKey=(x,y,z)=>x+','+y+','+z;
+function normalizedChest(raw){
+  return Array.from({length:CHEST_SIZE},(_,i)=>{
+    const st=Array.isArray(raw)?raw[i]:null,id=Number(st?.id),qty=Number(st?.qty);
+    return st&&Number.isInteger(id)&&Object.hasOwn(inventory,id)&&Number.isInteger(qty)&&qty>0?{id,qty:Math.min(qty,maxStackFor(id))}:null;
+  });
+}
+function chestSlots(x,y,z){
+  const k=chestKey(x,y,z);
+  if(!chestContents.has(k))chestContents.set(k,Array(CHEST_SIZE).fill(null));
+  return chestContents.get(k);
+}
+function serializeChests(){
+  return [...chestContents].filter(([k])=>{
+    const xyz=k.split(',').map(Number);
+    return xyz.length===3&&xyz.every(Number.isInteger)&&get(...xyz)===B.CHEST;
+  }).map(([k,slots])=>[k,slots.map(st=>st?{...st}:null)]);
+}
+function restoreChests(raw){
+  chestContents.clear();
+  if(!Array.isArray(raw))return;
+  for(const pair of raw.slice(0,2048)){
+    if(!Array.isArray(pair)||pair.length!==2||typeof pair[0]!=='string')continue;
+    const xyz=pair[0].split(',').map(Number);
+    if(xyz.length===3&&xyz.every(Number.isInteger)&&get(...xyz)===B.CHEST)
+      chestContents.set(chestKey(...xyz),normalizedChest(pair[1]));
+  }
+}
+function chestCapacity(slots,id){
+  return slots.reduce((n,st)=>n+(!st?maxStackFor(id):st.id===id?Math.max(0,maxStackFor(id)-st.qty):0),0);
+}
+function chestAdd(slots,id,count){
+  let remain=Math.max(0,Math.min(64,Math.floor(count))),requested=remain;
+  for(const st of slots){
+    if(!st||st.id!==id||st.qty>=maxStackFor(id))continue;
+    const n=Math.min(remain,maxStackFor(id)-st.qty);st.qty+=n;remain-=n;if(!remain)break;
+  }
+  while(remain>0){
+    const i=slots.findIndex(st=>!st);if(i<0)break;
+    const n=Math.min(remain,maxStackFor(id));slots[i]={id,qty:n};remain-=n;
+  }
+  return requested-remain;
+}
+function chestTake(slots,index,count){
+  const st=slots[index];if(!st)return null;
+  const n=Math.min(st.qty,Math.max(0,Math.floor(count)));if(!n)return null;
+  const result={id:st.id,qty:n};st.qty-=n;if(!st.qty)slots[index]=null;return result;
+}
+const chestSpill=(x,y,z)=>(chestContents.get(chestKey(x,y,z))||[]).filter(Boolean).map(st=>({...st}));
+const chestIsOpenAt=(x,y,z)=>chestOpen&&chestLocation?.key===chestKey(x,y,z);
+function chestApplyState(x,y,z,raw){
+  if(get(x,y,z)!==B.CHEST)return false;
+  chestContents.set(chestKey(x,y,z),normalizedChest(raw));markSaveDirty();
+  if(chestIsOpenAt(x,y,z))renderChestUI();
+  return true;
+}
+
 let streamCX=NaN,streamCZ=NaN;
 let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=5;
 let multiRole=null,multiHostSlot=null,multiHostId='',multiBusy=false,multiApplying=false,multiMembers={};
@@ -540,7 +607,7 @@ function makeSaveData(){
     equippedArmor:[...equippedArmor],
     worldDrops:serializeWorldDrops(),
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
-    edits:serializeEdits()
+    edits:serializeEdits(),chests:serializeChests()
   };
 }
 function saveCurrentGame(showMessage=false){
@@ -632,6 +699,7 @@ function applySaveData(data){
   restoreEdits(data.edits,Number(data.version)||3);
   const correctedDoors=repairFloatingDoorsOnLoad();
   if(correctedDoors)console.info('BLOCKWORLD: corrected '+correctedDoors+' floating door(s) in saved world.');
+  restoreChests(data.chests);
   restoreWorldDrops(data.worldDrops);
 
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
@@ -666,7 +734,8 @@ function resetWorldRuntime(){
     else scene.remove(m);
   }
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;nightZombieWaveStarted=false;
-  clearWorldDrops();
+  clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
+  $('chestScreen').classList.remove('open');
   chunks.clear();torchLocations.clear();clearTorchLights();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
   health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
@@ -686,7 +755,7 @@ async function initializeAccountWorld(save,slot){
     stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
-    editChunks.clear();torchLocations.clear();clearWorldDrops();
+    editChunks.clear();torchLocations.clear();chestContents.clear();clearWorldDrops();
   }
   await new Promise(r=>setTimeout(r,30));
   ensureInitialSpawn();
@@ -1317,7 +1386,13 @@ function get(x,y,z){
 function set(x,y,z,v){
   if(!inside(x,y,z))return;
   const cx=chunkCoord(x),cz=chunkCoord(z),c=ensureChunk(cx,cz),i=cIndex(localCoord(x),y,localCoord(z));
+  const before=c.data[i];
+  if(before===B.CHEST&&v!==B.CHEST){
+    chestContents.delete(chestKey(x,y,z));
+    if(chestIsOpenAt(x,y,z))setChestOpen(false);
+  }
   c.data[i]=v;
+  if(v===B.CHEST&&!chestContents.has(chestKey(x,y,z)))chestSlots(x,y,z);
   const k=chunkKey(cx,cz);
   let edits=editChunks.get(k);
   if(!edits){edits=new Map();editChunks.set(k,edits)}
@@ -1481,6 +1556,37 @@ const doorSideMat=L(T.plank);
 const doorFaceTop=[doorSideMat,doorSideMat,doorSideMat,doorSideMat,doorTopMat,doorTopMat];
 const doorFaceBottom=[doorSideMat,doorSideMat,doorSideMat,doorSideMat,doorBottomMat,doorBottomMat];
 for(const id of DOOR_ALL)M[id]=DOOR_TOP.has(id)?doorFaceTop:doorFaceBottom;
+// Chest lid seam, inset wooden panels and a silver-gold front latch.
+function chestTexture(part){
+  const canvas=document.createElement('canvas');canvas.width=16;canvas.height=16;
+  const g=canvas.getContext('2d');
+  g.fillStyle='#a66e35';g.fillRect(0,0,16,16);
+  g.fillStyle='#3e2819';g.fillRect(0,0,16,2);g.fillRect(0,14,16,2);
+  g.fillRect(0,0,2,16);g.fillRect(14,0,2,16);
+  g.fillStyle='#c18c52';g.fillRect(2,2,12,2);
+  g.fillStyle='#70451f';g.fillRect(2,5,12,1);g.fillRect(2,10,12,1);
+  g.fillStyle='#d6a166';g.fillRect(3,3,10,1);g.fillRect(3,7,10,1);
+  g.fillStyle='#865428';g.fillRect(3,11,10,2);
+  if(part==='front'){
+    g.fillStyle='#3d331c';g.fillRect(6,4,5,8);
+    g.fillStyle='#d2c181';g.fillRect(7,4,3,7);
+    g.fillStyle='#fff1ac';g.fillRect(8,5,1,3);
+    g.fillStyle='#695026';g.fillRect(8,9,1,2);
+  }else if(part==='top'){
+    g.fillStyle='#704721';g.fillRect(3,3,10,10);
+    g.fillStyle='#cc9858';g.fillRect(4,4,8,8);
+    g.fillStyle='#e2b577';g.fillRect(5,5,6,1);
+  }else if(part==='bottom'){
+    g.fillStyle='#604022';g.fillRect(2,2,12,12);
+  }
+  const t=new THREE.CanvasTexture(canvas);t.magFilter=THREE.NearestFilter;
+  t.minFilter=THREE.NearestFilter;t.colorSpace=THREE.SRGBColorSpace;return t;
+}
+const chestBox=new THREE.BoxGeometry(.90,.88,.90);
+const chestSideMat=L(chestTexture('side')),chestTopMat=L(chestTexture('top'));
+const chestFrontMat=L(chestTexture('front')),chestBottomMat=L(chestTexture('bottom'));
+M[B.CHEST]=[chestSideMat,chestSideMat,chestTopMat,chestBottomMat,chestFrontMat,chestSideMat];
+
 // Lightweight 3D torch: narrow wooden stem and two emissive flame voxels.
 const torchStemGeometry=new THREE.BoxGeometry(.14,.55,.14);
 const torchFlameGeometry=new THREE.BoxGeometry(.19,.20,.19);
@@ -1558,7 +1664,7 @@ function rebuildChunkMesh(c){
     // Previous terrain face-culling hid the bottom half when enclosed, so
     // it looked like the door was floating. Opening the door accidentally
     // made both halves render because the open IDs were treated as air.
-    let visible=isDoor(id)||id===B.TORCH;
+    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST;
     if(!visible)for(const [dx,dy,dz] of neighborVectors){
       const nx=lx+dx,ny=y+dy,nz=lz+dz;
       const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
@@ -1566,7 +1672,7 @@ function rebuildChunkMesh(c){
       // Doors leave visible space beside their thin panel: render the
       // neighbouring wall, floor and ceiling faces too.
       if(id===B.WATER?b!==B.WATER:
-         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH){visible=true;break}
+         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST){visible=true;break}
     }
     if(visible)groups[id].push({x,y,z});
   }
@@ -1574,7 +1680,7 @@ function rebuildChunkMesh(c){
   for(const key in groups){
     const id=+key,p=groups[id];if(!p.length)continue;
     if(id===B.TORCH){buildTorchMeshes(p,c,built);continue}
-    const geo=isDoor(id)?doorBox:(id===B.BED||id===B.BED_HEAD)?bedBox:box;
+    const geo=id===B.CHEST?chestBox:isDoor(id)?doorBox:(id===B.BED||id===B.BED_HEAD)?bedBox:box;
     const m=new THREE.InstancedMesh(geo,M[id],p.length);
     m.userData.id=id;
     // Shadows are expensive on mobile. Nearby terrain keeps its shadows.
@@ -1591,7 +1697,7 @@ function rebuildChunkMesh(c){
           dummy.rotation.y=alongZ?0:Math.PI/2;
           dummy.position.set(v.x+(alongZ?.46:-.46),v.y,v.z+(alongZ?-.46:.46));
         }else dummy.position.set(v.x,v.y,v.z);
-      }else dummy.position.set(v.x,(id===B.BED||id===B.BED_HEAD)?v.y-.25:v.y,v.z);
+      }else dummy.position.set(v.x,id===B.CHEST?v.y-.06:(id===B.BED||id===B.BED_HEAD)?v.y-.25:v.y,v.z);
       dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);
     });
     scene.add(m);meshes.push(m);lookup.set(m.uuid,p);built.push(m);
@@ -2794,7 +2900,7 @@ function pickTier(){
   return 0;
 }
 function toolSpeed(id){
-  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE,B.BED,B.BED_HEAD,...DOOR_ALL]);
+  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE,B.BED,B.BED_HEAD,B.CHEST,...DOOR_ALL]);
   const softLike=new Set([B.GRASS,B.DIRT,B.SAND,B.GRAVEL,B.SNOW]);
   const axeSpeed=selected===I.DIAMOND_AXE?6.5:selected===I.IRON_AXE?5:selected===I.GOLD_AXE?5.8:selected===I.STONE_AXE?3.2:selected===I.WOOD_AXE?2.1:1;
   const shovelSpeed=selected===I.DIAMOND_SHOVEL?6.5:selected===I.IRON_SHOVEL?5:selected===I.GOLD_SHOVEL?5.8:selected===I.STONE_SHOVEL?3.2:1;
@@ -3203,6 +3309,146 @@ function renderInventoryUI(){
   $('inventoryEquip').disabled=armorPartForId(st.id)<0;
   renderArmorUI();
 }
+// Chest transfer UI. Touch a bag item to store it, or a chest item to
+// retrieve it. The single-item switch is useful for splitting stacks.
+function chestStatus(text){$('chestHint').textContent=text}
+function chestRange(){return chestLocation&&get(chestLocation.x,chestLocation.y,chestLocation.z)===B.CHEST}
+function setChestOpen(open,point=null){
+  if(!open&&chestPending){flash('通信中です。少し待ってください');return}
+  if(open){
+    if(!point||get(point.x,point.y,point.z)!==B.CHEST)return;
+    if(craftOpen)setCraftOpen(false);
+    if(inventoryOpen)setInventoryOpen(false);
+    chestLocation={...point,key:chestKey(point.x,point.y,point.z)};
+    chestSlots(point.x,point.y,point.z);
+  }else chestLocation=null;
+  chestOpen=!!open;$('chestScreen').classList.toggle('open',chestOpen);
+  $('chestScreen').setAttribute('aria-hidden',String(!chestOpen));
+  Object.keys(keys).forEach(k=>keys[k]=false);resetSprint();primaryActionStop();
+  if(chestOpen){
+    document.exitPointerLock?.();
+    chestStatus('持ち物をタップして収納 / チェスト内をタップして取り出す');
+    renderChestUI();
+  }else if(started&&!matchMedia('(pointer:coarse)').matches){
+    renderer.domElement.requestPointerLock?.();
+  }
+}
+function renderChestUI(){
+  if(!chestOpen||!chestLocation)return;
+  const {x,y,z}=chestLocation,slots=chestSlots(x,y,z);
+  const container=$('chestGrid'),bag=$('chestBagGrid');
+  container.replaceChildren();bag.replaceChildren();
+  const build=(st,onClick,index,fromBag)=>{
+    const button=document.createElement('button');
+    button.type='button';button.className='inv-slot'+(chestPending?' chest-busy':'');
+    button.disabled=!!chestPending||!st;
+    if(st){
+      button.appendChild(itemCanvas(st.id,'item-icon'));
+      const qty=document.createElement('span');qty.className='stack-qty';qty.textContent=st.qty;
+      button.appendChild(qty);
+      button.title=(names[st.id]||'ITEM')+' ×'+st.qty+(fromBag?' を収納':' を取り出す');
+      button.setAttribute('aria-label',button.title);
+    }else button.setAttribute('aria-label','空き');
+    button.addEventListener('click',()=>onClick(index));
+    return button;
+  };
+  for(let i=0;i<CHEST_SIZE;i++)container.appendChild(build(slots[i],chestSlotTap,i,false));
+  for(let i=0;i<36;i++)bag.appendChild(build(inventorySlots[i],chestInventoryTap,i,true));
+  $('chestSingle').textContent=chestOneAtATime?'1個ずつ：ON':'1個ずつ：OFF';
+  $('chestSingle').disabled=!!chestPending;
+  $('chestClose').disabled=!!chestPending;
+}
+function chestInventoryTap(index){
+  if(!chestRange()||chestPending)return;
+  const st=inventorySlots[index];if(!st)return;
+  const qty=chestOneAtATime?1:st.qty;
+  chestTransfer('deposit',index,qty,st.id);
+}
+function chestSlotTap(index){
+  if(!chestRange()||chestPending)return;
+  const st=chestSlots(chestLocation.x,chestLocation.y,chestLocation.z)[index];if(!st)return;
+  const qty=chestOneAtATime?1:st.qty;
+  chestTransfer('withdraw',index,qty,st.id);
+}
+function chestBroadcast(){
+  if(multiRole!=='host'||!multiplayerNetwork.connected||!chestLocation)return;
+  const {x,y,z}=chestLocation;
+  multiplayerNetwork.send({t:'chestState',x,y,z,slots:chestSlots(x,y,z)});
+}
+function chestTransfer(kind,index,count,id){
+  if(!chestRange()||chestPending)return;
+  const {x,y,z}=chestLocation;
+  if(multiRole==='guest'){
+    if(!multiplayerNetwork.connected){chestStatus('接続されていません');return}
+    const slots=chestSlots(x,y,z);
+    if(kind==='deposit'&&(!inventorySlots[index]||inventorySlots[index].id!==id))return;
+    if(kind==='withdraw'&&(!slots[index]||slots[index].id!==id))return;
+    const room=kind==='deposit'?chestCapacity(slots,id):chestRoomForPlayer(id);
+    const qty=Math.min(count,room);
+    if(!qty){chestStatus('収納先に空きがありません');return}
+    const requestId=++chestRequestId;
+    chestPending={requestId,kind,index,id,qty,x,y,z,tries:0};
+    sendChestRequest();
+    renderChestUI();chestStatus('フレンドのワールドと同期中…');return;
+  }
+  const slots=chestSlots(x,y,z);
+  let moved=0;
+  if(kind==='deposit'){
+    const st=inventorySlots[index];if(!st||st.id!==id)return;
+    moved=chestAdd(slots,id,Math.min(st.qty,count));
+    if(moved)removeFromSlot(index,moved);
+  }else{
+    const st=slots[index];if(!st||st.id!==id)return;
+    const room=chestRoomForPlayer(id);
+    const taken=chestTake(slots,index,Math.min(room,count));
+    if(taken){
+      const leftover=addItem(taken.id,taken.qty);moved=taken.qty-leftover;
+      if(leftover)chestAdd(slots,taken.id,leftover);
+    }
+  }
+  if(!moved){chestStatus('空きがありません');return}
+  markSaveDirty();if(multiRole==='host')chestBroadcast();
+  renderChestUI();
+  chestStatus((kind==='deposit'?'収納した':'取り出した')+'：'+(names[id]||'アイテム')+' ×'+moved);
+}
+function chestRoomForPlayer(id){
+  let total=0;
+  for(const st of inventorySlots)
+    total+=!st?maxStackFor(id):st.id===id?Math.max(0,maxStackFor(id)-st.qty):0;
+  return total;
+}
+// A request is retried with the same ID. The host deduplicates it so lost
+// acknowledgements cannot double-spend the chest's stored items.
+function sendChestRequest(){
+  const q=chestPending;if(!q||multiRole!=='guest')return;
+  q.tries++;
+  multiplayerNetwork.send({t:'chestTransfer',requestId:q.requestId,
+    kind:q.kind,index:q.index,id:q.id,qty:q.qty,x:q.x,y:q.y,z:q.z});
+  setTimeout(()=>{
+    if(chestPending!==q)return;
+    if(q.tries<5&&multiplayerNetwork.connected)sendChestRequest();
+    else {chestPending=null;renderChestUI();chestStatus('通信が途切れました。もう一度チェストを開いて確認してください')}
+  },1700);
+}
+function chestReceiveResult(reply){
+  const q=chestPending;
+  if(!q||reply.requestId!==q.requestId||reply.x!==q.x||reply.y!==q.y||reply.z!==q.z)return;
+  // Keep the pending lock until both the world chest and personal inventory
+  // have been updated. No other UI transaction can interleave here.
+  const n=Math.max(0,Math.min(64,Number(reply.qty)||0));
+  if(reply.ok&&n&&reply.id===q.id){
+    if(q.kind==='deposit'){
+      const st=inventorySlots[q.index];
+      if(st?.id===q.id&&st.qty>=n)removeFromSlot(q.index,n);
+    }else addItem(q.id,n);
+  }
+  if(Array.isArray(reply.slots))chestApplyState(q.x,q.y,q.z,reply.slots);
+  chestPending=null;renderChestUI();
+  chestStatus(reply.ok?'移動完了：'+(names[q.id]||'アイテム')+' ×'+n:reply.reason||'移動できませんでした');
+}
+$('chestClose').addEventListener('click',()=>setChestOpen(false));
+$('chestScreen').addEventListener('pointerdown',e=>{if(e.target===$('chestScreen'))setChestOpen(false)});
+$('chestSingle').addEventListener('click',()=>{chestOneAtATime=!chestOneAtATime;renderChestUI()});
 function setInventoryOpen(v){
   inventoryOpen=v;inventoryScreen.classList.toggle('open',v);inventoryScreen.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
@@ -3226,12 +3472,14 @@ function minedDropPosition(x,y,z){
 function finishMine(x,y,z,id){
   if(get(x,y,z)!==id)return;
 
+  const chestDrops=id===B.CHEST?chestSpill(x,y,z):[];
   const doorOther=isDoor(id)?{x,y:y+(DOOR_TOP.has(id)?-1:1),z}:null;
   const bedFoot=isBedBlock(id)?canonicalBedFoot(x,y,z):null;
   const bedOther=isBedBlock(id)?findBedOtherHalf(x,y,z,id):null;
   const brokeRespawnBed=!!(bedFoot&&bedSpawn&&bedSpawn.x===bedFoot.x&&bedSpawn.y===bedFoot.y&&bedSpawn.z===bedFoot.z);
 
   set(x,y,z,B.AIR);
+  for(const st of chestDrops)spawnWorldDrop(st.id,st.qty,x,y,z,{scatter:true,pickupDelay:1.1});
   const torchOnTop=get(x,y+1,z)===B.TORCH;
   if(torchOnTop){
     set(x,y+1,z,B.AIR);
@@ -3251,10 +3499,11 @@ function finishMine(x,y,z,id){
   if(isBedBlock(id))drop=I.BED;
   if(isDoor(id))drop=I.DOOR;
   if(id===B.TORCH)drop=I.TORCH;
+  if(id===B.CHEST)drop=I.CHEST;
 
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
-  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH)){
+  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH||drop===I.CHEST)){
     const spawnAt=minedDropPosition(x,y,z);
     spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{pickupDelay:.45});
   }
@@ -3275,7 +3524,7 @@ function startMining(){
   breakFill.style.width='0%';breakMeter.classList.add('active');
 }
 function updateMining(dt){
-  if(!miningHeld||craftOpen||inventoryOpen){clearMining();return}
+  if(!miningHeld||craftOpen||inventoryOpen||chestOpen){clearMining();return}
   const h=target();if(!h){clearMining();return}
   const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p){clearMining();return}
   const id=get(p.x,p.y,p.z),key=`${p.x},${p.y},${p.z}`;
@@ -3345,9 +3594,17 @@ function doorSupportedBaseY(x,aimY,z){
   return null;
 }
 function place(){
+  if(chestOpen||craftOpen||inventoryOpen)return;
+  // Interacting with a chest takes priority even when holding food or
+  // a placeable block. Players can always open their storage.
+  const h=target();
+  const aimed=h&&h.distance<=5?lookup.get(h.object.uuid)?.[h.instanceId]:null;
+  if(aimed&&get(aimed.x,aimed.y,aimed.z)===B.CHEST){
+    setChestOpen(true,{x:aimed.x,y:aimed.y,z:aimed.z});return;
+  }
   if(startEating())return;
   const door=aimedDoor();if(door&&doorUse(door.x,door.y,door.z))return;
-  const h=target();if(!h||!h.face)return;
+  if(!h||!h.face)return;
   const p=lookup.get(h.object.uuid)?.[h.instanceId];if(!p)return;
   const targetId=get(p.x,p.y,p.z);
 
@@ -3373,6 +3630,12 @@ function place(){
   const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);
   if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
 
+  if(selected===I.CHEST){
+    if(mobs.some(m=>mobOverlapsBlock(m,x,y,z))){flash('モブの中には設置できません');return}
+    set(x,y,z,B.CHEST);
+    if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);rebuildEdited({x,z});return}
+    consumeSelected(1);rebuildEdited({x,z});flash('チェストを設置！ 設置・使用で開けます');return;
+  }
   if(selected===I.TORCH){
     if(!solid(get(x,y-1,z))){
       flash('松明はブロックの上に設置してください');return;
@@ -3551,7 +3814,7 @@ function updateEating(dt){
   flash((names[item]||'肉')+'を食べた　♥+'+(restored/2));
 }
 function primaryActionStart(){
-  if(!started||dead||sleeping||craftOpen||inventoryOpen)return;
+  if(!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
 }
@@ -3692,6 +3955,7 @@ addEventListener('blur',()=>{
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(dead)return;
+  if(chestOpen){if(k==='escape'){e.preventDefault();setChestOpen(false)}return}
   if((k==='v'||e.code==='F5')&&started){e.preventDefault();if(!e.repeat)cycleCameraMode();return}
   if(k==='e'&&started){e.preventDefault();setInventoryOpen(!inventoryOpen);return}
   if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}
@@ -3728,14 +3992,14 @@ function jump(){
   }
 }
 
-renderer.domElement.addEventListener('click',()=>{if(!dead&&!craftOpen&&!inventoryOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
+renderer.domElement.addEventListener('click',()=>{if(!dead&&!craftOpen&&!inventoryOpen&&!chestOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
-renderer.domElement.addEventListener('mousedown',e=>{if(!started||dead||craftOpen||inventoryOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
+renderer.domElement.addEventListener('mousedown',e=>{if(!started||dead||craftOpen||inventoryOpen||chestOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
 addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop()});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 let touchLook=null;
-renderer.domElement.addEventListener('pointerdown',e=>{if(dead||craftOpen||inventoryOpen)return;if(e.pointerType==='touch'&&e.clientX>innerWidth*.35)touchLook={x:e.clientX,y:e.clientY}});
+renderer.domElement.addEventListener('pointerdown',e=>{if(dead||craftOpen||inventoryOpen||chestOpen)return;if(e.pointerType==='touch'&&e.clientX>innerWidth*.35)touchLook={x:e.clientX,y:e.clientY}});
 renderer.domElement.addEventListener('pointermove',e=>{if(touchLook&&e.pointerType==='touch'){const dx=e.clientX-touchLook.x,dy=e.clientY-touchLook.y;player.yaw-=dx*.006;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch-dy*.006));touchLook={x:e.clientX,y:e.clientY}}});
 renderer.domElement.addEventListener('pointerup',()=>touchLook=null);
 
@@ -3747,7 +4011,7 @@ const mobileSprintButton=document.querySelector('.pad .sprint');
 function bindMobileForward(button,key){
   button.addEventListener('pointerdown',e=>{
     e.preventDefault();
-    if(!started||dead||craftOpen||inventoryOpen||sleeping)return;
+    if(!started||dead||craftOpen||inventoryOpen||chestOpen||sleeping)return;
     keys[key]=true;
     try{button.setPointerCapture?.(e.pointerId)}catch{}
     updateSprintIntent();
@@ -3834,12 +4098,12 @@ function advanceDayTime(dt){
 const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vector3();
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
-  if(started&&!dead&&!sleeping){
+  if(started&&!dead&&!sleeping&&!chestOpen){
     updateWorldDrops(dt,now);updatePassiveSpawning(dt);updateHealthRegen(dt);
     const activelySprinting=!craftOpen&&!inventoryOpen&&sprinting&&stamina>0&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!playerInWater();
     updateStaminaRecovery(dt,activelySprinting);
   }
-  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen){
+  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen){
     updateMining(dt);
     updateEating(dt);
     if(multiRole!=='guest')advanceDayTime(dt);
@@ -4240,9 +4504,49 @@ function multiClearAvatars(){
   }
   multiAvatars.clear();multiLastVisualFrame=0;
 }
+// Host processes guest chest transfers in a single serial handler.
+// Receipts are cached for retransmission so duplicate packets cannot
+// withdraw or deposit the same stack twice.
+const chestReceipts=new Map();
+function chestBroadcastAt(x,y,z){
+  if(multiRole==='host'&&multiplayerNetwork.connected)
+    multiplayerNetwork.send({t:'chestState',x,y,z,slots:chestSlots(x,y,z)});
+}
+function handleGuestChestTransfer(message,peerId,from){
+  const {requestId,x,y,z,id,index,qty,kind}=message;
+  if(!Number.isInteger(requestId)||requestId<1||requestId>1e10)return;
+  if(![x,y,z,id,index,qty].every(Number.isInteger)||Math.abs(x)>1000000||Math.abs(z)>1000000||
+     !inside(x,y,z)||!chestValidItemId(id)||qty<1||qty>64||!['deposit','withdraw'].includes(kind))return;
+  const receiptKey=peerId+':'+requestId;
+  const previous=chestReceipts.get(receiptKey);
+  if(previous){
+    multiplayerNetwork.send({...previous,slots:get(x,y,z)===B.CHEST?chestSlots(x,y,z):[]},peerId);
+    return;
+  }
+  const result={t:'chestResult',requestId,x,y,z,id,qty:0,ok:false,reason:'チェストを操作できません'};
+  const position=from.player;
+  if(get(x,y,z)===B.CHEST&&position&&Math.hypot(position.x-x,position.y-y,position.z-z)<8){
+    const slots=chestSlots(x,y,z);
+    if(kind==='deposit'&&index>=0&&index<36){
+      result.qty=chestAdd(slots,id,qty);
+    }else if(kind==='withdraw'&&index>=0&&index<CHEST_SIZE&&slots[index]?.id===id){
+      result.qty=chestTake(slots,index,qty)?.qty||0;
+    }
+    if(result.qty){
+      result.ok=true;markSaveDirty();
+      chestBroadcastAt(x,y,z);
+      if(chestIsOpenAt(x,y,z))renderChestUI();
+    }else result.reason='空きがありません';
+  }
+  result.slots=get(x,y,z)===B.CHEST?chestSlots(x,y,z):[];
+  chestReceipts.set(receiptKey,{...result});
+  if(chestReceipts.size>512)chestReceipts.delete(chestReceipts.keys().next().value);
+  multiplayerNetwork.send(result,peerId);
+}
+function chestValidItemId(id){return Number.isInteger(id)&&Object.hasOwn(inventory,id)}
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
-  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.TORCH||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.CHEST||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
   if(get(b.x,b.y,b.z)===b.v)return;
   multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
   finally{multiApplying=false}
@@ -4390,6 +4694,14 @@ async function multiPromoteHost(job){
     }
   }
   rebuildTorchIndex();
+  // Restore chest state found in the host checkpoint if a guest missed it.
+  if(Array.isArray(world.chests))for(const row of world.chests){
+    if(!Array.isArray(row)||typeof row[0]!=='string'||chestContents.has(row[0]))continue;
+    const xyz=row[0].split(',').map(Number);
+    if(xyz.length!==3||xyz.every(n=>Number.isInteger(n))&&get(...xyz)===B.CHEST)
+      chestContents.set(row[0],normalizedChest(row[1]));
+  }
+  chestReceipts.clear();
   multiHostId=job.checkpoint.originId||multiHostId;
   multiHostSlot=job.checkpoint.slot||currentWorldSlot;
   multiWorldKind=job.checkpoint.worldKind==='single'?'single':'multi';
@@ -4502,11 +4814,16 @@ function multiRoomData(message,peerId){
       multiplayerNetwork.send({t:'pose',id:from.id,player:from.player});
     }else if(message.t==='profile'&&Array.isArray(message.profile?.inventorySlots)){
       multiMembers[from.id]={...message.profile,name:from.name};markSaveDirty();
+    }else if(message.t==='chestTransfer'){
+      handleGuestChestTransfer(message,peerId,from);
     }else if(message.t==='block'){multiApplyBlock(message);multiplayerNetwork.send(message)}
     else if(message.t==='dropAdd'||message.t==='dropRemove'){multiApplyDrop(message);multiplayerNetwork.send(message)}
   }else{
     if(message.t==='pose')multiShowAvatar(message.id,message.player);
     if(message.t==='block')multiApplyBlock(message);
+    if(message.t==='chestState'&&[message.x,message.y,message.z].every(Number.isInteger))
+      chestApplyState(message.x,message.y,message.z,message.slots);
+    if(message.t==='chestResult')chestReceiveResult(message);
     if(message.t==='dropAdd'||message.t==='dropRemove')multiApplyDrop(message);
     if(message.t==='time'){
       if(Number.isFinite(message.dayTime))dayTime=message.dayTime;
@@ -4582,7 +4899,7 @@ function multiLeave(silent=false){
   multiRole=null;multiHostSlot=null;multiHostId='';multiOriginName='';multiWorldKind='multi';
   multiMigration=null;multiCheckpoint=null;multiRoster=[];
   multiplayerNetwork.leaveRoom({handoff});
-  multiGuestRecords.clear();multiMembers={};multiClearAvatars();
+  multiGuestRecords.clear();multiMembers={};chestReceipts.clear();multiClearAvatars();
   clearInterval(saveInterval);saveInterval=null;
   if(worldReady){resetWorldRuntime();worldReady=false;currentWorldSlot=null}
   cover.style.display='none';accountBox.style.display='none';
