@@ -47,7 +47,7 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,BUFFALO_MEAT:154,ANACONDA_HIDE:155
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -62,7 +62,7 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',154:'バッファローの肉',155:'オオアナコンダの革',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
@@ -81,7 +81,7 @@ const inventory={
   [I.GOLD_HELMET]:0,[I.GOLD_CHEST]:0,[I.GOLD_LEGS]:0,[I.GOLD_BOOTS]:0,
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
-  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.BED]:0,
+  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.BUFFALO_MEAT]:0,[I.ANACONDA_HIDE]:0,[I.BED]:0,
   [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
@@ -100,7 +100,7 @@ const itemGlyphs={
   [I.GOLD_HELMET]:'金頭',[I.GOLD_CHEST]:'金胴',[I.GOLD_LEGS]:'金脚',[I.GOLD_BOOTS]:'金靴',
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
-  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.BED]:'床',
+  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.BUFFALO_MEAT]:'肉',[I.ANACONDA_HIDE]:'蛇革',[I.BED]:'床',
   [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍'
 };
 
@@ -208,6 +208,23 @@ function gemIcon(g,m){
 }
 function stickIcon(g){pixelLine(g,11,3,4,13,'#332417',3);pixelLine(g,11,3,4,13,'#8b5b32',2);pixelLine(g,10,4,5,11,'#c08a52',1)}
 function mobDropIcon(g,id){
+  if(id===I.LION_FANG){
+    poly(g,[[4,2],[12,2],[11,7],[9,12],[7,15],[5,9]],'#f0e5bd');
+    ir(g,5,3,5,2,'#fff7dd');ir(g,7,12,2,2,'#b6a17a');return;
+  }
+  if(id===I.BUFFALO_HORN){
+    poly(g,[[2,4],[4,3],[7,8],[10,10],[13,7],[14,5],[14,10],[12,13],[8,13],[5,11]],'#c4b89a');
+    ir(g,3,4,2,3,'#f1e7ce');ir(g,10,11,3,2,'#867962');return;
+  }
+  if(id===I.BUFFALO_MEAT){
+    poly(g,[[3,5],[6,3],[11,4],[13,7],[11,12],[6,13],[3,10]],'#812c35');
+    ir(g,6,5,4,2,'#bd535a');ir(g,4,9,3,2,'#572029');return;
+  }
+  if(id===I.ANACONDA_HIDE){
+    poly(g,[[4,2],[7,3],[10,2],[13,5],[11,8],[13,12],[9,14],[6,12],[3,13],[2,9],[4,6]],'#5a7439');
+    ir(g,5,5,3,2,'#2c4226');ir(g,9,8,3,2,'#293e24');
+    ir(g,5,10,4,2,'#b2a675');return;
+  }
   if(id===I.WOOL){
     ir(g,4,4,8,8,'#f4f1e9');ir(g,3,6,2,5,'#ded9cf');ir(g,11,5,2,6,'#ffffff');
     ir(g,5,3,3,2,'#ffffff');ir(g,8,3,3,2,'#e7e2d8');ir(g,6,11,5,2,'#c9c4bb');return;
@@ -231,7 +248,8 @@ function mobDropIcon(g,id){
 function drawItemIcon(g,id){
   g.clearRect(0,0,16,16);
   if(id===I.WOOL||id===I.RAW_PORK||id===I.RAW_BEEF||id===I.LEATHER||
-    id===I.COOKED_PORK||id===I.COOKED_BEEF)return mobDropIcon(g,id);
+    id===I.COOKED_PORK||id===I.COOKED_BEEF||id===I.LION_FANG||
+    id===I.BUFFALO_HORN||id===I.BUFFALO_MEAT||id===I.ANACONDA_HIDE)return mobDropIcon(g,id);
   if(id===B.GRASS)return blockIcon(g,'#78b85c','#785032','#5f4028','grass');
   if(id===B.DIRT)return blockIcon(g,'#98643c','#7c4e31','#684029','plain');
   if(id===B.STONE)return blockIcon(g,'#a3a7aa','#888d91','#6f7478','stone');
@@ -4129,7 +4147,20 @@ function dropMobLoot(root){
   const x=root.position.x,y=root.position.y+.75,z=root.position.z;
   const type=root.userData.type;
   if(type==='zombie')return; // Zombie kills grant XP; no animal meat drops.
-  if(type==='horse'||type==='lion'||type==='anaconda'){
+  if(type==='lion'){
+    spawnWorldDrop(I.LION_FANG,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
+    return;
+  }
+  if(type==='bison'){
+    spawnWorldDrop(I.BUFFALO_HORN,1,x-.18,y,z,{scatter:true,pickupDelay:.55});
+    spawnWorldDrop(I.BUFFALO_MEAT,2+Math.floor(Math.random()*3),x+.18,y,z,{scatter:true,pickupDelay:.55});
+    return;
+  }
+  if(type==='anaconda'){
+    spawnWorldDrop(I.ANACONDA_HIDE,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
+    return;
+  }
+  if(type==='horse'){
     spawnWorldDrop(I.LEATHER,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
     return;
   }
