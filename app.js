@@ -2645,7 +2645,7 @@ function updateDangerousMob(m,dt,now){
   }
   if(headDist()<=reach&&heightDiff<(snake?2.65:2.1)&&d.attackCooldown<=0){
     d.attackCooldown=snake?1.6:d.type==='bison'?1.5:1.3;
-    damagePlayer(5,snake?'オオアナコンダの噛みつき':d.type==='bison'?'バイソンの突進':'ライオンの攻撃');
+    damagePlayer(10,snake?'オオアナコンダの噛みつき':d.type==='bison'?'バイソンの突進':'ライオンの攻撃');
   }
   return true;
 }
@@ -2721,7 +2721,7 @@ function spawnPassiveMob(){
       angle:heading,
       t:2+hash2(z,x)*3,
       speed:type==='horse'?.70:type==='bison'?.28:type==='lion'?.38:type==='anaconda'?.31:.22+hash2(x+4,z+2)*.24,
-      hp:type==='horse'?10:large?30:type===2?5:3,
+      hp:type==='horse'?10:large?250:type===2?5:3,
       xp:type==='horse'?24:type==='bison'?85:type==='lion'||type==='anaconda'?90:type===2?18:type===1?14:12,
       name:type===0?'ヒツジ':type===1?'ブタ':type===2?'ウシ':
         type==='horse'?'馬':type==='bison'?'バイソン':type==='lion'?'ライオン':'オオアナコンダ',
