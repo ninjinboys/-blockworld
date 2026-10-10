@@ -47,7 +47,7 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -62,7 +62,7 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
@@ -82,7 +82,7 @@ const inventory={
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
@@ -101,7 +101,7 @@ const itemGlyphs={
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍'
 };
 
 const ICON_MAT={
@@ -272,6 +272,14 @@ function drawItemIcon(g,id){
     ir(g,7,7,3,6,'#463c28');ir(g,8,8,1,4,'#f8d568');return;
   }
   if(id===I.TORCH){ir(g,7,6,3,9,'#58391e');ir(g,8,7,1,8,'#c59054');ir(g,6,3,5,5,'#ec7424');ir(g,7,1,3,6,'#ffb431');ir(g,8,0,1,6,'#fff2a1');return}
+  if(id===I.SADDLE){
+    // Leather saddle, curved seat, straps and brass buckle.
+    ir(g,2,7,12,5,'#4d2e20');ir(g,3,6,10,5,'#92552f');
+    ir(g,4,4,8,4,'#b77a47');ir(g,5,3,6,2,'#d39c64');
+    ir(g,3,11,3,3,'#64402b');ir(g,10,11,3,3,'#64402b');
+    ir(g,2,8,2,3,'#d6b35f');ir(g,12,8,2,3,'#d6b35f');
+    ir(g,6,8,4,1,'#e1ac70');return;
+  }
   if(id===I.BOW){
     // Dark curved wood with a taut pale string and grip.
     pixelLine(g,11,1,5,4,'#58331b',2);pixelLine(g,5,4,4,11,'#a5713c',2);
@@ -307,6 +315,7 @@ const workbenchRecipes=[
   {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
   {name:'チェスト',out:I.CHEST,qty:1,needs:[[B.PLANK,8]],unlockLevel:6},
   {name:'弓',out:I.BOW,qty:1,needs:[[I.STICK,3],[I.WOOL,3]],unlockLevel:7},
+  {name:'鞍',out:I.SADDLE,qty:1,needs:[[I.LEATHER,5]],unlockLevel:7},
   {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
   {name:'かまど',out:I.FURNACE,qty:1,needs:[[B.COBBLE,8]],unlockLevel:7},
   {name:'石の剣',out:I.STONE_SWORD,qty:1,needs:[[B.COBBLE,2],[I.STICK,1]],unlockLevel:6},
@@ -620,7 +629,9 @@ function makeSaveData(){
     equippedArmor:[...equippedArmor],
     worldDrops:serializeWorldDrops(),
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
-    edits:serializeEdits(),chests:serializeChests()
+    edits:serializeEdits(),chests:serializeChests(),
+    saddledHorses:serializeSaddledHorses(),
+    ridingHorseIndex:ridingHorse?saddledHorsesForSave().indexOf(ridingHorse):-1
   };
 }
 function saveCurrentGame(showMessage=false){
@@ -713,6 +724,7 @@ function applySaveData(data){
   const correctedDoors=repairFloatingDoorsOnLoad();
   if(correctedDoors)console.info('BLOCKWORLD: corrected '+correctedDoors+' floating door(s) in saved world.');
   restoreChests(data.chests);
+  restoreSaddledHorses(data);
   restoreWorldDrops(data.worldDrops);
 
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
@@ -729,11 +741,13 @@ function applySaveData(data){
         }
       }
     }
+    if(ridingHorse)syncRiderToHorse();
     return true;
   }
   return false;
 }
 function resetWorldRuntime(){
+  ridingHorse=null;
   resetSprint();
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   equippedArmor.fill(null);applyArmorAppearance(playerAvatar,equippedArmor);
@@ -1735,6 +1749,7 @@ function rebuildEdited(...positions){
 }
 
 const mobs=[];
+let ridingHorse=null; // Only saddled horses persist. Unridden horses stay at their chosen spot.
 const mobMaterials=new Map();
 function mobMat(color){
   const key=String(color);
@@ -1922,6 +1937,143 @@ function buildHorse(){
   }
   g.userData.walkLegs=legs;
   return g;
+}
+
+// The saddle is attached to the visible horse rig, so it stays on the back
+// during stepping and walking instead of hovering at world coordinates.
+const HORSE_SEAT_HEIGHT=2.02,HORSE_WALK_SPEED=6.1,HORSE_RUN_SPEED=8.5;
+function showHorseSaddle(horse){
+  if(!horse||horse.userData.type!=='horse'||horse.userData.saddleVisual)return;
+  const rig=horse.userData.stepVisual||horse;
+  const g=new THREE.Group();
+  const dark=0x44291d,leather=0x784628,light=0xa46b3c,brass=0xdcb76a;
+  cube(g,.94,.12,1.10,dark,0,1.965,.12);
+  cube(g,.78,.14,.84,leather,0,2.035,.12);
+  cube(g,.62,.10,.30,light,0,2.12,-.26);
+  cube(g,.62,.13,.27,dark,0,2.115,.56);
+  for(const side of [-1,1]){
+    cube(g,.11,.56,.11,dark,side*.48,1.68,.18);
+    cube(g,.14,.08,.32,brass,side*.51,1.40,.20);
+    cube(g,.10,.10,.15,light,side*.53,1.47,.19);
+  }
+  rig.add(g);horse.userData.saddleVisual=g;
+}
+function saddledHorsesForSave(){
+  return mobs.filter(m=>m.userData.type==='horse'&&m.userData.saddled).slice(0,64);
+}
+function serializeSaddledHorses(){
+  return saddledHorsesForSave().map(m=>({
+    x:m.position.x,y:m.position.y,z:m.position.z,
+    angle:m.userData.angle,hp:m.userData.hp
+  }));
+}
+function restoreSaddledHorses(data){
+  ridingHorse=null;
+  if(!Array.isArray(data?.saddledHorses))return;
+  const entries=data.saddledHorses.slice(0,64);
+  const savedRider=Number.isInteger(data.ridingHorseIndex)?data.ridingHorseIndex:-1;
+  for(let i=0;i<entries.length;i++){
+    const v=entries[i];
+    if(!v||![v.x,v.y,v.z,v.angle].every(Number.isFinite)||
+       Math.abs(v.x)>1000000||Math.abs(v.z)>1000000||v.y<Y_MIN||v.y>WORLD_TOP)continue;
+    const h=buildHorse();
+    h.position.set(v.x,v.y,v.z);h.userData={
+      ...h.userData,type:'horse',name:'馬',angle:v.angle,
+      t:2,speed:.70,hp:Math.max(1,Math.min(10,Number(v.hp)||10)),xp:24,
+      hostile:false,attackCooldown:0,chaseTime:0,phase:0,saddled:true
+    };
+    h.rotation.y=v.angle+Math.PI;
+    setupMobStepAnimation(h);
+    showHorseSaddle(h);
+    scene.add(h);mobs.push(h);
+    if(i===savedRider&&!dead&&multiRole!=='guest')ridingHorse=h;
+  }
+}
+function syncRiderToHorse(){
+  if(!ridingHorse)return;
+  player.pos.set(ridingHorse.position.x,ridingHorse.position.y+HORSE_SEAT_HEIGHT,ridingHorse.position.z);
+  player.vel.y=0;player.onGround=true;fallOriginY=null;
+}
+// Use the same reticle, raycaster and wall occlusion as regular block use.
+// This avoids saddling or mounting a horse through a wall.
+function aimedHorse(){
+  aimPlayerRay();
+  const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
+  if(!hits.length)return null;
+  const hit=hits[0];
+  let m=hit.object;
+  while(m.parent&&!mobs.includes(m))m=m.parent;
+  if(!mobs.includes(m)||m.userData.type!=='horse')return null;
+  const block=target();
+  return block&&block.distance<hit.distance-.05?null:m;
+}
+function useHorse(horse){
+  if(multiRole){
+    flash('馬への騎乗は現在シングルプレイ専用です');return true;
+  }
+  if(!horse.userData.saddled){
+    if(selected!==I.SADDLE||(inventory[I.SADDLE]||0)<1){
+      flash('馬に乗るには革で作った鞍を持って「設置・使用」');return true;
+    }
+    if(consumeSelected(1)!==1)return true;
+    horse.userData.saddled=true;
+    horse.userData.fleeTime=0;
+    showHorseSaddle(horse);
+    markSaveDirty();flash('馬に鞍をつけました！ もう一度「設置・使用」で乗れます');
+    return true;
+  }
+  if(ridingHorse){flash('すでに馬に乗っています');return true}
+  if(blocked(horse.position.x,horse.position.y+HORSE_SEAT_HEIGHT,horse.position.z)){
+    flash('頭上が狭いため、ここでは乗れません');return true;
+  }
+  ridingHorse=horse;horse.userData.fleeTime=0;horse.userData.ridingMoved=false;
+  syncRiderToHorse();markSaveDirty();
+  flash('乗馬中！ 方向キーで移動・RUNで疾走・攻撃ボタンで降りる');
+  return true;
+}
+function dismountHorse(){
+  if(!ridingHorse)return false;
+  const horse=ridingHorse,angle=horse.userData.angle;
+  const sideX=Math.cos(angle),sideZ=-Math.sin(angle);
+  const frontX=Math.sin(angle),frontZ=Math.cos(angle);
+  const spots=[
+    [sideX*1.65,sideZ*1.65],[-sideX*1.65,-sideZ*1.65],
+    [-frontX*1.95,-frontZ*1.95],[frontX*2.35,frontZ*2.35],
+    [sideX*2.2,sideZ*2.2],[-sideX*2.2,-sideZ*2.2]
+  ];
+  for(const [dx,dz] of spots){
+    const x=horse.position.x+dx,z=horse.position.z+dz;
+    for(const offset of [1.01,2.01,.01,-.99]){
+      const y=horse.position.y+offset;
+      if(!blocked(x,y,z)&&blocked(x,y-.16,z)){
+        ridingHorse=null;horse.userData.ridingMoved=false;
+        player.pos.set(x,y,z);player.vel.set(0,0,0);
+        player.onGround=true;fallOriginY=null;
+        markSaveDirty();flash('馬から降りました。鞍をつけた馬はその場で待ちます');
+        return true;
+      }
+    }
+  }
+  flash('降りる場所に足場と空きスペースがありません');
+  return true; // Consume attack even if dismount isn't safe.
+}
+function updateRidingHorse(input,dt,running){
+  const horse=ridingHorse;if(!horse)return;
+  const prev=horse.position.clone(),prevAngle=horse.userData.angle;
+  let moved=false;
+  if(input.lengthSq()>.001){
+    const heading=Math.atan2(input.x,input.z);
+    horse.userData.angle=heading;
+    moved=mobWalkStep(horse,heading,(running?HORSE_RUN_SPEED:HORSE_WALK_SPEED)*dt);
+    // A low ceiling may clear the horse but clip the rider: undo that step.
+    if(moved&&blocked(horse.position.x,horse.position.y+HORSE_SEAT_HEIGHT,horse.position.z)){
+      horse.position.copy(prev);horse.userData.angle=prevAngle;moved=false;
+    }
+    if(moved){horse.rotation.y=heading+Math.PI;markSaveDirty()}
+  }
+  horse.userData.ridingMoved=moved;
+  player.vel.set((horse.position.x-prev.x)/Math.max(dt,.001),0,(horse.position.z-prev.z)/Math.max(dt,.001));
+  syncRiderToHorse();
 }
 function buildBison(){
   const g=new THREE.Group();
@@ -2387,7 +2539,7 @@ function updatePassiveSpawning(dt){
   // Animals persist over a wide area. They are only cleaned up once very far away.
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i];
-    if(Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>180){
+    if(!m.userData.saddled&&Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>180){
       scene.remove(m);mobs.splice(i,1);
     }
   }
@@ -2510,7 +2662,7 @@ function updatePlayerAvatar(now){
   playerAvatar.visible=started&&!dead&&!sleeping&&cameraMode!==0;
   if(!playerAvatar.visible)return;
   playerAvatar.position.copy(player.pos);
-  playerAvatar.rotation.y=player.yaw;
+  playerAvatar.rotation.y=ridingHorse?ridingHorse.rotation.y:player.yaw;
   const moving=Math.hypot(player.vel.x,player.vel.z);
   const stride=moving>.3?Math.sin(now*.009*(moving>5.2?1.45:1))*(Math.min(.58,moving*.12)):0;
   const limbs=playerAvatar.userData.limbs;
@@ -2518,7 +2670,10 @@ function updatePlayerAvatar(now){
   limbs.rightLeg.rotation.x=-stride;
   limbs.leftArm.rotation.x=-stride*.8;
   limbs.rightArm.rotation.x=stride*.8;
-  if(!player.onGround){
+  if(ridingHorse){
+    limbs.leftLeg.rotation.x=-.85;limbs.rightLeg.rotation.x=-.85;
+    limbs.leftArm.rotation.x=-.40;limbs.rightArm.rotation.x=-.40;
+  }else if(!player.onGround){
     limbs.leftLeg.rotation.x=.15;
     limbs.rightLeg.rotation.x=-.15;
   }
@@ -2845,6 +3000,7 @@ function updateStaminaRecovery(dt,isRunning){
   }
 }
 function showDeathScreen(){
+  ridingHorse=null;
   dead=true;health=0;renderHealth();primaryActionStop();
   Object.keys(keys).forEach(k=>keys[k]=false);
   resetSprint();
@@ -2946,7 +3102,7 @@ const NON_STACKABLE=new Set([
   I.IRON_HELMET,I.IRON_CHEST,I.IRON_LEGS,I.IRON_BOOTS,
   I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS,
   I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS,
-  I.BED,I.BOW
+  I.BED,I.BOW,I.SADDLE
 ]);
 function maxStackFor(id){return NON_STACKABLE.has(id)?1:64}
 const ARMOR_NAMES=['頭','胸','脚','足'];
@@ -3610,6 +3766,9 @@ function doorSupportedBaseY(x,aimY,z){
 }
 function place(){
   if(chestOpen||craftOpen||inventoryOpen)return;
+  if(ridingHorse){flash('攻撃ボタンで馬から降りられます');return}
+  const horse=aimedHorse();
+  if(horse&&useHorse(horse))return;
   // Interacting with a chest takes priority even when holding food or
   // a placeable block. Players can always open their storage.
   const h=target();
@@ -3877,6 +4036,10 @@ function damageMob(root,damage){
   }else if(root.userData.type!=='zombie')makeMobFlee(root);
 
   if(root.userData.hp<=0){
+    if(root.userData.type==='horse'&&root.userData.saddled){
+      spawnWorldDrop(I.SADDLE,1,root.position.x,root.position.y+1,root.position.z,{scatter:true,pickupDelay:.55});
+      if(ridingHorse===root)ridingHorse=null;
+    }
     const earned=root.userData.xp||12,name=root.userData.name||'動物';
     dropMobLoot(root);
     if(root.userData.type==='zombie')removeZombie(root);
@@ -3941,6 +4104,7 @@ function updateEating(dt){
 }
 function primaryActionStart(){
   if(!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
+  if(ridingHorse){dismountHorse();return}
   if(selected===I.BOW){startBowDraw();return}
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
@@ -4110,6 +4274,7 @@ function playerInWater(){
          blockAtPoint(x,player.pos.y+1.55,z)===B.WATER;
 }
 function jump(){
+  if(ridingHorse)return;
   if(playerInWater()){
     fallOriginY=null;
     player.vel.y=Math.max(player.vel.y,4.6);
@@ -4246,6 +4411,8 @@ function loop(now){
     const running=sprinting&&stamina>0&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!inWater;
     if(running)updateStaminaDuringSprint(dt);
     if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:(running&&stamina>0?SPRINT_SPEED:WALK_SPEED));
+    if(ridingHorse)updateRidingHorse(move,dt,running);
+    else {
     player.vel.x+=(move.x-player.vel.x)*Math.min(1,dt*(inWater?7:11));
     player.vel.z+=(move.z-player.vel.z)*Math.min(1,dt*(inWater?7:11));
     if(inWater){
@@ -4278,6 +4445,7 @@ function loop(now){
       fallOriginY=preVerticalY;
     }
 
+    }
     if(player.pos.y<Y_MIN-5&&!dead){health=0;showDeathScreen()}
     streamChunks();
     processChunkStreaming();
@@ -4307,6 +4475,10 @@ function loop(now){
       }
       if(m.userData.type==='zombie'){
         updateZombie(m,dt,now);
+        return;
+      }
+      if(m.userData.saddled){
+        animateWildMob(m,dt,now,m===ridingHorse&&!!m.userData.ridingMoved);
         return;
       }
       if((m.userData.type==='lion'||m.userData.type==='bison')&&updateDangerousMob(m,dt,now)){
