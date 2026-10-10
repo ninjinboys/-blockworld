@@ -2615,8 +2615,8 @@ function chooseWildMob(){
   }
   return 2;
 }
-// The chance per SUCCESSFUL natural spawn stays identical for bison,
-// lions and anacondas (5 / 105 each). Retry unsuitable terrain instead of
+// The species-selection weights stay identical for bison, lions and
+// anacondas (5 / 105 each). Retry unsuitable terrain instead of
 // silently discarding a rare roll because the enlarged animal needs room.
 const MAX_WILD_ANIMALS=18;
 const WILD_COMMON_LIFETIME_MS=3*60*1000,WILD_RARE_LIFETIME_MS=8*60*1000;
