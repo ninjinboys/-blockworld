@@ -2615,58 +2615,88 @@ function chooseWildMob(){
   }
   return 2;
 }
+// The chance per SUCCESSFUL natural spawn stays identical for bison,
+// lions and anacondas (5 / 105 each). Retry unsuitable terrain instead of
+// silently discarding a rare roll because the enlarged animal needs room.
+const MAX_WILD_ANIMALS=18;
+const WILD_COMMON_LIFETIME_MS=3*60*1000,WILD_RARE_LIFETIME_MS=8*60*1000;
 function spawnPassiveMob(){
-  if(mobs.length>=20)return false;
-  const angle=Math.random()*Math.PI*2;
-  const dist=18+Math.random()*14;
-  const x=Math.floor(player.pos.x+Math.cos(angle)*dist);
-  const z=Math.floor(player.pos.z+Math.sin(angle)*dist);
-  const h=surfaceAt(x,z),bio=biomeAt(x,z);
-  if(h<=SEA||bio===2||bio===6||bio===7)return false;
-  if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<5))return false;
+  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&!m.userData.saddled).length;
+  if(wildCount>=MAX_WILD_ANIMALS)return false;
 
+  // Choose the species ONCE before checking locations. A bison failing its
+  // first flat-ground test still gets a chance to spawn as a bison.
   const type=chooseWildMob();
-  const g=type===0?buildSheep():type===1?buildPig():type===2?buildCow():
-    type==='horse'?buildHorse():type==='bison'?buildBison():
-    type==='lion'?buildLion():buildAnaconda();
-  g.position.set(x,h+.04,z);
-  g.userData={
-    ...g.userData,
-    angle:hash2(x,z)*Math.PI*2,
-    t:2+hash2(z,x)*3,
-    speed:type==='horse'?.70:type==='bison'?.28:type==='lion'?.38:type==='anaconda'?.31:.22+hash2(x+4,z+2)*.24,
-    hp:type==='horse'?10:type==='bison'||type==='lion'||type==='anaconda'?30:type===2?5:3,
-    xp:type==='horse'?24:type==='bison'?85:type==='lion'?90:type==='anaconda'?90:type===2?18:type===1?14:12,
-    name:type===0?'ヒツジ':type===1?'ブタ':type===2?'ウシ':
-      type==='horse'?'馬':type==='bison'?'バイソン':type==='lion'?'ライオン':'オオアナコンダ',
-    type,
-    hostile:false,attackCooldown:0,chaseTime:0,phase:Math.random()*Math.PI*2
-  };
-  // An animal must not spawn inside a constructed home, wall or tree.
-  if(!mobSpaceFree(g,x,g.position.y,z,g.userData.angle)){
-    g.traverse(obj=>{if(obj.isMesh)obj.geometry.dispose()});
-    return false;
+  const large=type==='bison'||type==='lion'||type==='anaconda';
+  const tries=type==='anaconda'?30:large?18:8;
+  const phase=Math.random()*Math.PI*2;
+  let g=null;
+  for(let attempt=0;attempt<tries;attempt++){
+    const angle=phase+attempt*2.399963229728653; // Spread attempts around the player.
+    const dist=19+Math.random()*17;
+    const x=Math.floor(player.pos.x+Math.cos(angle)*dist);
+    const z=Math.floor(player.pos.z+Math.sin(angle)*dist);
+    const h=surfaceAt(x,z),bio=biomeAt(x,z);
+    if(h<=SEA||bio===2||bio===6||bio===7)continue;
+    if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<(large?6:5)))continue;
+
+    // Only allocate the geometry when we first find a plausible location.
+    if(!g)g=type===0?buildSheep():type===1?buildPig():type===2?buildCow():
+      type==='horse'?buildHorse():type==='bison'?buildBison():
+      type==='lion'?buildLion():buildAnaconda();
+    g.position.set(x,h+.04,z);
+    const heading=hash2(x,z)*Math.PI*2;
+    g.userData.type=type;g.userData.angle=heading;
+    if(!mobSpaceFree(g,x,g.position.y,z,heading))continue;
+
+    // Turn the model to match the tested collision footprint immediately.
+    g.rotation.y=heading+Math.PI;
+    g.userData={
+      ...g.userData,
+      angle:heading,
+      t:2+hash2(z,x)*3,
+      speed:type==='horse'?.70:type==='bison'?.28:type==='lion'?.38:type==='anaconda'?.31:.22+hash2(x+4,z+2)*.24,
+      hp:type==='horse'?10:large?30:type===2?5:3,
+      xp:type==='horse'?24:type==='bison'?85:type==='lion'||type==='anaconda'?90:type===2?18:type===1?14:12,
+      name:type===0?'ヒツジ':type===1?'ブタ':type===2?'ウシ':
+        type==='horse'?'馬':type==='bison'?'バイソン':type==='lion'?'ライオン':'オオアナコンダ',
+      type,
+      spawnedAt:performance.now(),
+      hostile:false,attackCooldown:0,chaseTime:0,phase:Math.random()*Math.PI*2
+    };
+    setupMobStepAnimation(g);
+    scene.add(g);mobs.push(g);
+    return true;
   }
-  setupMobStepAnimation(g);
-  scene.add(g);mobs.push(g);
-  return true;
+  // All sampled locations were unsuitable, not an invalid animal species.
+  if(g)g.traverse(o=>{
+    if(o.isMesh){o.geometry?.dispose();if(o.userData.mobOwnMaterial)o.material?.dispose()}
+  });
+  return false;
 }
 function updatePassiveSpawning(dt){
   passiveSpawnCooldown-=dt;
   if(passiveSpawnCooldown>0)return;
   passiveSpawnCooldown=25;
 
-  // Animals persist over a wide area. They are only cleaned up once very far away.
+  // Before, spawning stopped permanently once only SIX animals were nearby.
+  // Retire old wild animals beyond close range so stationary worlds continue
+  // cycling spawn rolls, while keeping rare animals around much longer.
+  const now=performance.now();
   for(let i=mobs.length-1;i>=0;i--){
-    const m=mobs[i];
-    if(!m.userData.saddled&&Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>180){
-      scene.remove(m);mobs.splice(i,1);
+    const m=mobs[i],ud=m.userData;
+    if(ud.saddled||ud.type==='zombie')continue;
+    const distance=Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z);
+    const rare=ud.type==='bison'||ud.type==='lion'||ud.type==='anaconda';
+    const age=now-(ud.spawnedAt??now);
+    if(distance>180||(distance>25&&age>(rare?WILD_RARE_LIFETIME_MS:WILD_COMMON_LIFETIME_MS))){
+      removeZombie(m); // Shared safe scene/memory cleanup, not just for zombies.
     }
   }
 
-  // Old animals can stay behind without preventing fresh animals from appearing near the player.
-  const nearby=mobs.filter(m=>Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)<55).length;
-  const attempts=nearby<3?3:nearby<6?2:0;
+  const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&
+    Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)<55).length;
+  const attempts=nearby<4?3:nearby<10?2:nearby<15?1:0;
   for(let i=0;i<attempts;i++)spawnPassiveMob();
 }
 
