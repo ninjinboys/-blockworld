@@ -2045,7 +2045,7 @@ function dismountHorse(){
     const x=horse.position.x+dx,z=horse.position.z+dz;
     for(const offset of [1.01,2.01,.01,-.99]){
       const y=horse.position.y+offset;
-      if(!blocked(x,y,z)&&blocked(x,y-.16,z)){
+      if(!blocked(x,y,z)&&blocked(x,y-.60,z)){
         ridingHorse=null;horse.userData.ridingMoved=false;
         player.pos.set(x,y,z);player.vel.set(0,0,0);
         player.onGround=true;fallOriginY=null;
@@ -2069,7 +2069,12 @@ function updateRidingHorse(input,dt,running){
     if(moved&&blocked(horse.position.x,horse.position.y+HORSE_SEAT_HEIGHT,horse.position.z)){
       horse.position.copy(prev);horse.userData.angle=prevAngle;moved=false;
     }
-    if(moved){horse.rotation.y=heading+Math.PI;markSaveDirty()}
+    if(moved){
+      horse.rotation.y=heading+Math.PI;
+      if(!horse.userData.lastSaveMark||performance.now()-horse.userData.lastSaveMark>1500){
+        horse.userData.lastSaveMark=performance.now();markSaveDirty();
+      }
+    }
   }
   horse.userData.ridingMoved=moved;
   player.vel.set((horse.position.x-prev.x)/Math.max(dt,.001),0,(horse.position.z-prev.z)/Math.max(dt,.001));
