@@ -4248,6 +4248,10 @@ function endBowDraw(fire=false){
       power,id:multiOwnId()});
   }
 }
+// Java Edition-style attack recharge: a sword takes about 0.625 seconds
+// between full-strength hits. All melee weapons use this pacing for now.
+const PLAYER_MELEE_COOLDOWN_MS=625;
+let lastPlayerMeleeAt=-Infinity;
 function attackMob(){
   aimPlayerRay();
   const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
@@ -4255,6 +4259,9 @@ function attackMob(){
   let root=hits[0].object;
   while(root.parent&&!mobs.includes(root))root=root.parent;
   if(!mobs.includes(root))return false;
+  const now=performance.now();
+  if(now-lastPlayerMeleeAt<PLAYER_MELEE_COOLDOWN_MS)return true;
+  lastPlayerMeleeAt=now;
 
   const damage=selected===I.DIAMOND_SWORD?4:selected===I.IRON_SWORD?3:selected===I.GOLD_SWORD?2:selected===I.STONE_SWORD?2:1;
   damageMob(root,damage);
