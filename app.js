@@ -2087,9 +2087,12 @@ const LARGE_PREDATOR_SCALE=1.5; // Uniform size increase for bison and lions.
 function buildBison(){
   const g=new THREE.Group();
   g.scale.setScalar(LARGE_PREDATOR_SCALE);
-  const brown=0x764728,back=0x95603b,dark=0x4d2e21,deep=0x352219;
-  const fur=0x593623,furLite=0x9b6940,horn=0xcfc2a0,tip=0xf0e5cb;
-  const nose=0x6b5b4c,nostril=0x211e1c,eye=0x181616;
+  // Black buffalo: layered near-black charcoal fur and subtle silver-gray
+  // highlights retain the massive shape and texture in both daylight and dusk.
+  // Ivory horns stay pale for contrast; the nose is dark slate instead of brown.
+  const brown=0x1a1c1d,back=0x34383a,dark=0x121416,deep=0x090b0d;
+  const fur=0x101214,furLite=0x292d30,horn=0xcfc2a0,tip=0xf0e5cb;
+  const nose=0x272a2d,nostril=0x070809,eye=0x0b0c0d;
   // Front-heavy powerful body with a high shoulder hump.
   cube(g,1.52,1.16,2.07,brown,0,1.13,.15);
   cube(g,1.47,.28,1.73,back,0,1.76,.40);
