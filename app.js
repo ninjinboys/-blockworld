@@ -2092,7 +2092,7 @@ function buildBison(){
   // Ivory horns stay pale for contrast; the nose is dark slate instead of brown.
   const brown=0x1a1c1d,back=0x34383a,dark=0x121416,deep=0x090b0d;
   const fur=0x101214,furLite=0x292d30,horn=0xcfc2a0,tip=0xf0e5cb;
-  const nose=0x272a2d,nostril=0x070809,eye=0x0b0c0d;
+  const nose=0x272a2d,nostril=0x070809,eye=0xff3042,pupil=0x160609;
   // Front-heavy powerful body with a high shoulder hump.
   cube(g,1.52,1.16,2.07,brown,0,1.13,.15);
   cube(g,1.47,.28,1.73,back,0,1.76,.40);
@@ -2110,7 +2110,9 @@ function buildBison(){
   cube(g,.79,.43,.51,nose,0,1.36,-1.57);
   for(const x of[-.25,.25]){
     cube(g,.12,.085,.04,nostril,x,1.36,-1.848);
-    cube(g,.12,.12,.05,eye,x*1.55,1.77,-1.51);
+    // Red, front-facing eyes with a narrow dark pupil, visible on black fur.
+    cube(g,.18,.16,.075,eye,x*1.55,1.79,-1.55);
+    cube(g,.057,.105,.038,pupil,x*1.55,1.79,-1.604);
     cube(g,.16,.12,.14,tip,x*1.49,2.05,-1.29);
     const side=Math.sign(x);
     cube(g,.38,.21,.29,horn,side*.67,2.01,-1.18,0,0,side*.14);
@@ -2157,11 +2159,11 @@ function buildLion(){
   return g;
 }
 
-// A rare giant anaconda. Local -Z is the head; snout to tail measures
-// about eight blocks. Broad shoulders, flattened head, raised neck, olive
-// patchwork, pale belly, golden eyes and a short red forked tongue.
+// Giant anaconda: ONE continuous, tapering snake body (not disconnected
+// box segments that look like a caterpillar). Eight blocks from nose to tip.
+// Local -Z faces forward. This skeleton also drives its collision rings.
 const ANACONDA_BODY=[
-  // x (sideways S-curve), z (head to tail), width, height, depth, center Y
+  // sideways offset, longitudinal z, whole width, whole height, depth, center Y
   [-.03,-2.40,.86,.69,.92,1.23],
   [-.11,-1.63,1.00,.85,.96,1.08],
   [-.25,-.85,1.14,.98,.98,1.04],
@@ -2173,63 +2175,123 @@ const ANACONDA_BODY=[
   [-.25,3.57,.45,.44,.61,.75],
   [-.25,3.93,.22,.24,.48,.70]
 ];
-function buildAnaconda(){
-  const g=new THREE.Group(),olive=0x4b6630,darkOlive=0x354a27;
-  const green=0x6b8541,highlights=0x8b9d57,belly=0xc3ab74;
-  const spot=0x27341f,eye=0xe8cd50,pupil=0x161d11,red=0x9d2427;
-  const segments=[];
-  ANACONDA_BODY.forEach(([x,z,w,h,depth,y],i)=>{
-    const piece=new THREE.Group();
-    piece.position.set(x,0,z);
-    const primary=i%3===0?darkOlive:i%3===1?olive:green;
-    cube(piece,w,h,depth,primary,0,y,0);
-    // Flat pale belly band and ridged olive-green back.
-    cube(piece,w*.83,.13,depth*.94,belly,0,y-h*.46,0);
-    cube(piece,w*.69,.075,depth*.74,highlights,0,y+h*.46,0);
-    if(i<9){
-      for(const side of [-1,1]){
-        cube(piece,w*(i<7?.28:.23),.09,depth*.31,spot,
-          side*w*.21,y+h*.50,(i%2?-.12:.12));
-        cube(piece,.075,Math.min(.30,h*.35),depth*.23,darkOlive,
-          side*w*.48,y+.04,(i%3-1)*.13);
-      }
-    }
-    g.add(piece);segments.push({mesh:piece,baseX:x,phase:i*.65});
+// Extra ends: the front slips inside the raised head, while the far end
+// shrinks into a point. The model head/tail combined remain ~8 blocks.
+const ANACONDA_SKIN_PATH=[
+  [-.02,-2.78,.67,.54,1.35],
+  ...ANACONDA_BODY.map(([x,z,w,h,depth,y])=>[x,z,w,h,y]),
+  [-.25,4.17,.035,.045,.70]
+];
+const ANACONDA_BLOTCHES=Array.from({length:13},(_,i)=>[
+  -2.23+i*.47+Math.sin(i*7.43)*.13,
+  Math.PI/2+(i%2?.57:-.56)+Math.sin(i*2.3)*.12,
+  .19+Math.abs(Math.sin(i*1.27))*.095,
+  .26+Math.abs(Math.cos(i*3.1))*.09
+]);
+const anacondaSkinMaterial=new THREE.MeshLambertMaterial({
+  color:0xffffff,vertexColors:true
+});
+function anacondaProfile(z){
+  const points=ANACONDA_SKIN_PATH;
+  let k=0;
+  while(k<points.length-2&&points[k+1][1]<z)k++;
+  const a=points[k],b=points[k+1];
+  const t=Math.max(0,Math.min(1,(z-a[1])/(b[1]-a[1])));
+  // Catmull-Rom interpolation eliminates discontinuities at every body ring.
+  const before=points[Math.max(0,k-1)],after=points[Math.min(points.length-1,k+2)];
+  return [0,2,3,4].map(index=>{
+    const A=before[index],B=a[index],C=b[index],D=after[index];
+    return .5*(2*B+(-A+C)*t+(2*A-5*B+4*C-D)*t*t+(-A+3*B-3*C+D)*t*t*t);
   });
-  // Rising neck and distinct wedge-shaped head with a lower jaw.
-  cube(g,.82,.84,.77,olive,-.04,1.35,-2.66,-.16);
-  cube(g,.85,.26,.66,belly,-.04,1.06,-2.70,-.14);
-  cube(g,.99,.60,1.13,darkOlive,0,1.79,-3.12);
-  cube(g,.93,.24,.83,belly,0,1.49,-3.28);
-  cube(g,.91,.24,.55,green,0,1.90,-3.45);
-  cube(g,.89,.075,.44,spot,0,1.64,-3.47);
-  // Yellow eyes with pupils visible from either side of the head.
-  for(const side of [-1,1]){
-    cube(g,.105,.19,.21,eye,side*.49,1.99,-3.24);
-    cube(g,.04,.115,.075,pupil,side*.551,2.00,-3.27);
-    cube(g,.09,.055,.08,spot,side*.23,1.90,-3.73);
+}
+function buildAnaconda(){
+  const g=new THREE.Group();
+  const green=0x526d31,dark=0x293b23,olive=0x6e8541;
+  const belly=0xc6b783,eye=0xe9d05d,pupil=0x11170c,red=0xb8202b;
+  // Construct ONE water-tight, smooth-looking but low-poly body mesh.
+  // Vertex colors paint scales, belly and markings directly on the skin:
+  // no raised bumps, joints, collars or cubes along the back.
+  const vertices=[],colors=[],indices=[];
+  const zStart=ANACONDA_SKIN_PATH[0][1],zEnd=4.17;
+  const lengthSteps=72,radialSteps=20;
+  const pigment=Object.fromEntries([
+    ['green',0x556e34],['shade',0x3c572c],['side',0x637c3c],
+    ['belly',0xc6b783],['bellyShade',0xab9869],['spot',0x243820],
+    ['highlight',0x71884b]
+  ].map(([name,color])=>[name,new THREE.Color(color)]));
+  for(let i=0;i<=lengthSteps;i++){
+    const z=zStart+(zEnd-zStart)*i/lengthSteps;
+    const [side,width,height,centerY]=anacondaProfile(z);
+    for(let j=0;j<=radialSteps;j++){
+      const theta=j*Math.PI*2/radialSteps;
+      const radialX=Math.cos(theta),radialY=Math.sin(theta);
+      vertices.push(side+radialX*width*.5,centerY+radialY*height*.5,z);
+      let shade=radialY<-.60?(i%11<6?'belly':'bellyShade'):
+        radialY>.78?'green':radialY>.20?'side':'shade';
+      if(radialY>.13){
+        for(const [spotZ,spotTheta,zRadius,thetaRadius] of ANACONDA_BLOTCHES){
+          let dTheta=Math.abs(theta-spotTheta);
+          dTheta=Math.min(dTheta,2*Math.PI-dTheta);
+          const distance=((z-spotZ)/zRadius)**2+(dTheta/thetaRadius)**2;
+          if(distance<1){shade='spot';break}
+        }
+      }
+      // A narrow, uninterrupted darker dorsal stripe follows the snake.
+      if(radialY>.94&&shade!=='spot')shade='highlight';
+      const col=pigment[shade];
+      colors.push(col.r,col.g,col.b);
+    }
   }
-  // Forked red tongue does not change the overall eight-block silhouette.
-  cube(g,.10,.045,.20,red,0,1.63,-3.70);
-  cube(g,.052,.04,.13,red,-.075,1.63,-3.77,0,-.24);
-  cube(g,.052,.04,.13,red,.075,1.63,-3.77,0,.24);
-  g.userData.snakeSegments=segments;
+  for(let i=0;i<lengthSteps;i++)for(let j=0;j<radialSteps;j++){
+    const a=i*(radialSteps+1)+j,b=a+radialSteps+1;
+    indices.push(a,a+1,b,b,a+1,b+1);
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  const body=new THREE.Mesh(geometry,anacondaSkinMaterial);
+  body.castShadow=true;body.receiveShadow=true;g.add(body);
+  g.userData.snakeBody=body;
+  g.userData.snakeBasePositions=Float32Array.from(vertices);
+
+  // Long low triangular-looking head and a subtly raised neck.
+  // Its snout, tiny eyes and horizontal slit distinguish it from a grub.
+  cube(g,.86,.36,.89,dark,0,1.66,-3.10);
+  cube(g,.80,.16,.82,belly,0,1.46,-3.21);
+  cube(g,.81,.19,.72,olive,0,1.84,-3.23);
+  cube(g,.68,.23,.55,green,0,1.67,-3.53);
+  cube(g,.65,.055,.38,0x1d2319,0,1.52,-3.53);
+  for(const sign of [-1,1]){
+    // Yellow eyes on BOTH sides: real snake rather than a segmented larva.
+    cube(g,.13,.14,.15,eye,sign*.435,1.87,-3.18);
+    cube(g,.04,.105,.065,pupil,sign*.505,1.87,-3.21);
+    cube(g,.075,.045,.07,0x202a19,sign*.21,1.74,-3.79);
+  }
+  cube(g,.09,.045,.19,red,0,1.52,-3.73);
+  cube(g,.043,.035,.14,red,-.06,1.52,-3.79,0,-.22);
+  cube(g,.043,.035,.14,red,.06,1.52,-3.79,0,.22);
   return g;
 }
 function animateAnaconda(m,dt,now,moving){
-  const parts=m.userData.snakeSegments;
-  if(!parts)return;
-  const target=moving?.085:.014;
-  const intensity=m.userData.snakeSway||0;
-  m.userData.snakeSway=intensity+(target-intensity)*Math.min(1,dt*7);
-  for(let i=0;i<parts.length;i++){
-    const p=parts[i];
-    // Small visual-only undulation: body remains inside its collision rings.
-    const offset=Math.sin(now*.0065-p.phase+m.userData.phase)*(i/parts.length);
-    p.mesh.position.x=p.baseX+offset*m.userData.snakeSway;
+  const mesh=m.userData.snakeBody,original=m.userData.snakeBasePositions;
+  if(!mesh||!original)return;
+  const target=moving?.105:.016;
+  m.userData.snakeSway=(m.userData.snakeSway||0)*(1-Math.min(1,dt*6))+
+    target*Math.min(1,dt*6);
+  // Animate the vertices of ONE continuous skin. Never part the body into
+  // visible sections. Keep the neck stationary and move mainly the tail.
+  const positions=mesh.geometry.attributes.position;
+  const phase=m.userData.phase||0;
+  for(let k=0;k<original.length;k+=3){
+    const z=original[k+2];
+    const tailBias=Math.max(0,Math.min(1,(z+2.0)/6.17));
+    positions.array[k]=original[k]+Math.sin(now*.004-z*1.05+phase)*
+      m.userData.snakeSway*tailBias;
   }
+  positions.needsUpdate=true;
 }
-
 // Night-time hostile mob: a green version of the player silhouette.
 // Face points along local -Z. Both arms are kept in front, even while moving.
 const ZOMBIE_LIMIT=7,ZOMBIE_AGGRO_RANGE=28,ZOMBIE_ATTACK_RANGE=1.35;
