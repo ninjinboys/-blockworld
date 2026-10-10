@@ -3813,7 +3813,7 @@ function arrowHitNearbyMob(point,power){
       if(high!=null&&point.y>m.position.y+high+.1)continue;
       const dx=point.x-x,dz=point.z-z;
       if(dx*dx+dz*dz>(r+.10)*(r+.10))continue;
-      damageMob(m,Math.max(1,Math.round(2+4*power)));
+      damageMob(m,Math.max(1,Math.round(1+3*power)));
       return true;
     }
   }
