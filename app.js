@@ -1941,7 +1941,10 @@ function buildHorse(){
 
 // The saddle is attached to the visible horse rig, so it stays on the back
 // during stepping and walking instead of hovering at world coordinates.
-const HORSE_SEAT_HEIGHT=2.02,HORSE_WALK_SPEED=6.1,HORSE_RUN_SPEED=8.5;
+// The saddle is centered at horse Y≈2.08; rider hip is local Y=.69.
+// Lower the avatar root so the hips actually rest on the saddle instead of
+// placing its feet on top of the saddle like a standing character.
+const HORSE_RIDER_ROOT_Y=1.39,HORSE_WALK_SPEED=6.1,HORSE_RUN_SPEED=8.5;
 function showHorseSaddle(horse){
   if(!horse||horse.userData.type!=='horse'||horse.userData.saddleVisual)return;
   const rig=horse.userData.stepVisual||horse;
@@ -1991,7 +1994,7 @@ function restoreSaddledHorses(data){
 }
 function syncRiderToHorse(){
   if(!ridingHorse)return;
-  player.pos.set(ridingHorse.position.x,ridingHorse.position.y+HORSE_SEAT_HEIGHT,ridingHorse.position.z);
+  player.pos.set(ridingHorse.position.x,ridingHorse.position.y+HORSE_RIDER_ROOT_Y,ridingHorse.position.z);
   player.vel.y=0;player.onGround=true;fallOriginY=null;
 }
 // Use the same reticle, raycaster and wall occlusion as regular block use.
@@ -2023,7 +2026,7 @@ function useHorse(horse){
     return true;
   }
   if(ridingHorse){flash('すでに馬に乗っています');return true}
-  if(blocked(horse.position.x,horse.position.y+HORSE_SEAT_HEIGHT,horse.position.z)){
+  if(blocked(horse.position.x,horse.position.y+HORSE_RIDER_ROOT_Y,horse.position.z)){
     flash('頭上が狭いため、ここでは乗れません');return true;
   }
   ridingHorse=horse;horse.userData.fleeTime=0;horse.userData.ridingMoved=false;
@@ -2066,7 +2069,7 @@ function updateRidingHorse(input,dt,running){
     horse.userData.angle=heading;
     moved=mobWalkStep(horse,heading,(running?HORSE_RUN_SPEED:HORSE_WALK_SPEED)*dt);
     // A low ceiling may clear the horse but clip the rider: undo that step.
-    if(moved&&blocked(horse.position.x,horse.position.y+HORSE_SEAT_HEIGHT,horse.position.z)){
+    if(moved&&blocked(horse.position.x,horse.position.y+HORSE_RIDER_ROOT_Y,horse.position.z)){
       horse.position.copy(prev);horse.userData.angle=prevAngle;moved=false;
     }
     if(moved){
@@ -2671,16 +2674,35 @@ function updatePlayerAvatar(now){
   const moving=Math.hypot(player.vel.x,player.vel.z);
   const stride=moving>.3?Math.sin(now*.009*(moving>5.2?1.45:1))*(Math.min(.58,moving*.12)):0;
   const limbs=playerAvatar.userData.limbs;
-  limbs.leftLeg.rotation.x=stride;
-  limbs.rightLeg.rotation.x=-stride;
-  limbs.leftArm.rotation.x=-stride*.8;
-  limbs.rightArm.rotation.x=stride*.8;
   if(ridingHorse){
-    limbs.leftLeg.rotation.x=-.85;limbs.rightLeg.rotation.x=-.85;
-    limbs.leftArm.rotation.x=-.40;limbs.rightArm.rotation.x=-.40;
-  }else if(!player.onGround){
-    limbs.leftLeg.rotation.x=.15;
-    limbs.rightLeg.rotation.x=-.15;
+    // Sit upright with knees and boots on OPPOSITE sides of the horse.
+    // The old pose kept the feet over the saddle and swung both rigid legs
+    // backward, which looked like a standing character floating on the horse.
+    for(const [side,leg] of [[-1,limbs.leftLeg],[1,limbs.rightLeg]]){
+      leg.position.set(side*.50,.69,0);
+      leg.rotation.set(.12,0,side*.50);
+    }
+    // Both hands reach forward toward the reins instead of hanging behind
+    // the rider. Keep the saddle pose steady even while the horse gallops.
+    for(const [side,arm] of [[-1,limbs.leftArm],[1,limbs.rightArm]]){
+      arm.position.set(side*.32,1.30,-.04);
+      arm.rotation.set(.86,0,-side*.12);
+    }
+  }else{
+    // Reset every transformed axis as soon as the rider dismounts so walking,
+    // sprinting, jumping and armor attached to the limbs work exactly as before.
+    for(const [side,leg] of [[-1,limbs.leftLeg],[1,limbs.rightLeg]]){
+      leg.position.set(side*.20,.69,0);
+      leg.rotation.set(side===-1?stride:-stride,0,0);
+    }
+    for(const [side,arm] of [[-1,limbs.leftArm],[1,limbs.rightArm]]){
+      arm.position.set(side*.36,1.30,0);
+      arm.rotation.set(side===-1?-stride*.8:stride*.8,0,0);
+    }
+    if(!player.onGround){
+      limbs.leftLeg.rotation.x=.15;
+      limbs.rightLeg.rotation.x=-.15;
+    }
   }
 }
 function updateGameCamera(){
