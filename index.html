@@ -3,15 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#78aee0">
-<title>Blockworld</title>
-<link rel="stylesheet" href="style.css?v=20261010chest1">
+<meta name="theme-color" content="#172f33">
+<title>NEXACRAFT</title>
+<link rel="stylesheet" href="style.css?v=20261011nexacraftTitle1">
 </head>
 <body>
+<!-- The glowing monument in the title art is Nexa Gate,
+     a future link between the story maps. -->
+<div id="titleCover" class="title-cover" role="dialog" aria-modal="true" aria-label="NEXACRAFT タイトル画面">
+  <div class="title-bottom-shade" aria-hidden="true"></div>
+  <button id="titleEnter" class="title-enter" type="button" aria-label="PRESS ANY BUTTON。シングルプレイ・マルチプレイを選ぶ">
+    <span class="title-enter-label">PRESS ANY BUTTON</span>
+    <span class="title-enter-ornament" aria-hidden="true">── ◆ ──</span>
+  </button>
+</div>
 <div id="game"></div>
 <div id="authCover">
   <div class="auth-panel">
-    <h1>BLOCKWORLD</h1>
+    <h1>NEXACRAFT</h1>
     <div class="auth-tabs">
       <button id="showLogin" class="active" type="button">ログイン</button>
       <button id="showCreate" type="button">新規アカウント作成</button>
@@ -28,7 +37,7 @@
 </div>
 <div id="menuCover">
   <div class="menu-panel">
-    <h1>BLOCKWORLD</h1>
+    <h1>NEXACRAFT</h1>
     <div class="menu-kicker">PLAYER <strong id="menuAccountName">---</strong></div>
     <div class="menu-actions">
       <button id="singlePlayBtn" type="button">シングルプレイ</button>
@@ -39,7 +48,7 @@
 </div>
 <div id="multiCover" aria-label="マルチプレイメニュー">
   <div class="multi-panel">
-    <div class="multi-heading"><div><div class="multi-kicker">BLOCKWORLD</div><h2 id="multiTitle">マルチプレイ</h2></div><button id="multiBack" type="button">戻る</button></div>
+    <div class="multi-heading"><div><div class="multi-kicker">NEXACRAFT</div><h2 id="multiTitle">マルチプレイ</h2></div><button id="multiBack" type="button">戻る</button></div>
     <p id="multiStatus" role="status" aria-live="polite">最大4人。作成者が退出しても残った人は遊び続けられます。</p>
     <div id="multiHome" class="multi-section">
       <button id="multiHostBtn" class="multi-primary" type="button">ワールドを作る</button>
@@ -184,7 +193,7 @@
 </div>
 <div id="startCover" style="display:none">
   <div class="panel">
-    <h1>BLOCKWORLD</h1>
+    <h1>NEXACRAFT</h1>
     <p>持ち物ゼロから開始。無限に続くワールドを探索し、採掘や動物討伐で経験値を稼いでクラフト設計図を解放します。</p>
     <p>森・砂漠・雪山・海・川・洞窟・鉱石・動物・昼夜・雨を生成します。</p>
     <button id="startBtn">世界に入る</button>
@@ -230,6 +239,34 @@
   switchAuth('login');
 })();
 </script>
-<script type="module" src="app.js?v=20261010uniqueMobLoot"></script>
+<script>
+/* Title -> EXISTING two-mode menu, not straight into a saved world.
+ * Existing account session has #menuCover behind the splash.
+ * New/logged-out users authenticate before the same mode selection. */
+(function(){
+  const title=document.getElementById('titleCover');
+  const enter=document.getElementById('titleEnter');
+  let dismissed=false;
+  function proceed(){
+    if(dismissed)return;
+    dismissed=true;
+    title.classList.add('is-dismissed');
+    title.setAttribute('aria-hidden','true');
+    window.setTimeout(()=>{title.hidden=true},340);
+  }
+  title.addEventListener('pointerdown',function(e){
+    if(dismissed)return;
+    e.preventDefault();e.stopPropagation();proceed();
+  },{passive:false});
+  enter.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();proceed();
+  });
+  window.addEventListener('keydown',function(e){
+    if(dismissed||e.isComposing||e.repeat||e.key==='Tab')return;
+    e.preventDefault();e.stopImmediatePropagation();proceed();
+  },true);
+})();
+</script>
+<script type="module" src="app.js?v=20261011nexacraftTitle1"></script>
 </body>
 </html>
