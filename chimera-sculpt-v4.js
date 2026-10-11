@@ -454,11 +454,13 @@ export function buildChimera(T){
   // bends back toward the spectator with a full predatory snake head.
   // -----------------------------------------------------------
   const tail=pivot(body,'snakeTail',0,1.61,1.89);
+  // Wide lateral C-coil deliberately sits beside the lion rather than
+  // being hidden behind its shoulders in the reference-side 3/4 camera.
   const sections=[
-    [0,0,0],[.13,-.06,.65],[.76,-.10,1.39],
-    [1.67,-.04,2.00],[2.68,.23,2.42],
-    [3.51,.75,2.55],[3.97,1.44,2.36],
-    [3.91,2.16,2.04],[3.51,2.82,1.63],[3.17,3.15,1.06]
+    [0,0,0],[.20,-.06,.72],[1.07,-.10,1.48],
+    [2.12,-.04,2.12],[3.25,.23,2.52],
+    [4.18,.75,2.64],[4.75,1.44,2.43],
+    [4.77,2.16,2.08],[4.50,2.82,1.58],[4.19,3.22,1.02]
   ];
   const curve=new T.CatmullRomCurve3(sections.map(vec),false,'catmullrom',.40);
   const steps=80,facetCount=14,vertices=[],colors=[],indices=[];
@@ -489,7 +491,7 @@ export function buildChimera(T){
     indices.push(start,start+2,start+1,start+1,start+2,start+3);
   }
   createMesh(tail,'CONTINUOUS NON-LARVAL ANACONDA COIL',vertices,colors,indices);
-  const snakeHead=pivot(tail,'snakeHead',3.17,3.15,1.06);
+  const snakeHead=pivot(tail,'snakeHead',4.19,3.22,1.02);
   loftZ(snakeHead,'HUGE REPTILIAN HEAD',[
     [-1.56,.04,.27,.16,C.snakeDark],
     [-1.33,.10,.46,.25,C.snakeGold],
@@ -535,7 +537,7 @@ export function buildChimera(T){
     hindLPaw:legs.hindL.foot,hindRPaw:legs.hindR.foot
   };
   root.userData.chimeraVersion=4;
-  root.userData.visualVariant='CHIMERA_IV_3_FRAME_MATCHED_HEAVY_MANE';
+  root.userData.visualVariant='CHIMERA_IV_4_REFERENCE_SIDE_SERPENT';
   root.userData.chimeraVisualOnly=true;
   return root;
 }
@@ -586,7 +588,7 @@ export function animateChimera(model,seconds,state='idle'){
   r.tail.rotation.y=Math.sin(seconds*.83)*.17+
     intensity*.095*Math.sin(phase*.55);
   r.tail.rotation.z=Math.sin(seconds*.91+.7)*.058;
-  r.snakeHead.rotation.y=Math.sin(seconds*1.09)*.18;
+  r.snakeHead.rotation.y=.42+Math.sin(seconds*1.09)*.17;
   r.snakeHead.rotation.x=Math.sin(seconds*.73)*.055;
   r.lowerSnakeJaw.rotation.x=-.17-Math.sin(seconds*1.44)*.10;
 }
