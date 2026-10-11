@@ -64,7 +64,10 @@ button:active,a.chip:active{transform:translateY(1px)}
   #controls button,#controls a{min-width:50px;min-height:38px;font-size:10px;padding:9px}
   #note{bottom:calc(max(9px,env(safe-area-inset-bottom)) + 86px);font-size:9px}
 }
-@media(max-width:530px){#description{display:none}#note{white-space:normal;width:95vw}}
+@media(max-width:960px){#description{display:none}}
+@media(max-width:530px){#note{white-space:normal;width:95vw}}
+#controls button[data-view]{min-width:56px}
+#movementSpeed{color:#ffdc98;font-weight:900;text-shadow:0 1px 8px #000}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
@@ -73,7 +76,7 @@ button:active,a.chip:active{transform:translateY(1px)}
 <header id="mast">
   <div class="overline">NEXACRAFT // CREATURE DESIGN LAB</div>
   <h1>CHIMERA</h1>
-  <div class="subtitle">MID-BOSS • 360° MODEL REVIEW</div>
+  <div class="subtitle">MID-BOSS • 360° MODEL REVIEW · WALK & CHARGE</div>
 </header>
 <aside id="description">
   <h2>MODEL STRUCTURE</h2>
@@ -83,7 +86,7 @@ button:active,a.chip:active{transform:translateY(1px)}
   <p>⛏ 実際の3D形状を表示。画像を板に貼り付けたものではありません。</p>
   <span class="badge">VISUAL DEVELOPMENT · BOSS AI TBD</span>
 </aside>
-<div id="note">DRAG / SWIPE TO ROTATE · PINCH OR WHEEL TO ZOOM</div>
+<div id="note">DRAG TO ROTATE · PINCH TO ZOOM · <span id="movementSpeed">STAND BY</span></div>
 <nav id="controls" aria-label="3Dモデル表示操作">
   <button type="button" data-view="hero" class="active">3/4</button>
   <button type="button" data-view="front">正面</button>
@@ -92,14 +95,15 @@ button:active,a.chip:active{transform:translateY(1px)}
   <button type="button" id="zoomIn" aria-label="拡大">＋</button>
   <button type="button" id="zoomOut" aria-label="縮小">－</button>
   <button type="button" id="turntable" class="active">自動回転</button>
-  <button type="button" id="walk">歩行確認</button>
+  <button type="button" id="walk">歩行 4.8</button>
+  <button type="button" id="charge">突進 8.8</button>
   <a class="chip" href="./" aria-label="NEXACRAFTへ戻る">ゲームへ</a>
 </nav>
 <div id="loadingOverlay" role="status">CREATING CHIMERA MODEL...</div>
 <div id="error" role="alert"></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {buildChimera,animateChimera,CHIMERA_DESIGN} from './chimera-model.js?v=20261011chimeraV1';
+import {buildChimera,animateChimera,CHIMERA_DESIGN,CHIMERA_MOVEMENT} from './chimera-model.js?v=20261011chimeraMotion2';
 try{
   const stage=document.getElementById('stage');
   const scene=new THREE.Scene();
@@ -122,21 +126,21 @@ try{
   scene.add(key);
   const rim=new THREE.DirectionalLight(0x8ca5db,1.7);
   rim.position.set(3,6,8);scene.add(rim);
-  const floor=new THREE.Mesh(new THREE.CylinderGeometry(5,5,.35,56),
+  const floor=new THREE.Mesh(new THREE.CylinderGeometry(16,16,.35,72),
     new THREE.MeshStandardMaterial({color:0x292729,roughness:.95,metalness:.10}));
-  floor.position.y=-.30;floor.receiveShadow=true;scene.add(floor);
-  const grid=new THREE.GridHelper(9,20,0x5b4c39,0x3a3430);
-  grid.position.y=-.108;scene.add(grid);
+  floor.position.set(0,-.30,-4.4);floor.receiveShadow=true;scene.add(floor);
+  const grid=new THREE.GridHelper(28,28,0x5b4c39,0x3a3430);
+  grid.position.set(0,-.108,-4.4);scene.add(grid);
   const boss=buildChimera(THREE);
   scene.add(boss);
 
   const focus=new THREE.Vector3(.18,2.16,.25);
-  const position={az:.64,el:.25,dist:11.1};
+  const position={az:.64,el:.25,dist:13.2};
   const desired={...position};
-  let isRotating=true,isWalking=false;
+  let isRotating=true,moveMode='idle',distanceTraveled=0;
   const views={
-    hero:[.64,.25,11.1],front:[0,.16,10.3],
-    side:[Math.PI/2,.20,11.2],back:[Math.PI,.20,11.6]
+    hero:[.64,.25,13.2],front:[0,.16,12.7],
+    side:[Math.PI/2,.20,13.3],back:[Math.PI,.20,13.6]
   };
   function view(name){
     const v=views[name];if(!v)return;
@@ -147,15 +151,32 @@ try{
   }
   for(const b of document.querySelectorAll('[data-view]'))
     b.addEventListener('click',()=>view(b.dataset.view));
-  document.getElementById('zoomIn').addEventListener('click',()=>desired.dist=Math.max(5.4,desired.dist-.95));
-  document.getElementById('zoomOut').addEventListener('click',()=>desired.dist=Math.min(19,desired.dist+.95));
+  document.getElementById('zoomIn').addEventListener('click',()=>desired.dist=Math.max(6.2,desired.dist-.95));
+  document.getElementById('zoomOut').addEventListener('click',()=>desired.dist=Math.min(23,desired.dist+.95));
   document.getElementById('turntable').addEventListener('click',event=>{
     isRotating=!isRotating;event.currentTarget.classList.toggle('active',isRotating);
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
   });
-  document.getElementById('walk').addEventListener('click',event=>{
-    isWalking=!isWalking;event.currentTarget.classList.toggle('active',isWalking);
-  });
+  // The old "歩行確認" only wiggled legs without moving the model. These
+  // buttons demonstrate REAL translation along a 5.2-block radius route,
+  // with stride cadence matched to speed. Gameplay boss AI is still TBD.
+  function chooseMoveMode(next){
+    moveMode=moveMode===next?'idle':next;
+    document.getElementById('walk').classList.toggle('active',moveMode==='walk');
+    document.getElementById('charge').classList.toggle('active',moveMode==='charge');
+    const targetLabel=document.getElementById('movementSpeed');
+    targetLabel.textContent=moveMode==='walk'?'WALK '+CHIMERA_MOVEMENT.walk+' BLOCKS/SEC':
+      moveMode==='charge'?'CHARGE '+CHIMERA_MOVEMENT.charge+' BLOCKS/SEC':
+      'STAND BY';
+    if(moveMode==='idle'){distanceTraveled=0;boss.position.set(0,0,0);boss.rotation.y=0}
+    else{
+      isRotating=false;
+      document.getElementById('turntable').classList.remove('active');
+      document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
+    }
+  }
+  document.getElementById('walk').addEventListener('click',()=>chooseMoveMode('walk'));
+  document.getElementById('charge').addEventListener('click',()=>chooseMoveMode('charge'));
   const pointers=new Map();
   let lastPinch=null;
   function stopTurntable(){
@@ -177,7 +198,7 @@ try{
     }else{
       const pts=[...pointers.values()];
       const pinch=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
-      if(lastPinch!=null)desired.dist=Math.min(19,Math.max(5.4,desired.dist-(pinch-lastPinch)*.022));
+      if(lastPinch!=null)desired.dist=Math.min(23,Math.max(6.2,desired.dist-(pinch-lastPinch)*.022));
       lastPinch=pinch;
     }
     event.preventDefault();
@@ -186,7 +207,7 @@ try{
   renderer.domElement.addEventListener('pointerup',pointerEnd);
   renderer.domElement.addEventListener('pointercancel',pointerEnd);
   renderer.domElement.addEventListener('wheel',event=>{
-    desired.dist=Math.max(5.4,Math.min(19,desired.dist+Math.sign(event.deltaY)*.50));
+    desired.dist=Math.max(6.2,Math.min(23,desired.dist+Math.sign(event.deltaY)*.50));
     stopTurntable();event.preventDefault();
   },{passive:false});
   function resize(){
@@ -197,15 +218,29 @@ try{
   document.getElementById('loadingOverlay').hidden=true;
   let then=performance.now(),clock=0;
   function frame(now){
-    const dt=Math.min(.09,(now-then)/1000);then=now;clock+=dt;
+    const dt=Math.min(.065,(now-then)/1000);then=now;clock+=dt;
     if(isRotating)desired.az+=dt*.13;
-    for(const prop of ['az','el','dist'])position[prop]+=(desired[prop]-position[prop])*Math.min(1,dt*7);
+    if(moveMode!=='idle'){
+      const speed=moveMode==='charge'?CHIMERA_MOVEMENT.charge:CHIMERA_MOVEMENT.walk;
+      distanceTraveled+=dt*speed;
+      const theta=distanceTraveled/5.2;
+      const cx=5.2*Math.sin(theta),cz=4.4*(Math.cos(theta)-1);
+      boss.position.set(cx,.03,cz);
+      const dx=5.2*Math.cos(theta),dz=-4.4*Math.sin(theta);
+      // Model faces local -Z: yaw maps -Z onto the course tangent.
+      boss.rotation.y=Math.atan2(-dx,-dz);
+    }
+    const desiredFocus=new THREE.Vector3(
+      boss.position.x+.18,boss.position.y+2.29,boss.position.z+.10);
+    focus.lerp(desiredFocus,Math.min(1,dt*6));
+    for(const prop of ['az','el','dist'])
+      position[prop]+=(desired[prop]-position[prop])*Math.min(1,dt*7);
     const r=position.dist,el=position.el,az=position.az;
     camera.position.set(focus.x+Math.sin(az)*Math.cos(el)*r,
       focus.y+Math.sin(el)*r,
       focus.z-Math.cos(az)*Math.cos(el)*r);
     camera.lookAt(focus);
-    animateChimera(boss,clock,isWalking);
+    animateChimera(boss,clock,moveMode);
     renderer.render(scene,camera);
     requestAnimationFrame(frame);
   }
