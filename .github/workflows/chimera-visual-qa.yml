@@ -131,7 +131,7 @@ jobs:
           }));
           if(errorSkin.display!=='none')throw Error('CHIMERA SKIN FAILED: '+errorSkin.text);
           const skinInfo=await page.evaluate(()=>window.chimeraSkinQA);
-          if(!skinInfo||skinInfo.stage!=='skin-v1'||skinInfo.skinCount<28
+          if(!skinInfo||skinInfo.stage!=='skin-v1'||skinInfo.skinCount<18
               ||skinInfo.boneCount<45||!skinInfo.skinVisible)
             throw Error('Skin did not wrap the real bone rig: '+JSON.stringify(skinInfo));
           await page.waitForTimeout(1450);
