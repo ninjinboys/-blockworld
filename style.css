@@ -866,10 +866,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
  #chestHint{font-size:10px}
 }
 
-/* NEXACRAFT cinematic title cover, 2026-10-11. The monument is Nexa Gate. */
+/* NEXACRAFT cinematic title cover: full 1672 x 941 key art; no tiny preview. */
 .title-cover{
   position:fixed;inset:0;z-index:100;display:block;
-  background:#152a32 url("assets/nexacraft-title.webp") center center / cover no-repeat;
+  background:#152a32 url("assets/nexacraft-title.webp?v=20261011titleHD1672") center center / cover no-repeat;
   cursor:pointer;touch-action:manipulation;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   opacity:1;transition:opacity .32s ease;
@@ -908,8 +908,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 @media(prefers-reduced-motion:reduce){.title-enter{animation:none}.title-cover{transition:none}}
 /* Keep the same scenery visible when choosing SINGLE or MULTIPLAYER. */
 #menuCover,#authCover{
-  background:linear-gradient(rgba(8,17,21,.43),rgba(8,19,19,.70)),
-    url("assets/nexacraft-title.webp") center center / cover no-repeat,#172f33;
+  background:linear-gradient(rgba(8,17,21,.33),rgba(8,19,19,.58)),
+    url("assets/nexacraft-title.webp?v=20261011titleHD1672") center center / cover no-repeat,#172f33;
 }
 .menu-panel{
   background:rgba(12,22,24,.94);border-color:rgba(115,232,216,.45);
