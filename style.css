@@ -865,3 +865,59 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
  .chest-footer{gap:8px;margin-top:9px}
  #chestHint{font-size:10px}
 }
+
+/* NEXACRAFT cinematic title cover, 2026-10-11. The monument is Nexa Gate. */
+.title-cover{
+  position:fixed;inset:0;z-index:100;display:block;
+  background:#152a32 url("assets/nexacraft-title.webp") center center / cover no-repeat;
+  cursor:pointer;touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  opacity:1;transition:opacity .32s ease;
+}
+.title-cover.is-dismissed{opacity:0;pointer-events:auto}
+.title-cover[hidden]{display:none!important}
+.title-bottom-shade{
+  position:absolute;inset:61% 0 0;pointer-events:none;
+  background:linear-gradient(0deg,rgba(4,10,16,.70),rgba(4,10,16,.02));
+}
+.title-enter{
+  position:absolute;left:50%;bottom:clamp(25px,16.8%,185px);
+  transform:translateX(-50%);z-index:1;
+  border:1px solid rgba(216,249,236,.62);
+  background:rgba(5,18,24,.80);border-radius:4px;
+  box-shadow:0 0 21px rgba(20,231,202,.20),0 2px 16px rgba(0,0,0,.55);
+  padding:10px clamp(17px,3.6vw,40px) 6px;
+  color:#f6fcf9;font:500 clamp(13px,1.9vw,23px)/1.2 Georgia,serif;
+  letter-spacing:.18em;white-space:nowrap;text-align:center;text-shadow:0 1px 4px #000;
+  cursor:pointer;touch-action:manipulation;
+  animation:nexaTitlePulse 1.7s ease-in-out infinite;
+}
+.title-enter-label{display:block}
+.title-enter-ornament{
+  display:block;color:#88e9d7;font-size:12px;
+  letter-spacing:.3em;line-height:1.2;margin-top:4px;
+}
+.title-enter:hover,.title-enter:focus-visible{
+  background:rgba(14,54,54,.92);outline:2px solid #7ce4d1;outline-offset:2px;
+}
+@keyframes nexaTitlePulse{
+  0%,100%{box-shadow:0 0 9px rgba(20,231,202,.10),0 2px 16px rgba(0,0,0,.55)}
+  50%{box-shadow:0 0 28px rgba(20,231,202,.45),0 2px 16px rgba(0,0,0,.55)}
+}
+@media(max-height:520px){.title-enter{bottom:8%;padding:7px 22px 4px;font-size:15px}}
+@media(prefers-reduced-motion:reduce){.title-enter{animation:none}.title-cover{transition:none}}
+/* Keep the same scenery visible when choosing SINGLE or MULTIPLAYER. */
+#menuCover,#authCover{
+  background:linear-gradient(rgba(8,17,21,.43),rgba(8,19,19,.70)),
+    url("assets/nexacraft-title.webp") center center / cover no-repeat,#172f33;
+}
+.menu-panel{
+  background:rgba(12,22,24,.94);border-color:rgba(115,232,216,.45);
+  box-shadow:0 20px 65px rgba(0,0,0,.58),0 0 30px rgba(15,214,198,.12);
+}
+.menu-panel h1{color:#e8f7f0;text-shadow:0 0 18px rgba(40,230,210,.38)}
+.menu-actions button{
+  background:#357a71;border-color:#174e4a;
+  box-shadow:inset 3px 3px 0 #7cbbac,inset -3px -3px 0 #16534e,0 4px 0 rgba(0,0,0,.35);
+}
+.menu-actions button:hover{background:#41918a}
