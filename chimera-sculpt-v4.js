@@ -252,6 +252,11 @@ export function buildChimera(T){
     foreL:makeLeg(-1,true),foreR:makeLeg(1,true),
     hindL:makeLeg(-1,false),hindR:makeLeg(1,false)
   };
+  // Strong wrestler-like outward planted shoulders, not four narrow pillars.
+  legs.foreL.hip.rotation.z=-.115;
+  legs.foreR.hip.rotation.z=.115;
+  legs.hindL.hip.rotation.z=-.035;
+  legs.hindR.hip.rotation.z=.035;
   // -----------------------------------------------------------
   // LION MANE: a single broad heavy dark-gold fur mantle,
   // framing a DIFFERENT giant roaring face. This is not an orange wig.
@@ -312,6 +317,33 @@ export function buildChimera(T){
         row%3===0?C.maneBright:row%2?C.maneMid:C.root);
     }
   }
+  // Heavy gold-orange three-dimensional cheeklocks. Unlike the old flat
+  // orange wig, these lock plates wrap AROUND the head and merge with the
+  // shoulders, remaining well ABOVE the paws.
+  for(const sign of [-1,1]){
+    for(let column=0;column<5;column++)for(let tier=0;tier<6;tier++){
+      const x=sign*(.68+column*.175+(rand()-.5)*.035);
+      const y=.90-tier*.27+(rand()-.5)*.09;
+      const z=-1.21+column*.13+(rand()-.5)*.07;
+      const color=tier%3===0?C.maneBright:
+        column%3===0?C.maneAmber:
+        (tier+column)%3===0?C.maneMid:C.maneDark;
+      block(mane,x,y,z,.27+rand()*.12,.38+rand()*.13,
+        .42+rand()*.13,color,-.11,0,sign*.13);
+      tuft(mane,x,y-.13,z-.12,.30,.36,
+        sign*.14,-.31-rand()*.17,-.20-rand()*.13,color);
+    }
+    // Shoulder mantle strands sweeping BACK and away from the face.
+    for(let row=0;row<5;row++)for(let tier=0;tier<5;tier++){
+      const x=sign*(1.17+rand()*.11);
+      const y=.52-tier*.26;
+      const z=-.34+row*.25;
+      tuft(mane,x,y,z,.29,.34,
+        sign*.18,-.25-rand()*.18,.30+rand()*.11,
+        (row+tier)%3===0?C.maneAmber:(tier%2?C.root:C.maneMid));
+    }
+  }
+
   // -----------------------------------------------------------
   // LION HEAD: an open gaping mouth is made from a hollow-looking
   // black recessed cavity with separate upper and lower jaw volumes.
@@ -347,6 +379,15 @@ export function buildChimera(T){
       block(head,side*(.24+k*.10),-.29+(k%2)*.075,-1.705,
         .055,.035,.028,C.deep);
   }
+  // Distinct battered feline ears below the curled horn roots.
+  for(const sign of [-1,1]){
+    block(head,sign*.92,.66,-.33,.36,.48,.27,C.faceShade,
+      0,0,sign*.29);
+    block(head,sign*.93,.73,-.50,.21,.24,.07,C.root,
+      0,0,sign*.23);
+    tuft(head,sign*.91,.75,-.40,.34,.25,
+      sign*.08,.24,-.16,C.maneMid);
+  }
   // Black, wide, irregular feline nose wedge (not a pointed cuboid).
   block(head,0,-.11,-1.67,.72,.23,.27,C.nose);
   block(head,0,-.20,-1.72,.49,.22,.27,C.deep);
@@ -365,6 +406,11 @@ export function buildChimera(T){
   block(jaw,0,.125,-.60,.89,.16,.45,C.faceBright);
   block(jaw,0,.206,-.71,.68,.09,.35,C.gum);
   block(jaw,0,.24,-.76,.42,.062,.28,C.tongue);
+  // Teeth form an actual jagged jawline along each dark roaring lip.
+  for(const side of [-1,1])for(let row=0;row<4;row++){
+    block(head,side*(.45+row*.047),-.49-row*.17,-1.66,
+      .075,.16,.10,C.ivory,0,0,side*.06);
+  }
   // Signature sabre fangs: far more visible than two ivory squares.
   for(const side of [-1,1]){
     curveTube(head,'UPPER SABER FANG '+side,[
@@ -489,7 +535,7 @@ export function buildChimera(T){
     hindLPaw:legs.hindL.foot,hindRPaw:legs.hindR.foot
   };
   root.userData.chimeraVersion=4;
-  root.userData.visualVariant='CHIMERA_IV_2_SCULPT_REVIEW_CORRECTED';
+  root.userData.visualVariant='CHIMERA_IV_3_FRAME_MATCHED_HEAVY_MANE';
   root.userData.chimeraVisualOnly=true;
   return root;
 }
