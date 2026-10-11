@@ -153,6 +153,15 @@ export function buildChimera(THREE){
     box(core,sign*.86,2.07,-.67,.63,1.08,.82,C.coatLight,0,0,sign*-.06);
     box(core,sign*.86,1.75,1.24,.56,.90,.92,C.coat,0,0,sign*.12);
     box(core,sign*.96,2.26,-.57,.25,.58,.91,C.copper,0,0,sign*.21);
+    // Break up the rectangular hip silhouette into sloping feline flanks.
+    for(let b=0;b<18;b++){
+      const zz=.02+(b%6)*.28+(rand()-.5)*.12;
+      const yy=1.65+Math.floor(b/6)*.24+(rand()-.5)*.10;
+      const xx=sign*(.90+rand()*.065);
+      box(core,xx,yy,zz,.16,.20+rand()*.17,.33+rand()*.13,
+        rand()<.42?C.coat:rand()<.53?C.copper:C.coatShade,
+        0,0,sign*(.03+.12*rand()));
+    }
     for(let row=0;row<4;row++)for(let col=0;col<9;col++){
       const z=-.47+col*.26+(rand()-.5)*.10;
       const y=2.36-row*.29+(rand()-.5)*.08;
@@ -238,78 +247,90 @@ export function buildChimera(THREE){
 
   // Lion head / roar: physically distinct cranium and lower jaw.
   const head=makeJoint(core,'lionHead',0,2.93,-1.76);
-  const mainFace=C.amber,cheek=C.ochre;
-  box(head,0,0,-.38,1.23,.91,.91,mainFace);
-  box(head,0,.31,-.53,1.37,.42,.75,C.ochre);
-  box(head,0,.10,-.85,.95,.48,.64,C.gold);
+  const mainFace=C.amber;
+  // Multi-layer cranium: broad temples taper into a strong feline snout.
+  // Cheekbones and jaw are distinct, rather than one cartoon box.
+  box(head,0,0,-.36,1.52,1.00,1.08,C.coat);
+  box(head,0,.32,-.53,1.37,.47,.79,C.copper);
+  box(head,0,.13,-.89,1.03,.52,.73,mainFace);
+  box(head,0,-.19,-1.03,.96,.34,.56,C.ochre);
   for(const sign of [-1,1]){
-    box(head,sign*.52,.27,-.50,.35,.37,.59,C.copper,0,0,sign*-.22);
-    box(head,sign*.42,.18,-.93,.31,.24,.21,C.ochre);
-    box(head,sign*.39,.28,-1.16,.31,.17,.10,C.lip);
+    box(head,sign*.56,.24,-.56,.38,.41,.65,C.copper,0,0,sign*-.20);
+    box(head,sign*.45,.09,-.99,.37,.32,.33,C.ochre);
+    box(head,sign*.40,.28,-1.16,.32,.16,.11,C.lip);
+    // Sculpted cheeks form deep side shadows beneath angry brows.
+    box(head,sign*.60,-.27,-1.05,.26,.48,.42,C.deepMane,0,0,sign*.19);
+    box(head,sign*.45,-.41,-1.16,.27,.41,.43,C.amber,0,0,sign*.14);
+    box(head,sign*.60,-.67,-1.00,.21,.42,.38,C.ochre,0,0,sign*.26);
     // Jet-dark sockets; honey-yellow luminous rectangular eyes.
-    box(head,sign*.36,.23,-1.228,.30,.22,.035,C.coatShade);
-    box(head,sign*.36,.23,-1.250,.195,.11,.029,0x000000);
-    box(head,sign*.36,.23,-1.274,.135,.099,.024,0xffc643);
-    box(head,sign*.36,.23,-1.299,.053,.105,.02,0xffec92);
-    box(head,sign*.35,.25,-1.323,.027,.092,.014,0x482a11);
+    box(head,sign*.36,.23,-1.266,.34,.20,.04,C.coatShade,0,0,sign*.14);
+    box(head,sign*.36,.23,-1.294,.229,.105,.029,0x070606,0,0,sign*.10);
+    box(head,sign*.36,.23,-1.319,.166,.073,.023,0xffc643,0,0,sign*.10);
+    box(head,sign*.36,.23,-1.341,.075,.092,.018,0xffe887);
+    box(head,sign*.352,.236,-1.362,.034,.082,.016,0x301e0e);
     // Fierce, diagonally slanted brows. Upper cheek framing.
-    box(head,sign*.37,.425,-1.174,.46,.17,.21,C.copper,0,0,sign*.14);
-    box(head,sign*.65,-.08,-.80,.27,.47,.53,C.copper,0,0,sign*.14);
-    box(head,sign*.33,-.24,-1.17,.47,.27,.44,C.maneHi);
+    box(head,sign*.37,.40,-1.258,.53,.19,.25,C.deepMane,0,0,sign*.26);
+    box(head,sign*.63,-.06,-.82,.28,.47,.57,C.copper,0,0,sign*.18);
+    box(head,sign*.32,-.28,-1.23,.43,.25,.42,C.ochre);
+    // Sparse small whisker scars (voxel sculpture, not texture).
+    for(let dot=0;dot<3;dot++)
+      box(head,sign*(.30+dot*.095),-.35+(dot%2)*.09,-1.473,
+        .055,.046,.030,dot===1?C.deepMane:C.copper);
   }
   // Broad lion snout and black triangular-ish nose made from stepped voxels.
-  box(head,0,-.21,-1.10,1.05,.34,.40,C.amber);
-  box(head,-.25,-.21,-1.39,.47,.30,.37,C.gold);
-  box(head,.25,-.21,-1.39,.47,.30,.37,C.gold);
-  box(head,0,-.12,-1.60,.46,.17,.15,C.hoof);
-  box(head,0,-.225,-1.58,.31,.18,.14,C.lip);
+  box(head,0,-.21,-1.14,1.06,.35,.47,C.amber);
+  box(head,-.275,-.19,-1.44,.48,.29,.40,C.gold);
+  box(head,.275,-.19,-1.44,.48,.29,.40,C.gold);
+  box(head,0,-.13,-1.66,.48,.20,.18,C.hoof);
+  box(head,0,-.24,-1.635,.32,.19,.15,C.lip);
+  box(head,0,-.30,-1.655,.10,.15,.055,C.coatShade);
   // Strong open maw extends UNDER the nose, full cavity visible frontally.
-  box(head,0,-.65,-1.24,.91,.78,.16,C.lip);
-  box(head,0,-.60,-1.335,.75,.61,.045,C.mouth);
-  box(head,0,-.85,-1.378,.39,.17,.035,C.tongue);
-  box(head,0,-.70,-1.397,.10,.31,.031,0x6e2534);
-  const jaw=makeJoint(head,'lionJaw',0,-.93,-1.06);
-  box(jaw,0,0,-.18,.94,.27,.62,C.gold);
-  box(jaw,0,.14,-.38,.77,.13,.44,C.coatLight);
-  box(jaw,0,-.18,-.38,.78,.15,.40,C.copper);
-  box(jaw,0,.18,-.52,.44,.09,.28,C.tongue);
+  box(head,0,-.76,-1.30,1.06,1.00,.24,C.lip);
+  box(head,0,-.77,-1.441,.89,.83,.075,C.mouth);
+  box(head,0,-1.015,-1.489,.45,.17,.055,C.tongue);
+  box(head,0,-.85,-1.490,.11,.30,.035,0x6e2534);
+  const jaw=makeJoint(head,'lionJaw',0,-1.18,-1.07);
+  box(jaw,0,0,-.24,1.04,.29,.67,C.ochre);
+  box(jaw,0,.155,-.46,.85,.14,.49,C.coatLight);
+  box(jaw,0,-.17,-.43,.82,.15,.48,C.copper);
+  box(jaw,0,.20,-.59,.54,.11,.28,C.tongue);
   // Oversized ivory saber fangs, visually essential in the reference.
   for(const sign of [-1,1]){
     taperedTube(head,[
-      [sign*.31,-.30,-1.52],[sign*.31,-.49,-1.60],
-      [sign*.29,-.78,-1.62],[sign*.27,-1.06,-1.61],
-      [sign*.26,-1.17,-1.59]
-    ],[.175,.160,.125,.075,.012],
+      [sign*.35,-.31,-1.57],[sign*.35,-.51,-1.69],
+      [sign*.33,-.85,-1.71],[sign*.30,-1.16,-1.68],
+      [sign*.28,-1.37,-1.61]
+    ],[.180,.173,.131,.078,.009],
     [C.teeth,C.teeth,C.toothShade,C.teeth,C.teeth],5);
     // Supporting incisors, tiny lower teeth and two lower canines.
-    box(head,sign*.115,-.38,-1.582,.11,.21,.13,C.teeth);
+    box(head,sign*.115,-.41,-1.662,.12,.27,.15,C.teeth);
     taperedTube(jaw,[
-      [sign*.335,.15,-.54],[sign*.34,.31,-.55],
-      [sign*.32,.43,-.54]
-    ],[.115,.075,.014],[C.teeth,C.toothShade,C.teeth],5);
+      [sign*.345,.18,-.60],[sign*.34,.35,-.60],
+      [sign*.32,.50,-.59]
+    ],[.125,.078,.008],[C.teeth,C.toothShade,C.teeth],5);
   }
 
   // Massive mane: tightly stacked variable-size cuboid locks; a visibly
   // three-dimensional volume, not a flat orange shell painted on the head.
   const mane=makeJoint(core,'mane',0,2.58,-1.45);
-  box(mane,0,-.05,-.02,2.21,2.10,1.28,C.deepMane);
-  box(mane,0,.70,.10,2.22,.68,1.42,C.copper);
-  box(mane,0,-.71,.05,1.93,.74,1.26,C.copper);
+  box(mane,0,-.05,-.02,2.26,2.13,1.42,C.deepMane);
+  box(mane,0,.70,.10,2.24,.68,1.46,C.copper);
+  box(mane,0,-.71,.05,1.95,.74,1.34,C.copper);
   for(let layer=0;layer<9;layer++){
     const y=.98-layer*.28;
     const width=1.10+Math.sin(layer/9*Math.PI)*.18;
     for(let j=-6;j<=6;j++){
       const t=j/6;
       const x=t*width+(rand()-.5)*.10;
-      const z=.05+.23*Math.abs(t)+(rand()-.5)*.30;
-      const size=.20+rand()*.13;
+      const z=-.12+.30*Math.abs(t)+(rand()-.5)*.45;
+      const size=.20+rand()*.14;
       // Face must be OPEN at the front; frame it with thick cheek locks.
       if(Math.abs(x)<.51&&z<-.12&&y>-.50)continue;
       const shade=rand();
-      const color=shade<.20?C.maneHi:shade<.44?C.gold:shade<.70?C.amber:
-        shade<.86?C.ochre:C.deepMane;
-      box(mane,x,y,z,size,.34+rand()*.34,.31+rand()*.14,
-        color,rand()*.08,0,t*.14);
+      const color=shade<.15?C.maneHi:shade<.36?C.gold:shade<.65?C.amber:
+        shade<.87?C.ochre:C.deepMane;
+      box(mane,x,y,z,size,.36+rand()*.36,.32+rand()*.18,
+        color,-.05+rand()*.12,0,t*.18);
     }
   }
   // Bold upper crown pointing backward, stepped silhouettes along skull.
@@ -332,12 +353,24 @@ export function buildChimera(THREE){
         -.11,0,sign*(.06+.08*rand()));
     }
   }
-  for(let i=0;i<40;i++){
-    const x=(rand()-.5)*1.52,z=-.52+rand()*.94;
-    const y=-1.09-rand()*.35;
-    box(mane,x,y,z,.23+rand()*.10,.38+rand()*.24,.26,
-      rand()<.38?C.deepMane:C.ochre,-.09,0,(rand()-.5)*.13);
+  for(let i=0;i<80;i++){
+    const x=(rand()-.5)*1.80,z=-.51+rand()*.98;
+    const y=-1.00-rand()*.72;
+    box(mane,x,y,z,.21+rand()*.12,.38+rand()*.33,.24+rand()*.12,
+      rand()<.30?C.deepMane:rand()<.49?C.ochre:C.amber,
+      -.05-rand()*.17,0,(rand()-.5)*.20);
   }
+  // Long, layered swept-back locks soften the side silhouette WITHOUT
+  // replacing the authentic cube-built mane with flat paper surfaces.
+  for(const sign of [-1,1])for(let row=0;row<4;row++)
+    for(let k=0;k<14;k++){
+      const x=sign*(.90+row*.15+rand()*.11);
+      const z=-.15+row*.18+(k%7)*.25+(rand()-.5)*.13;
+      const y=.59-Math.floor(k/7)*.53-rand()*.16;
+      box(mane,x,y,z,.17+rand()*.10,.30+rand()*.28,.40+rand()*.17,
+        rand()<.32?C.copper:rand()<.47?C.ochre:C.amber,
+        -.31,0,sign*.12);
+    }
 
   // Buffalo horns: conspicuously WIDER and more swept-back than v1.
   // Each starts deep in the mane, reaches out horizontally, then curls UP.
@@ -366,8 +399,8 @@ export function buildChimera(THREE){
   const eyeMat=new THREE.MeshBasicMaterial({color:0xffe46b});
   const snakeEyeMat=new THREE.MeshBasicMaterial({color:0xffe26b});
   for(const sign of [-1,1]){
-    const e=new THREE.Mesh(new THREE.BoxGeometry(.135,.10,.028),eyeMat.clone());
-    e.position.set(sign*.36,.23,-1.314);
+    const e=new THREE.Mesh(new THREE.BoxGeometry(.153,.077,.028),eyeMat.clone());
+    e.position.set(sign*.36,.23,-1.357);
     e.castShadow=false;e.userData.mobOwnMaterial=true;head.add(e);
   }
 
@@ -428,39 +461,42 @@ export function buildChimera(THREE){
   // Facing toward the player's screen (local -Z), with a long angular upper
   // jaw, golden eye sockets, lower mandible, fangs and a forked red tongue.
   const snakeHead=makeJoint(tail,'snakeHead',1.83,2.79,1.34);
-  box(snakeHead,0,0,-.35,.77,.47,.82,C.snake);
-  box(snakeHead,0,.20,-.36,.67,.18,.68,C.snakeGold);
-  box(snakeHead,0,-.08,-.72,.63,.31,.66,C.snake);
-  box(snakeHead,0,-.21,-.72,.55,.23,.55,C.snakeBelly);
-  box(snakeHead,0,-.33,-.86,.60,.16,.57,C.snakeDark);
-  box(snakeHead,0,-.23,-1.00,.52,.29,.12,C.snakeLip);
-  box(snakeHead,0,-.265,-1.05,.37,.24,.04,C.mouth);
-  const lowerSnakeJaw=makeJoint(snakeHead,'snakeJaw',0,-.39,-.60);
-  box(lowerSnakeJaw,0,0,-.21,.65,.17,.70,C.snakeBelly);
-  box(lowerSnakeJaw,0,.13,-.34,.45,.075,.38,C.tongue);
-  box(snakeHead,0,-.36,-1.08,.09,.06,.32,0xab4556);
-  box(snakeHead,-.07,-.36,-1.24,.065,.047,.24,0xa93849,0,-.12);
-  box(snakeHead,.07,-.36,-1.24,.065,.047,.24,0xa93849,0,.12);
+  // Wedge-like reptile skull: large at the neck, tapering into a long
+  // heavy upper jaw. The open lower jaw is a completely separate joint.
+  box(snakeHead,0,0,-.29,.83,.45,.83,C.snake);
+  box(snakeHead,0,.20,-.35,.78,.18,.72,C.snakeGold);
+  box(snakeHead,0,-.065,-.76,.69,.30,.72,C.snake);
+  box(snakeHead,0,-.22,-.91,.57,.22,.64,C.snakeBelly);
+  box(snakeHead,0,-.33,-.93,.64,.16,.62,C.snakeDark);
+  box(snakeHead,0,-.20,-1.10,.55,.28,.20,C.snakeLip);
+  box(snakeHead,0,-.285,-1.18,.48,.27,.045,C.mouth);
+  const lowerSnakeJaw=makeJoint(snakeHead,'snakeJaw',0,-.45,-.62);
+  box(lowerSnakeJaw,0,0,-.24,.70,.17,.78,C.snakeBelly);
+  box(lowerSnakeJaw,0,.13,-.43,.49,.075,.43,C.tongue);
+  box(snakeHead,0,-.44,-1.15,.09,.06,.35,0xab4556);
+  box(snakeHead,-.07,-.44,-1.35,.065,.047,.27,0xa93849,0,-.12);
+  box(snakeHead,.07,-.44,-1.35,.065,.047,.27,0xa93849,0,.12);
   for(const sign of [-1,1]){
-    box(snakeHead,sign*.30,.15,-.72,.16,.21,.26,C.snakeDark);
-    box(snakeHead,sign*.31,.185,-.83,.115,.10,.08,0xffd24e);
-    box(snakeHead,sign*.31,.185,-.89,.037,.12,.025,0x171910);
-    const glow=new THREE.Mesh(new THREE.BoxGeometry(.085,.084,.023),snakeEyeMat.clone());
-    glow.position.set(sign*.31,.19,-.919);
+    box(snakeHead,sign*.34,.15,-.76,.18,.22,.30,C.snakeDark);
+    box(snakeHead,sign*.32,.195,-.94,.125,.105,.075,0xffd24e);
+    box(snakeHead,sign*.32,.195,-1.005,.039,.12,.026,0x171910);
+    const glow=new THREE.Mesh(new THREE.BoxGeometry(.105,.087,.027),snakeEyeMat.clone());
+    glow.position.set(sign*.32,.195,-1.038);
     glow.userData.mobOwnMaterial=true;snakeHead.add(glow);
-    box(snakeHead,sign*.21,-.08,-1.072,.078,.065,.09,C.snakeDark);
+    box(snakeHead,sign*.23,-.09,-1.185,.09,.065,.10,C.snakeDark);
     taperedTube(snakeHead,[
-      [sign*.25,-.16,-1.03],[sign*.25,-.34,-1.06],[sign*.23,-.57,-1.08]
-    ],[.104,.080,.008],[C.teeth,C.teeth,C.toothShade],5);
+      [sign*.27,-.21,-1.11],[sign*.27,-.39,-1.14],
+      [sign*.24,-.63,-1.19]
+    ],[.11,.083,.007],[C.teeth,C.teeth,C.toothShade],5);
     taperedTube(lowerSnakeJaw,[
-      [sign*.22,.10,-.48],[sign*.23,.26,-.48]
-    ],[.072,.008],[C.teeth,C.teeth],5);
+      [sign*.23,.12,-.55],[sign*.23,.28,-.55]
+    ],[.077,.008],[C.teeth,C.teeth],5);
   }
   // Dorsal lip scales keep the reptile angular and distinctly a snake.
-  for(let i=0;i<9;i++){
-    const x=((i%3)-1)*.24, z=-.30-Math.floor(i/3)*.21;
-    box(snakeHead,x,.265-(i%2)*.03,z,.19,.10,.18,
-      i%3===0?C.snakeGold:C.snakeDark);
+  for(let i=0;i<12;i++){
+    const x=((i%3)-1)*.26, z=-.25-Math.floor(i/3)*.22;
+    box(snakeHead,x,.265-(i%2)*.03,z,.19,.10,.20,
+      i%4===0?C.snakeGold:C.snakeDark);
   }
 
   finishBoxes();
@@ -539,12 +575,12 @@ export function animateChimera(chimera,elapsedSeconds,mode='idle'){
     +intensity*.048*Math.sin(phase+.2);
   r.head.rotation.z=.012*Math.sin(t*.66)+intensity*.026*Math.sin(phase-.3);
   // The roar is an independent jaw movement rather than jaw+head rotation.
-  r.jaw.rotation.x=-.16-.085*Math.sin(t*1.77);
+  r.jaw.rotation.x=-.23-.075*Math.sin(t*1.77);
   r.tail.rotation.y=Math.sin(t*1.13)*.20+intensity*.11*Math.sin(phase*.5);
   r.tail.rotation.z=Math.sin(t*.95+.5)*.085+intensity*.06*Math.sin(phase+.7);
   r.tail.rotation.x=Math.sin(t*.72)*.035;
   r.snakeHead.rotation.y=Math.sin(t*1.47)*.22;
   r.snakeHead.rotation.z=Math.sin(t*.91)*.10;
   r.snakeHead.rotation.x=Math.sin(t*.67)*.065;
-  r.lowerSnakeJaw.rotation.x=-.14-.065*Math.sin(t*1.72+.8);
+  r.lowerSnakeJaw.rotation.x=-.22-.065*Math.sin(t*1.72+.8);
 }
