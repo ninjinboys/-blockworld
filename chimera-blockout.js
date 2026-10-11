@@ -14,7 +14,7 @@
 import {
   buildChimeraSkeleton,animateChimeraSkeleton,
   CHIMERA_ARMATURE,CHIMERA_MOVEMENT
-} from './chimera-skeleton.js?v=20261011anatomyBones03';
+} from './chimera-skeleton.js?v=20261011anatomyBones03_2';
 
 export {CHIMERA_ARMATURE,CHIMERA_MOVEMENT};
 
