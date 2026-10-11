@@ -1,14 +1,14 @@
 /**
- * NEXACRAFT: CHIMERA ANATOMICAL SKELETON v1
+ * NEXACRAFT: CHIMERA ANATOMICAL SKELETON v2 — real Three.js Bone graph
  *
  * ONLY THE BONES — NOT the old lion model, not fur, a texture, or an image.
  * 1 unit = 1 Minecraft-like block. Front = local -Z. Ground = Y=0.
  * This file is the source of truth for future boss mesh skinning.
  */
 export const CHIMERA_ARMATURE=Object.freeze({
-  version:1,name:'キメラ / 基本骨格',
+  version:2,name:'キメラ / 基本骨格',
   shoulderHeight:3.45,hipHeight:2.60,
-  shoulderWidth:2.65,forefootWidth:3.12,hipWidth:1.75,
+  shoulderWidth:2.65,forefootWidth:3.68,hipWidth:1.75,
   bodyFromZ:-1.65,bodyToZ:2.16,skullNoseZ:-3.72,
   tailHeadHeight:4.53,status:'骨格の検証段階・表皮装飾なし'
 });
@@ -113,10 +113,10 @@ export function buildChimeraSkeleton(T){
     const fore={
       id:'fore'+name,kind:'fore',side,
       shoulder:[side*1.32,2.93,-1.36],
-      elbow:[side*1.45,1.70,-1.83],
-      wrist:[side*1.56,.74,-2.22],
-      paw:[side*1.58,.23,-2.63],
-      toe:[side*1.58,.18,-3.05],
+      elbow:[side*1.59,1.70,-1.83],
+      wrist:[side*1.80,.74,-2.22],
+      paw:[side*1.84,.23,-2.63],
+      toe:[side*1.84,.18,-3.05],
       L1:1.39,L2:1.35
     };
     const hind={
@@ -232,21 +232,84 @@ export function buildChimeraSkeleton(T){
     const joint=A.clone().addScaledVector(unit,a).addScaledVector(n,h);
     return [joint.x,joint.y,joint.z];
   }
+  // -------- REAL THREE.JS BONE HIERARCHY (SKINNABLE) --------
+  // Previously, adding decorative boxes changed no underlying skeleton.
+  // This is an explicit Three.js Skeleton with named hierarchical bones,
+  // rest/bind matrices and stable pivot positions; a future SkinnedMesh
+  // can bind to these nodes instead of inventing its own proportions.
+  const rootBone=new T.Bone();
+  rootBone.name='CHIMERA_WORLD_ROOT';
+  root.add(rootBone);
+  const skinBones=[rootBone],bindRest=new Map();
+  bindRest.set(rootBone,[0,0,0]);
+  function bind(name,parent,world){
+    const parentWorld=bindRest.get(parent);
+    if(!parentWorld)throw Error('Missing parent rest transform: '+name);
+    const joint=new T.Bone();
+    joint.name=name;
+    joint.position.set(world[0]-parentWorld[0],
+      world[1]-parentWorld[1],world[2]-parentWorld[2]);
+    parent.add(joint);
+    bindRest.set(joint,[...world]);
+    skinBones.push(joint);
+    return joint;
+  }
+  const spineBones=[];
+  for(let i=0;i<restSpine.length;i++)
+    spineBones.push(bind('vertebra_'+i,
+      i===0?rootBone:spineBones[i-1],restSpine[i]));
+  const neckBones=[];
+  for(let i=0;i<neck.length;i++)
+    neckBones.push(bind('cervical_'+i,
+      i===0?spineBones[0]:neckBones[i-1],neck[i]));
+  const skullBone=bind('lion_cranium',neckBones.at(-1),
+    [0,3.48,-3.18]);
+  const jawBone=bind('lion_lower_jaw',skullBone,[0,2.90,-3.52]);
+  const legBones={};
+  for(const key of legOrder){
+    const leg=legs[key];
+    const parent=leg.kind==='fore'?spineBones[1]:spineBones[6];
+    const shoulderBone=bind(key+'_shoulder',parent,leg.shoulder);
+    const jointBone=bind(key+'_'+(leg.kind==='fore'?'elbow':'knee'),
+      shoulderBone,leg.elbow);
+    const ankleBone=bind(key+'_'+(leg.kind==='fore'?'wrist':'hock'),
+      jointBone,leg.wrist);
+    const pawBone=bind(key+'_paw',ankleBone,leg.paw);
+    const toeBone=bind(key+'_toe',pawBone,leg.toe);
+    legBones[key]={shoulder:shoulderBone,joint:jointBone,
+      ankle:ankleBone,paw:pawBone,toe:toeBone};
+    leg.boneGraph=legBones[key];
+  }
+  const snakeBones=[];
+  for(let i=0;i<serpent.length;i++)
+    snakeBones.push(bind('anaconda_vertebra_'+i,
+      i===0?spineBones.at(-1):snakeBones[i-1],serpent[i]));
+  const snakeSkullBone=bind('anaconda_head',
+    snakeBones.at(-1),[-3.06,4.50,.62]);
+  const snakeJawBone=bind('anaconda_lower_jaw',
+    snakeSkullBone,[-3.06,4.09,-.17]);
+  // The root has already been attached to the visible model. Evaluate the
+  // bind pose before computing inverse rest matrices.
+  root.updateMatrixWorld(true);
+  const threeSkeleton=new T.Skeleton(skinBones);
   const skeleton={
     legs,legOrder,serpent,tailRadii:radius,restSpine,neck,
     joints,rods,volumeGroup:cage,axesGroup:axes,
+    realBones:threeSkeleton,skinBones,rootBone,spineBones,neckBones,
+    skullBone,jawBone,legBones,snakeBones,snakeSkullBone,snakeJawBone,
+    bindRest,
     solveIK,positionRod,setJoint,
     showVolumes(on){cage.visible=on;},
     showHornGuides(on){axes.visible=on;},
     snapshot(){return {
-      shoulderSpan:2*1.32,forefootSpan:2*1.58,hipSpan:2*.88,
+      shoulderSpan:2*1.32,forefootSpan:2*1.84,hipSpan:2*.88,
       torsoZSpan:2.20-(-1.66),skullReach:-3.80,
       serpentBase:[...serpent[0]],serpentHead:[...serpent.at(-1)]
     }}
   };
   root.userData.skeleton=skeleton;
   root.userData.chimeraSkeletonOnly=true;
-  root.userData.chimeraVersion='SKELETON_01';
+  root.userData.chimeraVersion='SKELETON_02_HIERARCHICAL_BONES';
   return root;
 }
 
@@ -294,7 +357,20 @@ export function animateChimeraSkeleton(model,time,mode='idle'){
     s.setJoint(key+'Ankle',q.wrist);
     s.setJoint(key+'Paw',q.paw);
     s.setJoint(key+'Toe',q.toe);
+    // Update the genuine 5-bone limb hierarchy as well as the visible
+    // segments. This keeps future skinning aligned to the physical joints.
+    const hierarchy=leg.boneGraph;
+    hierarchy.joint.position.set(q.mid[0]-leg.shoulder[0],
+      q.mid[1]-leg.shoulder[1],q.mid[2]-leg.shoulder[2]);
+    hierarchy.ankle.position.set(q.wrist[0]-q.mid[0],
+      q.wrist[1]-q.mid[1],q.wrist[2]-q.mid[2]);
+    hierarchy.paw.position.set(q.paw[0]-q.wrist[0],
+      q.paw[1]-q.wrist[1],q.paw[2]-q.wrist[2]);
+    hierarchy.toe.position.set(q.toe[0]-q.paw[0],
+      q.toe[1]-q.paw[1],q.toe[2]-q.paw[2]);
   }
+  // Evaluate the articulated world-space bone tree after leg IK.
+  model.updateMatrixWorld(true);
   const amp=active?(rush?.11:.055):0;
   return {mode:active?(rush?'charge':'walk'):'idle',
     verticalShift:amp*Math.sin(s.gaitPhase*Math.PI*4)**2,
