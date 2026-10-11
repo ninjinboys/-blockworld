@@ -1,16 +1,16 @@
 /**
- * NEXACRAFT: CHIMERA ANATOMICAL SKELETON v2 — real Three.js Bone graph
+ * NEXACRAFT: CHIMERA ANATOMICAL SKELETON v3 — reference-accurate long, massive feline proportions
  *
  * ONLY THE BONES — NOT the old lion model, not fur, a texture, or an image.
  * 1 unit = 1 Minecraft-like block. Front = local -Z. Ground = Y=0.
  * This file is the source of truth for future boss mesh skinning.
  */
 export const CHIMERA_ARMATURE=Object.freeze({
-  version:2,name:'キメラ / 基本骨格',
-  shoulderHeight:3.45,hipHeight:2.60,
-  shoulderWidth:2.65,forefootWidth:3.68,hipWidth:1.75,
-  bodyFromZ:-1.65,bodyToZ:2.16,skullNoseZ:-3.72,
-  tailHeadHeight:4.53,status:'骨格の検証段階・表皮装飾なし'
+  version:3,name:'キメラ / 参考画像準拠の体型',
+  shoulderHeight:3.70,hipHeight:2.74,
+  shoulderWidth:3.0,forefootWidth:4.16,hipWidth:1.96,
+  bodyFromZ:-1.83,bodyToZ:2.78,skullNoseZ:-4.30,
+  tailHeadHeight:5.26,status:'骨格の検証段階・表皮装飾なし'
 });
 export const CHIMERA_MOVEMENT=Object.freeze({
   walk:4.8,charge:8.8,walkStride:1.16,chargeStride:1.85
@@ -70,24 +70,26 @@ export function buildChimeraSkeleton(T){
     mesh.position.set(...pos);mesh.scale.set(...scales);
     cage.add(mesh);volumes.push(mesh);return mesh;
   }
+  // REFERENCE: high forward hump, continuous long barrel, descending rump.
+  // Over 4.5 blocks of torso, not an upright compact cattle-body.
   const restSpine=[
-    [0,3.22,-1.60],[0,3.45,-1.27],[0,3.39,-.68],
-    [0,3.24,-.02],[0,3.10,.64],[0,2.91,1.22],
-    [0,2.68,1.74],[0,2.49,2.13]
+    [0,3.46,-1.83],[0,3.72,-1.40],[0,3.66,-.72],
+    [0,3.46,.04],[0,3.31,.80],[0,3.12,1.51],
+    [0,2.87,2.20],[0,2.65,2.78]
   ];
   line('LONG FELINE SPINE',restSpine,.114,'spine');
   restSpine.forEach((pt,i)=>marker('vertebra'+i,pt,.095,'spine'));
   // Multiple distinct chest masses. Powerful high withers, deep brisket,
   // narrow middle ribs, broad thick hindquarters.
-  volume('SHOULDERS ARE 2.8 BLOCKS WIDE',[0,2.43,-1.07],
-    [1.42,1.06,.91]);
-  volume('DEEP CHEST WITH CURVED BREASTBONE',[0,2.16,-.38],
-    [1.24,1.03,1.40]);
-  volume('TAPERED LOIN',[0,2.13,.79],[.86,.73,.80]);
-  volume('WIDE PELVIS + THIGHS',[0,2.26,1.64],[1.06,.91,.78]);
+  volume('FORWARD HEAVY WITHERS (3 BLOCKS WIDE)',[0,2.55,-1.15],
+    [1.57,1.21,1.10]);
+  volume('DEEP BRISKET AND RIB CAGE',[0,2.23,-.24],
+    [1.34,1.18,1.65]);
+  volume('NARROWED ABDOMEN',[0,2.16,1.08],[.94,.77,1.03]);
+  volume('WIDE HAUNCHES (BUILT FOR SPRING)',[0,2.37,2.17],[1.16,1.02,1.09]);
   // Rib cage is transparent, articulated volumes are distinct from bones.
   for(let row=0;row<7;row++){
-    const z=-1.28+row*.35,w=1.18-row*.038,h=3.36-row*.065;
+    const z=-1.34+row*.46,w=1.29-row*.043,h=3.61-row*.072;
     const hoop=[
       [0,h,z],[-w*.69,h-.22,z],[-w,h-.58,z],
       [-w*.94,h-1.05,z],[-w*.51,h-1.42,z],
@@ -97,36 +99,36 @@ export function buildChimeraSkeleton(T){
     ];
     line('RIB ARC '+row,hoop,.032,'spine',cage);
   }
-  rod('HEAVY FORWARD BRISKET',[0,1.26,-1.50],
-    [0,1.42,-.23],.12,'spine');
+  rod('HEAVY FORWARD BRISKET',[0,1.20,-1.72],
+    [0,1.40,-.15],.14,'spine');
   const legs={},legOrder=[];
   for(const side of [-1,1]){
     const name=side<0?'L':'R';
     line('SHOULDER BLADE '+name,[
-      [side*.51,3.56,-1.41],[side*1.21,3.11,-1.22],
-      [side*1.33,2.90,-1.40]
-    ],.142,'spine');
+      [side*.59,3.79,-1.57],[side*1.32,3.27,-1.42],
+      [side*1.50,3.06,-1.51]
+    ],.158,'spine');
     line('PELVIC ARCH '+name,[
-      [side*.25,2.81,1.54],[side*.80,2.72,1.61],
-      [side*.88,2.52,1.70]
-    ],.133,'spine');
+      [side*.31,3.05,2.14],[side*.85,2.94,2.30],
+      [side*.98,2.70,2.34]
+    ],.148,'spine');
     const fore={
       id:'fore'+name,kind:'fore',side,
-      shoulder:[side*1.32,2.93,-1.36],
-      elbow:[side*1.59,1.70,-1.83],
-      wrist:[side*1.80,.74,-2.22],
-      paw:[side*1.84,.23,-2.63],
-      toe:[side*1.84,.18,-3.05],
-      L1:1.39,L2:1.35
+      shoulder:[side*1.50,3.07,-1.52],
+      elbow:[side*1.87,1.72,-2.26],
+      wrist:[side*2.05,.76,-2.76],
+      paw:[side*2.08,.23,-3.10],
+      toe:[side*2.08,.18,-3.62],
+      L1:1.61,L2:1.55
     };
     const hind={
       id:'hind'+name,kind:'hind',side,
-      shoulder:[side*.88,2.49,1.69],
-      elbow:[side*.98,1.57,1.09],
-      wrist:[side*1.02,.76,2.27],
-      paw:[side*1.04,.23,2.46],
-      toe:[side*1.04,.18,2.79],
-      L1:1.24,L2:1.34
+      shoulder:[side*.98,2.68,2.27],
+      elbow:[side*1.10,1.66,1.64],
+      wrist:[side*1.18,.79,3.08],
+      paw:[side*1.20,.23,3.35],
+      toe:[side*1.20,.18,3.75],
+      L1:1.42,L2:1.53
     };
     for(const leg of [fore,hind]){
       legs[leg.id]=leg;legOrder.push(leg.id);
@@ -151,11 +153,11 @@ export function buildChimeraSkeleton(T){
       };
       if(leg.kind==='fore'){
         const m=volume(s+' 0.8-BLOCK SHOULDERS',
-          [leg.shoulder[0],2.15,-1.54],[.45,.83,.53],'boneMass');
+          [leg.shoulder[0],2.28,-1.85],[.62,.92,.67],'boneMass');
         m.rotation.x=-.25;
       }else{
         const m=volume(s+' MUSCULAR THIGHS',
-          [leg.shoulder[0],2.03,1.71],[.53,.76,.70],'boneMass');
+          [leg.shoulder[0],2.15,2.24],[.63,.90,.80],'boneMass');
         m.rotation.x=.17;
       }
     }
@@ -163,61 +165,65 @@ export function buildChimeraSkeleton(T){
   // Lion's massive head must be IN FRONT of the shoulders, with a
   // real long down-sloping neck, a cranium and a separate jaw arch.
   const neck=[
-    [0,3.32,-1.55],[0,3.51,-1.98],
-    [0,3.61,-2.43],[0,3.52,-2.94],
-    [0,3.36,-3.29]
+    [0,3.55,-1.64],[0,3.77,-2.16],
+    [0,3.86,-2.65],[0,3.73,-3.24],
+    [0,3.56,-3.73]
   ];
   line('CERVICAL VERTEBRAE',neck,.133,'skull');
   neck.forEach((pt,i)=>marker('cervical'+i,pt,.13,'skull'));
-  volume('MASSIVE NECK (NOT MANE)',[0,3.06,-1.99],
-    [1.27,1.18,1.01],'mass');
-  volume('LION CRANIUM',[0,3.46,-3.06],[.79,.64,.79],'boneMass');
-  volume('LION SNOUT SKULL',[0,3.19,-3.61],[.52,.36,.45],'boneMass');
+  volume('HEAVY HORIZONTAL NECK / SHOULDER TRANSITION',[0,3.19,-2.20],
+    [1.42,1.22,1.23],'mass');
+  volume('LARGE FANGED PREDATOR CRANIUM',[0,3.66,-3.52],
+    [1.02,.76,.98],'boneMass');
+  volume('DEEP PROJECTED LION MUZZLE',[0,3.30,-4.00],
+    [.70,.43,.57],'boneMass');
   line('FELINE UPPER PROFILE',[
-    [0,3.72,-2.72],[0,3.58,-3.28],[0,3.26,-3.75]
+    [0,4.04,-3.11],[0,3.88,-3.75],[0,3.32,-4.36]
   ],.074,'skull');
   line('LION LOWER JAW',[
-    [-.45,3.08,-2.99],[-.38,2.90,-3.44],
-    [0,2.90,-3.80],[.38,2.90,-3.44],
-    [.45,3.08,-2.99]
+    [-.56,3.20,-3.38],[-.48,2.87,-3.91],
+    [0,2.80,-4.35],[.48,2.87,-3.91],
+    [.56,3.20,-3.38]
   ],.081,'skull');
-  marker('lionChin',[0,2.90,-3.80],.13,'skull');
+  marker('lionChin',[0,2.80,-4.35],.15,'skull');
   // Horn growth direction guides only. Actual horns are for AFTER
   // the proportions are approved, never baked into this skeletal pass.
   for(const side of [-1,1]){
     line('HORN ROOT GUIDE '+side,[
-      [side*.62,3.83,-2.81],[side*1.16,3.82,-2.83],
-      [side*1.81,3.79,-2.80],[side*2.35,4.08,-2.80],
-      [side*2.65,4.53,-2.76],[side*2.69,4.96,-2.71]
+      [side*.88,4.00,-3.35],[side*1.44,4.01,-3.36],
+      [side*2.12,3.98,-3.38],[side*2.65,4.28,-3.38],
+      [side*3.00,4.81,-3.34],[side*3.02,5.30,-3.32]
     ],.052,'axis',axes);
   }
   // Tail emerges from the sacrum; coils to the model's LEFT (-X).
   // From front, the snake visibly occupies the opposite half of the
   // overall silhouette, just like the user's approved reference art.
+  // Sweep out from the animal's sacrum, make a giant S-bend visible
+  // BESIDE the rump, then rise in a thick C-shaped vertical neck.
   const serpent=[
-    [0,2.46,2.09],[0,2.34,2.48],
-    [-.48,2.09,3.08],[-1.23,1.90,3.61],
-    [-2.21,1.89,3.99],[-3.14,2.06,4.00],
-    [-3.83,2.53,3.73],[-4.18,3.28,3.34],
-    [-4.09,4.03,2.77],[-3.70,4.51,2.17],
-    [-3.22,4.65,1.42],[-3.06,4.51,.96]
+    [0,2.60,2.73],[0,2.43,3.20],
+    [-.40,2.15,3.82],[-1.25,1.96,4.47],
+    [-2.35,1.99,4.82],[-3.47,2.13,4.72],
+    [-4.34,2.65,4.31],[-4.71,3.54,3.73],
+    [-4.50,4.42,3.05],[-4.01,5.04,2.34],
+    [-3.43,5.32,1.57],[-3.24,5.17,1.06]
   ];
-  const radius=[.65,.67,.66,.64,.60,.56,.50,.45,.37,.30,.25,.20];
+  const radius=[.84,.86,.81,.78,.73,.67,.60,.54,.46,.38,.31,.24];
   line('ONE CONTINUOUS REPTILE TAIL SPINE',serpent,.14,'tail');
   for(let i=0;i<serpent.length;i++){
     marker('snakeTailJoint'+i,serpent[i],radius[i]*.23+.042,'tail');
     volume('SNAKE THICKNESS RADIUS '+i,serpent[i],
       [radius[i],radius[i],radius[i]],'mass');
   }
-  volume('RAISED SNAKE CRANIUM',[-3.06,4.50,.62],
-    [.58,.43,.87],'boneMass');
+  volume('RAISED SNAKE CRANIUM',[-3.24,5.19,.70],
+    [.72,.50,1.01],'boneMass');
   line('SNAKE UPPER JAW',[
-    serpent[serpent.length-1],[-3.06,4.44,.22],
-    [-3.06,4.35,-.20]
-  ],.092,'tail');
+    serpent[serpent.length-1],[-3.24,5.08,.24],
+    [-3.24,4.94,-.40]
+  ],.100,'tail');
   line('SNAKE LOWER JAW',[
-    [-3.06,4.28,.70],[-3.06,4.05,-.17]
-  ],.07,'tail');
+    [-3.24,4.96,.71],[-3.24,4.66,-.35]
+  ],.080,'tail');
 
   function solveIK(start,end,L1,L2,bend){
     const A=makeVec(start),B=makeVec(end),delta=B.clone().sub(A);
@@ -263,8 +269,8 @@ export function buildChimeraSkeleton(T){
     neckBones.push(bind('cervical_'+i,
       i===0?spineBones[0]:neckBones[i-1],neck[i]));
   const skullBone=bind('lion_cranium',neckBones.at(-1),
-    [0,3.48,-3.18]);
-  const jawBone=bind('lion_lower_jaw',skullBone,[0,2.90,-3.52]);
+    [0,3.70,-3.66]);
+  const jawBone=bind('lion_lower_jaw',skullBone,[0,2.80,-4.02]);
   const legBones={};
   for(const key of legOrder){
     const leg=legs[key];
@@ -285,9 +291,9 @@ export function buildChimeraSkeleton(T){
     snakeBones.push(bind('anaconda_vertebra_'+i,
       i===0?spineBones.at(-1):snakeBones[i-1],serpent[i]));
   const snakeSkullBone=bind('anaconda_head',
-    snakeBones.at(-1),[-3.06,4.50,.62]);
+    snakeBones.at(-1),[-3.24,5.19,.70]);
   const snakeJawBone=bind('anaconda_lower_jaw',
-    snakeSkullBone,[-3.06,4.09,-.17]);
+    snakeSkullBone,[-3.24,4.66,-.35]);
   // The root has already been attached to the visible model. Evaluate the
   // bind pose before computing inverse rest matrices.
   root.updateMatrixWorld(true);
@@ -302,14 +308,14 @@ export function buildChimeraSkeleton(T){
     showVolumes(on){cage.visible=on;},
     showHornGuides(on){axes.visible=on;},
     snapshot(){return {
-      shoulderSpan:2*1.32,forefootSpan:2*1.84,hipSpan:2*.88,
-      torsoZSpan:2.20-(-1.66),skullReach:-3.80,
+      shoulderSpan:2*1.50,forefootSpan:2*2.08,hipSpan:2*.98,
+      torsoZSpan:2.78-(-1.83),skullReach:-4.36,
       serpentBase:[...serpent[0]],serpentHead:[...serpent.at(-1)]
     }}
   };
   root.userData.skeleton=skeleton;
   root.userData.chimeraSkeletonOnly=true;
-  root.userData.chimeraVersion='SKELETON_02_HIERARCHICAL_BONES';
+  root.userData.chimeraVersion='SKELETON_03_HEAVY_FORWARD_REFERENCE';
   return root;
 }
 
