@@ -9,6 +9,8 @@ on:
       - 'chimera-skeleton.html'
       - 'chimera-blockout.js'
       - 'chimera-blockout.html'
+      - 'chimera-skin.js'
+      - 'chimera-skin.html'
   workflow_dispatch:
 
 permissions:
@@ -117,13 +119,52 @@ jobs:
           }));
           console.log('Reference body blockout rendered:',summary);
           if(!summary.canvas||!summary.loaded)throw Error('missing 3D blockout canvas');
+
+          // Verify ACTUAL canvas output, skin coverage and limb animation.
+          // A JavaScript syntax check alone can pass for a broken WebGL mesh.
+          await page.goto('http://127.0.0.1:8765/chimera-skin.html?v=skin01',
+            {waitUntil:'domcontentloaded',timeout:35000});
+          await page.waitForFunction(()=>document.querySelector('#loadingOverlay')?.hidden,
+            null,{timeout:70000});
+          const errorSkin=await page.locator('#error').evaluate(el=>({
+            display:getComputedStyle(el).display,text:el.textContent
+          }));
+          if(errorSkin.display!=='none')throw Error('CHIMERA SKIN FAILED: '+errorSkin.text);
+          const skinInfo=await page.evaluate(()=>window.chimeraSkinQA);
+          if(!skinInfo||skinInfo.stage!=='skin-v1'||skinInfo.skinCount<28
+              ||skinInfo.boneCount<45||!skinInfo.skinVisible)
+            throw Error('Skin did not wrap the real bone rig: '+JSON.stringify(skinInfo));
+          await page.waitForTimeout(1450);
+          await page.screenshot({path:'chimera-skin-hero.png',animations:'disabled'});
+          await page.getByRole('button',{name:'正面'}).click();
+          await page.waitForTimeout(950);
+          await page.screenshot({path:'chimera-skin-front.png',animations:'disabled'});
+          await page.getByRole('button',{name:'側面'}).click();
+          await page.waitForTimeout(950);
+          await page.screenshot({path:'chimera-skin-side.png',animations:'disabled'});
+          await page.getByRole('button',{name:'内部表示'}).click();
+          const inside=await page.evaluate(()=>window.chimeraSkinQA.skinVisible);
+          if(inside)throw Error('Internal anatomy overlay not working');
+          await page.getByRole('button',{name:'内部表示'}).click();
+          if(!(await page.evaluate(()=>window.chimeraSkinQA.skinVisible)))
+            throw Error('Skin restore toggle not working');
+          await page.getByRole('button',{name:'歩行 4.8'}).click();
+          await page.waitForTimeout(850);
+          if((await page.locator('#movementSpeed').textContent()).includes('STAND BY'))
+            throw Error('Walking animation not enabled');
+          await page.getByRole('button',{name:'歩行 4.8'}).click();
+          await page.getByRole('button',{name:'3/4'}).click();
+          await page.setViewportSize({width:1180,height:820});
+          await page.waitForTimeout(950);
+          await page.screenshot({path:'chimera-skin-ipad.png',animations:'disabled'});
+          console.log('Skin WebGL render and interactive skeleton/skin switch PASSED',skinInfo);
           await browser.close();
           EOF
       - name: Store proof images in repo for 3D visual review
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for name in chimera-actual-v4 chimera-front-v4 chimera-skeleton-hero chimera-skeleton-front chimera-skeleton-side chimera-skeleton-ipad chimera-blockout-hero chimera-blockout-front chimera-blockout-side chimera-blockout-ipad; do
+          for name in chimera-actual-v4 chimera-front-v4 chimera-skeleton-hero chimera-skeleton-front chimera-skeleton-side chimera-skeleton-ipad chimera-blockout-hero chimera-blockout-front chimera-blockout-side chimera-blockout-ipad chimera-skin-hero chimera-skin-front chimera-skin-side chimera-skin-ipad; do
             current="$(gh api repos/${{ github.repository }}/contents/dev/${name}.png --jq .sha 2>/dev/null || true)"
             export NAME="$name" CURRENT_SHA="$current"
             python3 - <<'PY'
