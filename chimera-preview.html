@@ -89,7 +89,7 @@ button:active,a.chip:active{transform:translateY(1px)}
   <div class="overline">NEXACRAFT // CREATURE DESIGN LAB</div>
   <h1>CHIMERA</h1>
   <div class="subtitle">MID-BOSS • ALL NEW 3D SCULPT · IV</div>
-  <div class="version-stamp">IV-R4 — REBUILT BOSS · OPEN SNAKE COIL</div>
+  <div class="version-stamp">IV-R4 — NEW SCULPT · LION + SERPENT</div>
 </header>
 <aside id="description">
   <h2>CHIMERA IV · NEW MODEL</h2>
@@ -148,11 +148,11 @@ try{
   scene.add(boss);
 
   const focus=new THREE.Vector3(.47,2.28,.22);
-  const position={az:-1.02,el:.16,dist:15.4};
+  const position={az:.86,el:.16,dist:15.8};
   const desired={...position};
   let isRotating=true,moveMode='idle',distanceTraveled=0;
   const views={
-    hero:[-1.02,.16,15.4],front:[0,.13,15.0],
+    hero:[.86,.16,15.8],front:[0,.13,15.0],
     side:[Math.PI/2,.15,16.3],back:[Math.PI,.15,16.0]
   };
   function view(name){
