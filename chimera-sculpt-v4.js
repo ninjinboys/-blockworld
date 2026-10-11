@@ -40,7 +40,7 @@ export function buildChimera(T){
     hornTip:0x9b969c,claw:0x1b1a20,
     snake:0x4e5133,snakeGold:0x8c824e,
     snakeDark:0x303528,snakeBrown:0x63533a,
-    belly:0xaca080,eye:0xffbe30,eyeCore:0xffe07b
+    belly:0x847657,eye:0xffbe30,eyeCore:0xffe07b
   };
   let seed=512234;
   const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
@@ -196,8 +196,8 @@ export function buildChimera(T){
   // -----------------------------------------------------------
   function makeLeg(side,front){
     const label=(front?'fore':'hind')+(side===-1?'L':'R');
-    const hip=pivot(root,label,side*(front?1.02:.84),front?2.09:1.69,
-      front?-1.24:1.32);
+    const hip=pivot(root,label,side*(front?1.42:.84),front?2.10:1.69,
+      front?-1.57:1.32);
     const thigh=pivot(hip,label+'thigh');
     if(front){
       loftZ(thigh,label+' UPPER FOREARM',[
@@ -229,11 +229,11 @@ export function buildChimera(T){
     const foot=pivot(elbow,label+'foot',0,front?-.93:-.76,front?-.34:-.30);
     // Wide planted pads with four separated toes; each claw bends down
     // to a visible pointed end. Foot base lies within 0.1 of the ground.
-    block(foot,0,-.11,-.29,front?1.02:.84,.30,.89,C.bodyShadow);
+    block(foot,0,-.11,-.29,front?1.14:.84,.34,.95,C.bodyShadow);
     for(let i=0;i<4;i++){
-      const x=(i-1.5)*(front?.249:.202);
+      const x=(i-1.5)*(front?.277:.202);
       const depth=-.64-(i%2)*.055;
-      block(foot,x,-.15,depth,front?.24:.195,.25,.43,C.bodyTan);
+      block(foot,x,-.15,depth,front?.267:.195,.29,.49,C.bodyTan);
       curveTube(foot,label+' curved claw '+i,[
         [x,-.18,depth-.22],[x,-.19,depth-.47],[x,-.26,depth-.69]
       ],[.118,.071,.003],[C.claw,C.claw,C.nose],6);
@@ -268,8 +268,8 @@ export function buildChimera(T){
   // Hundreds of *curated* distinct tapered locks; they follow the
   // mantle's curved surface in overlapping DARK-to-GOLD descending strata.
   // The inner front stays open so the lion face and dark maw read clearly.
-  for(let tier=0;tier<9;tier++){
-    const t=tier/8, yy=1.18-tier*.35;
+  for(let tier=0;tier<7;tier++){
+    const t=tier/6, yy=1.13-tier*.27;
     const rowRadius=1.03+Math.sin(t*Math.PI)*.32;
     for(let j=0;j<24;j++){
       const a=j/24*Math.PI*2 + (tier%2)*.065;
@@ -280,31 +280,35 @@ export function buildChimera(T){
       const palette=shadow?[C.deep,C.root,C.maneDark,C.maneMid]:
         [C.maneDark,C.maneMid,C.maneAmber,C.maneBright];
       const color=palette[(j+tier*3)%palette.length];
-      const length=.32+.32*t+rand()*.19;
-      tuft(mane,x,yy,z,.21+rand()*.13,.24+rand()*.13,
-        Math.cos(a)*(.20+rand()*.10),
-        -.17-length,
-        Math.sin(a)*(.25+rand()*.20),
+      const length=.24+.24*t+rand()*.13;
+      tuft(mane,x,yy,z,.28+rand()*.18,.31+rand()*.15,
+        Math.cos(a)*(.15+rand()*.09),
+        -.09-length,
+        Math.sin(a)*(.30+rand()*.17),
         color);
     }
   }
   // A distinctive high backward-swept crown. The reference is darkest
   // around the horns, golden on outward locks, not uniformly yellow.
-  for(let row=0;row<7;row++)for(let k=-8;k<=8;k++){
-    if(Math.abs(k)===8&&row>4)continue;
-    const x=k*.170+(rand()-.5)*.075;
-    const z=-.68+row*.248;
-    const y=1.29 + .20*Math.max(0,1-Math.abs(k)/8);
-    tuft(mane,x,y,z,.23,.36,
-      (rand()-.5)*.10,.30+rand()*.49,.28+rand()*.45,
-      row<3?C.maneAmber:row%3?C.root:C.maneMid);
+  // Crown made from heavy BACK-SWEPT locks, not a porcupine mohawk.
+  // Wide roots and broad upper shelves create a coherent animal silhouette.
+  for(let row=0;row<6;row++)for(let k=-5;k<=5;k++){
+    if(Math.abs(k)===5&&row>3)continue;
+    const x=k*.239+(rand()-.5)*.064;
+    const z=-.67+row*.267;
+    const y=1.23 + .17*Math.max(0,1-Math.abs(k)/5);
+    tuft(mane,x,y,z,.37,.45,
+      (rand()-.5)*.10,.12+rand()*.27,.42+rand()*.38,
+      row<2?C.maneAmber:row%3?C.root:C.maneMid);
+    if(row%2===0)block(mane,x,y-.06,z+.07,.35,.18,.39,
+      row%3===0?C.maneDark:C.maneMid,-.17);
   }
   // Deep tapered chin tassels that strongly frame the open lion mouth.
   for(const side of [-1,1]){
-    for(let column=0;column<5;column++)for(let row=0;row<10;row++){
-      const x=side*(.65+column*.14),y=.52-row*.245;
-      tuft(mane,x,y,-.84+column*.14,.18,.24,
-        side*.12,-.38-rand()*.39,-.22-rand()*.16,
+    for(let column=0;column<5;column++)for(let row=0;row<6;row++){
+      const x=side*(.68+column*.15),y=.53-row*.195;
+      tuft(mane,x,y,-.84+column*.14,.27,.31,
+        side*.13,-.29-rand()*.20,-.24-rand()*.19,
         row%3===0?C.maneBright:row%2?C.maneMid:C.root);
     }
   }
@@ -432,7 +436,7 @@ export function buildChimera(T){
     for(const v of [surface(a,p),surface(a,q),surface(b,p),surface(b,q)])
       vertices.push(v.x,v.y,v.z);
     const band=i%9,pattern=Math.sin(i*.58+j*1.4)+Math.cos(i*.29-j*1.7);
-    const isBelly=j>=5&&j<=8;
+    const isBelly=j>=6&&j<=7;
     const col=isBelly?C.belly:(band===0||pattern>1.00)?C.snakeGold:
       pattern<-.8?C.snakeDark:((i+j)%7===0?C.snakeBrown:C.snake);
     for(let k=0;k<4;k++)colors.push(...shade(col,1-(j%3)*.035));
@@ -485,7 +489,7 @@ export function buildChimera(T){
     hindLPaw:legs.hindL.foot,hindRPaw:legs.hindR.foot
   };
   root.userData.chimeraVersion=4;
-  root.userData.visualVariant='CHIMERA_IV_REBUILT_NOT_MODIFIED';
+  root.userData.visualVariant='CHIMERA_IV_2_SCULPT_REVIEW_CORRECTED';
   root.userData.chimeraVisualOnly=true;
   return root;
 }
