@@ -402,3 +402,10 @@
 - 新規QA：`.github/workflows/chimera-visual-qa.yml` に本当のChromium/WebGLレンダリング（斜め、正面、側面、iPad）を追加。内部切替、歩行、50ボーンと皮膚表示を検証する。撮影画像：`dev/chimera-skin-{hero,front,side,ipad}.png`。
 - 初回QAで`blockout.setBonesVisible(false)`がルート直下の新しい皮膚グループまで隠していたことが判明したため、`skin.visible=true`を復元して修正。iPadキャッシュは`skinPass01b`に変更。
 - **通常ゲーム本体`app.js`、既存ワールド/セーブ、マルチプレイ、ボスAIは未変更。** 見た目はこの皮膚段階のデザイン検討用であり、原画完全一致とは主張しない。
+
+## 51. 2026-10-11：キメラ前脚を膝型から猫科の肘型へ修正
+- ユーザー指摘「前足が肘じゃなくて膝みたい」「治して」へ直接コード修正。
+- `chimera-skeleton.js`：前脚だけ肩（Z -1.52）の**後方**に肘（Z -1.26）を置き直し、肘高さY1.94、手首Y0.86、接地前足Y0.23へ。IK曲げ方向を従来の前方向`[0,.3,-1]`から**後方方向`[0,0,1]`**へ修正。関節棒長を1.18/1.27に短縮。前足着地位置をZ-2.36、つま先Z-2.94へ調整。
+- `chimera-blockout.js`の前腕・肘・手首だけ細くし、膝のような大きな張り出しを抑えた。`chimera-skin.js`の上腕と肘の半径も再設計して前脚の膝感を軽減。**後脚、胴、ライオンの頭、蛇の尾、色や装飾は変更なし**。
+- スクリプト三段キャッシュを更新し、`chimera-skin.html` `chimera-blockout.html` `chimera-skeleton.html`で新版を読み込む。専用皮膚モデルの最新確認URL：`https://ninjinboys.github.io/-blockworld/chimera-skin.html?v=20261011elbow04`
+- GitHub Actions Chromiumで**実WebGLスクリーンショットの正面・側面・斜め、歩行・内部切替**が通過した（`dev/chimera-skin-side.png` 等）。通常ゲーム、セーブ、マルチ、キメラボスAIの追加なし。
