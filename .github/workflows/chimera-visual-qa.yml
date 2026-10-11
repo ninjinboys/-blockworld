@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - '.github/workflows/chimera-visual-qa.yml'
+      - 'chimera-sculpt-v4.js'
+      - 'chimera-preview.html'
   workflow_dispatch:
 
 permissions:
@@ -39,7 +41,7 @@ jobs:
           });
           page.on('pageerror',e=>console.log('PAGE ERROR:',e.stack||e.message));
           page.on('console',m=>{if(m.type()==='error')console.log('WEB CONSOLE:',m.text())});
-          await page.goto('http://127.0.0.1:8765/chimera-preview.html?v=visual-check-4',
+          await page.goto('http://127.0.0.1:8765/chimera-preview.html?v=visual-check-r2',
             {waitUntil:'domcontentloaded',timeout:35000});
           await page.waitForFunction(()=>document.querySelector('#loadingOverlay')?.hidden,
             {timeout:70000});
@@ -60,13 +62,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          python3 - <<'PY'
-          import json,base64
-          for name in ('chimera-actual-v4','chimera-front-v4'):
-              data=base64.b64encode(open(name+'.png','rb').read()).decode()
-              with open(name+'.json','w') as f:
-                  json.dump({'message':'Visual QA: render actual Chimera IV in Chromium',
-                             'content':data},f)
+          for name in chimera-actual-v4 chimera-front-v4; do
+            current="$(gh api repos/${{ github.repository }}/contents/dev/${name}.png --jq .sha 2>/dev/null || true)"
+            export NAME="$name" CURRENT_SHA="$current"
+            python3 - <<'PY'
+          import json,base64,os
+          name=os.environ['NAME']
+          data=base64.b64encode(open(name+'.png','rb').read()).decode()
+          payload={'message':'Visual QA: verify revised Chimera IV geometry in Chromium','content':data}
+          if os.environ.get('CURRENT_SHA'):
+              payload['sha']=os.environ['CURRENT_SHA']
+          with open(name+'.json','w') as f:
+              json.dump(payload,f)
           PY
-          gh api --method PUT repos/${{ github.repository }}/contents/dev/chimera-actual-v4.png --input chimera-actual-v4.json >/dev/null
-          gh api --method PUT repos/${{ github.repository }}/contents/dev/chimera-front-v4.png --input chimera-front-v4.json >/dev/null
+            gh api --method PUT repos/${{ github.repository }}/contents/dev/${name}.png --input "${name}.json" >/dev/null
+          done
