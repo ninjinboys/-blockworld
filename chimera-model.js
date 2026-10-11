@@ -249,7 +249,15 @@ export function buildChimera(THREE){
         box(paw,x,-.19,-.68,.225,.29,.47,k%2?C.coatLight:C.coat);
         box(paw,x,-.24,-.96,.18,.21,.32,C.claw,-.24);
       }
-      // Fine outer paw ridges look like tendon plates, not flat mittens.
+      // Longer articulated black scythe claws. Front view must show four
+    // individual tips extending past the toes like the concept reference.
+    for(let k=0;k<4;k++){
+      const xx=(k-1.5)*.25;
+      taperedTube(paw,[
+        [xx,-.13,-.93],[xx,-.19,-1.19],[xx,-.24,-1.47]
+      ],[.109,.069,.005],[C.hoof,C.claw,0x0a090b],5);
+    }
+    // Fine outer paw ridges look like tendon plates, not flat mittens.
       for(const side of [-1,1]){
         box(paw,side*.45,-.06,-.46,.14,.28,.59,C.copper,0,0,side*.14);
       }
@@ -466,6 +474,13 @@ export function buildChimera(THREE){
     ],[.33,.37,.35,.31,.25,.19,.13,.077,.005],
     [C.horn,C.hornEdge,C.horn,C.horn,C.hornEdge,C.horn,
      C.horn,C.hornTip,C.hornTip],9);
+    // Visible scarred stone bands interrupt the smooth cartoon horn tube.
+    for(const [xx,yy,zz] of [
+      [1.63,3.50,-2.14],[2.13,3.53,-2.25],[2.70,3.78,-2.40]
+    ]){
+      box(core,sign*xx,yy,zz,.09,.33,.38,
+        rand()<.5?C.hornEdge:C.horn,0,0,sign*.12);
+    }
     // Fine bronze-black collar detailing is part of the reference silhouette.
     box(core,sign*.94,3.60,-2.03,.25,.33,.38,C.snakeGold,0,0,sign*.09);
     box(core,sign*1.10,3.57,-2.07,.10,.34,.35,C.horn,0,0,sign*.10);
@@ -591,6 +606,7 @@ export function buildChimera(THREE){
     mane,head,jaw,tail,snakeHead,lowerSnakeJaw
   };
   root.userData.chimeraVersion=CHIMERA_DESIGN.version;
+  root.userData.chimeraLookRevision='20261011-large-head-spiked-mane-visible-serpent-v3';
   root.userData.visualVariant='v3-giant-lion-angular-wild-mane-coiled-serpent';
   root.userData.chimeraVisualOnly=true;
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
@@ -662,7 +678,7 @@ export function animateChimera(chimera,elapsedSeconds,mode='idle'){
     intensity*(.018*Math.sin(phase+.7)+.024*Math.sin(2*phase)),damp);
   r.body.rotation.z=lerp(r.body.rotation.z,
     intensity*(.040*Math.sin(phase+1.1)),damp);
-  r.mane.position.y=2.58+Math.sin(t*1.67)*.020;
+  r.mane.position.y=2.71+Math.sin(t*1.67)*.024;
   r.mane.rotation.x=.025*Math.sin(t*1.93)+intensity*.022*Math.sin(phase+.4);
   r.head.rotation.x=.015+Math.sin(t*.81)*.026
     +intensity*.048*Math.sin(phase+.2);
