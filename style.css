@@ -1152,3 +1152,123 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   #staminaHud{bottom:107px;min-height:24px;padding:2px 7px}
   #healthHud{bottom:76px;min-height:24px;padding:2px 7px}
 }
+
+
+/* NEXACRAFT top-corner controls: red raised D-pad treatment */
+/* Upper-left coordinates and camera switch + upper-right account panel now
+   match the RED walking D-pad: same pigment, burgundy frame, polished bevel.
+   Do not move their hit targets or touch game behavior / bottom XP HUD. */
+#stats,#accountBox,#viewModeButton{
+  -webkit-appearance:none;
+  appearance:none;
+  box-sizing:border-box;
+  background:#c65259;
+  background-image:none;
+  color:#fff;
+  border:3px solid #873037;
+  border-radius:12px;
+  box-shadow:inset 2px 2px 0 #f1a7aa,
+    inset -2px -2px 0 #96363d,
+    0 3px 0 rgba(0,0,0,.38);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  text-shadow:0 2px 1px #641e29;
+}
+#stats{
+  padding:8px 10px;
+  line-height:1.55;
+  font-variant-numeric:tabular-nums;
+}
+#viewModeButton{
+  min-height:46px;
+  padding:9px 13px;
+  font-weight:900;
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
+}
+#viewModeButton:active{
+  background:#9b3640;
+  border-color:#64232c;
+  box-shadow:inset 2px 2px 0 #72262e,
+    inset -2px -2px 0 #e58e95,
+    0 1px 0 rgba(0,0,0,.35);
+  transform:translateY(2px);
+}
+#viewModeButton:focus-visible,
+.account-actions button:focus-visible{
+  outline:2px solid #fff9e6;
+  outline-offset:3px;
+}
+#accountBox{
+  min-width:215px;
+  padding:8px 9px 10px;
+}
+#accountName{
+  color:#fff6d7;
+  font-weight:900;
+  text-shadow:0 1px 1px rgba(66,12,20,.7);
+}
+#saveStatus{color:#fff1ed;opacity:1}
+.account-actions{
+  display:flex;
+  gap:5px;
+  margin-top:8px;
+}
+.account-actions button{
+  -webkit-appearance:none;
+  appearance:none;
+  flex:1 1 0;
+  min-width:0;
+  height:38px;
+  padding:4px 2px;
+  border:2px solid #873037;
+  border-radius:7px;
+  background:#c65259;
+  color:#fff;
+  font:900 9px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  text-shadow:0 1px 1px #641e29;
+  box-shadow:inset 1px 1px 0 #f1a7aa,
+    inset -1px -1px 0 #96363d,
+    0 2px 0 rgba(0,0,0,.25);
+  touch-action:manipulation;
+  overflow-wrap:anywhere;
+  cursor:pointer;
+}
+.account-actions button:active{
+  background:#9b3640;
+  border-color:#64232c;
+  box-shadow:inset 1px 1px 0 #72262e,
+    inset -1px -1px 0 #e58e95;
+  transform:translateY(1px);
+}
+@media(max-width:760px),(pointer:coarse){
+  #stats{
+    left:10px;top:9px;
+    padding:7px 9px;
+    font-size:10px;
+  }
+  #viewModeButton{
+    left:10px;top:104px;
+    min-width:126px;
+    min-height:46px;
+    padding:9px 11px;
+    font-size:11px;
+  }
+  #accountBox{
+    right:9px;top:9px;
+    min-width:205px;
+    padding:7px 8px 9px;
+    font-size:9px;
+  }
+  #accountName{max-width:103px}
+  .account-actions button{height:37px;font-size:9px}
+}
+@media(max-width:420px){
+  #accountBox{min-width:175px;padding:6px}
+  #accountName{max-width:82px}
+  .account-actions{gap:3px}
+  .account-actions button{font-size:8px;padding:3px 1px}
+  #stats{padding:6px;font-size:9px}
+  #viewModeButton{top:99px;min-width:112px;font-size:10px;padding:7px}
+}
