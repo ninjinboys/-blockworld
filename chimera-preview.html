@@ -64,7 +64,13 @@ button:active,a.chip:active{transform:translateY(1px)}
   #controls button,#controls a{min-width:50px;min-height:38px;font-size:10px;padding:9px}
   #note{bottom:calc(max(9px,env(safe-area-inset-bottom)) + 86px);font-size:9px}
 }
-@media(max-width:960px){#description{display:none}}
+@media(max-width:960px){
+  #description{display:none}
+  #controls{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#7c644c #1a1c1f}
+  #controls>*{flex:0 0 auto}
+  #controls button,#controls a{min-height:39px;padding:8px 10px}
+}
 @media(max-width:530px){#note{white-space:normal;width:95vw}}
 #controls button[data-view]{min-width:56px}
 #movementSpeed{color:#ffdc98;font-weight:900;text-shadow:0 1px 8px #000}
@@ -128,18 +134,18 @@ try{
   rim.position.set(3,6,8);scene.add(rim);
   const floor=new THREE.Mesh(new THREE.CylinderGeometry(16,16,.35,72),
     new THREE.MeshStandardMaterial({color:0x292729,roughness:.95,metalness:.10}));
-  floor.position.set(0,-.30,-4.4);floor.receiveShadow=true;scene.add(floor);
+  floor.position.set(0,-.30,-5.2);floor.receiveShadow=true;scene.add(floor);
   const grid=new THREE.GridHelper(28,28,0x5b4c39,0x3a3430);
-  grid.position.set(0,-.108,-4.4);scene.add(grid);
+  grid.position.set(0,-.108,-5.2);scene.add(grid);
   const boss=buildChimera(THREE);
   scene.add(boss);
 
   const focus=new THREE.Vector3(.18,2.16,.25);
-  const position={az:.64,el:.25,dist:13.2};
+  const position={az:.92,el:.25,dist:13.2};
   const desired={...position};
   let isRotating=true,moveMode='idle',distanceTraveled=0;
   const views={
-    hero:[.64,.25,13.2],front:[0,.16,12.7],
+    hero:[.92,.25,13.2],front:[0,.16,12.7],
     side:[Math.PI/2,.20,13.3],back:[Math.PI,.20,13.6]
   };
   function view(name){
@@ -224,9 +230,9 @@ try{
       const speed=moveMode==='charge'?CHIMERA_MOVEMENT.charge:CHIMERA_MOVEMENT.walk;
       distanceTraveled+=dt*speed;
       const theta=distanceTraveled/5.2;
-      const cx=5.2*Math.sin(theta),cz=4.4*(Math.cos(theta)-1);
+      const cx=5.2*Math.sin(theta),cz=5.2*(Math.cos(theta)-1);
       boss.position.set(cx,.03,cz);
-      const dx=5.2*Math.cos(theta),dz=-4.4*Math.sin(theta);
+      const dx=5.2*Math.cos(theta),dz=-5.2*Math.sin(theta);
       // Model faces local -Z: yaw maps -Z onto the course tangent.
       boss.rotation.y=Math.atan2(-dx,-dz);
     }
