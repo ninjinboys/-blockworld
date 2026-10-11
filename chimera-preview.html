@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101216">
-<title>CHIMERA V3 — NEXACRAFT NEW 3D SCULPT</title>
+<title>CHIMERA IV — REBUILT NEXACRAFT BOSS MODEL</title>
 <style>
 :root{color-scheme:dark;--metal:#bf8c51;--line:rgba(227,179,110,.35);--ink:#f0e8dd}
 *{box-sizing:border-box}
@@ -88,16 +88,16 @@ button:active,a.chip:active{transform:translateY(1px)}
 <header id="mast">
   <div class="overline">NEXACRAFT // CREATURE DESIGN LAB</div>
   <h1>CHIMERA</h1>
-  <div class="subtitle">MID-BOSS • REAL-TIME 3D • NEW SCULPT V3</div>
-  <div class="version-stamp">V3 — NEW LION HEAD · SPIKED MANE · GIANT SNAKE</div>
+  <div class="subtitle">MID-BOSS • ALL NEW 3D SCULPT · IV</div>
+  <div class="version-stamp">IV — REBUILT FROM ZERO · NOT THE OLD MODEL</div>
 </header>
 <aside id="description">
-  <h2>CHIMERA VISUAL V3</h2>
-  <p>🦁 頭を約28%拡大。尖った立体たてがみと長い剣歯。</p>
+  <h2>CHIMERA IV · NEW MODEL</h2>
+  <p>🦁 旧モデルを廃止。獅子の顔・開いた顎・長い牙を新造形。</p>
   <p>🦬 頭から左右に大きく張り出して上に反り返る水牛の角</p>
-  <p>🐍 大きなC字の蛇尾。横に張り出した大蛇の頭。</p>
+  <p>🐍 一本の太いC字蛇尾と、新しい独立した蛇頭・顎・牙。</p>
   <p>⛏ 実際の3D形状を表示。画像を板に貼り付けたものではありません。</p>
-  <span class="badge">SCULPT V3 · BOSS AI TBD</span>
+  <span class="badge">GEOMETRY IV · BOSS AI TBD</span>
 </aside>
 <div id="note">DRAG TO ROTATE · PINCH TO ZOOM · <span id="movementSpeed">STAND BY</span></div>
 <nav id="controls" aria-label="3Dモデル表示操作">
@@ -116,7 +116,7 @@ button:active,a.chip:active{transform:translateY(1px)}
 <div id="error" role="alert"></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {buildChimera,animateChimera,CHIMERA_DESIGN,CHIMERA_MOVEMENT} from './chimera-model.js?v=20261011chimeraVisualV3_r4';
+import {buildChimera,animateChimera,CHIMERA_DESIGN,CHIMERA_MOVEMENT} from './chimera-sculpt-v4.js?v=20261011sculptIV_final1';
 try{
   const stage=document.getElementById('stage');
   const scene=new THREE.Scene();
@@ -147,13 +147,13 @@ try{
   const boss=buildChimera(THREE);
   scene.add(boss);
 
-  const focus=new THREE.Vector3(.18,2.16,.25);
-  const position={az:.88,el:.23,dist:14.1};
+  const focus=new THREE.Vector3(.47,2.28,.22);
+  const position={az:.73,el:.16,dist:15.4};
   const desired={...position};
   let isRotating=true,moveMode='idle',distanceTraveled=0;
   const views={
-    hero:[.88,.23,14.1],front:[0,.12,13.8],
-    side:[Math.PI/2,.19,14.5],back:[Math.PI,.19,14.7]
+    hero:[.73,.16,15.4],front:[0,.13,15.0],
+    side:[Math.PI/2,.15,16.3],back:[Math.PI,.15,16.0]
   };
   function view(name){
     const v=views[name];if(!v)return;
@@ -244,7 +244,7 @@ try{
       boss.rotation.y=Math.atan2(-dx,-dz);
     }
     const desiredFocus=new THREE.Vector3(
-      boss.position.x+.18,boss.position.y+2.29,boss.position.z+.10);
+      boss.position.x+.47,boss.position.y+2.28,boss.position.z+.22);
     focus.lerp(desiredFocus,Math.min(1,dt*6));
     for(const prop of ['az','el','dist'])
       position[prop]+=(desired[prop]-position[prop])*Math.min(1,dt*7);
