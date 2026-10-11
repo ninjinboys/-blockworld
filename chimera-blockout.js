@@ -1,5 +1,5 @@
 /**
- * NEXACRAFT Chimera — ANATOMY BLOCKOUT v3
+ * NEXACRAFT Chimera — ANATOMY BLOCKOUT v3.1 — reference mass correction
  *
  * Surface masses are built DIRECTLY on the redesigned Chimera Skeleton v3,
  * not on any of the previously rejected box-lion or fur models.
@@ -133,60 +133,60 @@ export function buildChimeraBlockout(T){
   // =============================================================
   ellipticalLoft('1. SLANTED LONG MUSCULAR LION TRUNK',[
     [-2.18,2.43,.40,.63,P.shoulder],
-    [-1.76,2.40,1.29,1.16,P.shoulder],
-    [-1.24,2.41,1.51,1.32,P.chest],
-    [-.67,2.32,1.39,1.22,P.spine],
-    [-.08,2.28,1.26,1.09,P.belly],
-    [.59,2.28,1.11,.91,P.belly],
-    [1.23,2.31,1.08,.90,P.spine],
-    [1.76,2.36,1.14,.97,P.pelvis],
-    [2.26,2.43,1.20,1.03,P.pelvis],
-    [2.73,2.44,.83,.90,P.pelvis],
+    [-1.76,2.43,1.42,1.33,P.shoulder],
+    [-1.24,2.47,1.74,1.46,P.chest],
+    [-.67,2.40,1.59,1.33,P.spine],
+    [-.08,2.30,1.38,1.17,P.belly],
+    [.59,2.30,1.14,1.00,P.belly],
+    [1.23,2.32,1.10,.99,P.spine],
+    [1.76,2.40,1.24,1.11,P.pelvis],
+    [2.26,2.47,1.26,1.13,P.pelvis],
+    [2.73,2.47,.89,.94,P.pelvis],
     [3.01,2.50,.27,.43,P.limbShade]
   ],'spine');
 
   // Vast, visibly separate forequarter: body mass stretches continuously
   // down into shoulders at the front. Width dwarfs the narrower loin.
-  sphere('2. LEFT DRAPED SHOULDER MASS',[-1.11,2.56,-1.39],
-    [.79,1.23,.93],'shoulder',.19,0,-.23);
-  sphere('3. RIGHT DRAPED SHOULDER MASS',[1.11,2.56,-1.39],
-    [.79,1.23,.93],'shoulder',.19,0,.23);
-  sphere('4. DEEP HANGING BRISKET',[0,1.95,-1.45],
-    [1.02,.99,.90],'chest',-.18);
-  sphere('5. LOWER RIB CAGE',[0,1.92,-.53],
-    [1.08,.81,1.25],'belly');
-  sphere('6. NARROWER LOIN',[0,2.36,1.20],
-    [.92,.68,.85],'spine');
-  sphere('7. ROUNDED HINDQUARTERS',[0,2.44,2.38],
-    [1.20,.98,.91],'pelvis');
+  sphere('2. LEFT HUGE LION SHOULDER',[-1.10,2.52,-1.43],
+    [.96,1.38,1.02],'shoulder',.26,0,-.19);
+  sphere('3. RIGHT HUGE LION SHOULDER',[1.10,2.52,-1.43],
+    [.96,1.38,1.02],'shoulder',.26,0,.19);
+  sphere('4. DEEP HANGING LION BRISKET',[0,1.82,-1.45],
+    [1.24,1.15,1.05],'chest',-.18);
+  sphere('5. DEEP HEAVY RIB CAGE',[0,2.01,-.54],
+    [1.21,.96,1.35],'belly');
+  sphere('6. NARROWER LOIN',[0,2.33,1.21],
+    [1.02,.82,.96],'spine');
+  sphere('7. ROUNDED HINDQUARTERS',[0,2.39,2.38],
+    [1.27,1.08,1.03],'pelvis');
 
   // The reference's shoulders dominate the lion neck width and the head
   // emerges horizontally FORWARD. This is only muscle-blockout shape,
   // NOT a gold mane, hair or decorative collar.
-  sphere('8. LARGE LOW-DROOPING NECK',[0,3.11,-2.18],
-    [1.38,1.23,1.22],'neck',-.21);
-  sphere('9. STERNUM FORWARD SUPPORT',[0,2.35,-2.17],
-    [.96,.79,.75],'chest',-.16);
+  sphere('8. HEAVY PREDATOR NECK / ANATOMICAL MANTLE',[0,3.04,-2.17],
+    [1.66,1.52,1.37],'neck',-.18);
+  sphere('9. OUTWARD BROAD STERNUM',[0,2.18,-2.26],
+    [1.24,.95,.95],'chest',-.16);
 
   // A real large elongated head, not a short cuboid attached to a fringe.
-  sphere('10. ELONGATED ROARING LION CRANIUM',[0,3.61,-3.52],
-    [1.04,.70,1.08],'head',-.12);
+  sphere('10. ELONGATED WIDE LION CRANIUM',[0,3.62,-3.58],
+    [1.21,.83,1.16],'head',-.12);
   for(const sign of [-1,1]){
-    sphere('11. LION TEMPORAL CHEEKS '+sign,[sign*.73,3.27,-3.63],
-      [.40,.53,.59],'brow');
+    sphere('11. LION STRONG TEMPORAL CHEEKS '+sign,[sign*.84,3.23,-3.68],
+      [.48,.63,.68],'brow');
   }
-  sphere('12. STRONG PROJECTED MUZZLE',[0,3.35,-4.14],
-    [.76,.40,.57],'muzzle');
-  sphere('13. UPPER JAW RIM',[0,3.10,-4.20],
-    [.73,.20,.53],'head');
+  sphere('12. GIGANTIC PROJECTED MUZZLE',[0,3.35,-4.24],
+    [.84,.44,.63],'muzzle');
+  sphere('13. BONY UPPER JAW RIDGE',[0,3.10,-4.27],
+    [.78,.22,.55],'head');
 
   // Deep gaping lower jaw is not fused with the cranium.
-  sphere('14. DARK DEEP MOUTH CAVITY',[0,2.87,-4.10],
-    [.65,.27,.39],'mouth');
-  sphere('15. SEPARATE LOWER LION JAW',[0,2.60,-4.18],
-    [.77,.24,.67],'jaw');
-  sphere('16. WIDE JAW HINGE',[0,2.93,-3.48],
-    [.73,.29,.37],'head');
+  sphere('14. DEEP PREDATOR MOUTH CAVITY',[0,2.86,-4.10],
+    [.72,.34,.46],'mouth');
+  sphere('15. MASSIVE LOWER JAW',[0,2.57,-4.19],
+    [.86,.27,.72],'jaw');
+  sphere('16. STRONG JAW HINGE',[0,2.99,-3.55],
+    [.84,.33,.48],'head');
 
   // Four articulated heavy legs, TRUE connected segment volumes.
   // Segment positions are updated in animateChimeraBlockout from IK.
@@ -194,21 +194,21 @@ export function buildChimeraBlockout(T){
     const l=rig.legs[id];
     const fore=l.kind==='fore';
     const pieces={
-      hip:sphere('MUSCULAR '+id+' SHOULDER/HAUNCH',
-        l.shoulder,fore?[.76,.78,.70]:[.75,.84,.78],
+      hip:sphere('MASSIVE '+id+' SHOULDER/HAUNCH',
+        l.shoulder,fore?[.94,.98,.88]:[.91,1.02,.98],
         fore?'shoulder':'pelvis'),
-      upper:between(id+' UPPER LEG',l.shoulder,l.elbow,
-        fore?.53:.60,fore?.49:.54,fore?'limb':'pelvis'),
-      joint:sphere(id+' BENT ELBOW/KNEE',
-        l.elbow,fore?[.42,.46,.42]:[.45,.46,.46],'limbShade'),
-      lower:between(id+' SLANTED LOWER LEG',l.elbow,l.wrist,
-        fore?.37:.33,fore?.36:.35,fore?'limb':'limbShade'),
-      hock:sphere(id+' ANKLE/HOCK',l.wrist,
-        fore?[.35,.34,.34]:[.32,.33,.34],'limb'),
-      paw:sphere(id+' HEAVY GROUNDED PAW',
-        l.paw,fore?[.70,.28,.85]:[.56,.26,.72],'forepaw'),
-      toes:sphere(id+' PAW REACH AND TOES',
-        l.toe,fore?[.64,.20,.46]:[.54,.18,.40],'forepaw')
+      upper:between(id+' HEAVY THIGH/UPPER LEG',l.shoulder,l.elbow,
+        fore?.73:.76,fore?.67:.66,fore?'limb':'pelvis'),
+      joint:sphere(id+' LARGE CONNECTED ELBOW/KNEE',
+        l.elbow,fore?[.56,.60,.53]:[.58,.62,.60],'limbShade'),
+      lower:between(id+' ANGLED MUSCULAR FOREARM',l.elbow,l.wrist,
+        fore?.49:.42,fore?.44:.41,fore?'limb':'limbShade'),
+      hock:sphere(id+' ROBUST ANKLE/HOCK',l.wrist,
+        fore?[.47,.46,.46]:[.42,.43,.45],'limb'),
+      paw:sphere(id+' MASSIVE LION GROUNDED PAW',
+        l.paw,fore?[.86,.32,.98]:[.67,.29,.84],'forepaw'),
+      toes:sphere(id+' LARGE POWERFUL PAW TOES',
+        l.toe,fore?[.80,.23,.59]:[.65,.21,.51],'forepaw')
     };
     limbMasses[id]=pieces;
   }
@@ -296,7 +296,7 @@ export function buildChimeraBlockout(T){
     }}
   };
   skeleton.userData.chimeraModelPhase='reference-silhouette-blockout';
-  skeleton.userData.chimeraVersion='CHIMERA_BODY_MASS_V3';
+  skeleton.userData.chimeraVersion='CHIMERA_BODY_MASS_V3_1_BROAD_THORAX';
   skeleton.userData.chimeraBlockout.setBonesVisible(false);
   return skeleton;
 }
