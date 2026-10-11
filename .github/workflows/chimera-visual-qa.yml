@@ -160,22 +160,34 @@ jobs:
           console.log('Skin WebGL render and interactive skeleton/skin switch PASSED',skinInfo);
           await browser.close();
           EOF
-      - name: Store proof images in repo for 3D visual review
+      - name: Preserve skin QA screenshots
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for name in chimera-actual-v4 chimera-front-v4 chimera-skeleton-hero chimera-skeleton-front chimera-skeleton-side chimera-skeleton-ipad chimera-blockout-hero chimera-blockout-front chimera-blockout-side chimera-blockout-ipad chimera-skin-hero chimera-skin-front chimera-skin-side chimera-skin-ipad; do
-            current="$(gh api repos/${{ github.repository }}/contents/dev/${name}.png --jq .sha 2>/dev/null || true)"
-            export NAME="$name" CURRENT_SHA="$current"
-            python3 - <<'PY'
+          # Only persist new unpainted skin images. Re-uploading all 14
+          # legacy screenshots raced another workflow and caused HTTP 409.
+          for name in chimera-skin-hero chimera-skin-front chimera-skin-side chimera-skin-ipad; do
+            export NAME="$name"
+            for attempt in 1 2 3; do
+              current="$(gh api repos/${{ github.repository }}/contents/dev/${name}.png --jq .sha 2>/dev/null || true)"
+              export CURRENT_SHA="$current"
+              python3 - <<'PY'
           import json,base64,os
           name=os.environ['NAME']
           data=base64.b64encode(open(name+'.png','rb').read()).decode()
-          payload={'message':'Visual QA: render actual Chimera model/skeleton in Chromium','content':data}
+          payload={'message':'Save reviewed Chimera monochrome skin WebGL screenshot','content':data}
           if os.environ.get('CURRENT_SHA'):
               payload['sha']=os.environ['CURRENT_SHA']
           with open(name+'.json','w') as f:
               json.dump(payload,f)
           PY
-            gh api --method PUT repos/${{ github.repository }}/contents/dev/${name}.png --input "${name}.json" >/dev/null
+              if gh api --method PUT repos/${{ github.repository }}/contents/dev/${name}.png --input "${name}.json" >/dev/null; then
+                echo "Saved $name"
+                break
+              elif [ "$attempt" -eq 3 ]; then
+                echo "Failed saving $name after 3 attempts" >&2
+                exit 1
+              fi
+              sleep 2
+            done
           done
