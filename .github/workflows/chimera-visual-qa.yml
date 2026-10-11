@@ -7,6 +7,8 @@ on:
       - 'chimera-preview.html'
       - 'chimera-skeleton.js'
       - 'chimera-skeleton.html'
+      - 'chimera-blockout.js'
+      - 'chimera-blockout.html'
   workflow_dispatch:
 
 permissions:
@@ -86,13 +88,42 @@ jobs:
             hasCanvas:!!document.querySelector('#stage canvas')
           }));
           console.log('Skeleton headless WebGL verified',info);
+          // Major body masses MUST actually render with no page exceptions:
+          // this is the output to compare with the user's concept artwork.
+          await page.goto('http://127.0.0.1:8765/chimera-blockout.html?v=blockout-03',
+            {waitUntil:'domcontentloaded',timeout:35000});
+          await page.waitForFunction(()=>document.querySelector('#loadingOverlay')?.hidden,
+            {timeout:70000});
+          const issue=await page.locator('#error').evaluate(el=>({
+            display:getComputedStyle(el).display,text:el.textContent
+          }));
+          if(issue.display!=='none')throw Error('BODY BLOCKOUT FAILED '+issue.text);
+          await page.waitForTimeout(1300);
+          await page.screenshot({path:'chimera-blockout-hero.png',animations:'disabled'});
+          await page.getByRole('button',{name:'正面'}).click();
+          await page.waitForTimeout(850);
+          await page.screenshot({path:'chimera-blockout-front.png',animations:'disabled'});
+          await page.getByRole('button',{name:'側面'}).click();
+          await page.waitForTimeout(850);
+          await page.screenshot({path:'chimera-blockout-side.png',animations:'disabled'});
+          await page.getByRole('button',{name:'3/4'}).click();
+          await page.setViewportSize({width:1180,height:820});
+          await page.waitForTimeout(850);
+          await page.screenshot({path:'chimera-blockout-ipad.png',animations:'disabled'});
+          const summary=await page.evaluate(()=>({
+            loaded:document.querySelector('#loadingOverlay')?.hidden,
+            canvas:!!document.querySelector('#stage canvas'),
+            header:document.querySelector('.version-stamp')?.textContent
+          }));
+          console.log('Reference body blockout rendered:',summary);
+          if(!summary.canvas||!summary.loaded)throw Error('missing 3D blockout canvas');
           await browser.close();
           EOF
       - name: Store proof images in repo for 3D visual review
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for name in chimera-actual-v4 chimera-front-v4 chimera-skeleton-hero chimera-skeleton-front chimera-skeleton-side chimera-skeleton-ipad; do
+          for name in chimera-actual-v4 chimera-front-v4 chimera-skeleton-hero chimera-skeleton-front chimera-skeleton-side chimera-skeleton-ipad chimera-blockout-hero chimera-blockout-front chimera-blockout-side chimera-blockout-ipad; do
             current="$(gh api repos/${{ github.repository }}/contents/dev/${name}.png --jq .sha 2>/dev/null || true)"
             export NAME="$name" CURRENT_SHA="$current"
             python3 - <<'PY'
