@@ -41,6 +41,8 @@ export function buildChimera(THREE){
   root.name='CHIMERA_BOSS_MODEL';
   const joints={};
   const batches=new Map();
+  // Angular faceted tapered fur tufts are welded into a single render mesh.
+  const furTriangles=new Map();
   let seed=1469;
   const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
   const C={
@@ -68,6 +70,39 @@ export function buildChimera(THREE){
     let set=batches.get(group);
     if(!set){set=[];batches.set(group,set)}
     set.push({x,y,z,w,h,d,color,rx,ry,rz});
+  }
+  function furWedge(group,x,y,z,dx,dy,dz,w,d,color){
+    let b=furTriangles.get(group);
+    if(!b){b={vertices:[],colors:[],indices:[]};furTriangles.set(group,b)}
+    const points=[
+      [x-w*.5,y+w*.10,z-d*.5],[x+w*.5,y+w*.10,z-d*.5],
+      [x+w*.5,y-w*.25,z+d*.5],[x-w*.5,y-w*.25,z+d*.5],
+      [x+dx,y+dy,z+dz]
+    ];
+    const base=b.vertices.length/3,col=new THREE.Color(color);
+    for(let k=0;k<5;k++){
+      b.vertices.push(...points[k]);
+      const shade=k===4?1.02:k%2===0?.73:.92;
+      b.colors.push(col.r*shade,col.g*shade,col.b*shade);
+    }
+    for(const tri of [[0,1,4],[1,2,4],[2,3,4],[3,0,4],[0,2,1],[0,3,2]])
+      b.indices.push(base+tri[0],base+tri[1],base+tri[2]);
+  }
+  function finishFur(){
+    for(const [group,b] of furTriangles){
+      const geo=new THREE.BufferGeometry();
+      geo.setAttribute('position',new THREE.Float32BufferAttribute(b.vertices,3));
+      geo.setAttribute('color',new THREE.Float32BufferAttribute(b.colors,3));
+      geo.setIndex(b.indices);geo.computeVertexNormals();
+      const mat=new THREE.MeshLambertMaterial({
+        color:0xffffff,vertexColors:true,flatShading:true,side:THREE.DoubleSide
+      });
+      const mesh=new THREE.Mesh(geo,mat);
+      mesh.name=group.name+' ANGULAR WILD MANE';
+      mesh.castShadow=true;mesh.receiveShadow=true;
+      mesh.userData.mobOwnMaterial=true;
+      group.add(mesh);
+    }
   }
   function finishBoxes(){
     const obj=new THREE.Object3D();
@@ -376,6 +411,44 @@ export function buildChimera(THREE){
         -.31,0,sign*.12);
     }
 
+  // Completely NEW silhouette: many wedge-shaped mane locks flare outward
+  // and down, making the mane jagged and long rather than a toy block wig.
+  for(const sign of [-1,1]){
+    for(let layer=0;layer<7;layer++)for(let k=0;k<12;k++){
+      const x=sign*(.79+layer*.115+(rand()-.5)*.08);
+      const y=1.00-k*.23+(rand()-.5)*.10;
+      const z=-.78+layer*.20+(rand()-.5)*.18;
+      furWedge(mane,x,y,z,
+        sign*(.08+rand()*.19),-.35-rand()*.56,
+        -.08-rand()*.25,.19+rand()*.14,.27+rand()*.15,
+        rand()<.22?C.maneHi:rand()<.43?C.gold:rand()<.67?C.amber:C.deepMane);
+    }
+    for(let k=0;k<45;k++){
+      const x=sign*(.52+(k%5)*.14+rand()*.10);
+      const y=.48-Math.floor(k/5)*.18;
+      furWedge(mane,x,y,-.85+rand()*.19,
+        sign*.12,-.22-rand()*.33,-.23-rand()*.20,
+        .14+rand()*.11,.26+rand()*.10,
+        rand()<.38?C.copper:rand()<.49?C.maneHi:C.ochre);
+    }
+    // Angular dark cheek fur framing the jaws.
+    for(let k=0;k<24;k++){
+      furWedge(head,sign*(.55+rand()*.24),-.11-k*.036,-.90,
+        sign*(.10+rand()*.17),-.22-rand()*.26,-.25,
+        .16,.22,k%3===0?C.copper:C.deepMane);
+    }
+  }
+  // Aggressive swept-back crest, separated into sharp sculpted tufts.
+  for(let row=0;row<8;row++)for(let col=-6;col<=6;col++){
+    const x=col*.24+(rand()-.5)*.10;
+    const z=-.45+row*.24+(rand()-.5)*.10;
+    const y=1.30+Math.max(0,.23-Math.abs(x)*.14)+rand()*.12;
+    furWedge(mane,x,y,z,(rand()-.5)*.15,
+      .38+rand()*.45,.30+rand()*.35,
+      .19+rand()*.12,.25+rand()*.12,
+      rand()<.28?C.deepMane:rand()<.39?C.maneHi:C.copper);
+  }
+
   // Buffalo horns: conspicuously WIDER and more swept-back than v1.
   // Each starts deep in the mane, reaches out horizontally, then curls UP.
   // Attached to the torso rig so the roots never float when the boss breathes.
@@ -506,6 +579,7 @@ export function buildChimera(THREE){
   }
 
   finishBoxes();
+  finishFur();
   root.userData.chimeraRig={
     body:core,
     frontLeft:joints.frontLeft,frontRight:joints.frontRight,
@@ -517,7 +591,7 @@ export function buildChimera(THREE){
     mane,head,jaw,tail,snakeHead,lowerSnakeJaw
   };
   root.userData.chimeraVersion=CHIMERA_DESIGN.version;
-  root.userData.visualVariant='v3-giant-lion-shaggy-mane-coiled-serpent';
+  root.userData.visualVariant='v3-giant-lion-angular-wild-mane-coiled-serpent';
   root.userData.chimeraVisualOnly=true;
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
   return root;
