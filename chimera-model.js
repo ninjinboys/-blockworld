@@ -1,5 +1,5 @@
 /*
- * NEXACRAFT — Chimera art model, v1.
+ * NEXACRAFT — Chimera art model, v2.
  * Reference: CHIMERA 3/4 concept with roaring lion, enormous upward buffalo
  * horns, thick golden cuboid mane, dark muscular body, and anaconda-headed tail.
  *
@@ -14,12 +14,12 @@
 
 export const CHIMERA_DESIGN = Object.freeze({
   name:'キメラ',
-  version:1,
+  version:2,
   role:'オーバーワールド中ボス',
   direction:'-Z',
-  height:4.65,
-  length:8.3,
-  hornsWidth:4.7,
+  height:5.15,
+  length:9.0,
+  hornsWidth:5.75,
   distinguishingFeatures:[
     '厚い金茶色の段状たてがみ',
     '水牛の左右に反り上がる大角',
@@ -27,6 +27,13 @@ export const CHIMERA_DESIGN = Object.freeze({
     '黒っぽい筋肉質の四足体',
     '地面から持ち上がった巨大な蛇の尾と独立した蛇頭'
   ]
+});
+
+// Movement intent for the future boss AI, and real pacing for the preview.
+// Player walks at 4.5 blocks/s and sprints at 7.2 blocks/s.
+// This enemy can trot slightly faster than walking and CHARGE faster than sprinting.
+export const CHIMERA_MOVEMENT=Object.freeze({
+  walk:4.8, charge:8.8, walkStride:2.8, chargeStride:4.0
 });
 
 export function buildChimera(THREE){
@@ -37,10 +44,10 @@ export function buildChimera(THREE){
   let seed=1469;
   const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
   const C={
-    coat:0x514039,coatShade:0x372f31,coatLight:0x765747,
-    back:0x29282b,backHi:0x484043,
-    amber:0xb67132,gold:0xda922f,ochre:0x95551f,copper:0x76401f,
-    deepMane:0x59301c,maneHi:0xe0a44a,
+    coat:0x54433b,coatShade:0x302c31,coatLight:0x755747,
+    back:0x29292c,backHi:0x4a4040,
+    amber:0xa6652c,gold:0xc78231,ochre:0x84421e,copper:0x6b381f,
+    deepMane:0x4b2b1d,maneHi:0xdf9b40,
     lip:0x32272a,mouth:0x220f15,tongue:0x9c4250,
     teeth:0xffefc8,toothShade:0xcbb58b,
     horn:0x45454e,hornEdge:0x6f6d75,hornTip:0x92919a,
@@ -130,6 +137,8 @@ export function buildChimera(THREE){
 
   // Massive charcoal feline body, lightening toward the copper shoulder
   // plates; broad belly and humped hindquarters, not a single plain cube.
+  // Torso is the gait's moving centre of gravity. Head, horn, mane and
+  // serpent tail follow its natural bounce without detaching from the neck.
   const core=makeJoint(root,'body');
   box(core,0,1.50,.23,1.77,1.20,2.99,C.coat);
   box(core,0,1.94,.17,1.88,.76,2.75,C.back);
@@ -167,40 +176,60 @@ export function buildChimera(THREE){
       i%4===0?C.copper:C.coatShade);
   }
 
-  // Independently rigged 4 heavy feline limbs, feet planted around y=0.
-  // Forelegs are twice as visually dominant as the hind legs.
+  // Lion legs are NOT rigid paddles: the four independent hips each have
+  // separate elbows/knees and ankle/paw joints. Charging involves real
+  // weight transfer through the shoulders and the hind leg kick-off.
   function leg(name,sign,front){
-    const pivot=makeJoint(root,name,sign*(front?.84:.82),front?2.02:1.78,
-      front?-.93:1.28);
+    const pivot=makeJoint(root,name,sign*(front?.89:.82),front?2.14:1.95,
+      front?-1.02:1.27);
     if(front){
-      box(pivot,0,-.32,0,.74,.93,.81,C.coatLight,0,0,sign*-.10);
-      box(pivot,0,-.86,-.16,.68,.85,.69,C.coat,0,0,sign*.05);
-      box(pivot,sign*.08,-1.34,-.36,.75,.68,.77,C.coatLight);
-      box(pivot,sign*.09,-1.67,-.55,.89,.39,.96,C.coat);
-      box(pivot,sign*.09,-1.83,-.77,1.03,.26,.94,C.coatShade);
-      for(let i=0;i<4;i++){
-        const x=(i-1.5)*.245+sign*.10;
-        box(pivot,x,-1.88,-1.05,.22,.28,.42,C.hoof);
-        box(pivot,x,-1.89,-1.31,.17,.19,.29,C.claw,-.11);
-        box(pivot,x,-1.54,-.82,.19,.23,.27,i%2?C.coat:C.coatLight);
+      // Layered shoulder and long slanted upper forelimb.
+      box(pivot,0,-.23,-.07,.89,.85,.95,C.coatLight,0,0,sign*-.09);
+      box(pivot,0,-.65,-.23,.76,.88,.79,C.coat, -.16,0,sign*.04);
+      box(pivot,sign*.20,-.45,-.40,.28,.73,.57,C.copper,-.13,0,sign*.16);
+      box(pivot,sign*.07,-.32,.26,.57,.59,.54,C.coatShade,0,0,-sign*.10);
+      const elbow=makeJoint(pivot,name+'Elbow',sign*.035,-.85,-.37);
+      box(elbow,0,-.20,-.05,.73,.72,.75,C.coatLight,-.10);
+      box(elbow,0,-.53,-.17,.70,.82,.69,C.coat,-.15);
+      box(elbow,sign*.08,-.75,-.32,.66,.40,.72,C.coatLight);
+      for(let i=0;i<5;i++){
+        box(elbow,sign*.29,-.05-i*.15,.08,.15,.24,.23,
+          i%2?C.ochre:C.copper,0,0,sign*.08);
       }
-      // Angular protective shoulder strands.
-      for(let i=0;i<6;i++){
-        box(pivot,sign*.25,-.15-i*.19,-.24+i*.045,.27,.36,.35,
-          i%3===0?C.ochre:C.copper,0,0,sign*.12);
+      const paw=makeJoint(elbow,name+'Paw',sign*.02,-.97,-.46);
+      // Each front paw rests on the floor at Y~0 in the neutral pose.
+      box(paw,0,-.12,-.16,1.04,.35,.98,C.coatShade);
+      box(paw,0,-.25,-.37,1.11,.17,.83,C.coat);
+      for(let k=0;k<4;k++){
+        const x=(k-1.5)*.25;
+        box(paw,x,-.19,-.68,.225,.29,.47,k%2?C.coatLight:C.coat);
+        box(paw,x,-.24,-.96,.18,.21,.32,C.claw,-.24);
+      }
+      // Fine outer paw ridges look like tendon plates, not flat mittens.
+      for(const side of [-1,1]){
+        box(paw,side*.45,-.06,-.46,.14,.28,.59,C.copper,0,0,side*.14);
       }
     }else{
-      box(pivot,0,-.23,0,.75,.86,.95,C.coatLight,0,0,sign*.09);
-      box(pivot,sign*.08,-.77,.26,.55,.78,.57,C.coat);
-      box(pivot,sign*.04,-1.22,.17,.51,.53,.52,C.coatLight,0,0,-sign*.08);
-      box(pivot,sign*.03,-1.55,-.09,.73,.31,.77,C.coatShade);
-      for(let i=0;i<4;i++){
-        const x=(i-1.5)*.18;
-        box(pivot,x,-1.61,-.40,.17,.21,.36,C.hoof);
-        box(pivot,x,-1.64,-.61,.11,.17,.24,C.claw,-.15);
+      // Big haunches and sharply articulated rear hock, like a lion.
+      box(pivot,0,-.27,.03,.83,.95,1.04,C.coatLight,0,0,sign*.11);
+      box(pivot,-sign*.02,-.62,.25,.68,.74,.76,C.coat, -.17,0,sign*-.14);
+      box(pivot,sign*.19,-.22,.18,.26,.75,.54,C.copper,0,0,sign*.20);
+      const elbow=makeJoint(pivot,name+'Elbow',sign*.045,-.77,.28);
+      box(elbow,0,-.30,-.08,.56,.77,.60,C.coatLight,.23);
+      box(elbow,0,-.65,-.27,.58,.61,.64,C.coat,-.19);
+      box(elbow,sign*.13,-.75,-.30,.31,.30,.35,C.copper);
+      const paw=makeJoint(elbow,name+'Paw',0,-.90,-.30);
+      box(paw,0,-.09,-.25,.80,.26,.76,C.coatShade);
+      box(paw,0,-.14,-.40,.89,.20,.69,C.coat);
+      for(let k=0;k<4;k++){
+        const x=(k-1.5)*.19;
+        box(paw,x,-.16,-.57,.19,.22,.35,C.coatLight);
+        box(paw,x,-.19,-.76,.14,.15,.24,C.claw,-.17);
       }
-      for(let k=0;k<8;k++)box(pivot,sign*.29,-.12-k*.14,.04+rand()*.13,
-        .15,.22,.29,k%3?C.coat:C.copper,0,0,sign*.08);
+      for(let k=0;k<7;k++){
+        box(pivot,sign*.30,-.12-k*.14,.13+rand()*.13,.15,.22,.30,
+          k%3===0?C.copper:C.coatShade,0,0,sign*.05);
+      }
     }
     return pivot;
   }
@@ -208,7 +237,7 @@ export function buildChimera(THREE){
   leg('backLeft',-1,false);leg('backRight',1,false);
 
   // Lion head / roar: physically distinct cranium and lower jaw.
-  const head=makeJoint(root,'lionHead',0,2.96,-1.70);
+  const head=makeJoint(core,'lionHead',0,2.93,-1.76);
   const mainFace=C.amber,cheek=C.ochre;
   box(head,0,0,-.38,1.23,.91,.91,mainFace);
   box(head,0,.31,-.53,1.37,.42,.75,C.ochre);
@@ -262,7 +291,7 @@ export function buildChimera(THREE){
 
   // Massive mane: tightly stacked variable-size cuboid locks; a visibly
   // three-dimensional volume, not a flat orange shell painted on the head.
-  const mane=makeJoint(root,'mane',0,2.58,-1.41);
+  const mane=makeJoint(core,'mane',0,2.58,-1.45);
   box(mane,0,-.05,-.02,2.21,2.10,1.28,C.deepMane);
   box(mane,0,.70,.10,2.22,.68,1.42,C.copper);
   box(mane,0,-.71,.05,1.93,.74,1.26,C.copper);
@@ -310,23 +339,27 @@ export function buildChimera(THREE){
       rand()<.38?C.deepMane:C.ochre,-.09,0,(rand()-.5)*.13);
   }
 
-  // Monumental buffalo horns emerge on BOTH SIDES of the skull and sweep
-  // outward, curling sharply UP to tapered charcoal tips.
+  // Buffalo horns: conspicuously WIDER and more swept-back than v1.
+  // Each starts deep in the mane, reaches out horizontally, then curls UP.
+  // Attached to the torso rig so the roots never float when the boss breathes.
   for(const sign of [-1,1]){
-    taperedTube(root,[
-      [sign*.60,3.61,-1.92],
-      [sign*.83,3.67,-1.94],
-      [sign*1.22,3.63,-1.95],
-      [sign*1.61,3.60,-1.91],
-      [sign*1.96,3.73,-1.87],
-      [sign*2.22,4.05,-1.84],
-      [sign*2.30,4.35,-1.81],
-      [sign*2.24,4.59,-1.79]
-    ],[.30,.33,.32,.28,.22,.15,.092,.008],
-    [C.horn,C.hornEdge,C.horn,C.horn,C.hornEdge,C.horn,C.hornTip,C.hornTip],7);
-    // Distinct bronze-gold base collars carved into each horn.
-    box(root,sign*.88,3.68,-1.94,.28,.31,.34,C.snakeGold,0,0,sign*.13);
-    box(root,sign*1.07,3.68,-1.95,.11,.31,.29,C.horn,0,0,sign*.12);
+    taperedTube(core,[
+      [sign*.63,3.58,-1.98],
+      [sign*.93,3.60,-2.02],
+      [sign*1.37,3.55,-2.07],
+      [sign*1.79,3.49,-2.14],
+      [sign*2.18,3.59,-2.24],
+      [sign*2.55,3.87,-2.30],
+      [sign*2.76,4.30,-2.35],
+      [sign*2.83,4.73,-2.38],
+      [sign*2.73,5.06,-2.43]
+    ],[.33,.37,.35,.31,.25,.19,.13,.077,.005],
+    [C.horn,C.hornEdge,C.horn,C.horn,C.hornEdge,C.horn,
+     C.horn,C.hornTip,C.hornTip],9);
+    // Fine bronze-black collar detailing is part of the reference silhouette.
+    box(core,sign*.94,3.60,-2.03,.25,.33,.38,C.snakeGold,0,0,sign*.09);
+    box(core,sign*1.10,3.57,-2.07,.10,.34,.35,C.horn,0,0,sign*.10);
+    box(core,sign*1.56,3.53,-2.10,.07,.27,.29,C.hornEdge,0,0,sign*.15);
   }
 
   // Two glowing eyes are real unlit meshes, not merely yellow painted voxels.
@@ -341,17 +374,16 @@ export function buildChimera(THREE){
   // 8+-block snake-tail assembly. It is a single watertight tube (continuous
   // body) with subtle block-scale camouflage and a separately articulated
   // predatory snake head above and behind the feline back.
-  const tail=makeJoint(root,'snakeTail',0,1.57,1.64);
+  const tail=makeJoint(core,'snakeTail',0,1.57,1.64);
   const snakePoints=[
-    [0,0,0],[.04,-.04,.48],[.37,.04,1.00],[.89,.23,1.52],
-    [1.51,.45,1.95],[2.01,.89,2.14],[2.18,1.47,2.15],
-    [2.07,2.02,1.98],[1.72,2.40,1.64],[1.43,2.53,1.28]
+    [0,0,0],[.04,-.03,.49],[.43,.03,1.03],[1.04,.20,1.55],
+    [1.85,.47,2.07],[2.47,.95,2.31],[2.67,1.53,2.28],
+    [2.56,2.17,2.09],[2.18,2.67,1.73],[1.83,2.79,1.34]
   ];
   const snakeCurve=new THREE.CatmullRomCurve3(snakePoints.map(p=>point(...p)),false,'catmullrom',.38);
   const V=[],colors=[],faces=[];
   const segments=56,radial=12;
   const pigment=new THREE.Color();
-  let baseGeometry;
   for(let i=0;i<segments;i++){
     for(let j=0;j<radial;j++){
       const t0=i/segments,t1=(i+1)/segments;
@@ -395,7 +427,7 @@ export function buildChimera(THREE){
 
   // Facing toward the player's screen (local -Z), with a long angular upper
   // jaw, golden eye sockets, lower mandible, fangs and a forked red tongue.
-  const snakeHead=makeJoint(tail,'snakeHead',1.43,2.53,1.28);
+  const snakeHead=makeJoint(tail,'snakeHead',1.83,2.79,1.34);
   box(snakeHead,0,0,-.35,.77,.47,.82,C.snake);
   box(snakeHead,0,.20,-.36,.67,.18,.68,C.snakeGold);
   box(snakeHead,0,-.08,-.72,.63,.31,.66,C.snake);
@@ -433,8 +465,13 @@ export function buildChimera(THREE){
 
   finishBoxes();
   root.userData.chimeraRig={
+    body:core,
     frontLeft:joints.frontLeft,frontRight:joints.frontRight,
     backLeft:joints.backLeft,backRight:joints.backRight,
+    frontLeftElbow:joints.frontLeftElbow,frontRightElbow:joints.frontRightElbow,
+    backLeftElbow:joints.backLeftElbow,backRightElbow:joints.backRightElbow,
+    frontLeftPaw:joints.frontLeftPaw,frontRightPaw:joints.frontRightPaw,
+    backLeftPaw:joints.backLeftPaw,backRightPaw:joints.backRightPaw,
     mane,head,jaw,tail,snakeHead,lowerSnakeJaw
   };
   root.userData.chimeraVersion=CHIMERA_DESIGN.version;
@@ -443,27 +480,71 @@ export function buildChimera(THREE){
   return root;
 }
 
-export function animateChimera(chimera,elapsedSeconds,walking=false){
+/**
+ * Frame-rate independent four-legged locomotion. The gait is measured in
+ * blocks/second, not arbitrary "sin(t*.009)" or one stationary leg wiggle.
+ * Mode: false/'idle', true/'walk', or 'charge' (boss rush).
+ * The in-world boss AI can eventually call this with its actual movement mode.
+ */
+export function animateChimera(chimera,elapsedSeconds,mode='idle'){
   const r=chimera?.userData?.chimeraRig;
   if(!r)return;
   const t=elapsedSeconds;
-  const stride=walking?.17:.020;
-  const ease=(target,current)=>current+(target-current)*.20;
-  const s=Math.sin(t*3.45);
-  for(const [part,sign] of [
-    [r.frontLeft,1],[r.frontRight,-1],
-    [r.backLeft,-1],[r.backRight,1]
-  ]){
-    if(!part)continue;
-    part.rotation.x=ease(stride*s*sign,part.rotation.x);
+  const state=mode===true?'walk':mode==='charge'?'charge':
+    mode==='walk'?'walk':'idle';
+  const moving=state!=='idle';
+  const charging=state==='charge';
+  const intensity=moving?(charging?1:.70):0;
+  const moveSpeed=charging?CHIMERA_MOVEMENT.charge:CHIMERA_MOVEMENT.walk;
+  const travelPerCycle=charging?CHIMERA_MOVEMENT.chargeStride:CHIMERA_MOVEMENT.walkStride;
+  const phase=t*moveSpeed/travelPerCycle*Math.PI*2;
+  const lerp=(old,target,response)=>old+(target-old)*response;
+  const damp=.27;
+
+  // Quadruped trot / gallop: front-left and hind-right hit the ground
+  // together; the other diagonal pair offsets by half a gait cycle.
+  const legs=[
+    [r.frontLeft,r.frontLeftElbow,r.frontLeftPaw,0,true],
+    [r.frontRight,r.frontRightElbow,r.frontRightPaw,Math.PI,true],
+    [r.backLeft,r.backLeftElbow,r.backLeftPaw,Math.PI,false],
+    [r.backRight,r.backRightElbow,r.backRightPaw,0,false]
+  ];
+  for(const [hip,knee,paw,offset,front] of legs){
+    const p=phase+offset;
+    const forward=Math.sin(p);
+    const lift=Math.max(0,Math.sin(p));
+    const stride=front?(charging?.66:.51):(charging?.64:.46);
+    const hipTarget=moving?stride*forward+(front?.10:-.12):0;
+    const kneeTarget=moving?(front?-.14:.23)
+      +(front?-.46:.52)*lift*intensity:0;
+    const pawTarget=moving?(.18*Math.cos(p)-.20*lift)*intensity:0;
+    hip.rotation.x=lerp(hip.rotation.x,hipTarget,damp);
+    knee.rotation.x=lerp(knee.rotation.x,kneeTarget,damp);
+    paw.rotation.x=lerp(paw.rotation.x,pawTarget,damp);
+    paw.position.y=lerp(paw.position.y,(front?-.97:-.90)+lift*.18*intensity,damp);
   }
-  r.mane.position.y=2.58+Math.sin(t*1.60)*.025;
-  r.head.rotation.x=.018+Math.sin(t*.89)*.021;
-  // Slow breathing roar animation: open mouth remains visible even at rest.
-  r.jaw.rotation.x=-.10+Math.sin(t*1.92)*.092;
-  r.tail.rotation.y=Math.sin(t*1.20)*.135;
-  r.tail.rotation.z=Math.sin(t*1.04+.5)*.055;
-  r.snakeHead.rotation.y=Math.sin(t*1.63)*.16;
-  r.snakeHead.rotation.z=Math.sin(t*.77)*.057;
-  r.lowerSnakeJaw.rotation.x=-.10+Math.sin(t*1.72+.8)*.07;
+
+  // Body mass must LEAD the walk, not remain perfectly motionless while
+  // the feet flutter. Head, mane, horns and tail inherit this moving torso.
+  const beat=Math.sin(2*phase);
+  r.body.position.y=lerp(r.body.position.y,
+    intensity*(.052+.068*Math.max(0,beat)),damp);
+  r.body.rotation.x=lerp(r.body.rotation.x,
+    intensity*(.018*Math.sin(phase+.7)+.024*Math.sin(2*phase)),damp);
+  r.body.rotation.z=lerp(r.body.rotation.z,
+    intensity*(.040*Math.sin(phase+1.1)),damp);
+  r.mane.position.y=2.58+Math.sin(t*1.67)*.020;
+  r.mane.rotation.x=.025*Math.sin(t*1.93)+intensity*.022*Math.sin(phase+.4);
+  r.head.rotation.x=.015+Math.sin(t*.81)*.026
+    +intensity*.048*Math.sin(phase+.2);
+  r.head.rotation.z=.012*Math.sin(t*.66)+intensity*.026*Math.sin(phase-.3);
+  // The roar is an independent jaw movement rather than jaw+head rotation.
+  r.jaw.rotation.x=-.16-.085*Math.sin(t*1.77);
+  r.tail.rotation.y=Math.sin(t*1.13)*.20+intensity*.11*Math.sin(phase*.5);
+  r.tail.rotation.z=Math.sin(t*.95+.5)*.085+intensity*.06*Math.sin(phase+.7);
+  r.tail.rotation.x=Math.sin(t*.72)*.035;
+  r.snakeHead.rotation.y=Math.sin(t*1.47)*.22;
+  r.snakeHead.rotation.z=Math.sin(t*.91)*.10;
+  r.snakeHead.rotation.x=Math.sin(t*.67)*.065;
+  r.lowerSnakeJaw.rotation.x=-.14-.065*Math.sin(t*1.72+.8);
 }
