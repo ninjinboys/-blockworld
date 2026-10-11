@@ -535,7 +535,12 @@ export function animateChimera(chimera,elapsedSeconds,mode='idle'){
   const travelPerCycle=charging?CHIMERA_MOVEMENT.chargeStride:CHIMERA_MOVEMENT.walkStride;
   const phase=t*moveSpeed/travelPerCycle*Math.PI*2;
   const lerp=(old,target,response)=>old+(target-old)*response;
-  const damp=.27;
+  // Response in units of elapsed time (not FPS): 30/60/120 Hz animate
+  // the same way on iPad without dampening fast leg cycles too much.
+  const last=chimera.userData.chimeraAnimLast;
+  chimera.userData.chimeraAnimLast=t;
+  const delta=last==null?.016:Math.max(0,Math.min(.080,t-last));
+  const damp=1-Math.exp(-delta*27);
 
   // Quadruped trot / gallop: front-left and hind-right hit the ground
   // together; the other diagonal pair offsets by half a gait cycle.
@@ -549,22 +554,22 @@ export function animateChimera(chimera,elapsedSeconds,mode='idle'){
     const p=phase+offset;
     const forward=Math.sin(p);
     const lift=Math.max(0,Math.sin(p));
-    const stride=front?(charging?.66:.51):(charging?.64:.46);
+    const stride=front?(charging?.88:.58):(charging?.83:.54);
     const hipTarget=moving?stride*forward+(front?.10:-.12):0;
-    const kneeTarget=moving?(front?-.14:.23)
-      +(front?-.46:.52)*lift*intensity:0;
-    const pawTarget=moving?(.18*Math.cos(p)-.20*lift)*intensity:0;
+    const kneeTarget=moving?(front?-.19:.29)
+      +(front?-.65:.67)*lift*intensity:0;
+    const pawTarget=moving?(.24*Math.cos(p)-.23*lift)*intensity:0;
     hip.rotation.x=lerp(hip.rotation.x,hipTarget,damp);
     knee.rotation.x=lerp(knee.rotation.x,kneeTarget,damp);
     paw.rotation.x=lerp(paw.rotation.x,pawTarget,damp);
-    paw.position.y=lerp(paw.position.y,(front?-.97:-.90)+lift*.18*intensity,damp);
+    paw.position.y=lerp(paw.position.y,(front?-.97:-.90)+lift*.27*intensity,damp);
   }
 
   // Body mass must LEAD the walk, not remain perfectly motionless while
   // the feet flutter. Head, mane, horns and tail inherit this moving torso.
   const beat=Math.sin(2*phase);
   r.body.position.y=lerp(r.body.position.y,
-    intensity*(.052+.068*Math.max(0,beat)),damp);
+    intensity*(.062+.115*Math.max(0,beat)),damp);
   r.body.rotation.x=lerp(r.body.rotation.x,
     intensity*(.018*Math.sin(phase+.7)+.024*Math.sin(2*phase)),damp);
   r.body.rotation.z=lerp(r.body.rotation.z,
