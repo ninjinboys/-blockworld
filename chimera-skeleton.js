@@ -116,11 +116,11 @@ export function buildChimeraSkeleton(T){
     const fore={
       id:'fore'+name,kind:'fore',side,
       shoulder:[side*1.50,3.07,-1.52],
-      elbow:[side*1.87,1.72,-2.26],
-      wrist:[side*2.05,.76,-2.76],
-      paw:[side*2.08,.23,-3.10],
-      toe:[side*2.08,.18,-3.62],
-      L1:1.61,L2:1.55
+      elbow:[side*1.71,1.94,-1.26],
+      wrist:[side*1.91,.86,-1.90],
+      paw:[side*2.00,.23,-2.36],
+      toe:[side*2.00,.18,-2.94],
+      L1:1.18,L2:1.27
     };
     const hind={
       id:'hind'+name,kind:'hind',side,
@@ -347,7 +347,7 @@ export function animateChimeraSkeleton(model,time,mode='idle'){
     const wrist=[leg.wrist[0],leg.wrist[1]+lift,
       z+(leg.wrist[2]-leg.paw[2])];
     const mid=s.solveIK(leg.shoulder,wrist,leg.L1,leg.L2,
-      fore?[0,.3,-1]:[0,.12,-1]);
+      fore?[0,0,1]:[0,.12,-1]);
     const toe=[leg.toe[0],leg.toe[1]+lift,z+leg.toe[2]-leg.paw[2]];
     if(!leg.display)leg.display={
       mid:[...leg.elbow],wrist:[...leg.wrist],paw:[...leg.paw],toe:[...leg.toe]
