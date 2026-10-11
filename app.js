@@ -783,7 +783,7 @@ async function spawnChimeraVisualTest(){
   if(!CHIMERA_VISUAL_TEST||chimeraVisualModel||!worldReady||!started)return;
   const slot=currentWorldSlot;
   try{
-    const art=await import('./chimera-sculpt-v4.js?v=20261011sculptIV_final1');
+    const art=await import('./chimera-sculpt-v4.js?v=20261011sculptIV_rev2');
     if(!worldReady||!started||currentWorldSlot!==slot)return;
     const creature=art.buildChimera(THREE);
     // Place on terrain, ahead of the camera, with the lion head looking
