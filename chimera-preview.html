@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101216">
-<title>CHIMERA IV-R2 — NEXACRAFT BOSS MODEL</title>
+<title>CHIMERA IV-R3 — NEXACRAFT BOSS MODEL</title>
 <style>
 :root{color-scheme:dark;--metal:#bf8c51;--line:rgba(227,179,110,.35);--ink:#f0e8dd}
 *{box-sizing:border-box}
@@ -89,7 +89,7 @@ button:active,a.chip:active{transform:translateY(1px)}
   <div class="overline">NEXACRAFT // CREATURE DESIGN LAB</div>
   <h1>CHIMERA</h1>
   <div class="subtitle">MID-BOSS • ALL NEW 3D SCULPT · IV</div>
-  <div class="version-stamp">IV-R2 — NEW BODY · FRONT LEGS · LAYERED MANE</div>
+  <div class="version-stamp">IV-R3 — REAL LION MANE · WIDE STANCE · SNAKE</div>
 </header>
 <aside id="description">
   <h2>CHIMERA IV · NEW MODEL</h2>
@@ -116,7 +116,7 @@ button:active,a.chip:active{transform:translateY(1px)}
 <div id="error" role="alert"></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {buildChimera,animateChimera,CHIMERA_DESIGN,CHIMERA_MOVEMENT} from './chimera-sculpt-v4.js?v=20261011sculptIV_rev2';
+import {buildChimera,animateChimera,CHIMERA_DESIGN,CHIMERA_MOVEMENT} from './chimera-sculpt-v4.js?v=20261011sculptIV_rev3';
 try{
   const stage=document.getElementById('stage');
   const scene=new THREE.Scene();
@@ -148,11 +148,11 @@ try{
   scene.add(boss);
 
   const focus=new THREE.Vector3(.47,2.28,.22);
-  const position={az:.73,el:.16,dist:15.4};
+  const position={az:-1.02,el:.16,dist:15.4};
   const desired={...position};
   let isRotating=true,moveMode='idle',distanceTraveled=0;
   const views={
-    hero:[.73,.16,15.4],front:[0,.13,15.0],
+    hero:[-1.02,.16,15.4],front:[0,.13,15.0],
     side:[Math.PI/2,.15,16.3],back:[Math.PI,.15,16.0]
   };
   function view(name){
