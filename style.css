@@ -921,3 +921,153 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   box-shadow:inset 3px 3px 0 #7cbbac,inset -3px -3px 0 #16534e,0 4px 0 rgba(0,0,0,.35);
 }
 .menu-actions button:hover{background:#41918a}
+
+
+/* NEXACRAFT world-entry and save-slot visual unification.
+   Shared high-resolution Nexa Gate key art / illuminated obsidian glass. */
+#startCover,#worldCover,#multiCover{
+  background:
+    linear-gradient(180deg,rgba(4,14,20,.37),rgba(4,14,20,.67)),
+    url("assets/nexacraft-title.webp?v=20261011titleHD1672") center center / cover no-repeat,
+    #132b32;
+  color:#effbf7;
+}
+#startCover,#worldCover{
+  padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom));
+}
+#startCover .panel,.world-panel,.multi-panel{
+  position:relative;
+  background:rgba(10,23,28,.91);
+  color:#effbf7;
+  border:1px solid rgba(119,229,218,.55);
+  border-radius:15px;
+  box-shadow:0 24px 70px rgba(0,0,0,.66),0 0 32px rgba(37,217,207,.15),
+    inset 0 0 0 1px rgba(175,249,234,.055);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  text-shadow:none;
+}
+#startCover .panel::before,.world-panel::before{
+  content:"";display:block;position:absolute;left:20px;right:20px;top:0;height:2px;
+  background:linear-gradient(90deg,transparent,#56dac9 37%,#b3ffdb 50%,#56dac9 63%,transparent);
+  box-shadow:0 0 14px rgba(53,235,202,.72);
+  pointer-events:none;
+}
+#startCover .panel{
+  width:min(610px,94vw);max-width:none;
+  padding:clamp(25px,4vw,42px) clamp(19px,4.2vw,44px);
+}
+#startCover h1{
+  color:#f2fffb;font-size:clamp(29px,6vw,50px);font-weight:900;
+  letter-spacing:.09em;line-height:1.13;margin:0 0 19px;
+  text-shadow:0 0 24px rgba(76,238,215,.46),0 3px 10px rgba(0,0,0,.55);
+}
+#startCover p{
+  color:#cddfdc;font-size:clamp(12px,1.3vw,14px);
+  line-height:1.85;margin:10px 0;
+}
+#startCover #startBtn{
+  min-width:min(250px,100%);min-height:53px;margin-top:21px;
+  padding:12px 28px;background:linear-gradient(180deg,#388d85,#22665f);
+  border:1px solid #7bcabe;color:#f6fffa;
+  border-radius:8px;box-shadow:inset 0 1px 0 rgba(202,255,241,.33),
+    0 5px 0 #123e3a,0 0 22px rgba(46,214,190,.16);
+  font-size:clamp(14px,1.6vw,17px);font-weight:900;letter-spacing:.05em;
+  cursor:pointer;touch-action:manipulation;
+}
+#startCover #startBtn:hover,#startCover #startBtn:focus-visible{
+  background:linear-gradient(180deg,#42aea0,#2a786f);outline:2px solid #95f4dd;outline-offset:3px;
+}
+#startCover #startBtn:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(202,255,241,.33),0 2px 0 #123e3a}
+#startCover #loading{
+  margin-top:19px;font-size:11px;color:#a4c9c5;letter-spacing:.025em;
+}
+.world-panel{
+  width:min(940px,96vw);max-height:min(91vh,900px);
+  padding:clamp(14px,2.4vw,26px);
+  scrollbar-color:#508b85 rgba(6,22,26,.7);scrollbar-width:thin;
+}
+.world-head{gap:16px;align-items:center;margin-bottom:19px}
+.world-head h2{
+  color:#f3fffb;font-size:clamp(21px,2.7vw,30px);
+  letter-spacing:.04em;text-shadow:0 0 16px rgba(54,226,202,.24);
+}
+.world-head p{color:#b9d0cd;font-size:clamp(10px,1.1vw,12px);line-height:1.5}
+.world-kicker{color:#8fbbb4;font-size:11px}
+.world-kicker strong{color:#cefbdc}
+.world-header-actions{gap:9px}
+#worldBack,#worldLogout{
+  min-width:76px;min-height:41px;height:auto;padding:10px 13px;
+  border:1px solid rgba(120,201,193,.45);border-radius:6px;
+  background:rgba(29,62,67,.85);color:#e4f9f3;
+  box-shadow:inset 0 1px 0 rgba(232,255,253,.11);
+  cursor:pointer;touch-action:manipulation;
+}
+#worldBack:hover,#worldLogout:hover{background:#326c69}
+#worldBack:focus-visible,#worldLogout:focus-visible{
+  outline:2px solid #9af7df;outline-offset:2px;
+}
+#worldGrid{gap:12px}
+.world-slot,.world-slot.empty{
+  position:relative;min-width:0;min-height:138px;padding:13px 14px;
+  grid-template-columns:minmax(0,1fr) auto;gap:12px;
+  background:linear-gradient(145deg,rgba(37,67,71,.94),rgba(15,36,43,.96));
+  border:1px solid rgba(97,184,178,.38);border-radius:9px;
+  color:#e9f8f4;box-shadow:inset 0 1px 0 rgba(169,240,225,.10),0 5px 13px rgba(0,0,0,.24);
+}
+.world-slot.empty{background:linear-gradient(145deg,rgba(30,54,60,.84),rgba(13,33,39,.90));border-color:rgba(105,166,160,.27)}
+.world-slot:hover{border-color:rgba(106,230,212,.71);box-shadow:inset 0 1px 0 rgba(169,240,225,.14),0 0 18px rgba(40,206,186,.13)}
+.world-slot-title{
+  font-size:clamp(15px,1.7vw,19px);line-height:1.25;letter-spacing:.055em;
+  color:#f1fffb;text-shadow:0 0 9px rgba(80,214,202,.22);
+}
+.world-slot-meta{
+  margin-top:8px;color:#b3cfcb;font-size:clamp(10px,1vw,11px);line-height:1.65;
+}
+.world-slot-actions{gap:7px}
+.world-slot button{
+  min-width:108px;min-height:35px;height:auto;padding:8px 9px;
+  border:1px solid rgba(141,224,200,.55);border-radius:5px;
+  background:linear-gradient(180deg,#3d9281,#24665f);color:#f5fffc;
+  font:800 11px ui-monospace,SFMono-Regular,monospace;
+  box-shadow:inset 0 1px 0 rgba(230,255,242,.27),0 2px 0 rgba(0,0,0,.23);
+  cursor:pointer;touch-action:manipulation;white-space:nowrap;
+}
+.world-slot button:first-child:hover{background:#4ba794}
+.world-slot .share-world{
+  background:linear-gradient(180deg,#366e86,#224b60);
+  border-color:rgba(143,210,231,.55);color:#f1faff;
+  box-shadow:inset 0 1px 0 rgba(216,243,255,.25),0 2px 0 rgba(0,0,0,.24);
+}
+.world-slot .share-world:hover{background:#417e99}
+.world-slot .delete-world{
+  background:linear-gradient(180deg,#804d56,#5b333c);
+  border-color:rgba(207,141,146,.48);color:#ffedee;
+  box-shadow:inset 0 1px 0 rgba(255,220,220,.15),0 2px 0 rgba(0,0,0,.24);
+}
+.world-slot .delete-world:hover{background:#965560}
+.world-slot button:focus-visible{
+  outline:2px solid #91e6d5;outline-offset:2px;
+}
+/* iPads use pointer:coarse; keep two columns in landscape instead of
+   forcing a long five-row list designed for small portrait phones. */
+@media(min-width:760px) and (orientation:landscape){
+  #worldGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .world-panel{max-height:88vh}
+}
+@media(max-width:759px){
+  .world-panel{max-height:88dvh;padding:13px}
+  #worldGrid{grid-template-columns:1fr;gap:9px}
+  .world-slot,.world-slot.empty{min-height:105px;padding:11px;gap:8px}
+  .world-slot button{min-width:96px;font-size:10px;min-height:35px}
+  .world-head{align-items:flex-start}
+  .world-header-actions{flex-wrap:wrap;justify-content:flex-end}
+  #worldBack,#worldLogout{min-width:64px;font-size:10px;padding:9px}
+}
+@media(max-height:550px){
+  #startCover .panel{padding:16px 22px;max-height:93vh;overflow-y:auto}
+  #startCover h1{font-size:clamp(24px,6vh,36px);margin-bottom:10px}
+  #startCover p{margin:5px 0;line-height:1.5}
+  #startCover #startBtn{min-height:41px;margin-top:11px}
+  .world-panel{max-height:92vh}
+}
