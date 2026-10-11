@@ -1154,25 +1154,25 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 }
 
 
-/* NEXACRAFT top-corner controls: red raised D-pad treatment */
-/* Upper-left coordinates and camera switch + upper-right account panel now
-   match the RED walking D-pad: same pigment, burgundy frame, polished bevel.
-   Do not move their hit targets or touch game behavior / bottom XP HUD. */
+/* NEXACRAFT top-corner controls: BLACK raised D-pad treatment */
+/* Black-charcoal version of the beveled walking D-pad design.
+   Only the upper-left stats/camera and upper-right account/button colors
+   change. Preserve existing placement, touch areas and game behavior. */
 #stats,#accountBox,#viewModeButton{
   -webkit-appearance:none;
   appearance:none;
   box-sizing:border-box;
-  background:#c65259;
+  background:#242629;
   background-image:none;
-  color:#fff;
-  border:3px solid #873037;
+  color:#f5f7fa;
+  border:3px solid #101215;
   border-radius:12px;
-  box-shadow:inset 2px 2px 0 #f1a7aa,
-    inset -2px -2px 0 #96363d,
-    0 3px 0 rgba(0,0,0,.38);
+  box-shadow:inset 2px 2px 0 #73787e,
+    inset -2px -2px 0 #0b0d10,
+    0 3px 0 rgba(0,0,0,.47);
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
-  text-shadow:0 2px 1px #641e29;
+  text-shadow:0 2px 1px #080a0d;
 }
 #stats{
   padding:8px 10px;
@@ -1188,16 +1188,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   user-select:none;
 }
 #viewModeButton:active{
-  background:#9b3640;
-  border-color:#64232c;
-  box-shadow:inset 2px 2px 0 #72262e,
-    inset -2px -2px 0 #e58e95,
-    0 1px 0 rgba(0,0,0,.35);
+  background:#141719;
+  border-color:#090b0d;
+  box-shadow:inset 2px 2px 0 #111317,
+    inset -2px -2px 0 #7b8088,
+    0 1px 0 rgba(0,0,0,.4);
   transform:translateY(2px);
 }
 #viewModeButton:focus-visible,
 .account-actions button:focus-visible{
-  outline:2px solid #fff9e6;
+  outline:2px solid #a8f0df;
   outline-offset:3px;
 }
 #accountBox{
@@ -1205,11 +1205,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   padding:8px 9px 10px;
 }
 #accountName{
-  color:#fff6d7;
+  color:#e8f9c3;
   font-weight:900;
-  text-shadow:0 1px 1px rgba(66,12,20,.7);
+  text-shadow:0 1px 1px #080a0d;
 }
-#saveStatus{color:#fff1ed;opacity:1}
+#saveStatus{color:#e6ebef;opacity:1}
 .account-actions{
   display:flex;
   gap:5px;
@@ -1222,24 +1222,24 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   min-width:0;
   height:38px;
   padding:4px 2px;
-  border:2px solid #873037;
+  border:2px solid #0e1013;
   border-radius:7px;
-  background:#c65259;
-  color:#fff;
+  background:#303338;
+  color:#f5f7fa;
   font:900 9px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  text-shadow:0 1px 1px #641e29;
-  box-shadow:inset 1px 1px 0 #f1a7aa,
-    inset -1px -1px 0 #96363d,
-    0 2px 0 rgba(0,0,0,.25);
+  text-shadow:0 1px 1px #090b0d;
+  box-shadow:inset 1px 1px 0 #858a91,
+    inset -1px -1px 0 #111317,
+    0 2px 0 rgba(0,0,0,.34);
   touch-action:manipulation;
   overflow-wrap:anywhere;
   cursor:pointer;
 }
 .account-actions button:active{
-  background:#9b3640;
-  border-color:#64232c;
-  box-shadow:inset 1px 1px 0 #72262e,
-    inset -1px -1px 0 #e58e95;
+  background:#15181b;
+  border-color:#080a0c;
+  box-shadow:inset 1px 1px 0 #111317,
+    inset -1px -1px 0 #828790;
   transform:translateY(1px);
 }
 @media(max-width:760px),(pointer:coarse){
