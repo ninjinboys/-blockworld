@@ -1,15 +1,16 @@
 /**
- * NEXACRAFT: CHIMERA ANATOMICAL SKELETON v3 — reference-accurate long, massive feline proportions
+ * NEXACRAFT: CHIMERA ANATOMICAL SKELETON v3.2 — reference proportions with subtly elevated lion head
  *
  * ONLY THE BONES — NOT the old lion model, not fur, a texture, or an image.
  * 1 unit = 1 Minecraft-like block. Front = local -Z. Ground = Y=0.
  * This file is the source of truth for future boss mesh skinning.
  */
 export const CHIMERA_ARMATURE=Object.freeze({
-  version:3,name:'キメラ / 参考画像準拠の体型',
+  version:3.2,name:'キメラ / 参考画像準拠の体型',
   shoulderHeight:3.70,hipHeight:2.74,
   shoulderWidth:3.0,forefootWidth:4.16,hipWidth:1.96,
   bodyFromZ:-1.83,bodyToZ:2.78,skullNoseZ:-4.30,
+  lionCraniumY:4.02,lionMuzzleY:3.77,
   tailHeadHeight:5.26,status:'骨格の検証段階・表皮装飾なし'
 });
 export const CHIMERA_MOVEMENT=Object.freeze({
@@ -164,35 +165,38 @@ export function buildChimeraSkeleton(T){
   }
   // Lion's massive head must be IN FRONT of the shoulders, with a
   // real long down-sloping neck, a cranium and a separate jaw arch.
+  // Raise the LION'S head gently (not the snake): the neck lifts in
+  // stages so the head doesn't look detached or simply hover above the chest.
+  // Farther-forward muzzle rises a little more, adding a slight upward gaze.
   const neck=[
-    [0,3.55,-1.64],[0,3.77,-2.16],
-    [0,3.86,-2.65],[0,3.73,-3.24],
-    [0,3.56,-3.73]
+    [0,3.55,-1.64],[0,3.84,-2.16],
+    [0,4.02,-2.65],[0,4.03,-3.24],
+    [0,3.96,-3.73]
   ];
   line('CERVICAL VERTEBRAE',neck,.133,'skull');
   neck.forEach((pt,i)=>marker('cervical'+i,pt,.13,'skull'));
-  volume('HEAVY HORIZONTAL NECK / SHOULDER TRANSITION',[0,3.19,-2.20],
+  volume('HEAVY HORIZONTAL NECK / SHOULDER TRANSITION',[0,3.31,-2.20],
     [1.42,1.22,1.23],'mass');
-  volume('LARGE FANGED PREDATOR CRANIUM',[0,3.66,-3.52],
+  volume('LARGE FANGED PREDATOR CRANIUM',[0,4.02,-3.52],
     [1.02,.76,.98],'boneMass');
-  volume('DEEP PROJECTED LION MUZZLE',[0,3.30,-4.00],
+  volume('DEEP PROJECTED LION MUZZLE',[0,3.77,-4.00],
     [.70,.43,.57],'boneMass');
   line('FELINE UPPER PROFILE',[
-    [0,4.04,-3.11],[0,3.88,-3.75],[0,3.32,-4.36]
+    [0,4.34,-3.11],[0,4.27,-3.75],[0,3.79,-4.36]
   ],.074,'skull');
   line('LION LOWER JAW',[
-    [-.56,3.20,-3.38],[-.48,2.87,-3.91],
-    [0,2.80,-4.35],[.48,2.87,-3.91],
-    [.56,3.20,-3.38]
+    [-.56,3.58,-3.38],[-.48,3.29,-3.91],
+    [0,3.23,-4.35],[.48,3.29,-3.91],
+    [.56,3.58,-3.38]
   ],.081,'skull');
-  marker('lionChin',[0,2.80,-4.35],.15,'skull');
+  marker('lionChin',[0,3.23,-4.35],.15,'skull');
   // Horn growth direction guides only. Actual horns are for AFTER
   // the proportions are approved, never baked into this skeletal pass.
   for(const side of [-1,1]){
     line('HORN ROOT GUIDE '+side,[
-      [side*.88,4.00,-3.35],[side*1.44,4.01,-3.36],
-      [side*2.12,3.98,-3.38],[side*2.65,4.28,-3.38],
-      [side*3.00,4.81,-3.34],[side*3.02,5.30,-3.32]
+      [side*.88,4.38,-3.35],[side*1.44,4.38,-3.36],
+      [side*2.12,4.36,-3.38],[side*2.65,4.64,-3.38],
+      [side*3.00,5.16,-3.34],[side*3.02,5.63,-3.32]
     ],.052,'axis',axes);
   }
   // Tail emerges from the sacrum; coils to the model's LEFT (-X).
@@ -269,8 +273,8 @@ export function buildChimeraSkeleton(T){
     neckBones.push(bind('cervical_'+i,
       i===0?spineBones[0]:neckBones[i-1],neck[i]));
   const skullBone=bind('lion_cranium',neckBones.at(-1),
-    [0,3.70,-3.66]);
-  const jawBone=bind('lion_lower_jaw',skullBone,[0,2.80,-4.02]);
+    [0,4.07,-3.66]);
+  const jawBone=bind('lion_lower_jaw',skullBone,[0,3.23,-4.02]);
   const legBones={};
   for(const key of legOrder){
     const leg=legs[key];
@@ -315,7 +319,7 @@ export function buildChimeraSkeleton(T){
   };
   root.userData.skeleton=skeleton;
   root.userData.chimeraSkeletonOnly=true;
-  root.userData.chimeraVersion='SKELETON_03_HEAVY_FORWARD_REFERENCE';
+  root.userData.chimeraVersion='SKELETON_03_2_SLIGHTLY_RAISED_LION_HEAD';
   return root;
 }
 
