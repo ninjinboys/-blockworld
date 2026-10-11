@@ -183,7 +183,10 @@ export function buildChimeraSkin(T){
   ellipsoid('SEPARATE LOWER SNAKE JAW',
     [-3.24,4.69,-.22],[.57,.16,.60],[-.09,0,0]);
 
+  // setBonesVisible toggles all non-blockout children of the root;
+  // restore the newly created external skin AFTER hiding the internals.
   inside.setMassVisible(false);inside.setBonesVisible(false);
+  skin.visible=true;
   const state={
     skin,meshes,limbs,tail,torso,material,geometries,
     showSkin(on){skin.visible=!!on},
