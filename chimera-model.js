@@ -533,14 +533,21 @@ export function animateChimera(chimera,elapsedSeconds,mode='idle'){
   const intensity=moving?(charging?1:.70):0;
   const moveSpeed=charging?CHIMERA_MOVEMENT.charge:CHIMERA_MOVEMENT.walk;
   const travelPerCycle=charging?CHIMERA_MOVEMENT.chargeStride:CHIMERA_MOVEMENT.walkStride;
-  const phase=t*moveSpeed/travelPerCycle*Math.PI*2;
   const lerp=(old,target,response)=>old+(target-old)*response;
   // Response in units of elapsed time (not FPS): 30/60/120 Hz animate
   // the same way on iPad without dampening fast leg cycles too much.
   const last=chimera.userData.chimeraAnimLast;
   chimera.userData.chimeraAnimLast=t;
-  const delta=last==null?.016:Math.max(0,Math.min(.080,t-last));
+  const delta=last==null ? 1/60 : Math.max(0,Math.min(.080,t-last));
   const damp=1-Math.exp(-delta*27);
+  // Accumulate travel into the gait rather than deriving foot poses directly
+  // from t*speed. Switching from walk to charge keeps each planted foot
+  // continuous instead of snapping to another unrelated animation phase.
+  if(chimera.userData.chimeraGaitPhase==null)
+    chimera.userData.chimeraGaitPhase=0;
+  if(moving)
+    chimera.userData.chimeraGaitPhase+=delta*moveSpeed/travelPerCycle*Math.PI*2;
+  const phase=chimera.userData.chimeraGaitPhase;
 
   // Quadruped trot / gallop: front-left and hind-right hit the ground
   // together; the other diagonal pair offsets by half a gait cycle.
