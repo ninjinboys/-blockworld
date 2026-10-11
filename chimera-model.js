@@ -1,5 +1,5 @@
 /*
- * NEXACRAFT — Chimera art model, v2.
+ * NEXACRAFT — Chimera art model, v3 — rebuilt silhouette.
  * Reference: CHIMERA 3/4 concept with roaring lion, enormous upward buffalo
  * horns, thick golden cuboid mane, dark muscular body, and anaconda-headed tail.
  *
@@ -14,12 +14,12 @@
 
 export const CHIMERA_DESIGN = Object.freeze({
   name:'キメラ',
-  version:2,
+  version:3,
   role:'オーバーワールド中ボス',
   direction:'-Z',
-  height:5.15,
-  length:9.0,
-  hornsWidth:5.75,
+  height:5.4,
+  length:10.1,
+  hornsWidth:6.25,
   distinguishingFeatures:[
     '厚い金茶色の段状たてがみ',
     '水牛の左右に反り上がる大角',
@@ -190,7 +190,7 @@ export function buildChimera(THREE){
   // weight transfer through the shoulders and the hind leg kick-off.
   function leg(name,sign,front){
     const pivot=makeJoint(root,name,sign*(front?.89:.82),front?2.14:1.95,
-      front?-1.02:1.27);
+      front?-1.42:1.30);
     if(front){
       // Layered shoulder and long slanted upper forelimb.
       box(pivot,0,-.23,-.07,.89,.85,.95,C.coatLight,0,0,sign*-.09);
@@ -246,7 +246,9 @@ export function buildChimera(THREE){
   leg('backLeft',-1,false);leg('backRight',1,false);
 
   // Lion head / roar: physically distinct cranium and lower jaw.
-  const head=makeJoint(core,'lionHead',0,2.93,-1.76);
+  // The lion's HEAD (and therefore its silhouette) must dominate the frame.
+  const head=makeJoint(core,'lionHead',0,3.13,-2.27);
+  head.scale.set(1.28,1.19,1.24);
   const mainFace=C.amber;
   // Multi-layer cranium: broad temples taper into a strong feline snout.
   // Cheekbones and jaw are distinct, rather than one cartoon box.
@@ -312,7 +314,9 @@ export function buildChimera(THREE){
 
   // Massive mane: tightly stacked variable-size cuboid locks; a visibly
   // three-dimensional volume, not a flat orange shell painted on the head.
-  const mane=makeJoint(core,'mane',0,2.58,-1.45);
+  // Wrap the head in a lion's huge full neck mane, not an orange crest.
+  const mane=makeJoint(core,'mane',0,2.71,-1.56);
+  mane.scale.set(1.24,1.22,1.26);
   box(mane,0,-.05,-.02,2.26,2.13,1.42,C.deepMane);
   box(mane,0,.70,.10,2.24,.68,1.46,C.copper);
   box(mane,0,-.71,.05,1.95,.74,1.34,C.copper);
@@ -381,11 +385,11 @@ export function buildChimera(THREE){
       [sign*.93,3.60,-2.02],
       [sign*1.37,3.55,-2.07],
       [sign*1.79,3.49,-2.14],
-      [sign*2.18,3.59,-2.24],
-      [sign*2.55,3.87,-2.30],
-      [sign*2.76,4.30,-2.35],
-      [sign*2.83,4.73,-2.38],
-      [sign*2.73,5.06,-2.43]
+      [sign*2.30,3.56,-2.29],
+      [sign*2.78,3.80,-2.42],
+      [sign*3.02,4.29,-2.54],
+      [sign*3.12,4.78,-2.61],
+      [sign*3.00,5.23,-2.68]
     ],[.33,.37,.35,.31,.25,.19,.13,.077,.005],
     [C.horn,C.hornEdge,C.horn,C.horn,C.hornEdge,C.horn,
      C.horn,C.hornTip,C.hornTip],9);
@@ -408,10 +412,11 @@ export function buildChimera(THREE){
   // body) with subtle block-scale camouflage and a separately articulated
   // predatory snake head above and behind the feline back.
   const tail=makeJoint(core,'snakeTail',0,1.57,1.64);
+  // Clearly visible C-shaped thick snake, extended to the right.
   const snakePoints=[
-    [0,0,0],[.04,-.03,.49],[.43,.03,1.03],[1.04,.20,1.55],
-    [1.85,.47,2.07],[2.47,.95,2.31],[2.67,1.53,2.28],
-    [2.56,2.17,2.09],[2.18,2.67,1.73],[1.83,2.79,1.34]
+    [0,0,0],[.12,-.11,.54],[.67,-.11,1.23],[1.55,.07,1.92],
+    [2.42,.36,2.27],[3.16,.79,2.34],[3.54,1.40,2.20],
+    [3.49,2.13,1.88],[3.19,2.80,1.50],[2.86,3.08,1.06]
   ];
   const snakeCurve=new THREE.CatmullRomCurve3(snakePoints.map(p=>point(...p)),false,'catmullrom',.38);
   const V=[],colors=[],faces=[];
@@ -426,8 +431,8 @@ export function buildChimera(THREE){
         const helper=Math.abs(tangent.y)>.88?point(1,0,0):point(0,1,0);
         const u=new THREE.Vector3().crossVectors(tangent,helper).normalize();
         const w=new THREE.Vector3().crossVectors(tangent,u).normalize();
-        const taper=1-.76*Math.pow(t,1.30);
-        const radius=(.43+.07*Math.sin(t*Math.PI))*taper;
+        const taper=1-.63*Math.pow(t,1.30);
+        const radius=(.68+.10*Math.sin(t*Math.PI))*taper;
         return v.addScaledVector(u,Math.cos(angle)*radius)
           .addScaledVector(w,Math.sin(angle)*radius*.89);
       };
@@ -460,7 +465,8 @@ export function buildChimera(THREE){
 
   // Facing toward the player's screen (local -Z), with a long angular upper
   // jaw, golden eye sockets, lower mandible, fangs and a forked red tongue.
-  const snakeHead=makeJoint(tail,'snakeHead',1.83,2.79,1.34);
+  const snakeHead=makeJoint(tail,'snakeHead',2.86,3.08,1.06);
+  snakeHead.scale.set(1.34,1.30,1.38);
   // Wedge-like reptile skull: large at the neck, tapering into a long
   // heavy upper jaw. The open lower jaw is a completely separate joint.
   box(snakeHead,0,0,-.29,.83,.45,.83,C.snake);
@@ -511,6 +517,7 @@ export function buildChimera(THREE){
     mane,head,jaw,tail,snakeHead,lowerSnakeJaw
   };
   root.userData.chimeraVersion=CHIMERA_DESIGN.version;
+  root.userData.visualVariant='v3-giant-lion-shaggy-mane-coiled-serpent';
   root.userData.chimeraVisualOnly=true;
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
   return root;
