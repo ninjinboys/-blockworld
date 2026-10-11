@@ -14,7 +14,7 @@
 import {
   buildChimeraSkeleton,animateChimeraSkeleton,
   CHIMERA_ARMATURE,CHIMERA_MOVEMENT
-} from './chimera-skeleton.js?v=20261011anatomyBones03_2';
+} from './chimera-skeleton.js?v=20261011anatomyForelegFix04';
 
 export {CHIMERA_ARMATURE,CHIMERA_MOVEMENT};
 
@@ -198,13 +198,13 @@ export function buildChimeraBlockout(T){
         l.shoulder,fore?[.94,.98,.88]:[.91,1.02,.98],
         fore?'shoulder':'pelvis'),
       upper:between(id+' HEAVY THIGH/UPPER LEG',l.shoulder,l.elbow,
-        fore?.73:.76,fore?.67:.66,fore?'limb':'pelvis'),
+        fore?.62:.76,fore?.60:.66,fore?'limb':'pelvis'),
       joint:sphere(id+' LARGE CONNECTED ELBOW/KNEE',
-        l.elbow,fore?[.56,.60,.53]:[.58,.62,.60],'limbShade'),
+        l.elbow,fore?[.41,.46,.41]:[.58,.62,.60],'limbShade'),
       lower:between(id+' ANGLED MUSCULAR FOREARM',l.elbow,l.wrist,
-        fore?.49:.42,fore?.44:.41,fore?'limb':'limbShade'),
+        fore?.39:.42,fore?.37:.41,fore?'limb':'limbShade'),
       hock:sphere(id+' ROBUST ANKLE/HOCK',l.wrist,
-        fore?[.47,.46,.46]:[.42,.43,.45],'limb'),
+        fore?[.38,.40,.37]:[.42,.43,.45],'limb'),
       paw:sphere(id+' MASSIVE LION GROUNDED PAW',
         l.paw,fore?[.86,.32,.98]:[.67,.29,.84],'forepaw'),
       toes:sphere(id+' LARGE POWERFUL PAW TOES',
