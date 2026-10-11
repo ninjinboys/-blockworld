@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101216">
-<title>CHIMERA — NEXACRAFT 3D MODEL</title>
+<title>CHIMERA V3 — NEXACRAFT NEW 3D SCULPT</title>
 <style>
 :root{color-scheme:dark;--metal:#bf8c51;--line:rgba(227,179,110,.35);--ink:#f0e8dd}
 *{box-sizing:border-box}
@@ -25,6 +25,11 @@ h1{margin:4px 0 0;font:900 clamp(43px,6vw,80px)/.95 Impact,"Arial Black",sans-se
   border:1px solid var(--line);border-radius:10px;
   box-shadow:0 7px 36px rgba(0,0,0,.38)}
 #description h2{margin:0 0 8px;font-size:14px;letter-spacing:.12em;color:#f4d3a0}
+.version-stamp{display:inline-block;margin-top:11px;padding:7px 10px;
+  border:1px solid #b28b4c;border-radius:5px;
+  background:rgba(22,15,9,.78);color:#ffca75;
+  font:800 clamp(9px,1.0vw,12px)/1.5 ui-monospace,monospace;
+  letter-spacing:.04em;text-shadow:0 2px 7px #000}
 #description p{margin:7px 0;font-size:11px;color:#cfcbc3;line-height:1.7}
 .badge{display:inline-block;border:1px solid rgba(255,209,155,.4);padding:5px 8px;
   margin-top:6px;border-radius:5px;color:#f1cf9c;font:800 10px ui-monospace,monospace}
@@ -56,6 +61,7 @@ button:active,a.chip:active{transform:translateY(1px)}
   #mast{top:12px;left:13px}
   h1{font-size:38px}
   .subtitle{margin-top:5px;font-size:9px}
+  .version-stamp{margin-top:6px;font-size:9px;padding:5px 7px}
   #description{top:15px;right:12px;width:150px;padding:9px}
   #description h2{font-size:11px}
   #description p{font-size:9px;line-height:1.45;margin:5px 0}
@@ -82,15 +88,16 @@ button:active,a.chip:active{transform:translateY(1px)}
 <header id="mast">
   <div class="overline">NEXACRAFT // CREATURE DESIGN LAB</div>
   <h1>CHIMERA</h1>
-  <div class="subtitle">MID-BOSS • 360° MODEL REVIEW · WALK & CHARGE</div>
+  <div class="subtitle">MID-BOSS • REAL-TIME 3D • NEW SCULPT V3</div>
+  <div class="version-stamp">V3 — NEW LION HEAD · SPIKED MANE · GIANT SNAKE</div>
 </header>
 <aside id="description">
-  <h2>MODEL STRUCTURE</h2>
-  <p>🦁 厚い黄金色の段状たてがみと、長い剣歯を持つ獅子の顔</p>
+  <h2>CHIMERA VISUAL V3</h2>
+  <p>🦁 頭を約28%拡大。尖った立体たてがみと長い剣歯。</p>
   <p>🦬 頭から左右に大きく張り出して上に反り返る水牛の角</p>
-  <p>🐍 太く立ち上がる蛇の尻尾、開いた蛇の口と黄色い目</p>
+  <p>🐍 大きなC字の蛇尾。横に張り出した大蛇の頭。</p>
   <p>⛏ 実際の3D形状を表示。画像を板に貼り付けたものではありません。</p>
-  <span class="badge">VISUAL DEVELOPMENT · BOSS AI TBD</span>
+  <span class="badge">SCULPT V3 · BOSS AI TBD</span>
 </aside>
 <div id="note">DRAG TO ROTATE · PINCH TO ZOOM · <span id="movementSpeed">STAND BY</span></div>
 <nav id="controls" aria-label="3Dモデル表示操作">
@@ -109,7 +116,7 @@ button:active,a.chip:active{transform:translateY(1px)}
 <div id="error" role="alert"></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {buildChimera,animateChimera,CHIMERA_DESIGN,CHIMERA_MOVEMENT} from './chimera-model.js?v=20261011chimeraMotion3';
+import {buildChimera,animateChimera,CHIMERA_DESIGN,CHIMERA_MOVEMENT} from './chimera-model.js?v=20261011chimeraVisualV3_r4';
 try{
   const stage=document.getElementById('stage');
   const scene=new THREE.Scene();
@@ -141,12 +148,12 @@ try{
   scene.add(boss);
 
   const focus=new THREE.Vector3(.18,2.16,.25);
-  const position={az:.92,el:.25,dist:13.2};
+  const position={az:.88,el:.23,dist:14.1};
   const desired={...position};
   let isRotating=true,moveMode='idle',distanceTraveled=0;
   const views={
-    hero:[.92,.25,13.2],front:[0,.16,12.7],
-    side:[Math.PI/2,.20,13.3],back:[Math.PI,.20,13.6]
+    hero:[.88,.23,14.1],front:[0,.12,13.8],
+    side:[Math.PI/2,.19,14.5],back:[Math.PI,.19,14.7]
   };
   function view(name){
     const v=views[name];if(!v)return;
