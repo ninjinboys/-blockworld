@@ -1,5 +1,5 @@
 /**
- * NEXACRAFT Chimera — ANATOMY BLOCKOUT v3.1 — reference mass correction
+ * NEXACRAFT Chimera — ANATOMY BLOCKOUT v3.2 — lion head lifted in sync with anatomical bones
  *
  * Surface masses are built DIRECTLY on the redesigned Chimera Skeleton v3,
  * not on any of the previously rejected box-lion or fur models.
@@ -163,29 +163,29 @@ export function buildChimeraBlockout(T){
   // The reference's shoulders dominate the lion neck width and the head
   // emerges horizontally FORWARD. This is only muscle-blockout shape,
   // NOT a gold mane, hair or decorative collar.
-  sphere('8. HEAVY PREDATOR NECK / ANATOMICAL MANTLE',[0,3.04,-2.17],
+  sphere('8. HEAVY PREDATOR NECK / ANATOMICAL MANTLE',[0,3.17,-2.17],
     [1.66,1.52,1.37],'neck',-.18);
   sphere('9. OUTWARD BROAD STERNUM',[0,2.18,-2.26],
     [1.24,.95,.95],'chest',-.16);
 
   // A real large elongated head, not a short cuboid attached to a fringe.
-  sphere('10. ELONGATED WIDE LION CRANIUM',[0,3.62,-3.58],
+  sphere('10. ELONGATED WIDE LION CRANIUM',[0,3.99,-3.58],
     [1.21,.83,1.16],'head',-.12);
   for(const sign of [-1,1]){
-    sphere('11. LION STRONG TEMPORAL CHEEKS '+sign,[sign*.84,3.23,-3.68],
+    sphere('11. LION STRONG TEMPORAL CHEEKS '+sign,[sign*.84,3.62,-3.68],
       [.48,.63,.68],'brow');
   }
-  sphere('12. GIGANTIC PROJECTED MUZZLE',[0,3.35,-4.24],
+  sphere('12. GIGANTIC PROJECTED MUZZLE',[0,3.79,-4.24],
     [.84,.44,.63],'muzzle');
-  sphere('13. BONY UPPER JAW RIDGE',[0,3.10,-4.27],
+  sphere('13. BONY UPPER JAW RIDGE',[0,3.53,-4.27],
     [.78,.22,.55],'head');
 
   // Deep gaping lower jaw is not fused with the cranium.
-  sphere('14. DEEP PREDATOR MOUTH CAVITY',[0,2.86,-4.10],
+  sphere('14. DEEP PREDATOR MOUTH CAVITY',[0,3.29,-4.10],
     [.72,.34,.46],'mouth');
-  sphere('15. MASSIVE LOWER JAW',[0,2.57,-4.19],
+  sphere('15. MASSIVE LOWER JAW',[0,3.00,-4.19],
     [.86,.27,.72],'jaw');
-  sphere('16. STRONG JAW HINGE',[0,2.99,-3.55],
+  sphere('16. STRONG JAW HINGE',[0,3.40,-3.55],
     [.84,.33,.48],'head');
 
   // Four articulated heavy legs, TRUE connected segment volumes.
@@ -283,7 +283,7 @@ export function buildChimeraBlockout(T){
     },
     setMassVisible(on){mass.visible=on;},
     getMassMeasurements(){return {
-      lionSkullCenter:[0,3.61,-3.52],
+      lionSkullCenter:[0,3.99,-3.58],
       shoulderMass:[1.11,2.56,-1.39],
       brisketDepth:1.95-.99,
       frontFootWidth:2*2.08,
@@ -296,7 +296,7 @@ export function buildChimeraBlockout(T){
     }}
   };
   skeleton.userData.chimeraModelPhase='reference-silhouette-blockout';
-  skeleton.userData.chimeraVersion='CHIMERA_BODY_MASS_V3_1_BROAD_THORAX';
+  skeleton.userData.chimeraVersion='CHIMERA_BODY_MASS_V3_2_RAISED_LION_HEAD';
   skeleton.userData.chimeraBlockout.setBonesVisible(false);
   return skeleton;
 }
