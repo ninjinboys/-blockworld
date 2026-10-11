@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#101216">
+<title>CHIMERA — NEXACRAFT 3D MODEL</title>
+<style>
+:root{color-scheme:dark;--metal:#bf8c51;--line:rgba(227,179,110,.35);--ink:#f0e8dd}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101216;color:var(--ink);
+  font-family:system-ui,-apple-system,"Hiragino Sans",Meiryo,sans-serif}
+#stage{position:fixed;inset:0;touch-action:none;outline:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#mast{position:fixed;top:max(16px,env(safe-area-inset-top));left:max(19px,env(safe-area-inset-left));
+  pointer-events:none;z-index:2;text-shadow:0 2px 10px #030407}
+.overline{font:800 11px/1.3 ui-monospace,monospace;color:#cda36b;letter-spacing:.21em}
+h1{margin:4px 0 0;font:900 clamp(43px,6vw,80px)/.95 Impact,"Arial Black",sans-serif;
+  letter-spacing:.075em;color:#ffdfab;text-shadow:0 3px 0 #684329,0 6px 20px #000}
+.subtitle{margin-top:10px;font:600 clamp(10px,1.2vw,13px)/1.5 ui-monospace,monospace;
+  letter-spacing:.12em;color:#d9ba91}
+#description{position:fixed;top:max(18px,env(safe-area-inset-top));right:max(17px,env(safe-area-inset-right));
+  width:min(295px,28vw);padding:15px 17px;z-index:2;
+  background:rgba(12,18,22,.86);backdrop-filter:blur(8px);
+  border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 7px 36px rgba(0,0,0,.38)}
+#description h2{margin:0 0 8px;font-size:14px;letter-spacing:.12em;color:#f4d3a0}
+#description p{margin:7px 0;font-size:11px;color:#cfcbc3;line-height:1.7}
+.badge{display:inline-block;border:1px solid rgba(255,209,155,.4);padding:5px 8px;
+  margin-top:6px;border-radius:5px;color:#f1cf9c;font:800 10px ui-monospace,monospace}
+#controls{position:fixed;bottom:max(21px,env(safe-area-inset-bottom));left:50%;
+  transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;
+  align-items:center;gap:8px;width:min(93vw,890px);z-index:3;
+  padding:12px 14px;border:1px solid rgba(221,175,113,.3);border-radius:12px;
+  background:rgba(9,16,20,.87);backdrop-filter:blur(9px);
+  box-shadow:0 10px 28px rgba(0,0,0,.4)}
+button,a.chip{appearance:none;-webkit-appearance:none;touch-action:manipulation;
+  min-width:67px;min-height:42px;padding:10px 12px;cursor:pointer;
+  border:1px solid #4f4235;border-radius:7px;background:linear-gradient(#313033,#201f23);
+  box-shadow:inset 0 1px 0 #5b5249,0 2px 0 #070708;
+  color:#f9eddc;text-decoration:none;font:800 12px ui-monospace,monospace}
+button.active,button:focus-visible,a.chip:focus-visible{outline:1px solid #e9b773;outline-offset:1px;
+  border-color:#e1ac6b;background:linear-gradient(#705538,#453625)}
+button:active,a.chip:active{transform:translateY(1px)}
+#note{position:fixed;bottom:calc(max(21px,env(safe-area-inset-bottom)) + 79px);
+  left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;
+  z-index:2;pointer-events:none;font:700 11px ui-monospace,monospace;
+  letter-spacing:.13em;color:#d0c3ab;text-shadow:0 2px 9px #000}
+#loadingOverlay{position:fixed;inset:0;display:grid;place-items:center;z-index:20;
+  background:#12171b;font:800 14px ui-monospace,monospace;color:#f3d6a2}
+#loadingOverlay[hidden]{display:none}
+#error{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(90vw,560px);padding:20px;background:#261b1b;border:1px solid #b57f6a;
+  border-radius:10px;color:#fff;z-index:30;display:none;font-size:12px;line-height:1.7}
+@media(max-width:760px){
+  #mast{top:12px;left:13px}
+  h1{font-size:38px}
+  .subtitle{margin-top:5px;font-size:9px}
+  #description{top:15px;right:12px;width:150px;padding:9px}
+  #description h2{font-size:11px}
+  #description p{font-size:9px;line-height:1.45;margin:5px 0}
+  #description p:nth-of-type(n+3){display:none}
+  #controls{padding:8px;gap:5px;bottom:max(9px,env(safe-area-inset-bottom));width:96vw}
+  #controls button,#controls a{min-width:50px;min-height:38px;font-size:10px;padding:9px}
+  #note{bottom:calc(max(9px,env(safe-area-inset-bottom)) + 86px);font-size:9px}
+}
+@media(max-width:530px){#description{display:none}#note{white-space:normal;width:95vw}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main id="stage" role="region" aria-label="キメラの立体3Dモデル。ドラッグして回転、ピンチして拡大縮小"></main>
+<header id="mast">
+  <div class="overline">NEXACRAFT // CREATURE DESIGN LAB</div>
+  <h1>CHIMERA</h1>
+  <div class="subtitle">MID-BOSS • 360° MODEL REVIEW</div>
+</header>
+<aside id="description">
+  <h2>MODEL STRUCTURE</h2>
+  <p>🦁 厚い黄金色の段状たてがみと、長い剣歯を持つ獅子の顔</p>
+  <p>🦬 頭から左右に大きく張り出して上に反り返る水牛の角</p>
+  <p>🐍 太く立ち上がる蛇の尻尾、開いた蛇の口と黄色い目</p>
+  <p>⛏ 実際の3D形状を表示。画像を板に貼り付けたものではありません。</p>
+  <span class="badge">VISUAL DEVELOPMENT · BOSS AI TBD</span>
+</aside>
+<div id="note">DRAG / SWIPE TO ROTATE · PINCH OR WHEEL TO ZOOM</div>
+<nav id="controls" aria-label="3Dモデル表示操作">
+  <button type="button" data-view="hero" class="active">3/4</button>
+  <button type="button" data-view="front">正面</button>
+  <button type="button" data-view="side">側面</button>
+  <button type="button" data-view="back">背面</button>
+  <button type="button" id="zoomIn" aria-label="拡大">＋</button>
+  <button type="button" id="zoomOut" aria-label="縮小">－</button>
+  <button type="button" id="turntable" class="active">自動回転</button>
+  <button type="button" id="walk">歩行確認</button>
+  <a class="chip" href="./" aria-label="NEXACRAFTへ戻る">ゲームへ</a>
+</nav>
+<div id="loadingOverlay" role="status">CREATING CHIMERA MODEL...</div>
+<div id="error" role="alert"></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
+import {buildChimera,animateChimera,CHIMERA_DESIGN} from './chimera-model.js?v=20261011chimeraV1';
+try{
+  const stage=document.getElementById('stage');
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x15161b);
+  scene.fog=new THREE.FogExp2(0x15161b,.012);
+  const camera=new THREE.PerspectiveCamera(44,1,.10,150);
+  const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.8));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  stage.appendChild(renderer.domElement);
+  scene.add(new THREE.HemisphereLight(0xe4e0d5,0x292631,2.15));
+  const key=new THREE.DirectionalLight(0xffdba0,3.2);
+  key.position.set(-5,9,-7);key.castShadow=true;
+  key.shadow.mapSize.set(1024,1024);
+  key.shadow.camera.left=-9;key.shadow.camera.right=9;
+  key.shadow.camera.top=9;key.shadow.camera.bottom=-9;
+  key.shadow.camera.near=.5;key.shadow.camera.far=25;
+  scene.add(key);
+  const rim=new THREE.DirectionalLight(0x8ca5db,1.7);
+  rim.position.set(3,6,8);scene.add(rim);
+  const floor=new THREE.Mesh(new THREE.CylinderGeometry(5,5,.35,56),
+    new THREE.MeshStandardMaterial({color:0x292729,roughness:.95,metalness:.10}));
+  floor.position.y=-.30;floor.receiveShadow=true;scene.add(floor);
+  const grid=new THREE.GridHelper(9,20,0x5b4c39,0x3a3430);
+  grid.position.y=-.108;scene.add(grid);
+  const boss=buildChimera(THREE);
+  scene.add(boss);
+
+  const focus=new THREE.Vector3(.18,2.16,.25);
+  const position={az:.64,el:.25,dist:11.1};
+  const desired={...position};
+  let isRotating=true,isWalking=false;
+  const views={
+    hero:[.64,.25,11.1],front:[0,.16,10.3],
+    side:[Math.PI/2,.20,11.2],back:[Math.PI,.20,11.6]
+  };
+  function view(name){
+    const v=views[name];if(!v)return;
+    desired.az=v[0];desired.el=v[1];desired.dist=v[2];
+    isRotating=false;document.getElementById('turntable').classList.remove('active');
+    for(const b of document.querySelectorAll('[data-view]'))
+      b.classList.toggle('active',b.dataset.view===name);
+  }
+  for(const b of document.querySelectorAll('[data-view]'))
+    b.addEventListener('click',()=>view(b.dataset.view));
+  document.getElementById('zoomIn').addEventListener('click',()=>desired.dist=Math.max(5.4,desired.dist-.95));
+  document.getElementById('zoomOut').addEventListener('click',()=>desired.dist=Math.min(19,desired.dist+.95));
+  document.getElementById('turntable').addEventListener('click',event=>{
+    isRotating=!isRotating;event.currentTarget.classList.toggle('active',isRotating);
+    document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
+  });
+  document.getElementById('walk').addEventListener('click',event=>{
+    isWalking=!isWalking;event.currentTarget.classList.toggle('active',isWalking);
+  });
+  const pointers=new Map();
+  let lastPinch=null;
+  function stopTurntable(){
+    isRotating=false;document.getElementById('turntable').classList.remove('active');
+    document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
+  }
+  renderer.domElement.addEventListener('pointerdown',event=>{
+    renderer.domElement.setPointerCapture(event.pointerId);
+    pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});
+    stopTurntable();event.preventDefault();
+  });
+  renderer.domElement.addEventListener('pointermove',event=>{
+    const p=pointers.get(event.pointerId);if(!p)return;
+    const dx=event.clientX-p.x,dy=event.clientY-p.y;
+    pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});
+    if(pointers.size===1){
+      desired.az+=dx*.007;
+      desired.el=Math.max(-.20,Math.min(.95,desired.el+dy*.006));
+    }else{
+      const pts=[...pointers.values()];
+      const pinch=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+      if(lastPinch!=null)desired.dist=Math.min(19,Math.max(5.4,desired.dist-(pinch-lastPinch)*.022));
+      lastPinch=pinch;
+    }
+    event.preventDefault();
+  });
+  const pointerEnd=e=>{pointers.delete(e.pointerId);if(pointers.size<2)lastPinch=null};
+  renderer.domElement.addEventListener('pointerup',pointerEnd);
+  renderer.domElement.addEventListener('pointercancel',pointerEnd);
+  renderer.domElement.addEventListener('wheel',event=>{
+    desired.dist=Math.max(5.4,Math.min(19,desired.dist+Math.sign(event.deltaY)*.50));
+    stopTurntable();event.preventDefault();
+  },{passive:false});
+  function resize(){
+    const w=Math.max(1,stage.clientWidth),h=Math.max(1,stage.clientHeight);
+    renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize',resize,{passive:true});resize();
+  document.getElementById('loadingOverlay').hidden=true;
+  let then=performance.now(),clock=0;
+  function frame(now){
+    const dt=Math.min(.09,(now-then)/1000);then=now;clock+=dt;
+    if(isRotating)desired.az+=dt*.13;
+    for(const prop of ['az','el','dist'])position[prop]+=(desired[prop]-position[prop])*Math.min(1,dt*7);
+    const r=position.dist,el=position.el,az=position.az;
+    camera.position.set(focus.x+Math.sin(az)*Math.cos(el)*r,
+      focus.y+Math.sin(el)*r,
+      focus.z-Math.cos(az)*Math.cos(el)*r);
+    camera.lookAt(focus);
+    animateChimera(boss,clock,isWalking);
+    renderer.render(scene,camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}catch(err){
+  document.getElementById('loadingOverlay').hidden=true;
+  const e=document.getElementById('error');e.style.display='block';
+  e.textContent='3Dモデルの読み込みに失敗しました: '+(err?.message||String(err));
+  console.error(err);
+}
+</script>
+</body>
+</html>
