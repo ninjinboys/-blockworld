@@ -764,7 +764,63 @@ function applySaveData(data){
   }
   return false;
 }
+// Optional in-world Chimera MODEL REVIEW. Nothing spawns in regular play.
+// Open ?chimeraTest=1, choose a saved world and tap 世界に入る to inspect scale,
+// lighting and shape beside your character. No combat, drops, save or AI yet.
+const CHIMERA_VISUAL_TEST=new URLSearchParams(location.search).get('chimeraTest')==='1';
+let chimeraVisualModel=null,animateChimeraVisual=null;
+function removeChimeraVisualTest(){
+  if(!chimeraVisualModel)return;
+  scene.remove(chimeraVisualModel);
+  chimeraVisualModel.traverse(o=>{
+    if(!o.isMesh)return;
+    o.geometry?.dispose();
+    if(o.userData.mobOwnMaterial)o.material?.dispose();
+  });
+  chimeraVisualModel=null;animateChimeraVisual=null;
+}
+async function spawnChimeraVisualTest(){
+  if(!CHIMERA_VISUAL_TEST||chimeraVisualModel||!worldReady||!started)return;
+  const slot=currentWorldSlot;
+  try{
+    const art=await import('./chimera-model.js?v=20261011chimeraV1');
+    if(!worldReady||!started||currentWorldSlot!==slot)return;
+    const creature=art.buildChimera(THREE);
+    // Place on terrain, ahead of the camera, with the lion head looking
+    // toward the player. Prefer broad nearly-flat spaces over steep ledges.
+    const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);
+    let chosen=null,score=-Infinity;
+    for(let j=0;j<16;j++){
+      const angle=player.yaw+(j%2===0?1:-1)*Math.floor(j/2)*.34;
+      const distance=10+(j%3)*1.0;
+      const xx=Math.round(player.pos.x-Math.sin(angle)*distance);
+      const zz=Math.round(player.pos.z-Math.cos(angle)*distance);
+      const ground=surfaceAt(xx,zz);
+      if(ground<=SEA)continue;
+      let difference=0;
+      for(const [a,b] of [[-2,0],[2,0],[0,-2],[0,2],[-2,-2],[2,2]]){
+        difference+=Math.abs(surfaceAt(xx+a,zz+b)-ground);
+      }
+      const quality=20-difference*2-Math.abs(distance-10);
+      if(quality>score){score=quality;chosen={x:xx,z:zz,y:ground}}
+    }
+    if(!chosen){
+      const x=Math.round(player.pos.x+fx*10),z=Math.round(player.pos.z+fz*10);
+      chosen={x,z,y:surfaceAt(x,z)};
+    }
+    creature.position.set(chosen.x,chosen.y+.04,chosen.z);
+    const heading=Math.atan2(player.pos.x-chosen.x,player.pos.z-chosen.z);
+    creature.rotation.y=heading+Math.PI;
+    scene.add(creature);
+    chimeraVisualModel=creature;animateChimeraVisual=art.animateChimera;
+    flash('キメラの3D外観確認モデルを表示（戦闘・ドロップなし）');
+  }catch(err){
+    console.warn('Chimera model test could not load',err);
+    flash('キメラ3Dモデルの読み込みに失敗しました');
+  }
+}
 function resetWorldRuntime(){
+  removeChimeraVisualTest();
   ridingHorse=null;
   resetSprint();
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
@@ -4790,6 +4846,8 @@ function loop(now){
   }
   if(started&&multiRole)multiTick(now);
   if(!started||dead||sleeping)playerAvatar.visible=false;
+  if(chimeraVisualModel&&animateChimeraVisual)
+    animateChimeraVisual(chimeraVisualModel,now*.001,false);
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
 }
@@ -5604,6 +5662,7 @@ $('startBtn').addEventListener('click',()=>{
   started=true;cover.style.display='none';last=performance.now();renderHealth();
   if(dead){showDeathScreen();return}
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
+  void spawnChimeraVisualTest();
 });
 if(!restoreSession())authName.focus();
 requestAnimationFrame(loop);
