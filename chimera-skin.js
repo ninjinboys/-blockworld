@@ -1,5 +1,5 @@
 /**
- * NEXACRAFT — CHIMERA UNPAINTED SKIN 01.
+ * NEXACRAFT — CHIMERA UNPAINTED SKIN 01.2.
  * Built on anatomical skeleton V3.2. No old cuboid lion, fur, scales,
  * horns, eyes, fang sculpt, paint or boss AI. Uniform neutral clay skin.
  * Segmented legs follow the already-existing four-leg inverse kinematics.
@@ -106,36 +106,74 @@ export function buildChimeraSkin(T){
   ellipsoid('OPEN LOWER LION JAW',[0,3.00,-4.22],
     [.86,.25,.72],[-.09,0,0]);
 
-  function positionBetween(part,start,end){
-    const a=vec(start),b=vec(end),d=b.clone().sub(a);
-    const len=Math.max(.00001,d.length());
-    part.mesh.position.copy(a).add(b).multiplyScalar(.5);
-    part.mesh.quaternion.setFromUnitVectors(UP,d.normalize());
-    part.mesh.scale.set(part.width,len*.70,part.depth);
+  // Rather than stacking six separated capsule muscles (which showed
+  // ugly round seams), every foreleg/hindleg has ONE continuous 3D skin
+  // wrapped through the live shoulder > elbow/knee > wrist > paw > toes.
+  // Forelegs have thick upper muscle and wide flat grounded paw;
+  // hind legs taper through the backward-folding feline hock.
+  function updateLimb(l,pose,part){
+    const fore=l.kind==='fore';
+    const blend=(a,b,k)=>a.map((v,i)=>v*(1-k)+b[i]*k);
+    const elbow=pose.mid,wrist=pose.wrist,paw=pose.paw,toe=pose.toe;
+    const tip=[toe[0],toe[1]-.025,toe[2]-.27];
+    const anchors=[
+      [...l.shoulder],blend(l.shoulder,elbow,.40),[...elbow],
+      blend(elbow,wrist,.52),[...wrist],
+      blend(wrist,paw,.53),[...paw],[...toe],tip
+    ];
+    const widths=fore?
+      [.70,.75,.58,.49,.43,.52,.87,.74,.045]:
+      [.74,.72,.58,.43,.42,.46,.70,.66,.045];
+    const depths=fore?
+      [.70,.73,.56,.48,.42,.41,.35,.23,.035]:
+      [.77,.70,.60,.47,.43,.39,.31,.22,.035];
+    const path=new T.CatmullRomCurve3(anchors.map(vec),false,'centripetal');
+    const geometry=part.geometry,arr=geometry.attributes.position.array;
+    for(let k=0;k<=part.rings;k++){
+      const t=k/part.rings,point=path.getPoint(t),
+        tangent=path.getTangent(t);
+      const basis=new T.Vector3(1,0,0)
+        .addScaledVector(tangent,-tangent.x).normalize();
+      const orth=new T.Vector3().crossVectors(tangent,basis).normalize();
+      const position=t*(widths.length-1),
+        n=Math.min(widths.length-2,Math.floor(position)),
+        x=position-n,smooth=x*x*(3-2*x);
+      const width=widths[n]*(1-smooth)+widths[n+1]*smooth;
+      const depth=depths[n]*(1-smooth)+depths[n+1]*smooth;
+      for(let j=0;j<part.sides;j++){
+        const a=2*Math.PI*j/part.sides;
+        const v=point.clone()
+          .addScaledVector(basis,Math.cos(a)*width)
+          .addScaledVector(orth,Math.sin(a)*depth);
+        const idx=(k*part.sides+j)*3;
+        arr[idx]=v.x;arr[idx+1]=v.y;arr[idx+2]=v.z;
+      }
+    }
+    geometry.attributes.position.needsUpdate=true;
+    geometry.computeVertexNormals();
   }
-  function connect(name,a,b,width,depth){
-    const part={mesh:add(name,ball),width,depth};
-    positionBetween(part,a,b);
-    return part;
-  }
-  // Four muscular front/rear limbs follow the 50-bone IK skeleton.
-  // Smooth overlaps between joint volumes prevent disconnected segments.
   for(const id of rig.legOrder){
-    const l=rig.legs[id],f=l.kind==='fore';
-    limbs[id]={
-      upper:connect(id+' THICK UPPER LEG',l.shoulder,l.elbow,
-        f?.70:.72,f?.64:.68),
-      elbow:ellipsoid(id+' ELBOW/KNEE',l.elbow,
-        f?[.51,.56,.53]:[.56,.56,.57]),
-      lower:connect(id+' LOWER LEG',l.elbow,l.wrist,
-        f?.49:.44,f?.45:.43),
-      wrist:ellipsoid(id+' WRIST/HOCK',l.wrist,
-        f?[.43,.44,.42]:[.39,.40,.42]),
-      paw:ellipsoid(id+' HUGE PAW',l.paw,
-        f?[.88,.34,.92]:[.72,.29,.78]),
-      toes:ellipsoid(id+' TOES',l.toe,
-        f?[.77,.22,.49]:[.65,.20,.44])
-    };
+    const leg=rig.legs[id],rings=40,sides=18,
+      geometry=new T.BufferGeometry(),indices=[];
+    geometry.setAttribute('position',
+      new T.Float32BufferAttribute(new Float32Array((rings+1)*sides*3),3));
+    for(let k=0;k<rings;k++)for(let j=0;j<sides;j++){
+      const a=k*sides+j,b=k*sides+(j+1)%sides,
+        c=(k+1)*sides+j,d=(k+1)*sides+(j+1)%sides;
+      indices.push(a,c,b,b,c,d);
+    }
+    for(let j=1;j<sides-1;j++){
+      indices.push(0,j,j+1);
+      const end=rings*sides;indices.push(end,end+j+1,end+j);
+    }
+    geometry.setIndex(indices);geometries.push(geometry);
+    const mesh=add(id+' SEAMLESS JOINTED MUSCLE + SKIN',geometry);
+    mesh.frustumCulled=false; // bones move; bounding sphere mustn't crop skin
+    const part={mesh,geometry,rings,sides};
+    limbs[id]=part;
+    updateLimb(leg,{
+      mid:leg.elbow,wrist:leg.wrist,paw:leg.paw,toe:leg.toe
+    },part);
   }
   // One uninterrupted tapering snake muscle/skin with no "caterpillar"
   // cylinders, scales, patterns or seams. Width measured from skeleton.
@@ -188,7 +226,7 @@ export function buildChimeraSkin(T){
   inside.setMassVisible(false);inside.setBonesVisible(false);
   skin.visible=true;
   const state={
-    skin,meshes,limbs,tail,torso,material,geometries,
+    skin,meshes,limbs,tail,torso,material,geometries,updateLimb,
     showSkin(on){skin.visible=!!on},
     showInside(on){
       inside.setMassVisible(!!on);
@@ -205,31 +243,19 @@ export function buildChimeraSkin(T){
     }}
   };
   root.userData.chimeraSkin=state;
-  root.userData.chimeraVersion='CHIMERA_SKIN_01';
+  root.userData.chimeraVersion='CHIMERA_SKIN_01_UNIFIED_LIMBS';
   return root;
 }
 export function animateChimeraSkin(root,time,mode='idle'){
   const movement=animateChimeraBlockout(root,time,mode);
   const rig=root?.userData?.skeleton,state=root?.userData?.chimeraSkin;
   if(!rig||!state)return movement;
-  const V=a=>new root.userData._threeClass.Vector3(...a),
-    UP=new root.userData._threeClass.Vector3(0,1,0);
-  const connect=(part,start,end)=>{
-    const a=V(start),b=V(end),d=b.clone().sub(a),
-      len=Math.max(.00001,d.length());
-    part.mesh.position.copy(a).add(b).multiplyScalar(.5);
-    part.mesh.quaternion.setFromUnitVectors(UP,d.normalize());
-    part.mesh.scale.set(part.width,len*.70,part.depth);
-  };
+  // Surface vertices are computed directly from the exact IK joint pose.
   for(const id of rig.legOrder){
-    const l=rig.legs[id],part=state.limbs[id],
-      pose=l.display||{mid:l.elbow,wrist:l.wrist,paw:l.paw,toe:l.toe};
-    connect(part.upper,l.shoulder,pose.mid);
-    connect(part.lower,pose.mid,pose.wrist);
-    part.elbow.position.set(...pose.mid);
-    part.wrist.position.set(...pose.wrist);
-    part.paw.position.set(...pose.paw);
-    part.toes.position.set(...pose.toe);
+    const leg=rig.legs[id];
+    state.updateLimb(leg,leg.display||{
+      mid:leg.elbow,wrist:leg.wrist,paw:leg.paw,toe:leg.toe
+    },state.limbs[id]);
   }
   return movement;
 }
