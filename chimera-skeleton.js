@@ -115,12 +115,14 @@ export function buildChimeraSkeleton(T){
     ],.148,'spine');
     const fore={
       id:'fore'+name,kind:'fore',side,
+      // Feline forelimb, not a reverse-bending hind knee: the elbow
+      // sits close under/behind the chest, the carpus below it.
       shoulder:[side*1.50,3.07,-1.52],
-      elbow:[side*1.71,1.94,-1.26],
-      wrist:[side*1.91,.86,-1.90],
-      paw:[side*2.00,.23,-2.36],
-      toe:[side*2.00,.18,-2.94],
-      L1:1.18,L2:1.27
+      elbow:[side*1.68,2.06,-1.34],
+      wrist:[side*1.88,.96,-1.76],
+      paw:[side*2.00,.23,-2.04],
+      toe:[side*2.00,.18,-2.48],
+      L1:1.10,L2:1.14
     };
     const hind={
       id:'hind'+name,kind:'hind',side,
@@ -319,7 +321,7 @@ export function buildChimeraSkeleton(T){
   };
   root.userData.skeleton=skeleton;
   root.userData.chimeraSkeletonOnly=true;
-  root.userData.chimeraVersion='SKELETON_03_2_SLIGHTLY_RAISED_LION_HEAD';
+  root.userData.chimeraVersion='SKELETON_03_3_ANATOMIC_FELINE_FORE_ELBOW';
   return root;
 }
 
@@ -342,10 +344,22 @@ export function animateChimeraSkeleton(model,time,mode='idle'){
     const t=swing?(p-stance)/(1-stance):p/stance;
     const reach=swing?stride*(.5-t):stride*(t-.5);
     const lift=swing?(rush?.50:.35)*Math.sin(t*Math.PI):0;
-    const z=leg.paw[2]+(active?reach:0);
+    // Prevent paw swing from dragging a short forearm beyond its physical
+    // two-bone reach. Keep feet grounded; let the elbow remain behind the
+    // shoulder instead of snapping into a protruding "knee" during RUN.
+    const desiredZ=leg.paw[2]+(active?reach:0);
+    const restWristOffset=leg.wrist[2]-leg.paw[2];
+    const wristY=leg.wrist[1]+lift;
+    const dzMax=Math.sqrt(Math.max(.005,
+      (leg.L1+leg.L2-.025)**2
+      -(wristY-leg.shoulder[1])**2
+      -(leg.wrist[0]-leg.shoulder[0])**2));
+    const desiredWristZ=desiredZ+restWristOffset;
+    const wristZ=Math.max(leg.shoulder[2]-dzMax,
+      Math.min(leg.shoulder[2]+dzMax,desiredWristZ));
+    const z=wristZ-restWristOffset;
     const paw=[leg.paw[0],leg.paw[1]+lift,z];
-    const wrist=[leg.wrist[0],leg.wrist[1]+lift,
-      z+(leg.wrist[2]-leg.paw[2])];
+    const wrist=[leg.wrist[0],wristY,wristZ];
     const mid=s.solveIK(leg.shoulder,wrist,leg.L1,leg.L2,
       fore?[0,0,1]:[0,.12,-1]);
     const toe=[leg.toe[0],leg.toe[1]+lift,z+leg.toe[2]-leg.paw[2]];
