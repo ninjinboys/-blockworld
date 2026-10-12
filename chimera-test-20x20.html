@@ -150,7 +150,7 @@ async function loadChimera(){
     built.position.set(by.x,0,by.z);built.rotation.y=Math.PI;
     built.userData.chimeraSkin.material.color.setHex(0xa48669);
     // Only its painted state is provisional; geometry is the existing real rig.
-    scene.add(built);boss=built;
+    scene.add(built);boss=built;window._chimeraMotion=mod.animateChimeraSkin;
     scene.remove(standIn);standIn=null;
     status.textContent="20×20 平地OK · 軽量キメラ表示OK（無装飾版）";
     flash("キメラを読み込みました");
