@@ -82,7 +82,7 @@ let renderer,scene,camera,player,boss,standIn,ground,motionController=null;
 let camYaw=0,viewMode=0,activeAI=false,playerHp=100,bossHp=100;
 let attackTime=0,hitTime=0,gameTime=0,lastFrame=0,lastMove=false,lastAnim=0;
 let busy=false,noticeTimer=0;
-let manualMotion="idle",actionMode="",actionStarted=0,actionUntil=0,lastReportedMotion="";
+let manualMotion="idle",actionMode="",actionStarted=0,actionUntil=0,lastReportedMotion="",walkPreviewPhase=0;
 const motionNames={idle:"待機",walk:"歩行",charge:"突進",roar:"咆哮",tail:"蛇尾攻撃",hurt:"被弾",bite:"かみつき",death:"ダウン"};
 function setMotionButton(){document.querySelectorAll("[data-motion]").forEach(b=>{const on=b.dataset.motion===manualMotion;b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on));});}
 function triggerMotion(name,seconds){actionMode=name;actionStarted=gameTime;actionUntil=gameTime+seconds;}
@@ -161,8 +161,8 @@ async function loadChimera(){
     // Only its painted state is provisional; geometry is the existing real rig.
     scene.add(built);boss=built;
     try{
-      const motionMod=await import("./chimera-test-motion.js?v=20261013motion01");
-      motionController=motionMod.createTestMotion(built,mod.animateChimeraSkin);
+      const motionMod=await import("./chimera-test-motion.js?v=20261013bossMotion02");
+      motionController=motionMod.createTestMotion(built,mod.animateChimeraSkin,THREE);
     }catch(motionError){
       console.warn("追加モーションが読み込めないため、基本歩行だけ使用します",motionError);
       motionController={update:(t,dt,mode)=>mod.animateChimeraSkin(built,t,mode==="charge"?"charge":mode==="walk"?"walk":"idle")};
@@ -182,7 +182,7 @@ function updateHUD(){
 }
 function reset(){
   py.x=0;py.z=7;by.x=0;by.z=-3.3;playerHp=100;bossHp=100;
-  gameTime=0;lastAnim=0;attackTime=-2;hitTime=-2;camYaw=0;activeAI=false;actionUntil=0;actionStarted=0;actionMode="";manualMotion="idle";lastReportedMotion="";
+  gameTime=0;lastAnim=0;attackTime=-2;hitTime=-2;camYaw=0;activeAI=false;walkPreviewPhase=0;actionUntil=0;actionStarted=0;actionMode="";manualMotion="idle";lastReportedMotion="";
   if(boss?.userData?.skeleton){boss.userData.skeleton.previous=undefined;boss.userData.skeleton.gaitPhase=0;}
   if(boss){boss.visible=true;boss.rotation.x=0;boss.rotation.z=0;boss.position.y=0;}
   setMotionButton();
@@ -241,10 +241,29 @@ function frame(t){
   requestAnimationFrame(frame);
   if(t-lastFrame<31)return;const dt=Math.min(.05,lastFrame?(t-lastFrame)/1000:.033);lastFrame=t;gameTime+=dt;
   move(dt);enemy(dt);
+  // Motion-preview buttons move the entire boss too, not merely its legs.
+  // Position stays inside the flat 20×20 test arena.
+  if(!activeAI && boss && bossHp>0){
+    if(manualMotion==="walk" && gameTime>=actionUntil){
+      walkPreviewPhase+=dt*.8;
+      by.x=2.8*Math.sin(walkPreviewPhase);
+      by.z=-3.3+1.7*(1-Math.cos(walkPreviewPhase));
+    }else if(actionMode==="charge" && gameTime<actionUntil){
+      const age=gameTime-actionStarted;
+      const smooth=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+      by.x=0;
+      by.z=-3.3+5.2*(smooth((age-.27)/1.08)-smooth((age-1.85)/.65));
+    }
+  }
   const current=boss||standIn;
   if(current){
     current.position.x=by.x;current.position.z=by.z;
     if(activeAI){current.rotation.y=Math.atan2(-(py.x-by.x),-(py.z-by.z));}
+    else if(manualMotion==="walk" && gameTime>=actionUntil){
+      const dx=2.8*.8*Math.cos(walkPreviewPhase);
+      const dz=1.7*.8*Math.sin(walkPreviewPhase);
+      current.rotation.y=Math.atan2(-dx,-dz);
+    }
     else current.rotation.y=Math.PI;
   }
   if(boss && motionController && gameTime-lastAnim>.065){
@@ -279,9 +298,14 @@ document.querySelectorAll("[data-motion]").forEach(button=>{
     if(bossHp<=0){flash("最初からでリセットしてください");return;}
     const mode=button.dataset.motion;
     activeAI=false;document.getElementById("ai").textContent="AI：停止";
-    if(mode==="roar"||mode==="tail"){
-      manualMotion="idle";triggerMotion(mode,mode==="roar"?1.22:1.1);
-    }else{manualMotion=mode;actionUntil=0;}
+    if(mode==="roar"||mode==="tail"||mode==="charge"){
+      manualMotion="idle";
+      by.x=0;by.z=-3.3;walkPreviewPhase=0;
+      triggerMotion(mode,mode==="roar"?2.2:mode==="tail"?1.9:2.6);
+    }else{
+      if(mode!=="walk"){by.x=0;by.z=-3.3;walkPreviewPhase=0;}
+      manualMotion=mode;actionUntil=0;actionMode="";
+    }
     setMotionButton();flash((motionNames[mode]||mode)+" モーション");
   });
 });
