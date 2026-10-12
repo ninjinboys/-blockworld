@@ -23,7 +23,9 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#122225;fon
 #notice.show{opacity:1}
 #topActions{position:fixed;top:calc(max(10px,env(safe-area-inset-top)) + 94px);right:max(10px,env(safe-area-inset-right));display:flex;flex-direction:column;gap:7px}
 button{touch-action:none;color:#faf9ed;background:#162724dc;border:1px solid #bed2ae77;border-radius:9px;min-width:52px;min-height:42px;padding:8px 10px;font-size:12px;font-weight:750;cursor:pointer;user-select:none;-webkit-user-select:none}
-button:active,button.pressed{background:#4d684e}
+button:active,button.pressed,button.active{background:#4d684e;border-color:#eed3a0}
+#motions{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom)) + 157px);display:flex;gap:5px;flex-wrap:wrap;justify-content:center;width:min(96vw,510px);padding:7px;border:1px solid #ffffff44;border-radius:10px;background:#112421d9;z-index:3}
+#motions button{min-width:57px;min-height:38px;padding:6px 8px;font-size:12px}
 #pad{position:fixed;bottom:max(13px,env(safe-area-inset-bottom));left:max(15px,env(safe-area-inset-left));width:169px;height:143px;display:grid;grid-template-columns:52px 52px 52px;grid-template-rows:44px 44px 44px;gap:5px}
 #up{grid-area:1/2}#left{grid-area:2/1}#down{grid-area:2/2}#right{grid-area:2/3}
 #pad button{font-size:20px;background:#101f1dd9}
@@ -31,7 +33,7 @@ button:active,button.pressed{background:#4d684e}
 #attack{width:76px;height:76px;border-radius:50%;background:#814735ee;border:2px solid #ffe4ba;font-size:16px;box-shadow:0 4px 15px #0007}
 #hint{position:fixed;left:50%;bottom:calc(max(15px,env(safe-area-inset-bottom)) + 10px);transform:translateX(-50%);font-size:10px;white-space:nowrap;color:#e4e4d3cf;text-shadow:0 1px 5px #000;pointer-events:none}
 #error{display:none;position:fixed;top:40%;left:5%;width:90%;padding:15px;color:#ffe8db;background:#3c2021;border:1px solid #f49671;border-radius:8px;line-height:1.6;z-index:10}
-@media(max-width:480px){#brand{font-size:14px}.hpanel{padding:7px 9px}#info,#status{font-size:10px}#topActions{top:calc(max(10px,env(safe-area-inset-top)) + 85px)}#hint{display:none}}
+@media(max-width:480px){#brand{font-size:14px}.hpanel{padding:7px 9px}#info,#status{font-size:10px}#topActions{top:calc(max(10px,env(safe-area-inset-top)) + 85px)}#motions{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 145px);width:min(96vw,390px)}#motions button{min-width:52px;font-size:11px;padding:6px 7px}#hint{display:none}}
 </style>
 </head>
 <body>
@@ -52,6 +54,7 @@ button:active,button.pressed{background:#4d684e}
   <button id="ai" type="button">AI：停止</button>
   <button id="reset" type="button">最初から</button>
 </div>
+<nav id="motions" aria-label="キメラのモーションを選択"><button type="button" data-motion="idle" class="active">待機</button><button type="button" data-motion="walk">歩行</button><button type="button" data-motion="charge">突進</button><button type="button" data-motion="roar">咆哮</button><button type="button" data-motion="tail">蛇尾攻撃</button></nav>
 <div id="notice" aria-live="polite"></div>
 <div id="pad">
   <button id="up" data-key="forward" aria-label="前に移動" type="button">↑</button>
@@ -75,10 +78,16 @@ const bossVal=document.getElementById("bossVal");
 const hpFill=document.getElementById("hpFill");
 const bossFill=document.getElementById("bossFill");
 const pressed=new Set();
-let renderer,scene,camera,player,boss,standIn,ground;
+let renderer,scene,camera,player,boss,standIn,ground,motionController=null;
 let camYaw=0,viewMode=0,activeAI=false,playerHp=100,bossHp=100;
 let attackTime=0,hitTime=0,gameTime=0,lastFrame=0,lastMove=false,lastAnim=0;
 let busy=false,noticeTimer=0;
+let manualMotion="idle",actionMode="",actionStarted=0,actionUntil=0,lastReportedMotion="";
+const motionNames={idle:"待機",walk:"歩行",charge:"突進",roar:"咆哮",tail:"蛇尾攻撃",hurt:"被弾",bite:"かみつき",death:"ダウン"};
+function setMotionButton(){document.querySelectorAll("[data-motion]").forEach(b=>{const on=b.dataset.motion===manualMotion;b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on));});}
+function triggerMotion(name,seconds){actionMode=name;actionStarted=gameTime;actionUntil=gameTime+seconds;}
+function getMotion(){if(bossHp<=0)return "death";if(gameTime<actionUntil)return actionMode;
+if(activeAI){const d=Math.hypot(py.x-by.x,py.z-by.z);return d>6.8?"charge":d>3.9?"walk":"idle";}return manualMotion;}
 const py={x:0,z:7};
 const by={x:0,z:-3.3};
 const e=document.getElementById("error");
@@ -150,9 +159,16 @@ async function loadChimera(){
     built.position.set(by.x,0,by.z);built.rotation.y=Math.PI;
     built.userData.chimeraSkin.material.color.setHex(0xa48669);
     // Only its painted state is provisional; geometry is the existing real rig.
-    scene.add(built);boss=built;window._chimeraMotion=mod.animateChimeraSkin;
+    scene.add(built);boss=built;
+    try{
+      const motionMod=await import("./chimera-test-motion.js?v=20261013motion01");
+      motionController=motionMod.createTestMotion(built,mod.animateChimeraSkin);
+    }catch(motionError){
+      console.warn("追加モーションが読み込めないため、基本歩行だけ使用します",motionError);
+      motionController={update:(t,dt,mode)=>mod.animateChimeraSkin(built,t,mode==="charge"?"charge":mode==="walk"?"walk":"idle")};
+    }
     scene.remove(standIn);standIn=null;
-    status.textContent="20×20 平地OK · 軽量キメラ表示OK（無装飾版）";
+    status.textContent="20×20 平地OK · キメラのモーション準備OK";
     flash("キメラを読み込みました");
   }catch(err){
     status.textContent="平地OK · キメラ読み込み失敗（仮モデルを表示）";
@@ -166,7 +182,9 @@ function updateHUD(){
 }
 function reset(){
   py.x=0;py.z=7;by.x=0;by.z=-3.3;playerHp=100;bossHp=100;
-  gameTime=0;camYaw=0;activeAI=false;
+  gameTime=0;camYaw=0;activeAI=false;actionUntil=0;actionStarted=0;actionMode="";manualMotion="idle";lastReportedMotion="";
+  if(boss){boss.visible=true;boss.rotation.x=0;boss.rotation.z=0;boss.position.y=0;}
+  setMotionButton();
   document.getElementById("ai").textContent="AI：停止";
   pressed.clear();updateHUD();flash("リセットしました");
 }
@@ -174,7 +192,7 @@ function attack(){
   if(gameTime-attackTime<.4)return;attackTime=gameTime;
   const d=Math.hypot(py.x-by.x,py.z-by.z);
   if(d<5.6 && bossHp>0){
-    bossHp=Math.max(0,bossHp-8);flash("命中！ キメラ -8 HP");
+    bossHp=Math.max(0,bossHp-8);triggerMotion("hurt",.38);flash("命中！ キメラ -8 HP");
     if(bossHp===0){activeAI=false;document.getElementById("ai").textContent="AI：停止";flash("キメラを倒した！");}
   }else flash("もう少し近づいて攻撃！");
   updateHUD();
@@ -213,8 +231,8 @@ function move(dt){
 function enemy(dt){
   if(!activeAI||bossHp===0)return;
   const dx=py.x-by.x,dz=py.z-by.z,d=Math.hypot(dx,dz);
-  if(d>4.1){const speed=.7*dt;by.x+=dx/d*speed;by.z+=dz/d*speed;}
-  if(d<4.7&&gameTime-hitTime>.95){hitTime=gameTime;playerHp=Math.max(0,playerHp-5);updateHUD();
+  if(d>4.1){const speed=(d>6.8?2.1:1.3)*dt;by.x+=dx/d*speed;by.z+=dz/d*speed;}
+  if(d<4.7&&gameTime-hitTime>1.2){hitTime=gameTime;triggerMotion("bite",.7);playerHp=Math.max(0,playerHp-5);updateHUD();
     if(playerHp===0){flash("倒された！ 最初からで再挑戦");activeAI=false;document.getElementById("ai").textContent="AI：停止";}
   }
 }
@@ -224,22 +242,20 @@ function frame(t){
   move(dt);enemy(dt);
   const current=boss||standIn;
   if(current){
-    current.position.set(by.x,0,by.z);
+    current.position.x=by.x;current.position.z=by.z;
     if(activeAI){current.rotation.y=Math.atan2(-(py.x-by.x),-(py.z-by.z));}
     else current.rotation.y=Math.PI;
   }
-  if(boss && gameTime-lastAnim>.065 && bossHp>0){
-    // 15fps limb update, independent from light 30fps scene rendering.
-    lastAnim=gameTime;
-    try{
-      if(!window._animateChimeraPending){
-        // Function is installed as soon as the imported module has loaded.
-        if(window._chimeraMotion)window._chimeraMotion(boss,gameTime,activeAI?"walk":"idle");
-      }
-    }catch(err){console.warn("chimera animation skipped",err);window._chimeraMotion=null;}
+  if(boss && motionController && gameTime-lastAnim>.065){
+    // 15fps joint, jaw, serpent animation; render stays capped at ~30fps.
+    const elapsed=gameTime-lastAnim;lastAnim=gameTime;
+    const mode=getMotion();
+    try{motionController.update(gameTime,elapsed,mode,gameTime-actionStarted);}
+    catch(err){console.warn("モーション処理エラー",err);motionController=null;status.textContent="基本表示のみ（モーション停止）";}
+    if(mode!==lastReportedMotion && motionController){
+      lastReportedMotion=mode;status.textContent="20×20 平地 / キメラ：" +(motionNames[mode]||mode);
+    }
   }
-  if(boss && bossHp===0)boss.visible=false;
-  if(boss && bossHp>0)boss.visible=true;
   updateCamera();renderer.render(scene,camera);
 }
 document.querySelectorAll("[data-key]").forEach(b=>{
@@ -257,6 +273,17 @@ document.getElementById("ai").addEventListener("click",()=>{
   activeAI=!activeAI;document.getElementById("ai").textContent=activeAI?"AI：追跡中":"AI：停止";
 });
 document.getElementById("reset").addEventListener("click",reset);
+document.querySelectorAll("[data-motion]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    if(bossHp<=0){flash("最初からでリセットしてください");return;}
+    const mode=button.dataset.motion;
+    activeAI=false;document.getElementById("ai").textContent="AI：停止";
+    if(mode==="roar"||mode==="tail"){
+      manualMotion="idle";triggerMotion(mode,mode==="roar"?1.22:1.1);
+    }else{manualMotion=mode;actionUntil=0;}
+    setMotionButton();flash((motionNames[mode]||mode)+" モーション");
+  });
+});
 document.addEventListener("keydown",ev=>{
   const key=ev.key.toLowerCase();
   if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(key))ev.preventDefault();
