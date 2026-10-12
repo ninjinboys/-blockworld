@@ -182,7 +182,8 @@ function updateHUD(){
 }
 function reset(){
   py.x=0;py.z=7;by.x=0;by.z=-3.3;playerHp=100;bossHp=100;
-  gameTime=0;camYaw=0;activeAI=false;actionUntil=0;actionStarted=0;actionMode="";manualMotion="idle";lastReportedMotion="";
+  gameTime=0;lastAnim=0;attackTime=-2;hitTime=-2;camYaw=0;activeAI=false;actionUntil=0;actionStarted=0;actionMode="";manualMotion="idle";lastReportedMotion="";
+  if(boss?.userData?.skeleton){boss.userData.skeleton.previous=undefined;boss.userData.skeleton.gaitPhase=0;}
   if(boss){boss.visible=true;boss.rotation.x=0;boss.rotation.z=0;boss.position.y=0;}
   setMotionButton();
   document.getElementById("ai").textContent="AI：停止";
