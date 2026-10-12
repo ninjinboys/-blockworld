@@ -14,7 +14,7 @@
 import {
   buildChimeraSkeleton,animateChimeraSkeleton,
   CHIMERA_ARMATURE,CHIMERA_MOVEMENT
-} from './chimera-skeleton.js?v=20261011anatomyForelegFix04';
+} from './chimera-skeleton.js?v=20261012realElbow05';
 
 export {CHIMERA_ARMATURE,CHIMERA_MOVEMENT};
 
@@ -195,20 +195,20 @@ export function buildChimeraBlockout(T){
     const fore=l.kind==='fore';
     const pieces={
       hip:sphere('MASSIVE '+id+' SHOULDER/HAUNCH',
-        l.shoulder,fore?[.94,.98,.88]:[.91,1.02,.98],
+        l.shoulder,fore?[.90,.94,.84]:[.91,1.02,.98],
         fore?'shoulder':'pelvis'),
       upper:between(id+' HEAVY THIGH/UPPER LEG',l.shoulder,l.elbow,
-        fore?.62:.76,fore?.60:.66,fore?'limb':'pelvis'),
+        fore?.58:.76,fore?.54:.66,fore?'limb':'pelvis'),
       joint:sphere(id+' LARGE CONNECTED ELBOW/KNEE',
-        l.elbow,fore?[.41,.46,.41]:[.58,.62,.60],'limbShade'),
+        l.elbow,fore?[.42,.46,.40]:[.58,.62,.60],'limbShade'),
       lower:between(id+' ANGLED MUSCULAR FOREARM',l.elbow,l.wrist,
-        fore?.39:.42,fore?.37:.41,fore?'limb':'limbShade'),
+        fore?.38:.42,fore?.34:.41,fore?'limb':'limbShade'),
       hock:sphere(id+' ROBUST ANKLE/HOCK',l.wrist,
-        fore?[.38,.40,.37]:[.42,.43,.45],'limb'),
+        fore?[.34,.34,.34]:[.42,.43,.45],'limb'),
       paw:sphere(id+' MASSIVE LION GROUNDED PAW',
-        l.paw,fore?[.86,.32,.98]:[.67,.29,.84],'forepaw'),
+        l.paw,fore?[.84,.30,.92]:[.67,.29,.84],'forepaw'),
       toes:sphere(id+' LARGE POWERFUL PAW TOES',
-        l.toe,fore?[.80,.23,.59]:[.65,.21,.51],'forepaw')
+        l.toe,fore?[.72,.21,.52]:[.65,.21,.51],'forepaw')
     };
     limbMasses[id]=pieces;
   }
@@ -296,7 +296,7 @@ export function buildChimeraBlockout(T){
     }}
   };
   skeleton.userData.chimeraModelPhase='reference-silhouette-blockout';
-  skeleton.userData.chimeraVersion='CHIMERA_BODY_MASS_V3_2_RAISED_LION_HEAD';
+  skeleton.userData.chimeraVersion='CHIMERA_BODY_MASS_V3_3_ANATOMIC_ELBOW';
   skeleton.userData.chimeraBlockout.setBonesVisible(false);
   return skeleton;
 }
