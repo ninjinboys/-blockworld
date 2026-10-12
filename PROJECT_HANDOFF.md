@@ -409,3 +409,13 @@
 - `chimera-blockout.js`の前腕・肘・手首だけ細くし、膝のような大きな張り出しを抑えた。`chimera-skin.js`の上腕と肘の半径も再設計して前脚の膝感を軽減。**後脚、胴、ライオンの頭、蛇の尾、色や装飾は変更なし**。
 - スクリプト三段キャッシュを更新し、`chimera-skin.html` `chimera-blockout.html` `chimera-skeleton.html`で新版を読み込む。専用皮膚モデルの最新確認URL：`https://ninjinboys.github.io/-blockworld/chimera-skin.html?v=20261011elbow04`
 - GitHub Actions Chromiumで**実WebGLスクリーンショットの正面・側面・斜め、歩行・内部切替**が通過した（`dev/chimera-skin-side.png` 等）。通常ゲーム、セーブ、マルチ、キメラボスAIの追加なし。
+
+## 52. 2026-10-12：前脚の肘をさらに修正（実形状・IKの到達距離）
+- ユーザーから「早く治して、説明はいらない」「やって」と再指示。既存の修正04が未達と判断し、前脚の座標と外皮をさらに改修。
+- `chimera-skeleton.js`：前脚の肘を`[±1.68,2.06,-1.34]`、手首を`[±1.88,.96,-1.76]`、足を`[±2.00,.23,-2.04]`、指先を`[±2.00,.18,-2.48]`に配置。肩`[±1.50,3.07,-1.52]`から肘が後方・上方に近い形となり、肘の膨らみが前膝のように見えないようにした。上腕/前腕の長さを`1.10/1.14`へ。歩行/突進時にIKが物理到達距離外へ過伸展しないよう手首Zを制限する処理を追加。
+- `chimera-skin.js`：前脚だけ連続皮膚メッシュの断面半径を変更して上部を厚く、肘と手首を細く。後脚の断面は維持。
+- `chimera-blockout.js`：前肢の肩・腕・肘・手首・肉球も骨格に合わせた半径へ更新。モジュール読込キー`20261012realElbow05`へ切替。
+- 3ビューア`chimera-skin.html`/`chimera-blockout.html`/`chimera-skeleton.html`とも新しいキャッシュバスターに変更。`chimera-skin.html`の画面ラベル`SKIN 01.5 — FELINE ELBOW / NO FAUX KNEE`。
+- **本物のChrome WebGL 3D視覚テスト成功、GitHub Pagesの公開も成功（commit `cd8d351d194a9845bd2c15e1e49cfc9763ea2c30`、QA run `38192944860`、Pages run `38192944847`）**。正面・斜め・側面画像`dev/chimera-skin-*.png`に最終表示を保存。見た目の判断は本人のスクショを優先。
+- 最新リンク：`https://ninjinboys.github.io/-blockworld/chimera-skin.html?v=20261012realElbow05`。
+- 本番ゲームでのボス出現・ワールドデータ・セーブ・マルチプレイには変更なし。
