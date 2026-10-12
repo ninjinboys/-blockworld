@@ -44,7 +44,7 @@ export function createTestMotion(root, animateRig, THREE) {
     root.parent.add(floorRing);
   }
   function update(time,dt,mode="idle",age=0){
-    dt=clamp(dt)*.1; // dt is usually between .065 and .1 sec.
+    dt=Math.max(0,Math.min(.12,dt)); // 15fps pose update
     const isWalk=mode==="walk", isCharge=mode==="charge";
     const moving=isWalk||isCharge;
     const heavyRoar=mode==="roar"?pulse(age,2.2,.55,.55):0;
