@@ -1,101 +1,155 @@
 /**
- * NEXACRAFT 20x20 Chimera animation pass.
- * Uses existing chimera-skin.js anatomical IK. No textures, GLB,
- * or changes to the canonical chimera model.
+ * NEXACRAFT CHIMERA: MID-BOSS MOTION PASS 02
+ * Dramatic poses, charge, roar, connected snake tail strike, recoil.
+ * Existing anatomical IK and single skin remain the source of truth.
+ * 15 fps deform update; no GLB, texture or per-frame geometry allocations.
  */
-export function createTestMotion(root, animateRig) {
+export function createTestMotion(root, animateRig, THREE) {
   const state = root.userData.chimeraSkin;
-  if (!state || !state.tail || !state.torso) throw Error("Chimera skin not initialized");
-  const meshes = new Map(state.meshes.map(mesh => [mesh.name, mesh]));
+  if (!state?.tail || !state?.torso) throw Error("Chimera skin is missing");
+  const meshes = new Map(state.meshes.map(m => [m.name, m]));
   const lionJaw = meshes.get("OPEN LOWER LION JAW");
   const snakeJaw = meshes.get("SEPARATE LOWER SNAKE JAW");
-  const snakeHeadNames = [
-    "RAISED PREDATOR SNAKE HEAD",
-    "SNAKE UPPER MUZZLE",
-    "SEPARATE LOWER SNAKE JAW"
-  ];
-  const heads = snakeHeadNames.map(name => meshes.get(name)).filter(Boolean);
-  const headBases = heads.map(mesh => ({mesh, position: mesh.position.clone(), rotation: mesh.rotation.clone()}));
-  const lionJawBase = lionJaw?.position.clone();
-  const lionJawRot = lionJaw?.rotation.clone();
-  const torsoPosition = state.torso.geometry.attributes.position;
-  const torsoBase = new Float32Array(torsoPosition.array);
-  const tailPosition = state.tail.geometry.attributes.position;
-  const tailBase = new Float32Array(tailPosition.array);
-  // Original tail has 125 rings, 20 vertices in each ring.
-  const ringCount = 125;
-  const pointsPerRing = 20;
-  state.tail.frustumCulled = false;
-  state.torso.frustumCulled = false;
-  let previous = "idle";
-  let blend = 0, fall = 0;
-  const clamp01 = x => Math.min(1, Math.max(0, x));
-  const smooth = x => { x=clamp01(x); return x*x*(3-2*x); };
-  function update(time, dt, mode="idle", age=0) {
-    const walking = mode==="walk" || mode==="charge";
-    // Existing real joint solver (foreleg elbows + feline rear hocks).
-    animateRig(root, time, mode==="charge"?"charge":walking?"walk":"idle");
-    const speed = mode==="charge" ? 10.2 : walking ? 5.9 : 1.6;
-    const phase = time*speed;
-    const roar = mode==="roar" ? Math.sin(Math.PI*clamp01(age/1.22))**2 : 0;
-    const whip = mode==="tail" ? Math.sin(Math.PI*clamp01(age/1.1)) : 0;
-    const hurt = mode==="hurt" ? Math.sin(Math.PI*clamp01(age/.38)) : 0;
-    const bite = mode==="bite" ? Math.sin(Math.PI*clamp01(age/.7))**2 : 0;
-    blend += ((walking?1:0)-blend)*Math.min(1,dt*7);
-    fall += ((mode==="death"?1:0)-fall)*Math.min(1,dt*2.3);
-    const bounce = blend*Math.abs(Math.sin(phase))*(mode==="charge"?.095:.047);
-    // Gentle idle breathing; grounded movement is mostly from the IK limbs.
-    root.position.y = -.02*fall + (1-fall)*(.014*Math.sin(time*2.5)+bounce);
-    root.rotation.z = (1-fall)*blend*.023*Math.sin(phase*.5)-fall*.53;
-    root.rotation.x = (1-fall)*(-.04*(mode==="charge") + .08*roar + .045*bite);
-    const jawOpen = .07+.23*roar+.15*bite+.05*Math.sin(time*1.6)**2;
-    if (lionJaw && lionJawBase) {
-      lionJaw.position.set(lionJawBase.x, lionJawBase.y-jawOpen, lionJawBase.z+.09*jawOpen);
-      lionJaw.rotation.x = lionJawRot.x-.25*roar-.10*bite;
+  const headNames = ["RAISED PREDATOR SNAKE HEAD","SNAKE UPPER MUZZLE","SEPARATE LOWER SNAKE JAW"];
+  const headBases = headNames.map(name=>meshes.get(name)).filter(Boolean)
+    .map(mesh=>({mesh,base:mesh.position.clone(),rotation:mesh.rotation.clone()}));
+  const jawBase = lionJaw?.position.clone();
+  const jawRotation = lionJaw?.rotation.clone();
+  const torso = state.torso.geometry;
+  const torsoAttr = torso.attributes.position;
+  const torsoRest = new Float32Array(torsoAttr.array);
+  const tail = state.tail.geometry;
+  const tailAttr = tail.attributes.position;
+  const tailRest = new Float32Array(tailAttr.array);
+  const tailRings=125,sideCount=20;
+  state.tail.frustumCulled=false;
+  state.torso.frustumCulled=false;
+  const clamp=x=>Math.max(0,Math.min(1,x));
+  const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
+  const pulse=(t,d,attack=.3,recover=.38)=>{
+    if(t<=0||t>=d)return 0;
+    return smooth(t/attack)*smooth((d-t)/recover);
+  };
+  let stepBlend=0,deathBlend=0;
+  const floorRing = THREE && new THREE.Mesh(
+    new THREE.RingGeometry(.93,1.06,32),
+    new THREE.MeshBasicMaterial({
+      color:0xefcb83, transparent:true, opacity:0,
+      depthWrite:false, side:THREE.DoubleSide
+    }));
+  if(floorRing){
+    floorRing.name="BOSS GROUND SHOCKWAVE";
+    floorRing.rotation.x=-Math.PI/2;
+    floorRing.visible=false;
+    root.parent.add(floorRing);
+  }
+  function update(time,dt,mode="idle",age=0){
+    dt=clamp(dt)*.1; // dt is usually between .065 and .1 sec.
+    const isWalk=mode==="walk", isCharge=mode==="charge";
+    const moving=isWalk||isCharge;
+    const heavyRoar=mode==="roar"?pulse(age,2.2,.55,.55):0;
+    const strike=mode==="tail"?pulse(age,1.9,.36,.44):0;
+    const recoil=mode==="hurt"?pulse(age,.56,.10,.24):0;
+    const bite=mode==="bite"?pulse(age,.90,.19,.24):0;
+    const hitWave=(heavyRoar>.01||strike>.05)?Math.max(heavyRoar,strike*.6):0;
+    animateRig(root,time,isCharge?"charge":isWalk?"walk":"idle");
+
+    const rigPhase=root.userData.skeleton?.gaitPhase||0;
+    const foot=Math.sin(rigPhase*Math.PI*4);
+    const stomp=Math.pow(Math.abs(foot),2);
+    stepBlend+=(Number(moving)-stepBlend)*Math.min(1,dt*9);
+    deathBlend+=(Number(mode==="death")-deathBlend)*Math.min(1,dt*1.8);
+    const alive=1-deathBlend;
+
+    // Large, readable silhouette changes are essential for a mid-boss.
+    // Pitch raises the lion's head during roar, lowers it for charge.
+    const breath=Math.sin(time*2.1);
+    const pitch= -.19*(isCharge?1:0) + .23*heavyRoar -.14*bite + .12*recoil;
+    const roll=(moving?.064*foot:.022*Math.sin(time*.95))
+        + .065*heavyRoar*Math.sin(time*7.2)+.10*recoil;
+    root.rotation.x=alive*pitch;
+    root.rotation.z=alive*roll-deathBlend*.68;
+    root.position.y=alive*(
+       -.04 + .040*breath
+       + stepBlend*(isCharge?.28:.13)*stomp
+       - .17*heavyRoar*(1-heavyRoar)
+       + .23*heavyRoar
+       + .10*recoil
+       - .10*bite
+    ) - deathBlend*.43;
+    // Slow mass transfer makes the idle pose visibly alive.
+    const forehead= .34*heavyRoar - .12*recoil -.17*bite;
+    const muzzleLift=.68*heavyRoar-.15*bite+.085*breath;
+    const spineRise=.085*breath+.075*stepBlend*stomp;
+    const verts=torsoAttr.array;
+    for(let i=0;i<torsoRest.length;i+=3){
+      const x=torsoRest[i],y=torsoRest[i+1],z=torsoRest[i+2];
+      const face=smooth((-z-2.35)/2.50);
+      const chest=smooth((-z+.5)/2.6)*(1-face);
+      const belly=(1-face)*.027*breath;
+      verts[i]=x+(1-face)*.032*Math.sin(time*.9);
+      verts[i+1]=y+face*(muzzleLift+forehead)
+       +chest*(spineRise+.12*heavyRoar)+belly;
+      verts[i+2]=z-face*(.13*heavyRoar+.20*bite)
+       +chest*.06*stomp*stepBlend;
     }
-    // Facial surface follows the lifted roar pose, without disconnecting the neck.
-    const faceLift = .14*roar - .055*bite + .025*hurt;
-    for(let i=0;i<torsoBase.length;i+=3){
-      const z=torsoBase[i+2];
-      const influence=smooth((-z-2.2)/2.6);
-      torsoPosition.array[i]=torsoBase[i];
-      torsoPosition.array[i+1]=torsoBase[i+1]+influence*faceLift+
-        (1-influence)*.012*Math.sin(time*2.6);
-      torsoPosition.array[i+2]=z-.055*roar*influence;
+    torsoAttr.needsUpdate=true;
+    torso.computeVertexNormals();
+
+    // The jaw is a genuinely separate surface.
+    // Open it very widely on roar; retain a natural small idle opening.
+    if(lionJaw&&jawBase){
+      const gape=.09+.66*heavyRoar+.40*bite+.07*Math.sin(time*2)**2;
+      lionJaw.position.set(jawBase.x,jawBase.y-gape,jawBase.z-.10*heavyRoar);
+      lionJaw.rotation.x=jawRotation.x-.40*heavyRoar-.25*bite;
     }
-    torsoPosition.needsUpdate=true;
-    state.torso.geometry.computeVertexNormals();
-    // Deform the one continuous snake skin instead of moving a train of cylinders.
-    // The displacement grows toward its head and vanishes at the pelvis.
-    const tipPhase=time*(mode==="tail"?8.2:1.65);
-    let endDx=0,endDz=0,endDy=0;
-    for(let ring=0;ring<ringCount;ring++){
-      const u=ring/(ringCount-1);
-      const distal=u*u*(3-2*u);
-      const wave=Math.sin(tipPhase-u*5.6);
-      const dx=distal*(.085*wave+1.0*whip*Math.sin(u*Math.PI*.8));
-      const dz=distal*(.045*Math.cos(tipPhase*.8-u*3.7)-.65*whip);
-      const dy=distal*(.065*Math.cos(tipPhase*.85-u*4)+.18*whip);
-      for(let j=0;j<pointsPerRing;j++){
-        const k=(ring*pointsPerRing+j)*3;
-        tailPosition.array[k]=tailBase[k]+dx;
-        tailPosition.array[k+1]=tailBase[k+1]+dy;
-        tailPosition.array[k+2]=tailBase[k+2]+dz;
+
+    // Animate the original seamless anaconda skin: no detached segments.
+    // A strongly curved whip sweeps more than two whole world blocks.
+    const vertsTail=tailAttr.array;
+    let endX=0,endY=0,endZ=0;
+    const sweep = Math.sin(age*7.7-.65)*strike;
+    for(let ring=0;ring<tailRings;ring++){
+      const u=ring/(tailRings-1);
+      const distal=smooth((u-.07)/.93);
+      const wave=Math.sin(time*1.55-u*4.9);
+      const attackPhase=Math.sin(age*7.7-u*2.1);
+      const dx=distal*(.32*wave+2.45*strike*attackPhase);
+      const dy=distal*(.18*Math.cos(time*1.75-u*3.1)+.65*strike);
+      const dz=distal*(.18*Math.cos(time*1.2-u*4.0)-1.30*strike
+                     +.22*heavyRoar);
+      for(let j=0;j<sideCount;j++){
+        const k=(ring*sideCount+j)*3;
+        vertsTail[k]=tailRest[k]+dx;
+        vertsTail[k+1]=tailRest[k+1]+dy;
+        vertsTail[k+2]=tailRest[k+2]+dz;
       }
-      if(ring===ringCount-1){endDx=dx;endDz=dz;endDy=dy;}
+      if(ring===tailRings-1){endX=dx;endY=dy;endZ=dz;}
     }
-    tailPosition.needsUpdate=true;
-    state.tail.geometry.computeVertexNormals();
-    for(const {mesh,position,rotation} of headBases){
-      mesh.position.set(position.x+endDx,position.y+endDy,position.z+endDz);
-      mesh.rotation.set(rotation.x,rotation.y+.07*Math.sin(time*1.8)+.2*whip,rotation.z+.045*Math.cos(time*1.5));
+    tailAttr.needsUpdate=true;
+    tail.computeVertexNormals();
+    for(const entry of headBases){
+      entry.mesh.position.set(entry.base.x+endX,entry.base.y+endY,entry.base.z+endZ);
+      entry.mesh.rotation.set(entry.rotation.x-.17*strike,
+        entry.rotation.y+.40*Math.sin(time*1.5)+.58*sweep,
+        entry.rotation.z+.16*Math.cos(time*1.3));
     }
     if(snakeJaw){
-      const base=headBases.find(x=>x.mesh===snakeJaw);
-      if(base)snakeJaw.position.y-=.09+.20*whip+.12*roar;
+      snakeJaw.position.y-=.10+.40*strike+.18*heavyRoar;
     }
-    if(mode!==previous){previous=mode;root.userData.testMotion=mode;}
-    return {mode,roar,whip,bounce,fall};
+
+    if(floorRing){
+      const bang=heavyRoar>0.28?heavyRoar:
+                 isCharge?stomp*.53: strike>.35?strike*.50:0;
+      floorRing.visible=bang>.05;
+      if(floorRing.visible){
+        floorRing.position.set(root.position.x,.036,root.position.z);
+        floorRing.scale.setScalar(1.0+(1-bang)*3.4);
+        floorRing.material.opacity=bang*.40;
+      }
+    }
+    root.userData.testMotion=mode;
+    return {mode,roar:heavyRoar,tail:strike,stomp,charge:isCharge,death:deathBlend};
   }
   return {update};
 }
