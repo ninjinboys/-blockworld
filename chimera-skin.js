@@ -7,7 +7,7 @@
 import {
   buildChimeraBlockout,animateChimeraBlockout,
   CHIMERA_ARMATURE,CHIMERA_MOVEMENT
-} from './chimera-blockout.js?v=20261011forelegFix04';
+} from './chimera-blockout.js?v=20261012realElbow05';
 export {CHIMERA_ARMATURE,CHIMERA_MOVEMENT};
 export const CHIMERA_SKIN_INFO=Object.freeze({
   version:1,type:'Single-color muscle/skin',noDecor:true
@@ -124,10 +124,10 @@ export function buildChimeraSkin(T){
     // Shoulder stays broad; the high rear-facing elbow is a small hinge.
     // A slimmer straight wrist follows below, unlike a forward knee bulge.
     const widths=fore?
-      [.78,.69,.45,.40,.36,.43,.84,.72,.045]:
+      [.82,.70,.50,.40,.34,.40,.82,.68,.045]:
       [.74,.72,.58,.43,.42,.46,.70,.66,.045];
     const depths=fore?
-      [.76,.65,.43,.39,.35,.36,.34,.22,.035]:
+      [.78,.66,.48,.40,.34,.34,.30,.20,.035]:
       [.77,.70,.60,.47,.43,.39,.31,.22,.035];
     const path=new T.CatmullRomCurve3(anchors.map(vec),false,'centripetal');
     const geometry=part.geometry,arr=geometry.attributes.position.array;
@@ -245,7 +245,7 @@ export function buildChimeraSkin(T){
     }}
   };
   root.userData.chimeraSkin=state;
-  root.userData.chimeraVersion='CHIMERA_SKIN_01_FORE_ELBOW_04';
+  root.userData.chimeraVersion='CHIMERA_SKIN_01_FELINE_FORE_ELBOW_05';
   return root;
 }
 export function animateChimeraSkin(root,time,mode='idle'){
