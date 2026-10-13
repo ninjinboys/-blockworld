@@ -39,8 +39,8 @@ export function createTestMotion(root, animateRig, THREE) {
   const heavyPose={};
   function heavyWalk(dt){
     const rig=root.userData.skeleton;
-    // ONE cycle takes 2.8 seconds, versus 0.24 seconds in the original walk IK.
-    heavyPhase=(heavyPhase+dt/2.8)%1;
+    // ONE cycle takes 2.8/1.3 seconds, versus 0.24 seconds in the original walk IK.
+    heavyPhase=(heavyPhase+dt*1.3/2.8)%1;
     rig.gaitPhase=heavyPhase;
     const stance=.71;
     for(const id of rig.legOrder){
