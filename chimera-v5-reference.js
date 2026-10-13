@@ -320,6 +320,59 @@ export function dressChimera(root,T){
   pack(ruffV,"CHEEK-LAYER MANE AND EARS",face);
   const iris=pack(eyeV,"BRIGHT ANGRY AMBER LION EYES",face);
   iris.material=new T.MeshBasicMaterial({color:0xffbd31});
+  // V5 has a second forward curtain of irregular lion fur around its face,
+  // not just hair on the shoulders. It falls below the giant sabres and
+  // builds the heavy dark/amber lion silhouette shown in the reference.
+  const frontManeV=[];
+  for(const side of [-1,1]){
+    for(let strand=0;strand<66;strand++){
+      const rr=hash(strand,side,19);
+      const x0=side*(.96+rr*.72);
+      const y0=4.61+hash(strand,side,5)*.32;
+      const z0=-4.50-hash(strand,side,12)*.43;
+      const fall=1.55+hash(strand,side,3)*1.05;
+      const count=10+Math.floor(hash(strand,side,6)*5);
+      for(let k=0;k<count;k++){
+        const t=k/(count-1);
+        const x=x0+side*(.06+.26*t+.07*Math.sin(strand*.9+k*.4));
+        const y=y0-fall*t;
+        const z=z0-(.16+.28*t);
+        if(Math.abs(x)<.93&&y>3.85)continue; // reveal gold eye
+        const thick=.20+.045*(1-t)+.025*hash(strand,k,side);
+        const brown=t<.40?[0x673217,0x81421e,0x98491e]:
+          t<.78?[0xa85c27,0xc47731,0x9e4f25]:
+                   [0xc77c36,0xdb974c,0x9e5b2c];
+        vbox(frontManeV,x,y,z,thick,thick*1.10,thick*1.14,
+          pick(brown,strand,k,side));
+      }
+    }
+    // Four deeply stepped whisker-side cheek ruffs, not rectangular jaws.
+    for(let row=0;row<5;row++){
+      const y0=3.68-row*.28,x0=side*(.96+row*.13);
+      for(let n=0;n<8;n++){
+        const t=n/7;
+        vbox(frontManeV,x0+side*t*.27,y0-t*.26,
+          -4.87-.13*t,.23,.25,.21,
+          pick([0xa26431,0xc5853b,0x80451e],row,n,side));
+      }
+    }
+  }
+  for(let strand=0;strand<72;strand++){
+    const x0=(hash(strand,8,4)*2-1)*1.08;
+    const z0=-4.32-hash(strand,2,1)*.55;
+    const y0=4.72+hash(strand,6,1)*.20;
+    const count=5+Math.floor(hash(strand,4,5)*7);
+    for(let k=0;k<count;k++){
+      const t=k/(count-1);
+      const x=x0+.14*Math.sin(strand*2.2)*t;
+      const y=y0+.37*t-.075*Math.sin(t*Math.PI);
+      const z=z0-.14*t;
+      const size=.19+.052*(1-t);
+      vbox(frontManeV,x,y,z,size,size,size,
+        pick([0x9c4d20,0xc17a33,0x754021,0xe6a150],strand,k,11));
+    }
+  }
+  pack(frontManeV,"LONG WILD ORANGE LION RUFF / FACE-CURTAIN",face);
   // Independent anatomical limbs: voxel rings follow the genuine IK
   // fore-elbow and rear-hock joints, not an unchanging stick leg.
   const legMeshes=[];
