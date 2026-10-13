@@ -243,26 +243,26 @@ export function dressChimera(root,T){
         .047,.052,.045,0x67452e);
   }
   // Deep dark oval mouth; do not draw any brown muzzle pixels over this area.
-  for(let y=2.99;y<3.66;y+=.103)for(let x=-.59;x<=.59;x+=.103){
-    const nx=x/.69,ny=(y-3.32)/.40;
+  for(let y=2.63;y<3.73;y+=.093)for(let x=-.63;x<=.63;x+=.093){
+    const nx=x/.73,ny=(y-3.20)/.58;
     if(nx*nx+ny*ny>=1)continue;
-    vbox(oralV,x,y,-5.57-.045*(1-nx*nx),.112,.118,.085,
+    vbox(oralV,x,y,-5.65-.045*(1-nx*nx),.108,.108,.082,
       pick([0x0a080b,0x1c0e12,0x301118],x,y,7));
   }
   // Inner jaw tongue remains BEHIND the fangs, as a dark-red 3D shape.
-  for(let y=3.00;y<3.19;y+=.108)for(let x=-.25;x<=.25;x+=.108){
-    vbox(oralV,x,y,-5.63,.115,.109,.060,
+  for(let y=2.70;y<3.02;y+=.103)for(let x=-.31;x<=.31;x+=.103){
+    vbox(oralV,x,y,-5.725,.112,.107,.069,
       pick([0x70333c,0x933d46,0x6f2d37],x,y,13));
   }
   // Two unmistakable tapered sabre canines emerging from the upper lip.
   // The pointed tips stop just ABOVE the lower lip.
   for(const side of [-1,1]){
-    for(let k=0;k<18;k++){
-      const t=k/17;
-      const w=.195*Math.pow(1-t,.71)+.024;
-      const x=side*(.43-.085*t);
-      const y=3.58-.74*t;
-      const z=-5.57-.066*Math.sin(t*Math.PI);
+    for(let k=0;k<21;k++){
+      const t=k/20;
+      const w=.205*Math.pow(1-t,.71)+.024;
+      const x=side*(.43-.095*t);
+      const y=3.65-1.06*t;
+      const z=-5.69-.090*Math.sin(t*Math.PI);
       vbox(fangV,x,y,z,w*1.60,.067,w*1.55,
         pick([0xf7e0b3,0xe9cf9f,0xffe8c3],k,side,6));
     }
@@ -285,21 +285,21 @@ export function dressChimera(root,T){
     if(e>1)continue;
     const front=z<-5.22,outer=Math.abs(x)>.50;
     if(!front&&!outer)continue;
-    vbox(chinV,x,2.97,z,.122,.20,.121,
+    vbox(chinV,x,2.56,z,.122,.20,.121,
       pick([0xa5794a,0xc18a55,0x8e5d3b,0xd09b60],x,z,9));
   }
   // Upturned mouth corners attach lip back to the cheek.
   for(const side of [-1,1]){
     for(let j=0;j<8;j++){
       const t=j/7;
-      vbox(chinV,side*(.62+.02*t),2.98+.43*t,-5.25+.09*t,
+      vbox(chinV,side*(.62+.02*t),2.62+.88*t,-5.25+.07*t,
         .152,.146,.147,
         pick([0xa87546,0x94603b,0xb7814d],j,side,14));
     }
     for(let k=0;k<7;k++){
       const t=k/6;
       const w=.115*(1-t)+.024;
-      vbox(lowerTeethV,side*(.35-.055*t),3.01+.29*t,
+      vbox(lowerTeethV,side*(.35-.055*t),2.65+.43*t,
         -5.443-.05*t,w*1.6,.075,w*1.5,
         pick([0xe5cfa3,0xf1ddb4],k,side,15));
     }
@@ -307,7 +307,7 @@ export function dressChimera(root,T){
   // Tiny cream fur chin tuft makes the open mouth look feline, not robotic.
   for(let j=-3;j<=3;j++)for(let k=0;k<3;k++){
     const t=Math.abs(j)/3;
-    vbox(chinV,j*.135,2.79+.065*t-k*.068,-5.28+k*.08,
+    vbox(chinV,j*.135,2.41+.065*t-k*.068,-5.28+k*.08,
       .145,.145,.14,pick([0xc49a67,0xf0c390,0xa97948],j,k,14));
   }
   pack(chinV,"CONNECTING LION MANDIBLE",jawGroup);
