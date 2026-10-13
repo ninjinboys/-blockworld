@@ -417,11 +417,13 @@ export function dressChimera(root,T){
     const r=animation?.roar||0;
     // Facial ornaments travel WITH the cranial skin during the roar.
     // The jaw stays physically joined at both corners.
-    mane.position.y=.25*r;
-    horns.position.y=.43*r;
-    face.position.y=.78*r;
-    jawGroup.position.y=-.09*r;
-    jawGroup.rotation.x=-.07*r;
+    // The visible voxel body is rigid; keep all face sections joined.
+    // Never inherit the hidden clay mesh's large vertex deformation.
+    mane.position.y=.045*r;
+    horns.position.y=.035*r;
+    face.position.y=.045*r;
+    jawGroup.position.y=-.13*r;
+    jawGroup.rotation.x=-.045*r;
     for(const {leg,descs,mesh} of legMeshes){
       const q=leg.display||{mid:leg.elbow,wrist:leg.wrist,paw:leg.paw,toe:leg.toe};
       const chain=[
