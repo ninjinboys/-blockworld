@@ -78,7 +78,7 @@ const bossVal=document.getElementById("bossVal");
 const hpFill=document.getElementById("hpFill");
 const bossFill=document.getElementById("bossFill");
 const pressed=new Set();
-let renderer,scene,camera,player,boss,standIn,ground,motionController=null;
+let renderer,scene,camera,player,boss,standIn,ground,motionController=null,appearanceController=null;
 let camYaw=0,viewMode=0,activeAI=false,playerHp=100,bossHp=100;
 let attackTime=0,hitTime=0,gameTime=0,lastFrame=0,lastMove=false,lastAnim=0;
 let busy=false,noticeTimer=0;
@@ -161,6 +161,13 @@ async function loadChimera(){
     // Only its painted state is provisional; geometry is the existing real rig.
     scene.add(built);boss=built;
     try{
+      const appearanceMod=await import("./chimera-test-appearance.js?v=20261013looks01");
+      appearanceController=appearanceMod.dressChimera(built,THREE);
+    }catch(appearanceError){
+      console.warn("キメラ装飾の読み込みエラー",appearanceError);
+      status.textContent="キメラ本体OK / 見た目の装飾だけ読み込み失敗";
+    }
+    try{
       const motionMod=await import("./chimera-test-motion.js?v=20261013heavywalk05");
       motionController=motionMod.createTestMotion(built,mod.animateChimeraSkin,THREE);
     }catch(motionError){
@@ -168,7 +175,7 @@ async function loadChimera(){
       motionController={update:(t,dt,mode)=>mod.animateChimeraSkin(built,t,mode==="charge"?"charge":mode==="walk"?"walk":"idle")};
     }
     scene.remove(standIn);standIn=null;
-    status.textContent="20×20 平地OK · キメラのモーション準備OK";
+    status.textContent=appearanceController?"20×20 平地OK · 角・たてがみ・牙・蛇の装飾OK":"20×20 平地OK · キメラモーション準備OK";
     flash("キメラを読み込みました");
   }catch(err){
     status.textContent="平地OK · キメラ読み込み失敗（仮モデルを表示）";
@@ -283,7 +290,10 @@ function frame(t){
     // 15fps joint, jaw, serpent animation; render stays capped at ~30fps.
     const elapsed=gameTime-lastAnim;lastAnim=gameTime;
     const mode=getMotion();
-    try{motionController.update(gameTime,elapsed,mode,gameTime-actionStarted);}
+    try{
+      const pose=motionController.update(gameTime,elapsed,mode,gameTime-actionStarted);
+      appearanceController?.update?.(pose);
+    }
     catch(err){console.warn("モーション処理エラー",err);motionController=null;status.textContent="基本表示のみ（モーション停止）";}
     if(mode!==lastReportedMotion && motionController){
       lastReportedMotion=mode;status.textContent="20×20 平地 / キメラ：" +(motionNames[mode]||mode);
