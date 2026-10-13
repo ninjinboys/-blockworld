@@ -40,7 +40,7 @@ button:active,button.pressed,button.active{background:#4d684e;border-color:#eed3
 <div id="stage" aria-label="20×20ブロックのテストフィールド"></div>
 <div id="hud">
   <div class="hpanel">
-    <div id="brand">NEXACRAFT · CHIMERA FACE V4</div>
+    <div id="brand">NEXACRAFT · CHIMERA V5</div>
     <div id="info">20 × 20 BLOCKS / 即時生成なし</div>
     <div id="status" role="status">3Dエンジンを読み込み中…</div>
   </div>
@@ -161,7 +161,7 @@ async function loadChimera(){
     // Only its painted state is provisional; geometry is the existing real rig.
     scene.add(built);boss=built;
     try{
-      const appearanceMod=await import("./chimera-face-v4-model.js?v=face4_20261013_1820");
+      const appearanceMod=await import("./chimera-v5-reference.js?v=refV5_20261013_2125");
       appearanceController=appearanceMod.dressChimera(built,THREE);
     }catch(appearanceError){
       console.warn("キメラ装飾の読み込みエラー",appearanceError);
@@ -175,7 +175,7 @@ async function loadChimera(){
       motionController={update:(t,dt,mode)=>mod.animateChimeraSkin(built,t,mode==="charge"?"charge":mode==="walk"?"walk":"idle")};
     }
     scene.remove(standIn);standIn=null;
-    status.textContent=appearanceController?"20×20 平地OK · ライオン顔 V4 新モデル適用":"20×20 平地OK · キメラモーション準備OK";
+    status.textContent=appearanceController?"20×20 平地OK · 参考画像のキメラ V5":"20×20 平地OK · キメラモーション準備OK";
     flash("キメラを読み込みました");
   }catch(err){
     status.textContent="平地OK · キメラ読み込み失敗（仮モデルを表示）";
