@@ -161,7 +161,7 @@ async function loadChimera(){
     // Only its painted state is provisional; geometry is the existing real rig.
     scene.add(built);boss=built;
     try{
-      const motionMod=await import("./chimera-test-motion.js?v=20261013heavywalk03");
+      const motionMod=await import("./chimera-test-motion.js?v=20261013heavywalk04");
       motionController=motionMod.createTestMotion(built,mod.animateChimeraSkin,THREE);
     }catch(motionError){
       console.warn("追加モーションが読み込めないため、基本歩行だけ使用します",motionError);
@@ -246,11 +246,18 @@ function frame(t){
   // Position stays inside the flat 20×20 test arena.
   if(!activeAI && boss && bossHp>0){
     if(manualMotion==="walk" && gameTime>=actionUntil){
-      // Slow straight out-and-back patrol, no sideways waddling.
-      // The cosine eases into a deliberate body turn at each end.
-      walkPreviewPhase+=dt*.85;
+      // Steady heavyweight march along a straight lane. No circular
+      // side-to-side shuffling or speed changes on each footstep.
+      const moveTime=8.8,turnTime=1.1,cycle=2*(moveTime+turnTime);
+      walkPreviewPhase=(walkPreviewPhase+dt)%cycle;
       by.x=0;
-      by.z=-3.3+2.3*(1-Math.cos(walkPreviewPhase));
+      if(walkPreviewPhase<moveTime)
+        by.z=-4.5+.74*walkPreviewPhase;
+      else if(walkPreviewPhase<moveTime+turnTime)
+        by.z=-4.5+.74*moveTime;
+      else if(walkPreviewPhase<moveTime*2+turnTime)
+        by.z=-4.5+.74*(moveTime-(walkPreviewPhase-moveTime-turnTime));
+      else by.z=-4.5;
     }else if(actionMode==="charge" && gameTime<actionUntil){
       const age=gameTime-actionStarted;
       const smooth=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
@@ -263,12 +270,12 @@ function frame(t){
     current.position.x=by.x;current.position.z=by.z;
     if(activeAI){current.rotation.y=Math.atan2(-(py.x-by.x),-(py.z-by.z));}
     else if(manualMotion==="walk" && gameTime>=actionUntil){
-      // Face the direction of travel; a heavyweight turns gradually.
-      const direction=Math.sin(walkPreviewPhase);
-      const targetYaw=direction>=0?Math.PI:0;
+      // Turn the whole body slowly only at either end of the lane.
+      const movingBack=walkPreviewPhase>9.9&&walkPreviewPhase<18.7;
+      const targetYaw=movingBack?0:Math.PI;
       const difference=Math.atan2(Math.sin(targetYaw-current.rotation.y),
         Math.cos(targetYaw-current.rotation.y));
-      current.rotation.y+=difference*Math.min(1,dt*2.2);
+      current.rotation.y+=difference*Math.min(1,dt*1.6);
     }
     else current.rotation.y=Math.PI;
   }
