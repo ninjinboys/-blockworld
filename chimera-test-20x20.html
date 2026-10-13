@@ -161,7 +161,7 @@ async function loadChimera(){
     // Only its painted state is provisional; geometry is the existing real rig.
     scene.add(built);boss=built;
     try{
-      const motionMod=await import("./chimera-test-motion.js?v=20261013heavywalk04");
+      const motionMod=await import("./chimera-test-motion.js?v=20261013heavywalk05");
       motionController=motionMod.createTestMotion(built,mod.animateChimeraSkin,THREE);
     }catch(motionError){
       console.warn("追加モーションが読み込めないため、基本歩行だけ使用します",motionError);
