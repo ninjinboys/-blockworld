@@ -30,8 +30,79 @@ export function createTestMotion(root, animateRig, THREE) {
     if(t<=0||t>=d)return 0;
     return smooth(t/attack)*smooth((d-t)/recover);
   };
-  let stepBlend=0,deathBlend=0,rigTime=0;
+  let stepBlend=0,deathBlend=0,rigTime=0,heavyPhase=0;
+  let lastMode="idle";
   const footRings=[];
+  // Four independent touchdowns: L fore → R hind → R fore → L hind.
+  // The canonical demo used paired diagonal limbs, making the boss trot.
+  const heavyOffset={foreL:0,hindR:.25,foreR:.50,hindL:.75};
+  const heavyPose={};
+  function heavyWalk(dt){
+    const rig=root.userData.skeleton;
+    // ONE cycle takes 2.8 seconds, versus 0.24 seconds in the original walk IK.
+    heavyPhase=(heavyPhase+dt/2.8)%1;
+    rig.gaitPhase=heavyPhase;
+    const stance=.71;
+    for(const id of rig.legOrder){
+      const leg=rig.legs[id];
+      if(!leg)continue;
+      const phase=(heavyPhase+(heavyOffset[id]??0))%1;
+      const isSwing=phase>=stance;
+      const u=isSwing?(phase-stance)/(1-stance):phase/stance;
+      const eased=u*u*(3-2*u);
+      // A planted paw travels backward relative to the lumbering torso.
+      // Then a single forepaw is clearly lifted, carried forward, and set down.
+      const travel=isSwing?(1-2*eased):(-1+2*u);
+      const reach=(leg.kind==="fore"?.50:.58)*travel;
+      const lift=isSwing?(leg.kind==="fore"?.82:.58)*Math.sin(Math.PI*u):0;
+      const paw=[leg.paw[0],leg.paw[1]+lift,leg.paw[2]+reach];
+      const wristY=leg.wrist[1]+lift*.65;
+      const dzMax=Math.sqrt(Math.max(.008,(leg.L1+leg.L2-.025)**2-
+        (wristY-leg.shoulder[1])**2-
+        (leg.wrist[0]-leg.shoulder[0])**2));
+      const desiredWristZ=leg.wrist[2]+reach*.86;
+      const wristZ=Math.max(leg.shoulder[2]-dzMax,
+        Math.min(leg.shoulder[2]+dzMax,desiredWristZ));
+      const wrist=[leg.wrist[0],wristY,wristZ];
+      // Important: forelimb elbow folds backward like a cat, NOT like a knee.
+      const mid=rig.solveIK(leg.shoulder,wrist,leg.L1,leg.L2,
+        leg.kind==="fore"?[0,0,1]:[0,.12,-1]);
+      const toe=[leg.toe[0],leg.toe[1]+lift,
+        paw[2]+leg.toe[2]-leg.paw[2]];
+      const pose=leg.display||{mid:[...leg.elbow],wrist:[...leg.wrist],
+        paw:[...leg.paw],toe:[...leg.toe]};
+      // Quick but non-snapping interpolation keeps the mass of the paws.
+      const k=Math.min(1,dt*(isSwing?16:10));
+      for(const [name,target] of [["mid",mid],["wrist",wrist],["paw",paw],["toe",toe]]){
+        for(let j=0;j<3;j++)pose[name][j]+=(target[j]-pose[name][j])*k;
+      }
+      leg.display=pose;
+      if(leg.segments){
+        rig.positionRod(leg.segments.upper,leg.shoulder,pose.mid);
+        rig.positionRod(leg.segments.shin,pose.mid,pose.wrist);
+        rig.positionRod(leg.segments.ankle,pose.wrist,pose.paw);
+        rig.positionRod(leg.segments.paw,pose.paw,pose.toe);
+      }
+      rig.setJoint(id+"Joint",pose.mid);
+      rig.setJoint(id+"Ankle",pose.wrist);
+      rig.setJoint(id+"Paw",pose.paw);
+      rig.setJoint(id+"Toe",pose.toe);
+      const b=leg.boneGraph;
+      if(b){
+        b.joint.position.set(pose.mid[0]-leg.shoulder[0],
+          pose.mid[1]-leg.shoulder[1],pose.mid[2]-leg.shoulder[2]);
+        b.ankle.position.set(pose.wrist[0]-pose.mid[0],
+          pose.wrist[1]-pose.mid[1],pose.wrist[2]-pose.mid[2]);
+        b.paw.position.set(pose.paw[0]-pose.wrist[0],
+          pose.paw[1]-pose.wrist[1],pose.paw[2]-pose.wrist[2]);
+        b.toe.position.set(pose.toe[0]-pose.paw[0],
+          pose.toe[1]-pose.paw[1],pose.toe[2]-pose.paw[2]);
+      }
+      state.updateLimb(leg,pose,state.limbs[id]);
+      heavyPose[id]={phase,lift,paw:pose.paw.slice()};
+    }
+    root.updateMatrixWorld(true);
+  }
   const floorRing = THREE && new THREE.Mesh(
     new THREE.RingGeometry(.93,1.06,32),
     new THREE.MeshBasicMaterial({
@@ -65,13 +136,18 @@ export function createTestMotion(root, animateRig, THREE) {
     // The canonical skeleton uses 4.8 / 1.16 = 4.1 walk cycles/s.
     // Slowing its input clock gives a deliberate planted mid-boss gait,
     // without altering the reusable original anatomical model.
-    rigTime+=dt*(isWalk?.28:1);
-    animateRig(root,rigTime,isCharge?"charge":isWalk?"walk":"idle");
-
-    const rigPhase=root.userData.skeleton?.gaitPhase||0;
+    rigTime+=dt;
+    // WALK uses genuine four-beat independent paws instead of a diagonal trot.
+    // Other actions retain the existing skeleton motion unchanged.
+    animateRig(root,rigTime,isCharge?"charge":"idle");
+    if(isWalk)heavyWalk(dt);
+    const rigPhase=isWalk?heavyPhase:(root.userData.skeleton?.gaitPhase||0);
     const foot=Math.sin(rigPhase*Math.PI*2);
     const beat=(Math.cos(rigPhase*Math.PI*4)+1)*.5;
-    const impact=beat*beat*beat*beat;
+    const impact=isWalk
+      ?Math.pow(Math.max(0,1-Math.min(...["foreL","foreR"]
+        .map(id=>{const p=heavyPose[id]?.phase??.5;return Math.min(p,1-p);}))/.095),3)
+      :beat*beat*beat*beat;
     const stomp=impact;
     stepBlend+=(Number(moving)-stepBlend)*Math.min(1,dt*9);
     deathBlend+=(Number(mode==="death")-deathBlend)*Math.min(1,dt*1.8);
@@ -90,8 +166,8 @@ export function createTestMotion(root, animateRig, THREE) {
     root.rotation.x=alive*pitch;
     root.rotation.z=alive*roll-deathBlend*.68;
     root.position.y=alive*(
-       -.04 + .025*breath
-       + walkWeight*(.045*(1-impact)-.09*impact)
+       .015 + .018*breath
+       + walkWeight*(.045*(1-impact)-.012*impact)
        + (isCharge?stepBlend*.22*stomp:0)
        - .17*heavyRoar*(1-heavyRoar)
        + .23*heavyRoar
@@ -101,8 +177,8 @@ export function createTestMotion(root, animateRig, THREE) {
     // Slow mass transfer makes the idle pose visibly alive.
     const forehead= .34*heavyRoar - .12*recoil -.17*bite;
     const muzzleLift=.68*heavyRoar-.15*bite+.085*breath;
-    const spineRise=.045*breath
-      + walkWeight*(.07*(1-impact)-.105*impact)
+    const spineRise=.038*breath
+      + walkWeight*(.085*(1-impact)-.10*impact)
       + (isCharge?.075*stomp:0);
     const verts=torsoAttr.array;
     for(let i=0;i<torsoRest.length;i+=3){
@@ -163,13 +239,15 @@ export function createTestMotion(root, animateRig, THREE) {
 
     // Alternating left/right front-paw impact marks.
     for(const {mesh,side} of footRings){
-      const p=((rigPhase+(side<0?0:.5))%1+1)%1;
-      const landing=Math.pow(Math.max(0,1-Math.min(p,1-p)/.14),2);
+      const id=side<0?"foreL":"foreR";
+      const phase=isWalk?(heavyPose[id]?.phase??.5):
+        ((rigPhase+(side<0?0:.5))%1+1)%1;
+      const landing=Math.pow(Math.max(0,1-Math.min(phase,1-phase)/.085),2);
       const show=(isWalk||isCharge)&&landing>.04;
       mesh.visible=show;
       if(show){
         const yaw=root.rotation.y;
-        const lx=side*2.0,lz=-2.1;
+        const lx=side*2.0,lz=isWalk?(heavyPose[id]?.paw?.[2]??-2.1):-2.1;
         mesh.position.set(root.position.x+lx*Math.cos(yaw)+lz*Math.sin(yaw),
           .025,root.position.z-lx*Math.sin(yaw)+lz*Math.cos(yaw));
         mesh.scale.setScalar(1+(1-landing)*1.25);
@@ -189,9 +267,11 @@ export function createTestMotion(root, animateRig, THREE) {
     root.userData.testMotion=mode;
     return {mode,roar:heavyRoar,tail:strike,stomp,charge:isCharge,death:deathBlend};
   }
-  function reset(){rigTime=0;stepBlend=0;deathBlend=0;
+  function reset(){rigTime=0;heavyPhase=0;stepBlend=0;deathBlend=0;
     for(const {mesh} of footRings)mesh.visible=false;
     if(floorRing)floorRing.visible=false;
   }
-  return {update,reset};
+  // Exposed for headless verification of the four independent stride phases.
+  function snapshot(){return {heavyPhase,poses:JSON.parse(JSON.stringify(heavyPose))};}
+  return {update,reset,snapshot};
 }
