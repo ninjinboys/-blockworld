@@ -1,7 +1,7 @@
 /**
  * NEXACRAFT Chimera — appearance pass 01.
  * Lion mane, sweeping horns, fangs, claws, glowing eyes, ears,
- * faceted serpent face and permanent colored snake bands.
+ * smooth horn / mane / fang surfaces, serpent face and soft color bands.
  * Pure procedural lightweight meshes; no downloads/assets/GLB.
  */
 export function dressChimera(root,T){
@@ -11,7 +11,7 @@ export function dressChimera(root,T){
   const deco=new T.Group();deco.name="CHIMERA ORNAMENTS / REAL MESH";
   root.add(deco);
   const mat=(color,more={})=>new T.MeshStandardMaterial({
-    color,roughness:.94,metalness:0,flatShading:true,...more});
+    color,roughness:.94,metalness:0,flatShading:false,...more});
   const P={
     maneDark:mat(0x4a291f),mane:mat(0x945029),maneGold:mat(0xbe7535),
     manelight:mat(0xd39342),horn:mat(0x35343b),hornLight:mat(0x55525a),
@@ -22,8 +22,30 @@ export function dressChimera(root,T){
     snakeDark:mat(0x314931),snakeEye:new T.MeshBasicMaterial({color:0xffbb36}),
     tongue:mat(0xd65e77),claws:mat(0x201e24)
   };
-  const sphereGeo=new T.SphereGeometry(1,12,9);
-  const coneGeo=new T.ConeGeometry(1,1,6);
+  // Reuse smooth meshes everywhere rather than six-sided faceted cones.
+  // Shared geometries + instancing keep the 20x20 world fast on mobile.
+  const sphereGeo=new T.SphereGeometry(1,24,16);
+  const coneGeo=new T.ConeGeometry(1,1,16,1);
+  const tuftGeo=(()=>{
+    const sections=9,sides=12,verts=[],ids=[];
+    for(let k=0;k<=sections;k++){
+      const u=k/sections;
+      const radius=.84*Math.pow(1-u,.72)+.004;
+      const curve=.22*u*u;
+      for(let j=0;j<sides;j++){
+        const a=j*2*Math.PI/sides;
+        verts.push(radius*Math.cos(a)+curve,u-.5,radius*Math.sin(a));
+        if(k<sections){
+          const p=k*sides+j,q=k*sides+(j+1)%sides;
+          ids.push(p,q,p+sides,q,q+sides,p+sides);
+        }
+      }
+    }
+    const g=new T.BufferGeometry();
+    g.setAttribute("position",new T.Float32BufferAttribute(verts,3));
+    g.setIndex(ids);g.computeVertexNormals();
+    return g;
+  })();
   const dummy=new T.Object3D();
   const up=new T.Vector3(0,1,0);
   function ball(parent,name,xyz,sizes,material){
@@ -48,7 +70,7 @@ export function dressChimera(root,T){
       [sign*2.76,6.39,-3.57]
     ];
     const path=new T.CatmullRomCurve3(coords.map(p=>new T.Vector3(...p)));
-    const rows=27,sides=9,vertices=[],colors=[],indices=[];
+    const rows=60,sides=20,vertices=[],colors=[],indices=[];
     const c1=new T.Color(0x49464a),c2=new T.Color(0x1f2027);
     const tangent=new T.Vector3(),axis1=new T.Vector3(),axis2=new T.Vector3();
     for(let i=0;i<=rows;i++){
@@ -56,14 +78,13 @@ export function dressChimera(root,T){
       path.getTangent(t,tangent);
       axis1.set(0,0,1).addScaledVector(tangent,-tangent.z).normalize();
       axis2.crossVectors(tangent,axis1).normalize();
-      const radius=(.34*(1-t)**.67+.005)*(1+.045*Math.sin(t*68));
+      const radius=.345*Math.pow(1-t,.78)+.003;
       for(let j=0;j<sides;j++){
         const angle=2*Math.PI*j/sides;
         const pos=p.clone().addScaledVector(axis1,Math.cos(angle)*radius)
           .addScaledVector(axis2,Math.sin(angle)*radius);
         vertices.push(pos.x,pos.y,pos.z);
-        const color=c1.clone().lerp(c2,Math.min(1,t*.85+
-          (Math.floor(t*12)%3===0?.13:0)));
+        const color=c1.clone().lerp(c2,Math.min(1,t*.91));
         colors.push(color.r,color.g,color.b);
         if(i<rows){
           const a=i*sides+j,b=i*sides+(j+1)%sides,
@@ -77,7 +98,7 @@ export function dressChimera(root,T){
     geo.setAttribute("color",new T.Float32BufferAttribute(colors,3));
     geo.setIndex(indices);geo.computeVertexNormals();
     const horn=new T.Mesh(geo,new T.MeshStandardMaterial({
-      color:0xffffff,vertexColors:true,roughness:.88,flatShading:true,
+      color:0xffffff,vertexColors:true,roughness:.88,flatShading:false,
       side:T.DoubleSide}));
     horn.name=sign<0?"LEFT RAM HORN":"RIGHT RAM HORN";
     hornGroup.add(horn);
@@ -89,7 +110,7 @@ export function dressChimera(root,T){
   // Annular faceted mane geometry leaves the face open, unlike a
   // full sphere which would hide the anatomical skull.
   function furRing(name,cx,cy,cz,outerX,outerY,innerX,innerY,depth,material){
-    const N=32,v=[],indices=[];
+    const N=72,v=[],indices=[];
     // front inner rim, front outer edge, back outer edge, back inner rim
     for(let ring=0;ring<4;ring++){
       const rx=(ring===0||ring===3)?innerX:outerX;
@@ -97,7 +118,7 @@ export function dressChimera(root,T){
       const zz=ring===0?cz-.12:ring===1?cz:ring===2?cz+depth:cz+depth*.72;
       for(let j=0;j<N;j++){
         const a=j*2*Math.PI/N;
-        const ragged=ring===1||ring===2?1+.065*Math.sin(j*2.1):1;
+        const ragged=ring===1||ring===2?1+.018*Math.sin(a*7):1;
         v.push(cx+Math.cos(a)*rx*ragged,
           cy+Math.sin(a)*ry*ragged,zz);
       }
@@ -118,7 +139,7 @@ export function dressChimera(root,T){
   furRing("dark outer mane",0,3.53,-2.88,1.95,1.83,1.12,.81,1.17,P.maneDark);
   furRing("thick umber mane",0,3.66,-3.34,1.70,1.56,.97,.75,.92,P.mane);
   furRing("amber face framing fur",0,3.76,-3.92,1.42,1.24,.83,.67,.54,P.maneGold);
-  // 3 instanced low-poly fur layers: ~85 tufts, only 3 draw calls.
+  // 3 smooth curved tuft layers, still only 3 instanced draw calls.
   const layers=[
     {count:32,cx:0,cy:3.53,cz:-2.78,rx:1.78,ry:1.61,len:.61,r:.19,material:P.maneDark},
     {count:32,cx:0,cy:3.70,cz:-3.29,rx:1.65,ry:1.46,len:.52,r:.17,material:P.mane},
@@ -126,7 +147,7 @@ export function dressChimera(root,T){
   ];
   for(let li=0;li<layers.length;li++){
     const a=layers[li];
-    const inst=new T.InstancedMesh(coneGeo,a.material,a.count);
+    const inst=new T.InstancedMesh(tuftGeo,a.material,a.count);
     inst.name="MANE TUFTS LAYER "+li;inst.frustumCulled=false;
     for(let i=0;i<a.count;i++){
       const t=(i+.36*li)*Math.PI*2/a.count;
@@ -213,20 +234,23 @@ export function dressChimera(root,T){
   const tailMesh=skin.tail;
   const attr=tailMesh.geometry.attributes.position;
   const colors=new Float32Array(attr.count*3);
-  const palette=[0x556b32,0x778542,0x405938,0x93a164,0x4b5b35,0x7c8a49];
-  const pal=palette.map(c=>new T.Color(c));
+  const stripeDark=new T.Color(0x405936);
+  const stripeLight=new T.Color(0x80945b);
+  const underside=new T.Color(0xa4a677);
   for(let i=0;i<attr.count;i++){
-    const ring=Math.floor(i/20),section=Math.floor(ring/8);
-    const angle=i%20;
-    const stripes=(section+(angle===0?1:0))%pal.length;
-    const clr=pal[stripes].clone();
-    if(angle>=9&&angle<=15)clr.lerp(new T.Color(0xa5a878),.28);
+    const u=Math.floor(i/20)/124,a=(i%20)*Math.PI*2/20;
+    // Broad bands with interpolated edges, not 8-ring hard stair steps.
+    const band=Math.sin(u*Math.PI*12.4);
+    const smoothBand=.5+.5*Math.tanh(band*3.5);
+    const clr=stripeDark.clone().lerp(stripeLight,smoothBand);
+    const bellyBlend=.26*Math.max(0,Math.sin(a));
+    clr.lerp(underside,bellyBlend);
     const k=i*3;
     colors[k]=clr.r;colors[k+1]=clr.g;colors[k+2]=clr.b;
   }
   tailMesh.geometry.setAttribute("color",new T.BufferAttribute(colors,3));
   tailMesh.material=new T.MeshStandardMaterial({
-    color:0xffffff,roughness:.93,flatShading:true,
+    color:0xffffff,roughness:.93,flatShading:false,
     vertexColors:true,side:T.DoubleSide
   });
   // Snake-head eyes and tongue ride directly with its original animated head.
