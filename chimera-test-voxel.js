@@ -148,178 +148,166 @@ export function dressChimera(root,T){
   }
   pack(hornBoxes,"CURVED OBSIDIAN BUFFALO HORNS",horns);
 
-  // Real 3D lion face: sculpted muzzle and brows, recessed eyes,
-  // deep roaring mouth, sabre canines and a hinged lower jaw.
-  // The reference is a SHORT/BROAD lion face, not a long canine snout.
-  const face=new T.Group();face.name="REFERENCE LION HEAD / ANATOMICAL MUZZLE";
+  // Lion face V3: strong cheekbones and a BROAD short feline muzzle.
+  // No free-floating jaw; all facial parts share a single animated group.
+  const face=new T.Group();
+  face.name="CONNECTED LION HEAD / SABRE CAT FACE V3";
   deco.add(face);
-  const headShell=[],faceTrim=[],oral=[],goldEyes=[];
-  const addFace=(arr,x,y,z,sx,sy,sz,col)=>
-    voxel(arr,x,y,z,Math.min(sx,sy,sz),col,sx,sy,sz);
-  const faceStep=.145;
-  function faceMass(name,x0,y0,z0,rx,ry,rz,palette,seed,mode="all"){
-    const dim=(v,r)=>Math.ceil(r/faceStep)+1;
-    for(let ix=-dim(x0,rx);ix<=dim(x0,rx);ix++)
-    for(let iy=-dim(y0,ry);iy<=dim(y0,ry);iy++)
-    for(let iz=-dim(z0,rz);iz<=dim(z0,rz);iz++){
-      const x=x0+ix*faceStep,y=y0+iy*faceStep,z=z0+iz*faceStep;
-      const norm=(x,y,z)=>Math.sqrt(((x-x0)/rx)**2+
-        ((y-y0)/ry)**2+((z-z0)/rz)**2);
-      if(norm(x,y,z)>=1 ||
-        (norm(x+faceStep,y,z)<1&&norm(x-faceStep,y,z)<1&&
-         norm(x,y+faceStep,z)<1&&norm(x,y-faceStep,z)<1&&
-         norm(x,y,z+faceStep)<1&&norm(x,y,z-faceStep)<1))continue;
-      if(mode==="side" && Math.abs(x)<.40)continue;
-      const shade=pick(palette,ix+seed,iy,iz);
-      addFace(headShell,x,y,z,faceStep*1.05,faceStep*1.05,
-        faceStep*1.05,shade);
+  const skullV=[],browV=[],muzzleV=[],oralV=[],fangV=[],eyeV=[],ruffV=[];
+  const vbox=(arr,x,y,z,w,h,d,color)=>
+    voxel(arr,x,y,z,Math.min(w,h,d),color,w,h,d);
+  const res=.126;
+  // Only sample the outer skin of sculpted ellipsoids; back-half remains
+  // embedded in the existing body, avoiding a second hollow, box-shaped head.
+  const shell=(arr,center,radii,palette,seed,onlyFront=false)=>{
+    const [cx,cy,cz]=center,[rx,ry,rz]=radii;
+    const nx=Math.ceil(rx/res),ny=Math.ceil(ry/res),nz=Math.ceil(rz/res);
+    const dist=(x,y,z)=>
+      ((x-cx)/rx)**2+((y-cy)/ry)**2+((z-cz)/rz)**2;
+    for(let i=-nx;i<=nx;i++)for(let j=-ny;j<=ny;j++)
+    for(let k=-nz;k<=nz;k++){
+      const x=cx+i*res,y=cy+j*res,z=cz+k*res;
+      if(onlyFront&&z>cz+.10)continue;
+      if(dist(x,y,z)>1)continue;
+      if(dist(x+res,y,z)<1&&dist(x-res,y,z)<1&&
+         dist(x,y+res,z)<1&&dist(x,y-res,z)<1&&
+         dist(x,y,z+res)<1&&dist(x,y,z-res)<1)continue;
+      const c=pick(palette,seed+i,j,k);
+      vbox(arr,x,y,z,res*1.06,res*1.06,res*1.06,c);
     }
-  }
-  // A compact squared cranium, wide temples, heavy cheeks and whisker pads.
-  faceMass("broad lion forehead",0,3.99,-4.23,1.02,.67,.84,
-    [0x5d4536,0x72503b,0x825739,0x66503d],11);
+  };
+  // The upper face is embedded in the anatomical skull (Z -4.4).
+  // Cheek lumps are distinct, but all silhouettes remain rounded.
+  shell(skullV,[0,3.99,-4.57],[1.00,.66,.61],
+    [0x68503f,0x76553c,0x684937,0x886344],13,true);
   for(const side of [-1,1]){
-    faceMass("high cheekbone",side*.77,3.75,-4.46,.45,.51,.53,
-      [0x885b37,0x986b41,0x674b36,0xac7848],24+side);
-    faceMass("feline muzzle pad",side*.30,3.68,-4.91,.40,.24,.39,
-      [0xd3a06b,0xc69560,0xb98653,0xe0ad75],43+side);
-  }
-  // A recessed mouth reads as an opening even from 3/4 profile.
-  for(let y=2.94;y<=3.54;y+=.13)for(let x=-.58;x<=.58;x+=.13){
-    const nx=x/.69,ny=(y-3.23)/.42;
-    if(nx*nx+ny*ny<1){
-      const depth=-5.12-.06*(1-nx*nx);
-      addFace(oral,x,y,depth,.14,.14,.15,
-        pick([0x180e13,0x2a1418,0x35181c],x,y,5));
+    shell(skullV,[side*.75,3.74,-4.66],[.43,.47,.44],
+      [0x895f41,0x9b6b44,0x6e4a36],33+side,true);
+    // Folded whisker pads: feline split muzzle and compressed nose bridge.
+    shell(muzzleV,[side*.31,3.72,-5.06],[.37,.25,.34],
+      [0xc99c66,0xd4a36a,0xb4814c,0xe1b37a],45+side,true);
+    // Lower side cheeks form uninterrupted vertical edges of the mouth.
+    for(let j=0;j<9;j++){
+      const t=j/8;
+      vbox(muzzleV,side*(.63+.08*t),3.60-.64*t,-5.18+.08*t,
+        .19,.18,.19,pick([0x865737,0xa26c41,0xb07b4a],j,side,5));
     }
-  }
-  // Interior throat and reddish tongue are behind the sharp teeth.
-  for(let y=3.03;y<=3.36;y+=.12)for(let x=-.30;x<=.30;x+=.12){
-    const nx=x/.41,ny=(y-3.15)/.25;
-    if(nx*nx+ny*ny<1)
-      addFace(oral,x,y,-5.17,.12,.12,.08,
-        pick([0x5c242c,0x8d3542,0x461c27],x,y,4));
-  }
-  // Wide, powerful brows meet the bridge of the nose. Their deep lower
-  // surfaces make the two bright amber pupils visibly inset.
-  for(const side of [-1,1]){
-    for(let j=0;j<7;j++){
-      const x=side*(.20+j*.11),y=4.31-Math.abs(j-2)*.032;
-      addFace(faceTrim,x,y,-5.10,.145,.23,.21,
-        pick([0x302a27,0x4d3932,0x72513b],j,side,1));
-    }
-    // eye socket / iris / slit pupil stacked along local forward (-Z)
-    addFace(faceTrim,side*.51,4.105,-5.137,.38,.205,.18,0x241b19);
-    addFace(faceTrim,side*.51,4.110,-5.240,.255,.135,.075,0x87531f);
-    addFace(goldEyes,side*.51,4.12,-5.292,.18,.095,.060,0xffffff);
-    addFace(faceTrim,side*.525,4.12,-5.346,.042,.100,.045,0x110e0c);
-    addFace(faceTrim,side*.46,4.158,-5.349,.050,.035,.045,0xffe9a1);
-    // Feline whisker pads, darker smile line and strong upper lip.
-    addFace(faceTrim,side*.35,3.63,-5.253,.50,.25,.21,0xce9862);
-    for(let j=0;j<3;j++)
-      addFace(faceTrim,side*(.30+.11*j),3.55-.026*j,-5.29,
-        .12,.09,.095,0x513025);
-    // Small nostril creases and pointed outer ears in the mane.
-    addFace(faceTrim,side*.30,3.79,-5.356,.13,.093,.09,0x241d1c);
-    addFace(faceTrim,side*.94,4.69,-3.95,.42,.52,.33,0x503123);
-    addFace(faceTrim,side*.96,4.72,-4.16,.25,.30,.13,0xc38a51);
-    // Two great downward sabre fangs; the taper is subtle at the top.
-    const sabreFrom=[side*.51,3.57,-5.30],
-      sabreTo=[side*.39,2.70,-5.37];
-    for(let k=0;k<15;k++){
-      const t=k/14;
-      const tipX=sabreFrom[0]*(1-t)+sabreTo[0]*t;
-      const w=.18*Math.pow(1-t,.68)+.028;
-      addFace(faceTrim,tipX,3.57-.87*t,
-        -5.30-.06*Math.sin(Math.PI*t),w*1.55,.083,w*1.55,
-        pick([0xf2dcad,0xffe6b9,0xdec291],k,side,3));
-    }
-    // Secondary incisors frame the opening without closing it.
-    for(let j=0;j<3;j++){
-      const x=side*(.18+j*.105);
-      for(let k=0;k<4;k++){
-        const v=k/3;
-        addFace(faceTrim,x,3.53-v*.15,-5.29,
-          .095*(1-v)+.025,.07,.11*(1-v)+.028,0xdcca9e);
+    // Tapered pale fur sheets at the cheeks. These remain outside the face
+    // and do not cover the glowing eyes.
+    for(let strand=0;strand<11;strand++){
+      const t=strand/10;
+      const x=side*(1.08+.30*t),y=4.29-.105*strand;
+      const z=-4.59+.10*Math.sin(strand*.9);
+      for(let j=0;j<4;j++){
+        vbox(ruffV,x+side*j*.016,y-j*.15,z+j*.02,
+          .19,.22,.22,pick(colors.mane,strand,j,side*7));
       }
     }
+    // The heavy eye brow has a pronounced inward scowl.
+    for(let j=0;j<7;j++){
+      const x=side*(.22+j*.105);
+      const y=4.26+(j*.019); // lower towards nose, higher at temples
+      vbox(browV,x,y,-5.15,.15,.205,.20,
+        pick([0x302822,0x4c3629,0x60422e],j,side,7));
+    }
+    // Eye socket sits below brow; narrow GOLD iris with slit pupil.
+    vbox(browV,side*.48,4.095,-5.17,.32,.18,.15,0x211b1b);
+    vbox(browV,side*.48,4.103,-5.26,.225,.098,.064,0x835222);
+    vbox(eyeV,side*.48,4.11,-5.320,.168,.080,.048,0xffffff);
+    vbox(browV,side*.485,4.108,-5.362,.040,.088,.045,0x15110e);
+    vbox(browV,side*.450,4.138,-5.365,.030,.027,.035,0xffd282);
+    // Correct small feline ears embedded near the horn bases.
+    vbox(ruffV,side*.94,4.68,-3.99,.40,.46,.30,0x593823);
+    vbox(ruffV,side*.94,4.71,-4.155,.23,.27,.095,0xb58452);
   }
-  // Broad, triangular black lion nose rather than a pinched dog snout.
-  for(let j=-4;j<=4;j++)for(let k=0;k<3;k++){
-    const x=j*.105,y=3.80-k*.08;
-    if(Math.abs(j)>4-k)continue;
-    addFace(faceTrim,x,y,-5.39+(Math.abs(j)*.009),
-      .125,.11,.15,pick([0x18191b,0x2c2526,0x393031],j,k,9));
+  // Broad flattened upside-down-triangle nose, NOT a vertical dog snout.
+  for(let row=0;row<3;row++){
+    const n=4-row;
+    for(let col=-n;col<=n;col++){
+      const x=col*.097,y=3.86-row*.087,z=-5.41+.014*Math.abs(col);
+      vbox(muzzleV,x,y,z,.110,.105,.17,
+        pick([0x1b1c1e,0x292326,0x393033],row,col,9));
+    }
   }
-  // The central philtrum is dark; the side muzzle remains golden.
-  for(let j=0;j<3;j++)
-    addFace(faceTrim,0,3.63-j*.10,-5.344,.11,.105,.094,0x372626);
-  const headBody=pack(headShell,"WIDE LION CRANIUM AND JOWLS",face);
-  const mouthMesh=pack(oral,"OPEN DARK THROAT AND TONGUE",face);
-  const detailMesh=pack(faceTrim,"REAL LION BROW / NOSE / SABERS",face);
-  const ember=pack(goldEyes,"GLOWING GOLD LION IRIS",face);
-  ember.material=new T.MeshBasicMaterial({color:0xffb92e});
-  // Hinged lower jaw: the original skeletal solver moves this assembly.
-  // Its front lip projects to the same plane as the upper sabres.
-  const jawSource=st.meshes.find(m=>m.name==="OPEN LOWER LION JAW");
-  const jawGroup=new T.Group();jawGroup.name="HINGED LOWER LION JAW / VOXEL";
-  deco.add(jawGroup);
-  const jawVox=[],jawTongue=[];
-  // Original jaw pivot is approximately (0, 3.00, -4.22).
-  // Its visible lip needs to reach forward to world Z -5.3.
-  for(let ix=-6;ix<=6;ix++)for(let iz=-7;iz<=1;iz++){
-    const x=ix*.12,z=-.49+iz*.11;
-    const e=x*x/.79**2 + (z+.78)**2/.67**2;
-    if(e>.98)continue;
-    const edge=Math.abs(x)>.55||iz<-4;
-    const y=edge?.014:-.058;
-    addFace(jawVox,x,y,z,.135,.16,.14,
-      pick(edge?[0x916843,0xae8050,0xc18b55]:
-        [0x64412f,0x77503a,0x8f6346],ix,iz,2));
-  }
-  // Cheek-side jaw bones curl up around the mouth.
-  for(const side of [-1,1])for(let k=0;k<9;k++){
-    const t=k/8;
-    addFace(jawVox,side*(.70-.06*t),.01+t*.25,-.48-t*.34,
-      .16,.14,.15,pick([0x775239,0xa37b52],k,side,4));
-  }
-  // Lower upward canines.
-  for(const side of [-1,1])for(let k=0;k<8;k++){
-    const t=k/7;
-    addFace(jawVox,side*(.40-.08*t),.10+.38*t,-1.01-.055*t,
-      .16*(1-t)+.045,.11,.17*(1-t)+.035,
-      pick([0xf2d8ae,0xd2b98e],k,side,5));
-  }
-  // Exposed mouth tongue follows opening of hinged lower jaw.
-  for(let k=0;k<8;k++){
-    const t=k/7;
-    addFace(jawTongue,0,.055+.045*Math.sin(t*Math.PI),
-      -.46-.60*t,.25*(1-.55*t),.09,.16,0x9d4754);
-  }
-  pack(jawVox,"LOWER JAW CHIN / UPPER-FACING TEETH",jawGroup);
-  pack(jawTongue,"LION TONGUE",jawGroup);
-
-  // Framing locks along cheeks: keeps the face integrated with its mane.
-  // These are actual cuboids and do not cover the glowing eyes.
-  const framing=[];
   for(const side of [-1,1]){
-    for(let row=0;row<4;row++)for(let j=0;j<15;j++){
-      const t=j/14;
-      const x=side*(1.08+.10*Math.sin(j*1.31)+.16*row);
-      const y=4.23-j*.075-row*.035;
-      const z=-4.25-.11*(row%2)-.27*t;
-      addFace(framing,x,y,z,.20,.23+.11*t,.20,
-        pick(colors.mane,j,row,side+9));
+    vbox(muzzleV,side*.26,3.81,-5.515,.115,.075,.071,0x120f10);
+    // Small whisker freckles offset from the mouth, no protruding sticks.
+    for(let i=0;i<3;i++)
+      vbox(muzzleV,side*(.29+i*.105),3.61-.033*i,-5.39,
+        .047,.052,.045,0x67452e);
+  }
+  // Deep dark oval mouth; do not draw any brown muzzle pixels over this area.
+  for(let y=2.99;y<3.58;y+=.113)for(let x=-.55;x<=.55;x+=.113){
+    const nx=x/.67,ny=(y-3.29)/.365;
+    if(nx*nx+ny*ny>=1)continue;
+    vbox(oralV,x,y,-5.385-.045*(1-nx*nx),.126,.124,.105,
+      pick([0x180e12,0x211017,0x31171d],x,y,7));
+  }
+  // Inner jaw tongue remains BEHIND the fangs, as a dark-red 3D shape.
+  for(let y=3.00;y<3.19;y+=.108)for(let x=-.25;x<=.25;x+=.108){
+    vbox(oralV,x,y,-5.448,.115,.109,.060,
+      pick([0x70333c,0x933d46,0x6f2d37],x,y,13));
+  }
+  // Two unmistakable tapered sabre canines emerging from the upper lip.
+  // The pointed tips stop just ABOVE the lower lip.
+  for(const side of [-1,1]){
+    for(let k=0;k<18;k++){
+      const t=k/17;
+      const w=.195*Math.pow(1-t,.71)+.024;
+      const x=side*(.43-.085*t);
+      const y=3.58-.74*t;
+      const z=-5.40-.066*Math.sin(t*Math.PI);
+      vbox(fangV,x,y,z,w*1.60,.067,w*1.55,
+        pick([0xf7e0b3,0xe9cf9f,0xffe8c3],k,side,6));
     }
-    for(let j=0;j<25;j++){
-      const t=j/24,x=side*(.85+1.00*t);
-      const y=4.56+.36*Math.sin(t*Math.PI),z=-3.96+.28*t;
-      addFace(framing,x,y,z,.225,.20,.225,
-        pick(colors.mane,j,side,22));
+    // Smaller front incisors leave the center of the gaping maw visible.
+    for(let i=0;i<2;i++)for(let k=0;k<4;k++){
+      const t=k/3;
+      vbox(fangV,side*(.16+.12*i),3.57-.18*t,-5.407,
+        .083*(1-t)+.023,.070,.105*(1-t)+.025,0xdcc395);
     }
   }
-  const faceFrame=pack(framing,"MANE LOCKS FRAME LION FACE",face);
-
+  // Chin is INSIDE face coordinates (not in another absolute-coordinate
+  // rig object), so it cannot detach and fall to the floor during roaring.
+  const jawGroup=new T.Group();
+  jawGroup.name="CONNECTED OPEN LION JAW / NO FREE PIECES";
+  face.add(jawGroup);
+  const chinV=[],lowerTeethV=[];
+  // Rounded shallow U: x[-.67,.67], front lip at Z-5.33.
+  for(let x=-.69;x<=.69;x+=.115)for(let z=-5.38;z<=-4.83;z+=.115){
+    const e=(x/.76)**2+((z+5.08)/.41)**2;
+    if(e>1)continue;
+    const front=z<-5.18,outer=Math.abs(x)>.50;
+    if(!front&&!outer)continue;
+    vbox(chinV,x,2.89,z,.122,.205,.121,
+      pick([0xa5794a,0xc18a55,0x8e5d3b,0xd09b60],x,z,9));
+  }
+  // Upturned mouth corners attach lip back to the cheek.
+  for(const side of [-1,1]){
+    for(let j=0;j<8;j++){
+      const t=j/7;
+      vbox(chinV,side*(.62+.02*t),2.92+.34*t,-5.20+.14*t,
+        .152,.146,.147,
+        pick([0xa87546,0x94603b,0xb7814d],j,side,14));
+    }
+    for(let k=0;k<7;k++){
+      const t=k/6;
+      const w=.115*(1-t)+.024;
+      vbox(lowerTeethV,side*(.35-.055*t),2.97+.29*t,
+        -5.343-.05*t,w*1.6,.075,w*1.5,
+        pick([0xe5cfa3,0xf1ddb4],k,side,15));
+    }
+  }
+  pack(chinV,"CONNECTING LION MANDIBLE",jawGroup);
+  pack(lowerTeethV,"LOWER UPWARD CANINES",jawGroup);
+  pack(skullV,"SCULPTED COMPACT LION SKULL",face);
+  pack(muzzleV,"SPLIT LION MUZZLE AND NOSE",face);
+  pack(browV,"HEAVY BROW AND SLIT PUPILS",face);
+  pack(oralV,"DARK OPEN MOUTH / DEEP TONGUE",face);
+  pack(fangV,"PAIR OF LONG SABRE CANINES",face);
+  pack(ruffV,"CHEEK-LAYER MANE AND EARS",face);
+  const iris=pack(eyeV,"BRIGHT ANGRY AMBER LION EYES",face);
+  iris.material=new T.MeshBasicMaterial({color:0xffbd31});
   // Independent anatomical limbs: voxel rings follow the genuine IK
   // fore-elbow and rear-hock joints, not an unchanging stick leg.
   const legMeshes=[];
@@ -427,14 +415,13 @@ export function dressChimera(root,T){
   const v1=new T.Vector3(),v2=new T.Vector3(),basis=new T.Vector3(),binorm=new T.Vector3();
   function update(animation){
     const r=animation?.roar||0;
-    mane.position.y=.15*r;
-    horns.position.y=.21*r;
-    face.position.y=.055*r;
-    // No scenery changes: all movements happen in model-local space.
-    if(jawSource){
-      jawGroup.position.copy(jawSource.position);
-      jawGroup.rotation.copy(jawSource.rotation);
-    }
+    // Facial ornaments travel WITH the cranial skin during the roar.
+    // The jaw stays physically joined at both corners.
+    mane.position.y=.25*r;
+    horns.position.y=.43*r;
+    face.position.y=.78*r;
+    jawGroup.position.y=-.09*r;
+    jawGroup.rotation.x=-.07*r;
     for(const {leg,descs,mesh} of legMeshes){
       const q=leg.display||{mid:leg.elbow,wrist:leg.wrist,paw:leg.paw,toe:leg.toe};
       const chain=[
