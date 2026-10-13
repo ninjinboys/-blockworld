@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#172b2d">
+<title>NEXACRAFT | 参考画像版 キメラ V5</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#122225;font-family:system-ui,-apple-system,"Hiragino Sans",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0;touch-action:none}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#hud{position:fixed;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));display:flex;align-items:flex-start;justify-content:space-between;gap:8px;pointer-events:none}
+.hpanel{background:rgba(10,20,18,.83);border:1px solid #ffffff33;border-radius:10px;padding:9px 12px;max-width:70%;box-shadow:0 3px 16px #0003}
+#brand{font-weight:900;font-size:17px;letter-spacing:1px;color:#e7c88b}
+#info,#status{font-size:11px;color:#e0e5d4;line-height:1.5}
+#bars{min-width:114px;flex:0 1 160px;max-width:40%}
+.barline{font-size:10px;font-weight:700;margin-bottom:5px}
+.track{height:7px;border-radius:3px;background:#3c3b3a;overflow:hidden;margin-top:3px}
+#hpFill{height:100%;width:100%;background:#ff776b}
+#bossFill{height:100%;width:100%;background:#d6a24b}
+#notice{position:fixed;top:23%;left:50%;transform:translateX(-50%);padding:9px 14px;background:#121a1bd9;border:1px solid #9c9c89;border-radius:8px;font-size:12px;max-width:94%;text-align:center;pointer-events:none;opacity:0;transition:opacity .2s}
+#notice.show{opacity:1}
+#topActions{position:fixed;top:calc(max(10px,env(safe-area-inset-top)) + 94px);right:max(10px,env(safe-area-inset-right));display:flex;flex-direction:column;gap:7px}
+button{touch-action:none;color:#faf9ed;background:#162724dc;border:1px solid #bed2ae77;border-radius:9px;min-width:52px;min-height:42px;padding:8px 10px;font-size:12px;font-weight:750;cursor:pointer;user-select:none;-webkit-user-select:none}
+button:active,button.pressed,button.active{background:#4d684e;border-color:#eed3a0}
+#motions{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom)) + 157px);display:flex;gap:5px;flex-wrap:wrap;justify-content:center;width:min(96vw,510px);padding:7px;border:1px solid #ffffff44;border-radius:10px;background:#112421d9;z-index:3}
+#motions button{min-width:57px;min-height:38px;padding:6px 8px;font-size:12px}
+#pad{position:fixed;bottom:max(13px,env(safe-area-inset-bottom));left:max(15px,env(safe-area-inset-left));width:169px;height:143px;display:grid;grid-template-columns:52px 52px 52px;grid-template-rows:44px 44px 44px;gap:5px}
+#up{grid-area:1/2}#left{grid-area:2/1}#down{grid-area:2/2}#right{grid-area:2/3}
+#pad button{font-size:20px;background:#101f1dd9}
+#actionBox{position:fixed;right:max(15px,env(safe-area-inset-right));bottom:calc(max(19px,env(safe-area-inset-bottom)) + 19px);display:flex;flex-direction:column;align-items:center;gap:8px}
+#attack{width:76px;height:76px;border-radius:50%;background:#814735ee;border:2px solid #ffe4ba;font-size:16px;box-shadow:0 4px 15px #0007}
+#hint{position:fixed;left:50%;bottom:calc(max(15px,env(safe-area-inset-bottom)) + 10px);transform:translateX(-50%);font-size:10px;white-space:nowrap;color:#e4e4d3cf;text-shadow:0 1px 5px #000;pointer-events:none}
+#error{display:none;position:fixed;top:40%;left:5%;width:90%;padding:15px;color:#ffe8db;background:#3c2021;border:1px solid #f49671;border-radius:8px;line-height:1.6;z-index:10}
+@media(max-width:480px){#brand{font-size:14px}.hpanel{padding:7px 9px}#info,#status{font-size:10px}#topActions{top:calc(max(10px,env(safe-area-inset-top)) + 85px)}#motions{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 145px);width:min(96vw,390px)}#motions button{min-width:52px;font-size:11px;padding:6px 7px}#hint{display:none}}
+</style>
+</head>
+<body>
+<div id="stage" aria-label="20×20ブロックのテストフィールド"></div>
+<div id="hud">
+  <div class="hpanel">
+    <div id="brand">NEXACRAFT · CHIMERA V5</div>
+    <div id="info">20 × 20 BLOCKS / 即時生成なし</div>
+    <div id="status" role="status">3Dエンジンを読み込み中…</div>
+  </div>
+  <div id="bars" class="hpanel">
+    <div class="barline">プレイヤー <span id="hpVal">100</span><div class="track"><div id="hpFill"></div></div></div>
+    <div class="barline">キメラ <span id="bossVal">100</span><div class="track"><div id="bossFill"></div></div></div>
+  </div>
+</div>
+<div id="topActions">
+  <button id="view" type="button">視点：3人称</button>
+  <button id="ai" type="button">AI：停止</button>
+  <button id="modelView" type="button">キメラ拡大</button>
+  <button id="reset" type="button">最初から</button>
+</div>
+<nav id="motions" aria-label="キメラのモーションを選択"><button type="button" data-motion="idle" class="active">待機</button><button type="button" data-motion="walk">歩行</button><button type="button" data-motion="charge">突進</button><button type="button" data-motion="roar">咆哮</button><button type="button" data-motion="tail">蛇尾攻撃</button></nav>
+<div id="notice" aria-live="polite"></div>
+<div id="pad">
+  <button id="up" data-key="forward" aria-label="前に移動" type="button">↑</button>
+  <button id="left" data-key="left" aria-label="左に移動" type="button">←</button>
+  <button id="down" data-key="back" aria-label="後ろに移動" type="button">↓</button>
+  <button id="right" data-key="right" aria-label="右に移動" type="button">→</button>
+</div>
+<div id="actionBox"><button id="attack" type="button">攻撃</button></div>
+<div id="hint">画面ドラッグ：視点回転 / WASD：移動 / Space：攻撃</div>
+<div id="error" role="alert"></div>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/+esm";
+
+// This page intentionally has NO GLB, texture download, map generation,
+// terrain noise, clouds, vegetation or shadows. 400 fixed instances only.
+const stage=document.getElementById("stage");
+const status=document.getElementById("status");
+const notice=document.getElementById("notice");
+const hpVal=document.getElementById("hpVal");
+const bossVal=document.getElementById("bossVal");
+const hpFill=document.getElementById("hpFill");
+const bossFill=document.getElementById("bossFill");
+const pressed=new Set();
+let renderer,scene,camera,player,boss,standIn,ground,motionController=null,appearanceController=null;
+let camYaw=0,viewMode=3,activeAI=false,playerHp=100,bossHp=100;
+let attackTime=0,hitTime=0,gameTime=0,lastFrame=0,lastMove=false,lastAnim=0;
+let busy=false,noticeTimer=0;
+let manualMotion="idle",actionMode="",actionStarted=0,actionUntil=0,lastReportedMotion="",walkPreviewPhase=0;
+const motionNames={idle:"待機",walk:"歩行",charge:"突進",roar:"咆哮",tail:"蛇尾攻撃",hurt:"被弾",bite:"かみつき",death:"ダウン"};
+function setMotionButton(){document.querySelectorAll("[data-motion]").forEach(b=>{const on=b.dataset.motion===manualMotion;b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on));});}
+function triggerMotion(name,seconds){actionMode=name;actionStarted=gameTime;actionUntil=gameTime+seconds;}
+function getMotion(){if(bossHp<=0)return "death";if(gameTime<actionUntil)return actionMode;
+if(activeAI){const d=Math.hypot(py.x-by.x,py.z-by.z);return d>6.8?"charge":d>3.9?"walk":"idle";}return manualMotion;}
+const py={x:0,z:7};
+const by={x:0,z:-3.3};
+const e=document.getElementById("error");
+function flash(s){notice.textContent=s;notice.classList.add("show");clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>notice.classList.remove("show"),1600);}
+function fail(s){e.textContent=s;e.style.display="block";status.textContent="読み込みエラー";console.error(s);}
+function box(parent,name,x,y,z,sx,sy,sz,color){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),new THREE.MeshLambertMaterial({color}));
+  m.name=name;m.position.set(x,y,z);parent.add(m);return m;
+}
+function setup(){
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x7eaaca);
+  camera=new THREE.PerspectiveCamera(60,1,.09,65);
+  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:"high-performance"});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.4));
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled=false;
+  stage.appendChild(renderer.domElement);
+  scene.add(new THREE.HemisphereLight(0xfff7db,0x56604c,2.4));
+  const sun=new THREE.DirectionalLight(0xffe4ad,1.7);sun.position.set(-5,12,3);scene.add(sun);
+  // The 20 × 20 field is a fixed grid of InstancedMesh cubes (1 draw call).
+  const tiles=new THREE.InstancedMesh(new THREE.BoxGeometry(.985,.30,.985),
+    new THREE.MeshLambertMaterial({color:0xffffff}),400);
+  const tmp=new THREE.Object3D(),color=new THREE.Color();let idx=0;
+  for(let z=-10;z<10;z++)for(let x=-10;x<10;x++){
+    tmp.position.set(x+.5,-.15,z+.5);tmp.updateMatrix();
+    tiles.setMatrixAt(idx,tmp.matrix);
+    color.setHSL(.285+((x*11+z*7+100)%9)*.004,.43,.36+((x*19-z*7+1000)%9)*.008);
+    tiles.setColorAt(idx,color);idx++;
+  }
+  tiles.instanceMatrix.needsUpdate=true;tiles.instanceColor.needsUpdate=true;scene.add(tiles);ground=tiles;
+  box(scene,"brown-dirt-underfield",0,-.48,0,20,.64,20,0x73503a);
+  player=new THREE.Group();player.name="player";
+  box(player,"body",0,.95,0,.55,.72,.32,0x3a91c3);
+  box(player,"head",0,1.57,0,.49,.49,.49,0xe7b58c);
+  box(player,"left leg",-.17,.33,0,.20,.57,.23,0x243c77);
+  box(player,"right leg",.17,.33,0,.20,.57,.23,0x243c77);
+  box(player,"left arm",-.38,.99,0,.19,.62,.23,0xc8a07c);
+  box(player,"right arm",.38,.99,0,.19,.62,.23,0xc8a07c);
+  scene.add(player);
+  // Tiny proxy appears immediately; the real lightweight model replaces it.
+  standIn=new THREE.Group();standIn.name="temporary-chimera";
+  box(standIn,"chest",0,1.75,0,2,2.5,3.0,0x81552e);
+  box(standIn,"mane",0,2.6,-1.6,2.6,2.7,1.55,0xa86125);
+  box(standIn,"face",0,2.6,-2.6,1.1,1.0,.7,0xb69b65);
+  for(let side of [-1,1]){
+    box(standIn,"foreleg",side*.80,.8,-.75,.65,1.6,.8,0x684d35);
+    box(standIn,"hindleg",side*.74,.8,1.1,.64,1.5,.8,0x654630);
+    box(standIn,"horn",side*1.15,3.65,-1.7,.45,1.1,.45,0x54555a);
+  }
+  scene.add(standIn);
+  const resize=()=>{
+    const w=Math.max(1,stage.clientWidth),h=Math.max(1,stage.clientHeight);
+    camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);
+  };
+  resize();window.addEventListener("resize",resize,{passive:true});
+  document.getElementById("view").textContent="視点：キメラ鑑賞";
+  updateHUD();updateCamera();
+  renderer.render(scene,camera);  // SHOW GROUND AND PLAYER IMMEDIATELY.
+  status.textContent="平地表示OK · キメラを別途準備中…";
+  requestAnimationFrame(frame);
+  // Build only once, after the first frame is already on screen.
+  setTimeout(loadChimera,100);
+}
+async function loadChimera(){
+  try{
+    const mod=await import("./chimera-skin.js?v=20261012realElbow05");
+    const built=mod.buildChimeraSkin(THREE);
+    built.name="NEXACRAFT current lightweight anatomical chimera";
+    built.position.set(by.x,0,by.z);built.rotation.y=Math.PI;
+    built.userData.chimeraSkin.material.color.setHex(0xa48669);
+    // Only its painted state is provisional; geometry is the existing real rig.
+    scene.add(built);boss=built;
+    try{
+      const appearanceMod=await import("./chimera-v5-reference.js?v=refV5_20261013_2125");
+      appearanceController=appearanceMod.dressChimera(built,THREE);
+    }catch(appearanceError){
+      console.warn("キメラ装飾の読み込みエラー",appearanceError);
+      status.textContent="キメラ本体OK / 見た目の装飾だけ読み込み失敗";
+    }
+    try{
+      const motionMod=await import("./chimera-test-motion.js?v=20261013heavywalk05");
+      motionController=motionMod.createTestMotion(built,mod.animateChimeraSkin,THREE);
+    }catch(motionError){
+      console.warn("追加モーションが読み込めないため、基本歩行だけ使用します",motionError);
+      motionController={update:(t,dt,mode)=>mod.animateChimeraSkin(built,t,mode==="charge"?"charge":mode==="walk"?"walk":"idle")};
+    }
+    scene.remove(standIn);standIn=null;
+    status.textContent=appearanceController?"20×20 平地OK · 参考画像版のライオン造形 V5":"20×20 平地OK · キメラモーション準備OK";
+    flash("CHIMERA V5 · 新しい3D造形を表示");
+  }catch(err){
+    status.textContent="平地OK · キメラ読み込み失敗（仮モデルを表示）";
+    flash("キメラ本体だけ読み込み失敗");
+    console.error("Chimera loading failed",err);
+  }
+}
+function updateHUD(){
+ hpVal.textContent=Math.ceil(playerHp);bossVal.textContent=Math.ceil(bossHp);
+ hpFill.style.width=playerHp+"%";bossFill.style.width=bossHp+"%";
+}
+function reset(){
+  py.x=0;py.z=7;by.x=0;by.z=-3.3;playerHp=100;bossHp=100;
+  gameTime=0;lastAnim=0;attackTime=-2;hitTime=-2;camYaw=0;activeAI=false;walkPreviewPhase=0;actionUntil=0;actionStarted=0;actionMode="";manualMotion="idle";lastReportedMotion="";
+  if(boss?.userData?.skeleton){boss.userData.skeleton.previous=undefined;boss.userData.skeleton.gaitPhase=0;}
+  motionController?.reset?.();
+  if(boss){boss.visible=true;boss.rotation.x=0;boss.rotation.z=0;boss.position.y=0;}
+  setMotionButton();
+  document.getElementById("ai").textContent="AI：停止";
+  pressed.clear();updateHUD();flash("リセットしました");
+}
+function attack(){
+  if(gameTime-attackTime<.4)return;attackTime=gameTime;
+  const d=Math.hypot(py.x-by.x,py.z-by.z);
+  if(d<5.6 && bossHp>0){
+    bossHp=Math.max(0,bossHp-8);triggerMotion("hurt",.38);flash("命中！ キメラ -8 HP");
+    if(bossHp===0){activeAI=false;document.getElementById("ai").textContent="AI：停止";flash("キメラを倒した！");}
+  }else flash("もう少し近づいて攻撃！");
+  updateHUD();
+}
+function updateCamera(){
+  const fwd=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw));
+  const here=new THREE.Vector3(py.x,0,py.z);
+  player.position.copy(here);player.rotation.y=camYaw;
+  if(viewMode===0){
+    camera.position.set(py.x-fwd.x*4.5,3.3,py.z-fwd.z*4.5);
+    camera.lookAt(py.x+fwd.x*4,1.5,py.z+fwd.z*4);
+    player.visible=true;
+  }else if(viewMode===1){
+    camera.position.set(py.x,1.63,py.z);
+    camera.lookAt(py.x+fwd.x*8,1.55,py.z+fwd.z*8);
+    player.visible=false;
+  }else if(viewMode===2){
+    camera.position.set(by.x+9.0,7.7,by.z+10.5);
+    camera.lookAt(by.x,2.7,by.z);
+    player.visible=true;
+  }else{
+    // Reference concept sheet's readable front-three-quarter model view.
+    // Drag to orbit. It deliberately shows the creature MUCH closer
+    // than the old test-world camera.
+    const a=camYaw+.60,dist=9.2;
+    camera.position.set(by.x+Math.sin(a)*dist,5.5,by.z+Math.cos(a)*dist);
+    camera.lookAt(by.x,3.02,by.z+.35);
+    player.visible=false;
+  }
+}
+function move(dt){
+  let f=0,s=0;
+  if(pressed.has("forward")||pressed.has("w")||pressed.has("arrowup"))f++;
+  if(pressed.has("back")||pressed.has("s")||pressed.has("arrowdown"))f--;
+  if(pressed.has("right")||pressed.has("d")||pressed.has("arrowright"))s++;
+  if(pressed.has("left")||pressed.has("a")||pressed.has("arrowleft"))s--;
+  lastMove=!!(f||s);if(!lastMove)return;
+  const v=3.6*dt/(Math.hypot(f,s)||1);
+  const mx=(-Math.sin(camYaw)*f+Math.cos(camYaw)*s)*v;
+  const mz=(-Math.cos(camYaw)*f-Math.sin(camYaw)*s)*v;
+  py.x=Math.max(-9.25,Math.min(9.25,py.x+mx));
+  py.z=Math.max(-9.25,Math.min(9.25,py.z+mz));
+}
+function enemy(dt){
+  if(!activeAI||bossHp===0)return;
+  const dx=py.x-by.x,dz=py.z-by.z,d=Math.hypot(dx,dz);
+  if(d>4.1){const speed=(d>6.8?2.1:1.3)*dt;by.x+=dx/d*speed;by.z+=dz/d*speed;}
+  if(d<4.7&&gameTime-hitTime>1.2){hitTime=gameTime;triggerMotion("bite",.7);playerHp=Math.max(0,playerHp-5);updateHUD();
+    if(playerHp===0){flash("倒された！ 最初からで再挑戦");activeAI=false;document.getElementById("ai").textContent="AI：停止";}
+  }
+}
+function frame(t){
+  requestAnimationFrame(frame);
+  if(t-lastFrame<31)return;const dt=Math.min(.05,lastFrame?(t-lastFrame)/1000:.033);lastFrame=t;gameTime+=dt;
+  move(dt);enemy(dt);
+  // Motion-preview buttons move the entire boss too, not merely its legs.
+  // Position stays inside the flat 20×20 test arena.
+  if(!activeAI && boss && bossHp>0){
+    if(manualMotion==="walk" && gameTime>=actionUntil){
+      // Steady heavyweight march along a straight lane. No circular
+      // side-to-side shuffling or speed changes on each footstep.
+      const moveTime=8.8,turnTime=1.1,cycle=2*(moveTime+turnTime);
+      walkPreviewPhase=(walkPreviewPhase+dt)%cycle;
+      by.x=0;
+      if(walkPreviewPhase<moveTime)
+        by.z=-4.5+.74*walkPreviewPhase;
+      else if(walkPreviewPhase<moveTime+turnTime)
+        by.z=-4.5+.74*moveTime;
+      else if(walkPreviewPhase<moveTime*2+turnTime)
+        by.z=-4.5+.74*(moveTime-(walkPreviewPhase-moveTime-turnTime));
+      else by.z=-4.5;
+    }else if(actionMode==="charge" && gameTime<actionUntil){
+      const age=gameTime-actionStarted;
+      const smooth=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+      by.x=0;
+      by.z=-3.3+5.2*(smooth((age-.27)/1.08)-smooth((age-1.85)/.65));
+    }
+  }
+  const current=boss||standIn;
+  if(current){
+    current.position.x=by.x;current.position.z=by.z;
+    if(activeAI){current.rotation.y=Math.atan2(-(py.x-by.x),-(py.z-by.z));}
+    else if(manualMotion==="walk" && gameTime>=actionUntil){
+      // Turn the whole body slowly only at either end of the lane.
+      const movingBack=walkPreviewPhase>9.9&&walkPreviewPhase<18.7;
+      const targetYaw=movingBack?0:Math.PI;
+      const difference=Math.atan2(Math.sin(targetYaw-current.rotation.y),
+        Math.cos(targetYaw-current.rotation.y));
+      current.rotation.y+=difference*Math.min(1,dt*1.6);
+    }
+    else current.rotation.y=Math.PI;
+  }
+  if(boss && motionController && gameTime-lastAnim>.065){
+    // 15fps joint, jaw, serpent animation; render stays capped at ~30fps.
+    const elapsed=gameTime-lastAnim;lastAnim=gameTime;
+    const mode=getMotion();
+    try{
+      const pose=motionController.update(gameTime,elapsed,mode,gameTime-actionStarted);
+      appearanceController?.update?.(pose);
+    }
+    catch(err){console.warn("モーション処理エラー",err);motionController=null;status.textContent="基本表示のみ（モーション停止）";}
+    if(mode!==lastReportedMotion && motionController){
+      lastReportedMotion=mode;status.textContent="20×20 平地 / キメラ：" +(motionNames[mode]||mode);
+    }
+  }
+  updateCamera();renderer.render(scene,camera);
+}
+document.querySelectorAll("[data-key]").forEach(b=>{
+  const k=b.dataset.key;
+  b.addEventListener("pointerdown",ev=>{ev.preventDefault();b.setPointerCapture(ev.pointerId);pressed.add(k);b.classList.add("pressed");});
+  for(const type of ["pointerup","pointercancel","lostpointercapture"])
+    b.addEventListener(type,()=>{pressed.delete(k);b.classList.remove("pressed");});
+});
+document.getElementById("attack").addEventListener("pointerdown",ev=>{ev.preventDefault();attack();});
+document.getElementById("view").addEventListener("click",()=>{
+  viewMode=(viewMode+1)%4;
+  document.getElementById("view").textContent=["視点：3人称","視点：1人称","視点：観察","視点：キメラ鑑賞"][viewMode];
+});
+document.getElementById("ai").addEventListener("click",()=>{
+  activeAI=!activeAI;document.getElementById("ai").textContent=activeAI?"AI：追跡中":"AI：停止";
+});
+document.getElementById("reset").addEventListener("click",reset);
+document.getElementById("modelView").addEventListener("click",()=>{
+  viewMode=3;camYaw=0;
+  document.getElementById("view").textContent="視点：キメラ鑑賞";
+});
+document.querySelectorAll("[data-motion]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    if(bossHp<=0){flash("最初からでリセットしてください");return;}
+    const mode=button.dataset.motion;
+    activeAI=false;document.getElementById("ai").textContent="AI：停止";
+    if(mode==="roar"||mode==="tail"||mode==="charge"){
+      manualMotion="idle";
+      by.x=0;by.z=-3.3;walkPreviewPhase=0;
+      triggerMotion(mode,mode==="roar"?2.2:mode==="tail"?1.9:2.6);
+    }else{
+      by.x=0;by.z=-3.3;walkPreviewPhase=0;
+      manualMotion=mode;actionUntil=0;actionMode="";
+    }
+    setMotionButton();flash((motionNames[mode]||mode)+" モーション");
+  });
+});
+document.addEventListener("keydown",ev=>{
+  const key=ev.key.toLowerCase();
+  if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(key))ev.preventDefault();
+  if(key===" "){if(!ev.repeat)attack();return;}pressed.add(key);
+});
+document.addEventListener("keyup",ev=>pressed.delete(ev.key.toLowerCase()));
+window.addEventListener("blur",()=>pressed.clear());
+let dragX=null,dragPointer=null;
+stage.addEventListener("pointerdown",ev=>{dragPointer=ev.pointerId;dragX=ev.clientX;stage.setPointerCapture(ev.pointerId);});
+stage.addEventListener("pointermove",ev=>{
+  if(ev.pointerId!==dragPointer||dragX===null)return;
+  const dx=ev.clientX-dragX;dragX=ev.clientX;camYaw+=dx*.007;
+});
+for(const evType of ["pointerup","pointercancel"])stage.addEventListener(evType,ev=>{if(ev.pointerId===dragPointer){dragPointer=null;dragX=null;}});
+try{setup();}catch(err){fail("3D画面を開始できませんでした: "+(err?.message||String(err)));}
+</script>
+</body>
+</html>
