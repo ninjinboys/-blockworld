@@ -16,7 +16,7 @@ export function dressChimera(root,T) {
   // V5 torso contains an OLD LION FACE already baked into the torso batch.
   // Remove it geometrically; adding ornaments before did NOT remove it.
   const erased={skull:0,hair:0};
-  const mtx=new T.Matrix4(),zero=new T.Matrix4().makeScale(0,0,0);
+  const mtx=new T.Matrix4(),zero=new T.Matrix4().makeScale(.00001,.00001,.00001).setPosition(0,-100,0);
   function strip(mesh,section) {
     for(let i=0;i<mesh.count;i++){
       mesh.getMatrixAt(i,mtx);
@@ -202,7 +202,7 @@ export function dressChimera(root,T) {
   // Upper lip folds over the dark cavern, no pale 'white smile' frame.
   for(let side of [-1,1])for(let j=0;j<10;j++){
     const t=j/9;
-    box(bridge,side*(.15+.51*t),3.61-.085*t,-5.86,
+    box(bridge,side*(.15+.51*t),3.61-.085*t,-6.15,
       .15,.11,.16,[0x8c5735,0xaf7543,0xc38b53],side,j,0);
   }
   // Attached lower jaw pivots at each side of the face. No free/falling parts.
