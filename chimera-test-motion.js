@@ -30,7 +30,8 @@ export function createTestMotion(root, animateRig, THREE) {
     if(t<=0||t>=d)return 0;
     return smooth(t/attack)*smooth((d-t)/recover);
   };
-  let stepBlend=0,deathBlend=0;
+  let stepBlend=0,deathBlend=0,rigTime=0;
+  const footRings=[];
   const floorRing = THREE && new THREE.Mesh(
     new THREE.RingGeometry(.93,1.06,32),
     new THREE.MeshBasicMaterial({
@@ -42,6 +43,15 @@ export function createTestMotion(root, animateRig, THREE) {
     floorRing.rotation.x=-Math.PI/2;
     floorRing.visible=false;
     root.parent.add(floorRing);
+    // Two reusable ground marks for heavy front-paw landings.
+    const footGeometry=new THREE.RingGeometry(.24,.57,16);
+    for(const side of [-1,1]){
+      const mark=new THREE.Mesh(footGeometry,
+        new THREE.MeshBasicMaterial({color:0x91775c,side:THREE.DoubleSide,
+          transparent:true,depthWrite:false,opacity:0}));
+      mark.rotation.x=-Math.PI/2;mark.visible=false;
+      root.parent.add(mark);footRings.push({mesh:mark,side});
+    }
   }
   function update(time,dt,mode="idle",age=0){
     dt=Math.max(0,Math.min(.12,dt)); // 15fps pose update
@@ -52,42 +62,55 @@ export function createTestMotion(root, animateRig, THREE) {
     const recoil=mode==="hurt"?pulse(age,.56,.10,.24):0;
     const bite=mode==="bite"?pulse(age,.90,.19,.24):0;
     const hitWave=(heavyRoar>.01||strike>.05)?Math.max(heavyRoar,strike*.6):0;
-    animateRig(root,time,isCharge?"charge":isWalk?"walk":"idle");
+    // The canonical skeleton uses 4.8 / 1.16 = 4.1 walk cycles/s.
+    // Slowing its input clock gives a deliberate planted mid-boss gait,
+    // without altering the reusable original anatomical model.
+    rigTime+=dt*(isWalk?.28:1);
+    animateRig(root,rigTime,isCharge?"charge":isWalk?"walk":"idle");
 
     const rigPhase=root.userData.skeleton?.gaitPhase||0;
-    const foot=Math.sin(rigPhase*Math.PI*4);
-    const stomp=Math.pow(Math.abs(foot),2);
+    const foot=Math.sin(rigPhase*Math.PI*2);
+    const beat=(Math.cos(rigPhase*Math.PI*4)+1)*.5;
+    const impact=beat*beat*beat*beat;
+    const stomp=impact;
     stepBlend+=(Number(moving)-stepBlend)*Math.min(1,dt*9);
     deathBlend+=(Number(mode==="death")-deathBlend)*Math.min(1,dt*1.8);
     const alive=1-deathBlend;
 
     // Large, readable silhouette changes are essential for a mid-boss.
     // Pitch raises the lion's head during roar, lowers it for charge.
-    const breath=Math.sin(time*2.1);
-    const pitch= -.19*(isCharge?1:0) + .23*heavyRoar -.14*bite + .12*recoil;
-    const roll=(moving?.064*foot:.022*Math.sin(time*.95))
-        + .065*heavyRoar*Math.sin(time*7.2)+.10*recoil;
+    const breath=Math.sin(time*1.65);
+    // Feet bear the mass: compression at touchdown, not a puppy hop.
+    const walkWeight=isWalk?stepBlend:0;
+    const pitch= -.19*(isCharge?1:0)
+      + walkWeight*(.035*Math.cos(rigPhase*Math.PI*4)-.025)
+      + .23*heavyRoar-.14*bite+.12*recoil;
+    const roll=(isWalk?.017*foot:isCharge?.055*foot:.020*Math.sin(time*.95))
+      + .065*heavyRoar*Math.sin(time*7.2)+.10*recoil;
     root.rotation.x=alive*pitch;
     root.rotation.z=alive*roll-deathBlend*.68;
     root.position.y=alive*(
-       -.04 + .040*breath
-       + stepBlend*(isCharge?.28:.13)*stomp
+       -.04 + .025*breath
+       + walkWeight*(.045*(1-impact)-.09*impact)
+       + (isCharge?stepBlend*.22*stomp:0)
        - .17*heavyRoar*(1-heavyRoar)
        + .23*heavyRoar
        + .10*recoil
        - .10*bite
-    ) - deathBlend*.43;
+    )-deathBlend*.43;
     // Slow mass transfer makes the idle pose visibly alive.
     const forehead= .34*heavyRoar - .12*recoil -.17*bite;
     const muzzleLift=.68*heavyRoar-.15*bite+.085*breath;
-    const spineRise=.085*breath+.075*stepBlend*stomp;
+    const spineRise=.045*breath
+      + walkWeight*(.07*(1-impact)-.105*impact)
+      + (isCharge?.075*stomp:0);
     const verts=torsoAttr.array;
     for(let i=0;i<torsoRest.length;i+=3){
       const x=torsoRest[i],y=torsoRest[i+1],z=torsoRest[i+2];
       const face=smooth((-z-2.35)/2.50);
       const chest=smooth((-z+.5)/2.6)*(1-face);
       const belly=(1-face)*.027*breath;
-      verts[i]=x+(1-face)*.032*Math.sin(time*.9);
+      verts[i]=x+(1-face)*(.016*Math.sin(time*.8)+walkWeight*.024*foot);
       verts[i+1]=y+face*(muzzleLift+forehead)
        +chest*(spineRise+.12*heavyRoar)+belly;
       verts[i+2]=z-face*(.13*heavyRoar+.20*bite)
@@ -138,6 +161,21 @@ export function createTestMotion(root, animateRig, THREE) {
       snakeJaw.position.y-=.10+.40*strike+.18*heavyRoar;
     }
 
+    // Alternating left/right front-paw impact marks.
+    for(const {mesh,side} of footRings){
+      const p=((rigPhase+(side<0?0:.5))%1+1)%1;
+      const landing=Math.pow(Math.max(0,1-Math.min(p,1-p)/.14),2);
+      const show=(isWalk||isCharge)&&landing>.04;
+      mesh.visible=show;
+      if(show){
+        const yaw=root.rotation.y;
+        const lx=side*2.0,lz=-2.1;
+        mesh.position.set(root.position.x+lx*Math.cos(yaw)+lz*Math.sin(yaw),
+          .025,root.position.z-lx*Math.sin(yaw)+lz*Math.cos(yaw));
+        mesh.scale.setScalar(1+(1-landing)*1.25);
+        mesh.material.opacity=landing*(isCharge?.30:.23)*stepBlend;
+      }
+    }
     if(floorRing){
       const bang=heavyRoar>0.28?heavyRoar:
                  isCharge?stomp*.53: strike>.35?strike*.50:0;
@@ -151,5 +189,9 @@ export function createTestMotion(root, animateRig, THREE) {
     root.userData.testMotion=mode;
     return {mode,roar:heavyRoar,tail:strike,stomp,charge:isCharge,death:deathBlend};
   }
-  return {update};
+  function reset(){rigTime=0;stepBlend=0;deathBlend=0;
+    for(const {mesh} of footRings)mesh.visible=false;
+    if(floorRing)floorRing.visible=false;
+  }
+  return {update,reset};
 }
