@@ -37,7 +37,7 @@ export function dressChimera(root,T){
         verts.push(radius*Math.cos(a)+curve,u-.5,radius*Math.sin(a));
         if(k<sections){
           const p=k*sides+j,q=k*sides+(j+1)%sides;
-          ids.push(p,q,p+sides,q,q+sides,p+sides);
+          ids.push(p,p+sides,q,q,p+sides,q+sides);
         }
       }
     }
