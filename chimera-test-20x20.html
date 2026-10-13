@@ -161,7 +161,7 @@ async function loadChimera(){
     // Only its painted state is provisional; geometry is the existing real rig.
     scene.add(built);boss=built;
     try{
-      const appearanceMod=await import("./chimera-test-appearance.js?v=20261013smooth02");
+      const appearanceMod=await import("./chimera-test-voxel.js?v=20261013trueVoxel01");
       appearanceController=appearanceMod.dressChimera(built,THREE);
     }catch(appearanceError){
       console.warn("キメラ装飾の読み込みエラー",appearanceError);
@@ -175,7 +175,7 @@ async function loadChimera(){
       motionController={update:(t,dt,mode)=>mod.animateChimeraSkin(built,t,mode==="charge"?"charge":mode==="walk"?"walk":"idle")};
     }
     scene.remove(standIn);standIn=null;
-    status.textContent=appearanceController?"20×20 平地OK · 角・たてがみ・牙・蛇の表面なめらか版":"20×20 平地OK · キメラモーション準備OK";
+    status.textContent=appearanceController?"20×20 平地OK · 参考画像のボクセル造形版":"20×20 平地OK · キメラモーション準備OK";
     flash("キメラを読み込みました");
   }catch(err){
     status.textContent="平地OK · キメラ読み込み失敗（仮モデルを表示）";
