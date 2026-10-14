@@ -1,0 +1,190 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>NEXACRAFT • CHIMERA — 完全新規3D</title><style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#141a1c;color:#ffedca;font:13px/1.4 system-ui,-apple-system,sans-serif;touch-action:none}canvas{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none}
+#logo{position:fixed;left:12px;top:max(12px,env(safe-area-inset-top));font-weight:900;background:#0c1515cc;border:1px solid #c3945080;padding:9px 12px;border-radius:9px;font-size:14px;letter-spacing:.07em;pointer-events:none}#logo small{display:block;font-size:10px;font-weight:500;color:#d9c5a5;letter-spacing:0}
+#tools{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:56vw}button{border:1px solid #bf9662c0;border-radius:8px;background:#182522e8;color:#ffe3b8;font-size:12px;font-weight:700;padding:10px;cursor:pointer;touch-action:manipulation}button.active{background:#b07e3d;color:#1b120d}
+#move{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:15px;display:grid;grid-template-columns:45px 45px 45px;gap:4px}#move button{min-width:44px;font-size:18px}#move [data-d="up"]{grid-column:2}#move [data-d="left"]{grid-column:1}#move [data-d="down"]{grid-column:2}#move [data-d="right"]{grid-column:3}#attacks{position:fixed;right:15px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
+#status{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);font-size:10px;color:#c5bea9dd;pointer-events:none;white-space:nowrap}
+body.clean #logo,body.clean #move,body.clean #attacks,body.clean #status{display:none}body.clean #tools button:not(#cleanBtn){display:none}
+#error{position:fixed;inset:25% 8% auto;background:#291a19;padding:15px;display:none;white-space:pre-wrap;z-index:5}
+@media(max-width:600px){#logo{font-size:11px;padding:7px 9px}#tools{max-width:55vw}#tools button{font-size:10px;padding:7px}#status{display:none}}
+</style></head><body><canvas id="game"></canvas><div id="logo">NEXACRAFT · CHIMERA <small>NEW 3D MODEL · FROM ZERO / 2026-10-14</small></div>
+<div id="tools"><button id="full" class="active">全身</button><button id="face">顔アップ</button><button id="side">横</button><button id="back">背面</button><button id="cleanBtn">UI非表示</button></div>
+<div id="move"><button data-d="up">↑</button><button data-d="left">←</button><button data-d="down">↓</button><button data-d="right">→</button></div><div id="attacks"><button id="walk">歩行</button><button id="roar">咆哮</button><button id="tail">蛇尾攻撃</button></div><div id="status">ドラッグ：視点回転 ｜ 20×20平地 ｜ 軽量ボクセル3D</div><div id="error"></div>
+<script>
+'use strict';
+const C=document.getElementById('game'),E=document.getElementById('error');let gl;
+try {gl=C.getContext('webgl2',{alpha:false,antialias:true,depth:true,powerPreference:'high-performance'});if(!gl)throw Error('WebGL2 が使用できません');boot()}catch(e){E.style.display='block';E.textContent='3D初期化エラー：'+e.message;console.error(e)}
+function boot(){
+const vs=`#version 300 es\nprecision highp float;
+layout(location=0)in vec3 p;layout(location=1)in vec3 n;
+layout(location=2)in vec3 center;layout(location=3)in vec3 scale;
+layout(location=4)in vec3 tint;
+uniform mat4 projection,view,model;out vec3 normal,worldPos,color;
+void main(){vec4 w=model*vec4(center+p*scale,1.);worldPos=w.xyz;normal=mat3(model)*n;color=tint;gl_Position=projection*view*w;}`;
+const fs=`#version 300 es\nprecision highp float;in vec3 normal,worldPos,color;uniform float unlit;out vec4 frag;
+void main(){vec3 L=normalize(vec3(-.42,.79,-.60));float lam=max(0.,dot(normalize(normal),L));
+float light=.40+.59*lam;float fac=(normal.y>.55?1.05:(normal.y<-.55?.62:.94));
+vec3 col=color*mix(light*fac,1.0,unlit);
+float dist=length(worldPos.xz)/28.;col=mix(col,vec3(.11,.13,.14),clamp(dist-.32,0.,.5)*.35);
+frag=vec4(pow(col,vec3(.93)),1.);}`;
+function compile(type,code){let s=gl.createShader(type);gl.shaderSource(s,code);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
+let pr=gl.createProgram();gl.attachShader(pr,compile(gl.VERTEX_SHADER,vs));gl.attachShader(pr,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(pr));gl.useProgram(pr);
+const U={projection:gl.getUniformLocation(pr,'projection'),view:gl.getUniformLocation(pr,'view'),model:gl.getUniformLocation(pr,'model'),unlit:gl.getUniformLocation(pr,'unlit')};
+// 24 vertices, each cube face has its own correctly facing normal.
+const cube=[],indices=[];const faces=[[[0,0,-1],[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1]],[[0,0,1],[1,-1,1],[-1,-1,1],[-1,1,1],[1,1,1]],[[1,0,0],[1,-1,-1],[1,-1,1],[1,1,1],[1,1,-1]],[[-1,0,0],[-1,-1,1],[-1,-1,-1],[-1,1,-1],[-1,1,1]],[[0,1,0],[-1,1,-1],[1,1,-1],[1,1,1],[-1,1,1]],[[0,-1,0],[-1,-1,1],[1,-1,1],[1,-1,-1],[-1,-1,-1]]];
+faces.forEach((f,i)=>{for(let j=1;j<=4;j++)cube.push(f[j][0]*.5,f[j][1]*.5,f[j][2]*.5,...f[0]);const b=i*4;indices.push(b,b+1,b+2,b,b+2,b+3)});
+const shape=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,shape);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(cube),gl.STATIC_DRAW);
+const ix=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ix);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(indices),gl.STATIC_DRAW);
+const identity=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+function mul(a,b){let r=new Float32Array(16);for(let c=0;c<4;c++)for(let row=0;row<4;row++)for(let k=0;k<4;k++)r[c*4+row]+=a[k*4+row]*b[c*4+k];return r}
+function tr(x,y,z){let r=identity();r[12]=x;r[13]=y;r[14]=z;return r}
+function rx(a){let c=Math.cos(a),s=Math.sin(a),r=identity();r[5]=c;r[6]=s;r[9]=-s;r[10]=c;return r}
+function ry(a){let c=Math.cos(a),s=Math.sin(a),r=identity();r[0]=c;r[2]=-s;r[8]=s;r[10]=c;return r}
+function perspective(fov,aspect,near,far){let f=1/Math.tan(fov/2),r=new Float32Array(16);r[0]=f/aspect;r[5]=f;r[10]=(far+near)/(near-far);r[11]=-1;r[14]=2*far*near/(near-far);return r}
+function lookAt(e,t){let z=norm(sub(e,t)),x=norm(cross([0,1,0],z)),y=cross(z,x);let m=identity();m[0]=x[0];m[4]=x[1];m[8]=x[2];m[1]=y[0];m[5]=y[1];m[9]=y[2];m[2]=z[0];m[6]=z[1];m[10]=z[2];m[12]=-dot(x,e);m[13]=-dot(y,e);m[14]=-dot(z,e);return m}
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=a=>{let d=Math.hypot(...a)||1;return a.map(x=>x/d)};
+const toColor=x=>[(x>>16&255)/255,(x>>8&255)/255,(x&255)/255],rng=(a,b,c=0)=>{let n=Math.sin(a*127.1+b*311.7+c*81.37)*43758.54;return n-Math.floor(n)};
+function batch(name,lit=true){return {name,instances:[],lit,add(x,y,z,sx,sy,sz,c){this.instances.push(x,y,z,sx,sy,sz,...toColor(c))},finish(){const va=gl.createVertexArray();gl.bindVertexArray(va);
+gl.bindBuffer(gl.ARRAY_BUFFER,shape);for(let i=0;i<2;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,3,gl.FLOAT,false,24,i*12)}gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ix);
+const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(this.instances),gl.STATIC_DRAW);
+for(let j=0;j<3;j++){let a=j+2;gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,36,j*12);gl.vertexAttribDivisor(a,1)}this.va=va;this.count=this.instances.length/9;this.instances=null;gl.bindVertexArray(null);return this}}}
+const all=[];function make(name,light=true){let b=batch(name,light);all.push(b);return b}
+const brick=(b,x,y,z,s,c,sy=s,sz=s,sx=s)=>b.add(x,y,z,sx,sy,sz,c);
+function ellip(b,x0,y0,z0,rx0,ry0,rz0,step,pal,seed=0,cut){const shape=(x,y,z)=>((x-x0)/rx0)**2+((y-y0)/ry0)**2+((z-z0)/rz0)**2;
+for(let ix=-Math.ceil(rx0/step);ix<=Math.ceil(rx0/step);ix++)for(let iy=-Math.ceil(ry0/step);iy<=Math.ceil(ry0/step);iy++)for(let iz=-Math.ceil(rz0/step);iz<=Math.ceil(rz0/step);iz++){
+let x=x0+step*ix,y=y0+step*iy,z=z0+step*iz;if(shape(x,y,z)>1||cut?.(x,y,z))continue;
+if(shape(x+step,y,z)<1&&shape(x-step,y,z)<1&&shape(x,y+step,z)<1&&shape(x,y-step,z)<1&&shape(x,y,z+step)<1&&shape(x,y,z-step)<1)continue;
+brick(b,x,y,z,step*1.05,pal[Math.floor(rng(ix+seed,iy,iz)*pal.length)])}}
+const p={coat:[0x523f31,0x665040,0x76563e,0x4e3d34,0x936541],amber:[0xa35a24,0xbf742b,0xd18b3c,0xe09a47,0x7a411e],mane:[0x78391d,0x9a4b21,0xb86229,0xc87630,0xd99a4c,0x5d301b],dark:[0x28201f,0x3b2b25,0x4b3529,0x634a3d],ivory:[0xf8e8c7,0xe4cba6,0xf0d8ad,0xd5bd9a],olive:[0x3b4b32,0x566138,0x727546,0x99904f,0x4b512d]};
+const choose=(pal,a,b,c)=>pal[Math.floor(rng(a,b,c)*pal.length)];
+const ground=make('20x20 grass'),border=make('soil'),shadow=make('shadows');
+for(let z=-10;z<10;z++)for(let x=-10;x<10;x++){ground.add(x+.5,-.15,z+.5,.98,.26,.98,choose([0x79a65b,0x81ae63,0x729d55,0x86b468],x,z));}
+border.add(0,-.43,0,20,.45,20,0x514333);shadow.add(0,.007,0,4,.014,6,0x395035);
+// One torso. Unlike all old versions, there is NO baked-in old lion face.
+const torso=make('new feline quadruped body');
+ellip(torso,0,2.65,-.35,1.70,1.58,1.78,.24,p.coat);
+ellip(torso,0,2.50,1.30,1.33,1.12,1.75,.24,p.coat,8);
+ellip(torso,0,2.57,2.57,1.29,1.20,.95,.24,p.coat,2);
+ellip(torso,0,2.79,-1.45,1.44,1.27,1.30,.21,p.coat,8);
+const spots=make('muscle rough coat');for(let i=0;i<180;i++){let a=i*2.4,z=-1.3+3.85*rng(i,4),x=(rng(i,9)-.5)*2.9,y=3.05+(rng(i,5)-.5)*1.6;if(Math.abs(x)>1.0&&y>1.55)brick(spots,x,y,z,.25,choose([0x9c6b40,0x644331,0x865534],i,2));}
+// Voluminous, layered mane surrounds the skull. Its front center stays OPEN.
+const mane=make('huge hanging layered lion mane');
+const layers=[[0,3.52,-1.80,1.75,1.57,60,8],[-.1,3.76,-2.15,1.83,1.54,76,9],[0,3.90,-2.48,1.57,1.34,78,9],[0,3.95,-2.80,1.32,1.15,66,9]];
+for(let q=0;q<layers.length;q++){let [cx,cy,cz,radx,rady,num,length]=layers[q];for(let i=0;i<num;i++){
+let a=(i+.48*q)*Math.PI*2/num,co=Math.cos(a),si=Math.sin(a),j=rng(q,i),n=length+Math.floor(j*4),topY=cy+si*rady;
+for(let k=0;k<n;k++){let t=k/(n-1),x=cx+co*(radx+.10+.30*t),y=topY-(si<.1?1.25:.45)*t+.03*Math.sin(k*.8+i),z=cz+.17+.77*t;
+if(z< -2.55 && Math.abs(x)<.92 && y<4.50)continue; // clear lion eyes and nose
+if(y<1.65)continue;let col=choose(t>.68?[0xc67830,0xdf9a46,0xb36629]:p.mane,i,k,q);
+brick(mane,x,y,z,.21+(1-t)*.09,col,.23,.23);}}}
+const fringe=make('lion forelock');for(let i=0;i<110;i++){let x=(rng(i,1)-.5)*2.45,z=-2.72+rng(i,4)*1.0,y=4.55+rng(i,7)*.34;
+for(let j=0;j<4+Math.floor(rng(i,6)*4);j++){brick(fringe,x+j*.015,y+j*.095,z+j*.036,.22,choose(p.mane,i,j));}}
+// Horns are BIG, visibly curved OUT then UP with tapered almost-vertical tips.
+const horns=make('two enormous curved buffalo horns');
+function catmull(pts,t){let n=pts.length-1,p=Math.min(n-.00001,t*n),i=Math.floor(p),u=p-i,a=pts[Math.max(i-1,0)],b=pts[i],c=pts[Math.min(i+1,n)],d=pts[Math.min(i+2,n)];return [0,1,2].map(k=>.5*((2*b[k])+(-a[k]+c[k])*u+(2*a[k]-5*b[k]+4*c[k]-d[k])*u*u+(-a[k]+3*b[k]-3*c[k]+d[k])*u*u*u));}
+for(let side of [-1,1]){const line=[[side*.88,4.46,-2.54],[side*1.50,4.37,-2.48],[side*2.13,4.43,-2.41],[side*2.67,4.70,-2.40],[side*2.97,5.30,-2.39],[side*2.93,5.93,-2.40],[side*2.72,6.34,-2.41]];
+for(let i=0;i<=64;i++){let t=i/64,ctr=catmull(line,t),next=catmull(line,Math.min(1,t+.005)),tang=norm(sub(next,ctr)),u=norm(cross(tang,[0,0,1]));if(!u.every(Number.isFinite))u=[1,0,0];let v=norm(cross(tang,u)),r=.38*Math.pow(1-t,.67)+.026;
+for(let j=0;j<12;j++){let a=j*Math.PI/6,dist=r*(.96+.04*rng(i,j));let xyz=ctr.map((x,k)=>x+u[k]*dist*Math.cos(a)+v[k]*dist*Math.sin(a));let shade=i%8===0?0x8e7f68:choose([0x302e35,0x45424a,0x555057,0x655d59,0x252730],i,j,side);brick(horns,...xyz,.165,shade);}}}
+// Dedicated independent LION head: not a recolored buffalo and has no old mesh.
+const skull=make('dark short big-cat cranium');
+ellip(skull,0,3.88,-2.68,1.03,.73,.66,.137,[0x3e3029,0x4b382e,0x624631,0x745239],5,(x,y,z)=>Math.abs(x)<.75&&y<3.47&&z< -2.94);
+for(let side of [-1,1])ellip(skull,side*.70,3.63,-2.84,.44,.46,.44,.13,[0x60422d,0x775039,0x4e382d],side+6);
+// FACE remains exposed beyond mane at Z<-3.0. Strong black forehead and heavy eyebrow.
+const face=make('fierce feline brows cheekbones ears and black triangular nose');
+for(let side of [-1,1]){
+ for(let j=0;j<10;j++){let t=j/9,x=side*(.12+.78*t),y=4.19+.11*t-.07*Math.sin(t*Math.PI);face.add(x,y,-3.245,.17,.25,.23,choose([0x251c1b,0x3c2b22,0x53402f],j,side));}
+ face.add(side*.48,3.99,-3.32,.38,.21,.15,0x1b1414);
+ // feline cheek cheekbone wedge, broad but SHORT muzzle, not a long bull nose
+ for(let j=0;j<7;j++)face.add(side*(.85+.07*j/6),3.83-.50*j/6,-3.13,.225,.23,.22,choose([0x53382b,0x6f4830],j,side));
+ face.add(side*.95,4.46,-2.73,.31,.38,.25,0x5a321d);face.add(side*.95,4.47,-2.88,.20,.23,.10,0xb97f48);
+}
+const iris=make('glowing fierce amber lion eyes',false);for(let side of [-1,1]){face.add(side*.47,3.992,-3.423,.27,.115,.07,0x69351a);iris.add(side*.47,4.00,-3.477,.176,.077,.052,0xffc02d);face.add(side*.478,4.0,-3.518,.035,.098,.034,0x100e0e)}
+// Split cream whisker-pads. Black nose above them, upper lip hangs over the gape.
+const muzzle=make('lion whisker pads');for(let side of [-1,1]){ellip(muzzle,side*.32,3.54,-3.36,.36,.25,.28,.12,[0xe1b279,0xc99562,0xedc08a,0xb9814d],side+12);
+ for(let i=0;i<4;i++)muzzle.add(side*(.24+i*.11),3.33-i*.012,-3.57,.13,.07,.09,0x7a492e);
+ for(let i=0;i<3;i++)muzzle.add(side*(.29+i*.11),3.49-i*.03,-3.622,.042,.045,.039,0x553a29);
+}
+for(let row=0;row<4;row++)for(let j=-(5-row);j<=5-row;j++)face.add(j*.092,3.70-row*.088,-3.67+.016*Math.abs(j),.107,.115,.13,choose([0x141316,0x242023,0x37302d],j,row));
+for(let side of [-1,1])face.add(side*.24,3.64,-3.745,.15,.07,.057,0x0c0d0c);
+// Huge OPEN MOUTH: dark cavity is more than 1.2 blocks tall and recessed.
+const mouth=make('true huge lion roar throat');for(let i=-9;i<=9;i++)for(let j=0;j<18;j++){let x=i*.084,y=2.33+j*.072,v=(x/.81)**2+((y-2.99)/.69)**2;if(v>1)continue;let c=choose([0x170d13,0x290e15,0x3f1b22],i,j);
+mouth.add(x,y,-3.315+.035*v,.093,.083,.085,c);
+if(y<2.69&&Math.abs(x)<.31)mouth.add(x,y,-3.407,.09,.08,.05,choose([0x81313c,0xb2515e,0x6a2738],i,j));}
+// Sharp IVORY canines arch from upper mouth and taper to fang tips.
+const teeth=make('four long clean saber lion fangs');for(let side of [-1,1]){
+for(let j=0;j<26;j++){let t=j/25,w=.195*Math.pow(1-t,.72)+.013;teeth.add(side*(.48-.125*t),3.33-1.07*t,-3.70-.12*Math.sin(t*Math.PI),w*1.45,.075,w*1.55,choose(p.ivory,j,side));}
+for(let k=0;k<3;k++)for(let j=0;j<5;j++){let t=j/4,w=.065*(1-t)+.017;teeth.add(side*(.12+.105*k),3.28-.18*t,-3.70,w*1.5,.07,w*1.4,p.ivory[1]);}}
+// U-shaped physically separate LOWER JAW + light chin hair, opens with roar.
+const jaw=make('moving lion lower jaw'),jawTeeth=make('lower jaw canines');for(let i=-8;i<=8;i++)for(let j=0;j<=8;j++){let x=i*.098,z=-3.64+j*.095;if((x/.80)**2+((z+3.29)/.49)**2>1)continue;if(j>2&&Math.abs(i)<6)continue;
+jaw.add(x,2.25,z,.12,.17,.126,choose([0xb98753,0xd4a16a,0x9b6a43],i,j));}
+for(let side of [-1,1]){for(let j=0;j<11;j++){let t=j/10;jaw.add(side*(.70+.04*Math.sin(t*Math.PI)),2.27+.88*t,-3.51+.60*t,.17,.18,.15,choose([0x7b4b31,0xa67146,0x9b603c],j,side));}
+for(let j=0;j<7;j++){let t=j/6,w=.125*(1-t)+.021;jawTeeth.add(side*(.37-.09*t),2.37+.36*t,-3.65,w*1.6,.068,w*1.5,p.ivory[0]);}}
+for(let i=-4;i<=4;i++)for(let j=0;j<5;j++){let t=j/4;jaw.add(i*.12,2.09-.24*t+Math.abs(i)*.020,-3.55+.09*t,.14,.15,.16,choose([0xb9834c,0xdea96e],i,j));}
+// Face curtain is AROUND head: deep tawny mane under jaw, not on muzzle.
+const beard=make('mane in front and around face');for(let side of [-1,1])for(let strand=0;strand<58;strand++){let x0=side*(.95+.62*rng(strand,side,1)),y0=4.31+rng(strand,side,7)*.34,z0=-2.74-rng(strand,side,10)*.47;
+let len=1.0+rng(strand,side,4)*1.6,n=7+Math.floor(rng(strand,side,5)*6);
+for(let j=0;j<n;j++){let t=j/(n-1),x=x0+side*.13*t,y=y0-len*t,z=z0-.09*t;
+if(Math.abs(x)<.86&&z< -3.03)continue;brick(beard,x,y,z,.19+(1-t)*.06,choose(t>.55?[0xc17735,0xd58b3d,0xa35d2a]:p.mane,strand,j),.24,.23);}}
+// Massive feline paws, each part is its own animated lower/upper group.
+let legs=[];function limb(side,front){let h=front?2.61:2.38,z=front?-1.12:2.33,x=side*(front?1.15:1.08),upper=make((front?'fore':'rear')+(side<0?'L':'R')+' upper'),lower=make('lower'),nails=make('four black claws');
+ellip(upper,0,-.45,front?-.08:.11,front?.54:.51,.72,front?.64:.58,.19,p.coat,front?4:9);
+ellip(lower,0,-.53,-.15,front?.37:.35,.69,front?.43:.39,.18,p.coat,front?6:11);
+ellip(lower,0,-1.04,-.45,.61,.30,.71,.16,[0x825e44,0x9a724a,0x6c513d],front?13:14);
+for(let j=0;j<4;j++)for(let k=0;k<3;k++)nails.add((j-1.5)*.29,-1.08-.05*k,-.84-.12*k,.22,.20,.24,choose([0x23232b,0x333039,0x171c23],j,k));
+legs.push({x,h,z,front,side,upper,lower,nails})}
+for(let side of [-1,1]){limb(side,true);limb(side,false)}
+// Coiled anaconda tails, connected to hips and raised behind lion.
+const tail=make('anaconda body + olive colored overlapping scales');
+const spine=[[0,2.55,3.0],[.65,2.55,3.85],[1.93,2.82,4.71],[3.33,3.35,4.9],[4.15,4.02,4.23],[4.48,4.9,3.43],[4.24,5.6,2.67]];
+for(let i=0;i<=100;i++){let t=i/100,ctr=catmull(spine,t),n=catmull(spine,Math.min(1,t+.005)),tang=norm(sub(n,ctr));let u=norm(cross(tang,[1,0,0]));if(!u.every(Number.isFinite))u=[0,0,1];let v=norm(cross(tang,u)),rad=.55*(1-.29*t);
+for(let j=0;j<14;j++){let a=j*2*Math.PI/14, xyz=ctr.map((q,k)=>q+rad*(u[k]*Math.cos(a)+v[k]*Math.sin(a)));
+let dark=Math.sin(t*65+j*.47)>.05,olive=dark?choose([0x36482d,0x454f2f,0x535e38],i,j):choose([0x7b8150,0x898350,0xaaaa72],i,j);brick(tail,...xyz,.16,olive);}}
+// Separate defined reptile HEAD / mouth / eyes / fangs.
+const snake=make('hissing anaconda cobra-like head');ellip(snake,4.24,5.61,2.46,.55,.36,.68,.12,p.olive,2);ellip(snake,4.24,5.40,1.94,.46,.21,.43,.12,[0x78754a,0x989268,0x565f3b],11);
+for(let side of [-1,1]){snake.add(4.24+side*.37,5.79,2.04,.20,.16,.20,0x171c17);snake.add(4.24+side*.37,5.80,1.92,.13,.10,.07,0xffb225);
+for(let j=0;j<6;j++){let t=j/5,s=.13*(1-t)+.018;snake.add(4.24+side*.24,5.36-.38*t,1.64-.04*t,s,.10,s,p.ivory[1]);}}
+for(let j=0;j<10;j++){let t=j/9;snake.add(4.24,5.33-.04*t,1.60-.65*t,.11,.11,.14,0xb34958);if(j>6)for(let side of [-1,1])snake.add(4.24+side*(j-6)*.05,5.27,1.00-.08*(j-7),.085,.07,.12,0xcc6070);}
+// User avatar for ground scale (not obstructing default camera).
+const avatar=make('player statue');avatar.add(0,.87,-7.2,.48,.69,.3,0x356ca0);avatar.add(0,1.50,-7.2,.42,.48,.41,0xe5b385);for(let side of [-1,1]){avatar.add(side*.14,.33,-7.2,.19,.61,.21,0x293964);avatar.add(side*.36,.95,-7.2,.18,.56,.20,0xb78a66);}
+for(const b of all)b.finish();
+console.log('NEXACRAFT FROM-ZERO 3D',all.map(b=>[b.name,b.count]));
+const actions={walk:0,roar:0,tail:0},keys=new Set();let mode='full',orbit=.57,camDist=11.4,angleLift=.15;
+function chooseMode(m){mode=m;document.querySelectorAll('#tools button').forEach(x=>x.classList.toggle('active',x.id===m));}
+for(const m of ['full','face','side','back'])document.getElementById(m).onclick=()=>chooseMode(m);
+document.getElementById('cleanBtn').onclick=()=>{document.body.classList.toggle('clean');document.getElementById('cleanBtn').textContent=document.body.classList.contains('clean')?'UI表示':'UI非表示'};
+for(const k of ['walk','roar','tail'])document.getElementById(k).onclick=()=>{actions[k]=performance.now()/1000+({walk:7,roar:2.5,tail:2}[k]);document.querySelectorAll('#attacks button').forEach(b=>b.classList.toggle('active',b.id===k));};
+document.querySelectorAll('#move button').forEach(b=>{const k=b.dataset.d;b.addEventListener('pointerdown',e=>{b.setPointerCapture(e.pointerId);keys.add(k)});for(const e of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(e,()=>keys.delete(k))});
+window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if('wasd'.includes(e.key.toLowerCase()))e.preventDefault()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+let down=null,lastX=0;C.addEventListener('pointerdown',e=>{down=e.pointerId;lastX=e.clientX;C.setPointerCapture(e.pointerId)});C.addEventListener('pointermove',e=>{if(down!==e.pointerId)return;orbit+=(e.clientX-lastX)*.008;lastX=e.clientX});C.addEventListener('pointerup',()=>down=null);C.addEventListener('wheel',e=>{camDist=Math.max(7,Math.min(18,camDist+e.deltaY*.015));e.preventDefault()},{passive:false});
+let last=0,feet=0,bossWalk=0,hitShake=0;
+function drawBatch(b,model,unlit=0){if(!b.count)return;gl.uniformMatrix4fv(U.model,false,model);gl.uniform1f(U.unlit,unlit);gl.bindVertexArray(b.va);gl.drawElementsInstanced(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0,b.count)}
+const resetCamera=(t)=>{let p,targ;
+ if(mode==='face'){let d=8.9;p=[Math.sin(orbit*.55)*d,4.21+angleLift,-3.0-Math.cos(orbit*.55)*d];targ=[0,3.49,-2.90];}
+ else if(mode==='side'){p=[12,5.1,0.3];targ=[0,2.8,.35];}
+ else if(mode==='back'){p=[.2,5.2,11.7];targ=[0,2.8,.65];}
+ else {let d=camDist;p=[Math.sin(orbit)*d,5.0+angleLift,-Math.cos(orbit)*d+1.4];targ=[0,2.78,.36];}
+ return lookAt(p,targ)};
+function frame(tm){requestAnimationFrame(frame);let t=tm*.001,dt=Math.min(.05,last?(tm-last)*.001:.016);last=tm;
+ const w=t<actions.walk,r=t<actions.roar,s=t<actions.tail;
+ if(w)feet+=dt*2.3;
+ const roar=r?Math.sin(Math.PI*Math.max(0,Math.min(1,(actions.roar-t)/2.5)))**2:0;
+ const sc=s?Math.sin((actions.tail-t)*10)*.30:Math.sin(t*1.3)*.045;
+ if(C.width!==Math.round(C.clientWidth* Math.min(devicePixelRatio||1,1.4))||C.height!==Math.round(C.clientHeight* Math.min(devicePixelRatio||1,1.4))){let dpi=Math.min(devicePixelRatio||1,1.4);C.width=Math.round(C.clientWidth*dpi);C.height=Math.round(C.clientHeight*dpi);gl.viewport(0,0,C.width,C.height)}
+ gl.clearColor(.105,.130,.14,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.uniformMatrix4fv(U.projection,false,perspective(Math.PI/3.4,C.width/C.height,.1,80));gl.uniformMatrix4fv(U.view,false,resetCamera(t));
+ const I=identity();drawBatch(ground,I);drawBatch(border,I);drawBatch(shadow,I);
+ let root=mul(tr(0,.03*Math.sin(t*1.3)-(w?.05*Math.abs(Math.sin(feet*Math.PI*2)):0),0),ry(0));
+ for(let b of [torso,spots,mane,fringe,horns,skull,face,iris,muzzle,mouth,teeth,beard])drawBatch(b,root,b===iris?1:0);
+ let jawPivot=mul(root,mul(tr(0,3.35,-2.92),mul(rx(-roar*.26),tr(0,-3.35,2.92))));
+ drawBatch(jaw,jawPivot);drawBatch(jawTeeth,jawPivot);
+ for(let limb of legs){let id=(limb.front?0:2)+(limb.side>0?1:0),ph=feet+([0,.50,.75,.25][id]);let step=w?Math.sin(ph*Math.PI*2):0, lift=w?Math.max(0,Math.cos(ph*Math.PI*2))*.28:0;
+ let hip=mul(root,mul(tr(limb.x,limb.h,limb.z),rx((limb.front?-.19:.16)+step*.18)));
+ drawBatch(limb.upper,hip);
+ let knee=mul(hip,mul(tr(0,-1.00,.02),rx((limb.front?.16:-.10)-step*.13+lift*.10)));
+ drawBatch(limb.lower,knee);drawBatch(limb.nails,knee);
+ }
+ const snakeModel=mul(root,mul(tr(0,2.45,3),mul(ry(sc),tr(0,-2.45,-3))));
+ drawBatch(tail,snakeModel);drawBatch(snake,snakeModel);
+ if(mode!=='face' && !document.body.classList.contains('clean'))drawBatch(avatar,I);
+ }
+requestAnimationFrame(frame);
+}
+</script></body></html>
