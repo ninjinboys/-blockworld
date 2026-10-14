@@ -4,12 +4,13 @@
  * email, so there is no email-based account recovery.
  * All Firestore reads/writes require uid-scoped rules (firestore.rules).
  */
-import {firebaseConfig} from './firebase-config.js?v=20261014firebaseRegistered01';
+import {firebaseConfig} from './firebase-config.js?v=20261014cloudActivated01';
 
 // Never switch every player away from local login until the Firebase
 // Authentication provider AND owner-only Firestore rules are configured.
 export const cloudEnabled=!!(
   firebaseConfig?.enabled === true &&
+  !new URLSearchParams(location.search).has('local') &&
   firebaseConfig?.apiKey && firebaseConfig?.authDomain &&
   firebaseConfig?.projectId && firebaseConfig?.appId
 );
@@ -40,13 +41,16 @@ async function loginAddress(name){
 function readableAuthError(e){
   const t=e?.code||'';
   if(t==='auth/email-already-in-use')return Error('このユーザー名はすでに登録されています。「ログイン」してください');
-  if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(t))
-    return Error('ユーザー名かパスワードが違います');
+  if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(t)){
+    const err=Error('ユーザー名かパスワードが違います');
+    err.code=t;return err;
+  }
   if(t==='auth/weak-password')return Error('パスワードは6文字以上にしてください');
   if(t==='auth/network-request-failed'||t.includes('unavailable'))
     return Error('インターネット接続を確認してください');
   if(t==='permission-denied')return Error('クラウド保存のセキュリティ設定を確認してください');
-  return Error('クラウド接続エラー: '+(e?.message||t||'不明'));
+  const err=Error('クラウド接続エラー: '+(e?.message||t||'不明'));
+  err.code=t;return err;
 }
 export async function cloudRegister(name,password){
   const {a,db,auth,fs}=await backend();
