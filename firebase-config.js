@@ -1,10 +1,14 @@
-// NEXACRAFT Firebase Web App public configuration.
-// The site uses the current local-only login until this is populated.
-// Copy ONLY Firebase Project Settings > Your apps > Web app config here.
-// Never place service-account private keys or admin tokens in this file.
-export const firebaseConfig = null;
-// Example shape (public browser settings, values supplied by project owner):
-// export const firebaseConfig = {
-//   apiKey: '...', authDomain: 'YOUR_PROJECT.firebaseapp.com',
-//   projectId: 'YOUR_PROJECT', appId: '1:...:web:...'
-// };
+// NEXACRAFT - Firebase public client settings from the registered Web app.
+// These values are designed to be present in client-side JavaScript.
+// Do not add Firebase Admin credentials or service account secrets.
+// Stay off until Authentication and locked-down Firestore rules are configured.
+export const firebaseConfig = {
+  apiKey: 'AIzaSyCjDMfNw5XQhYNCxo2e9OrWkuGYi18A3MQ',
+  authDomain: 'nexacraft-dd850.firebaseapp.com',
+  projectId: 'nexacraft-dd850',
+  storageBucket: 'nexacraft-dd850.firebasestorage.app',
+  messagingSenderId: '43826808017',
+  appId: '1:43826808017:web:9cec3cac2bf59be47c31f0',
+  measurementId: 'G-G0QLE18PL2',
+  enabled: false // Flip to true after Firebase Auth, Firestore and rules are ready.
+};
