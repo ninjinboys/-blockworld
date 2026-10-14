@@ -9,7 +9,7 @@ NEXACRAFT の GitHub Pages は静的サイトです。**ユーザー名とパス
 3. 「Authentication → Sign-in method」で **メール/パスワード** を有効化する（このゲームではユーザー名を SHA-256 で内部用疑似メールアドレスに変換して使用する）。メールアドレス確認は不要の構成で運用する。**メールが実在しないため、メールによるパスワードリセットはできない。**
 4. 「Authentication → Settings → Authorized domains」で `ninjinboys.github.io` を許可する。
 5. 「Firestore Database」でデータベースを作成する。**試験モードの全公開ルールは使用しない。** このリポジトリの `firestore.rules` の所有者限定ルールを Firebase コンソールの Firestore → ルールに貼り付けて公開するか、Firebase CLI を用いて `firebase deploy --only firestore:rules --project <projectId>` を実行する。
-6. `firebase-config.js` の `firebaseConfig = null` を Firebase のウェブアプリ公開設定に置き換える。サービスアカウント秘密鍵・管理者APIキー・Firebase Admin認証情報は**絶対にブラウザコードに置かない**。
+6. **2026-10-14 完了**: `firebase-config.js` に登録済みウェブアプリ `nexacraft-dd850` の公開設定を接続済み。ただし、Firebase Auth と Firestore / ルールのセットアップが終わるまでは `enabled: false` を維持する。設定完了・テスト後に `enabled: true` に変更し、`firebase-config.js` および参照するJSのキャッシュを更新する。サービスアカウント秘密鍵・Firebase Admin認証情報は**絶対にブラウザコードに置かない**。
 7. GitHub Pages への反映後、元の端末と新しい端末でログイン・ワールドの復元をテストする。
 
 ## プレイヤーの使い方
@@ -18,7 +18,7 @@ NEXACRAFT の GitHub Pages は静的サイトです。**ユーザー名とパス
 - **新しい端末**：同じユーザー名・パスワードだけでログインし、最大5ワールドのセーブを自動取得できる。
 - ワールドの変更は現状、定期セーブ（20秒ごと）または手動セーブから順次クラウドへアップロードする。**同時に2端末で同じワールドを編集することはサポートしない。**
 - 通信切断や Firebase 障害がある場合はローカル保存が優先される。通信復帰時に再ログインすると保存日時が新しいほうを復元/アップロードする。マルチのゲスト持ち物など、すべてのローカルデータが自動同期されるとは限らない。
-- Cloud 側を構成しない（`firebaseConfig = null`）間は、現行の端末内アカウントと暗号化ファイル引き継ぎだけが動き、既存ユーザーへの破壊的変更は生じない。
+- Cloud 側が未有効化（`firebaseConfig.enabled = false`）の間は、現行の端末内アカウントと暗号化ファイル引き継ぎだけが動き、既存ユーザーへの破壊的変更は生じない。
 
 ## 制約と安全性
 
