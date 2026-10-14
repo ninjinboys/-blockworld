@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
-  cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014firebaseRegistered01';
+  cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
 
 const $=id=>document.getElementById(id);
 const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill'),heartsEl=$('hearts'),deathScreen=$('deathScreen'),respawnBtn=$('respawnBtn');
@@ -539,6 +539,10 @@ async function cloudAuthSubmit(name,password,key,reg,mode){
     }catch(e){
       // First sign-in by an existing local user securely registers their
       // established username/password in Firebase and imports old saves.
+      // A temporary network/Firestore error must NOT cause a duplicate
+      // create attempt or mask the real Firebase problem.
+      if(!['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(e.code))
+        throw e;
       const old=reg.accounts[key];
       if(!old?.salt||!old?.hash||!(await verifyLocalPassword(old,password)))
         throw e;
@@ -1055,6 +1059,7 @@ async function submitAuth(e){
   try{
     if(cloudEnabled){
       await cloudAuthSubmit(name,password,key,reg,mode);
+      authPassword.value='';
       return;
     }
     if(mode==='create'){
@@ -1072,7 +1077,10 @@ async function submitAuth(e){
     authPassword.value='';
     showMainMenu();
   }catch(err){
-    authError.textContent='アカウント処理に失敗しました';console.warn?.('auth failed',err);
+    authError.textContent=cloudEnabled
+      ?(err?.message||'クラウドログインに失敗しました')
+      :'アカウント処理に失敗しました';
+    console.warn?.('auth failed',err);
   }finally{
     authSubmit.disabled=false;authSubmit.textContent=(authForm.dataset.mode||'login')==='create'?'アカウント作成':'ログイン';
   }
