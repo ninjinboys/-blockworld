@@ -1276,3 +1276,50 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   #stats{padding:6px;font-size:9px}
   #viewModeButton{top:99px;min-width:112px;font-size:10px;padding:7px}
 }
+
+/* NEXACRAFT encrypted account transfer between devices (2026-10-14). */
+.transfer-secondary{
+  display:block;max-width:100%;margin:12px auto 3px;
+  padding:10px 14px;border:2px solid #81a68b;border-radius:9px;
+  background:#193b32;color:#f7e6b3;font-weight:800;
+  font-size:13px;cursor:pointer;touch-action:manipulation;
+  box-shadow:0 3px 0 #0b241f;line-height:1.5;
+}
+.transfer-secondary:active{transform:translateY(2px);box-shadow:0 1px 0 #0b241f}
+.transfer-cover[hidden]{display:none!important}
+.transfer-cover{
+  position:fixed;inset:0;z-index:999999;
+  display:flex;align-items:center;justify-content:center;
+  padding:18px;background:rgba(5,12,15,.86);
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  overflow:auto;
+}
+.transfer-panel{
+  width:min(440px,100%);max-height:calc(100vh - 36px);overflow:auto;
+  padding:22px 20px;border:2px solid #d4a95c;border-radius:15px;
+  background:#122b2a;color:#fff5d8;text-align:left;
+  box-shadow:0 15px 60px #0009;
+}
+.transfer-panel h2{font-size:20px;line-height:1.3;margin:0 0 12px;color:#ffe19b}
+.transfer-panel p{font-size:13px;line-height:1.65;margin:0 0 12px;white-space:pre-line}
+.transfer-panel label{display:block;font-size:13px;font-weight:800;margin-bottom:12px}
+.transfer-panel input{
+  display:block;width:100%;height:48px;padding:9px 12px;margin-top:7px;
+  background:#f4f4eb;color:#132324;border:2px solid #9eb9a5;border-radius:8px;
+  font:16px system-ui,sans-serif;
+}
+.transfer-panel .transfer-actions{display:flex;gap:8px;margin:10px 0 14px}
+.transfer-actions button{
+  min-width:0;flex:1;padding:13px 10px;border-radius:8px;
+  border:2px solid #648f78;background:#225e47;color:#fff9e4;
+  font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation;
+}
+.transfer-actions button:disabled{opacity:.5;cursor:wait}
+.transfer-actions #transferGo{background:#9a672e;border-color:#e6b76b}
+#transferStatus{min-height:1.6em;color:#f5d091}
+.transfer-panel small{font-size:11px;line-height:1.6;display:block;color:#d0dbcb}
+@media(max-width:480px){
+  .transfer-panel{padding:17px 15px}
+  .transfer-panel h2{font-size:18px}
+  .transfer-secondary{font-size:12px}
+}
