@@ -14,7 +14,8 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
   // Let the terrain depth buffer hide the weapon wherever leaves, walls or
   // other world objects are physically closer to the camera.
   root.position.set(.72,-.82,-1.08);
-  root.rotation.z=.65;
+  // An upright first-person forearm: the sleeve and hand are vertical at rest.
+  root.rotation.z=0;
   const pivot=new THREE.Group();
   root.add(pivot);
   const shape=(parent,w,h,d,material,x,y,z)=>{
@@ -80,7 +81,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
     m.rotation.z=rz;
     return m;
   }
-  // Cancel the arm's +0.65rad tilt so held weapons stay upright on screen.
+  // Weapons follow the upright arm: do not add a second compensating 0.65rad tilt.
   // Do not change arm size, position, or world occlusion.
   function craftWeapon(id){
     const tool=new THREE.Group(),metal=tierOf(id);
@@ -103,7 +104,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       part(tool,.148,.205,.116,main,0,.768,0);
       part(tool,.077,.129,.099,shine,0,.907,0);
       part(tool,.085,.08,.108,edge,0,.980,0);
-      tool.rotation.set(-.18,.23,-.65);
+      tool.rotation.set(-.18,.23,-.06);
       tool.scale.set(.91,.88,.91);
     }else if(pickIds.has(id)){
       handle(true);
@@ -114,7 +115,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       part(tool,.16,.14,.145,edge,.27,.658,0,-.36);
       part(tool,.105,.12,.115,main,-.371,.612,0,.47);
       part(tool,.105,.12,.115,main,.371,.612,0,-.47);
-      tool.rotation.set(-.18,.36,-.65);
+      tool.rotation.set(-.18,.36,-.06);
       tool.scale.set(.88,.84,.88);
     }else if(axeIds.has(id)){
       handle(true);
@@ -123,7 +124,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       part(tool,.135,.39,.169,shine,-.292,.658,0);
       part(tool,.077,.36,.15,edge,-.385,.657,0);
       part(tool,.17,.13,.17,edge,.047,.650,0);
-      tool.rotation.set(-.18,.45,-.65);
+      tool.rotation.set(-.18,.45,-.06);
       tool.scale.set(.94,.91,.94);
     }else if(shovelIds.has(id)){
       handle(true);
@@ -132,7 +133,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       part(tool,.215,.23,.052,shine,-.012,.769,-.063);
       part(tool,.18,.10,.108,edge,0,.574,0);
       part(tool,.12,.10,.10,main,0,.956,0);
-      tool.rotation.set(-.16,.40,-.65);
+      tool.rotation.set(-.16,.40,-.06);
       tool.scale.set(.89,.87,.89);
     }
     return tool;
@@ -148,7 +149,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
     }
     part(bow,.022,1.02,.021,string,.012,0,-.025);
     part(bow,.13,.18,.12,wood,-.19,.0,0);
-    bow.rotation.set(-.15,.27,-.65);
+    bow.rotation.set(-.15,.27,-.06);
     bow.scale.set(.86,.88,.86);
     return bow;
   }
@@ -228,7 +229,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       const swing=swingTime>0?Math.sin(Math.PI*(1-swingTime/.39)):0;
       const bob=movement*Math.sin(walkPhase)*.017;
       root.position.set(.72+bob*.45,-.82+movement*Math.abs(Math.sin(walkPhase))*.027,-1.08);
-      root.rotation.set(-swing*.18,0,.65-swing*.66+bob*.45);
+      root.rotation.set(-swing*.18,0,-swing*.46+bob*.25);
       pivot.rotation.x=-swing*.70;
       pivot.rotation.z=swing*.19;
       held.rotation.set(swing*.08,0,-swing*.15);
