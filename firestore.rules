@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Deny all documents unless individually allowed below.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    function owner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    match /users/{uid} {
+      allow get: if owner(uid);
+      allow list: if false;
+      allow create: if owner(uid)
+        && request.resource.data.keys().hasOnly(['name','key','createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.key is string
+        && request.resource.data.createdAt is int
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.key.size() <= 20;
+      allow update: if owner(uid)
+        && request.resource.data.key == resource.data.key
+        && request.resource.data.keys().hasOnly(['name','key','createdAt']);
+      allow delete: if owner(uid);
+
+      match /worlds/{slot} {
+        allow read: if owner(uid);
+        allow create, update: if owner(uid)
+          && slot in ['1','2','3','4','5']
+          && request.resource.data.keys().hasOnly(
+            ['revision','parts','codec','savedAt','writtenAt','schema'])
+          && request.resource.data.schema == 1
+          && request.resource.data.revision is string
+          && request.resource.data.revision.size() == 20
+          && request.resource.data.codec in ['json','gzip']
+          && request.resource.data.parts is int
+          && request.resource.data.parts >= 1
+          && request.resource.data.parts <= 100
+          && request.resource.data.savedAt is number;
+        allow delete: if owner(uid);
+        match /chunks/{piece} {
+          allow read: if owner(uid);
+          allow create, update: if owner(uid)
+            && request.resource.data.keys().hasOnly(['data'])
+            && request.resource.data.data is string
+            && request.resource.data.data.size() <= 100000;
+          allow delete: if owner(uid);
+        }
+      }
+    }
+  }
+}
