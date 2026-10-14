@@ -10,8 +10,21 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
   const jacket=basic(0x247f9b),jacketShade=basic(0x185569),cuff=basic(0x38a5b6);
   const root=new THREE.Group();
   root.name='NEXACRAFT right hand and held item';
-  root.position.set(.72,-.82,-1.08);
-  root.rotation.z=.65;
+  // Keep the first-person viewmodel at the bottom-right of the screen.
+  // It must never cover the experience bar, hotbar or centre crosshair.
+  // The previous 1:1 camera-space scale made the arm/sword enormous.
+  const handPlacement=()=>{
+    const aspect=camera.aspect||innerWidth/Math.max(1,innerHeight);
+    // Camera projection is vertical-FOV based: horizontal placement follows
+    // the actual aspect ratio, including phone portrait screens.
+    const wide=Math.min(1,Math.max(.43,aspect/1.35));
+    const size=.64*wide;
+    root.scale.set(size,size,size);
+    return {x:.622*aspect,y:-.945,z:-1.53};
+  };
+  const initialHand=handPlacement();
+  root.position.set(initialHand.x,initialHand.y,initialHand.z);
+  root.rotation.z=.54;
   const pivot=new THREE.Group();
   root.add(pivot);
   const shape=(parent,w,h,d,material,x,y,z)=>{
@@ -222,8 +235,9 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       swingTime=Math.max(0,swingTime-dt);
       const swing=swingTime>0?Math.sin(Math.PI*(1-swingTime/.39)):0;
       const bob=movement*Math.sin(walkPhase)*.017;
-      root.position.set(.72+bob*.45,-.82+movement*Math.abs(Math.sin(walkPhase))*.027,-1.08);
-      root.rotation.set(-swing*.18,0,.65-swing*.66+bob*.45);
+      const at=handPlacement();
+      root.position.set(at.x+bob*.45,at.y+movement*Math.abs(Math.sin(walkPhase))*.024,at.z);
+      root.rotation.set(-swing*.18,0,.54-swing*.52+bob*.45);
       pivot.rotation.x=-swing*.70;
       pivot.rotation.z=swing*.19;
       held.rotation.set(swing*.08,0,-swing*.15);
