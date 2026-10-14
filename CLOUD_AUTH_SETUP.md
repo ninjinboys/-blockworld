@@ -9,7 +9,7 @@ NEXACRAFT の GitHub Pages は静的サイトです。**ユーザー名とパス
 3. 「Authentication → Sign-in method」で **メール/パスワード** を有効化する（このゲームではユーザー名を SHA-256 で内部用疑似メールアドレスに変換して使用する）。メールアドレス確認は不要の構成で運用する。**メールが実在しないため、メールによるパスワードリセットはできない。**
 4. 「Authentication → Settings → Authorized domains」で `ninjinboys.github.io` を許可する。
 5. 「Firestore Database」でデータベースを作成する。**試験モードの全公開ルールは使用しない。** このリポジトリの `firestore.rules` の所有者限定ルールを Firebase コンソールの Firestore → ルールに貼り付けて公開するか、Firebase CLI を用いて `firebase deploy --only firestore:rules --project <projectId>` を実行する。
-6. **2026-10-14 完了**: `firebase-config.js` に登録済みウェブアプリ `nexacraft-dd850` の公開設定を接続済み。ただし、Firebase Auth と Firestore / ルールのセットアップが終わるまでは `enabled: false` を維持する。設定完了・テスト後に `enabled: true` に変更し、`firebase-config.js` および参照するJSのキャッシュを更新する。サービスアカウント秘密鍵・Firebase Admin認証情報は**絶対にブラウザコードに置かない**。
+6. **2026-10-14 完了**: `firebase-config.js` に登録済みウェブアプリ `nexacraft-dd850` の公開設定を接続済み。**2026-10-14：ユーザーからAuthentication・Firestoreルール公開の完了報告を受けて `enabled: true` に変更済み。** GitHub側のモジュールのキャッシュも更新済み。初回は旧端末でユーザー名・パスワードを入力し、既存ワールドが表示・クラウド同期されることを確認してから新端末でログインすること。ブラウザでの実機ログイン／双方向同期はまだ未検証。既存の端末内セーブは削除していない。クラウドに問題がある際は `?local=1` をURLに付与して旧来の端末内アカウントを利用できる。サービスアカウント秘密鍵・Firebase Admin認証情報は**絶対にブラウザコードに置かない**。
 7. GitHub Pages への反映後、元の端末と新しい端末でログイン・ワールドの復元をテストする。
 
 ## プレイヤーの使い方
@@ -26,3 +26,9 @@ NEXACRAFT の GitHub Pages は静的サイトです。**ユーザー名とパス
 - Firebase の疑似メールアドレスはログイン用の内部値であり、メール通知/メールによるパスワード回復は不可。別途回復コード等のアカウント回復方法を検討する。
 - **既存の端末内ユーザー名には中央登録簿がない**ため、初回クラウド登録の順番によっては同名を先に登録される恐れがある。プライベートテスト環境で既存プレイヤーを移行させてから一般公開する。
 - iPad Safari・2端末の実機検証は未実施。使用前に Firestore Security Rules の設定とテストが必須。
+
+## 2026-10-14 本番有効化
+- `firebase-config.js` の `enabled: true` とGitHub Pagesのスクリプト更新を実施。
+- `?local=1` はクラウド接続を一時停止して端末内の従来のアカウントに戻る保護用パラメータ。
+- デプロイ・静的コード確認は済み。**実機でのFirebaseログイン・Firestore書込／別端末読込はまだ未検証。**
+- 初回移行直後に既存ワールドが新端末に現れるまで、元の端末のブラウザデータは消去しない。
