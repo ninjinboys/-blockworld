@@ -4,11 +4,14 @@
  * email, so there is no email-based account recovery.
  * All Firestore reads/writes require uid-scoped rules (firestore.rules).
  */
-import {firebaseConfig} from './firebase-config.js?v=20261014cloudcfg01';
+import {firebaseConfig} from './firebase-config.js?v=20261014firebaseRegistered01';
 
+// Never switch every player away from local login until the Firebase
+// Authentication provider AND owner-only Firestore rules are configured.
 export const cloudEnabled=!!(
-  firebaseConfig?.apiKey&&firebaseConfig?.authDomain&&
-  firebaseConfig?.projectId&&firebaseConfig?.appId
+  firebaseConfig?.enabled === true &&
+  firebaseConfig?.apiKey && firebaseConfig?.authDomain &&
+  firebaseConfig?.projectId && firebaseConfig?.appId
 );
 let firebase=null;
 async function backend(){
