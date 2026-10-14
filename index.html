@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#172f33">
 <title>NEXACRAFT</title>
 <link rel="preload" href="assets/nexacraft-title.webp?v=20261011titleHD1672" as="image" type="image/webp">
-<link rel="stylesheet" href="style.css?v=20261011verticalWorldSlots1">
+<link rel="stylesheet" href="style.css?v=20261014accountTransfer01">
 </head>
 <body>
 <!-- The glowing monument in the title art is Nexa Gate,
@@ -32,8 +32,9 @@
       <label>パスワード<input id="authPassword" name="password" type="password" minlength="6" maxlength="64" autocomplete="current-password" required></label>
       <button id="authSubmit" type="submit">ログイン</button>
       <div id="authError" role="alert"></div>
+      <button id="importAccount" type="button" class="transfer-secondary">別の端末からアカウントを引き継ぐ</button>
     </form>
-    <div class="auth-note">この版ではアカウントとセーブはこの端末に保存されます。</div>
+    <div class="auth-note">初めて別の端末で使う場合は、前の端末から暗号化引き継ぎファイルを受け取ってください。端末間の自動同期はありません。</div>
   </div>
 </div>
 <div id="menuCover">
@@ -44,9 +45,27 @@
       <button id="singlePlayBtn" type="button">シングルプレイ</button>
       <button id="multiPlayBtn" type="button">マルチプレイ</button>
     </div>
+    <button id="exportAccount" type="button" class="transfer-secondary">別の端末で使う（引き継ぎ）</button>
     <button id="menuLogout" type="button">ログアウト</button>
   </div>
 </div>
+<div id="accountTransferCover" class="transfer-cover" hidden aria-label="アカウントの引き継ぎ">
+  <div class="transfer-panel" role="dialog" aria-modal="true" aria-labelledby="transferTitle">
+    <h2 id="transferTitle">アカウントを別の端末へ</h2>
+    <p id="transferHelp"></p>
+    <label>アカウントのパスワード
+      <input id="transferPassword" type="password" autocomplete="current-password"
+             minlength="6" maxlength="64" placeholder="現在のパスワード">
+    </label>
+    <p id="transferStatus" role="status" aria-live="polite"></p>
+    <div class="transfer-actions">
+      <button id="transferCancel" type="button">戻る</button>
+      <button id="transferGo" type="button">引き継ぎファイルを作成</button>
+    </div>
+    <small>保存データは暗号化されます。ファイルとパスワードを他人に渡さないでください。クラウド自動同期ではありません。</small>
+  </div>
+</div>
+<input id="accountImportFile" type="file" accept=".nexa,.json,application/json" hidden>
 <div id="multiCover" aria-label="マルチプレイメニュー">
   <div class="multi-panel">
     <div class="multi-heading"><div><div class="multi-kicker">NEXACRAFT</div><h2 id="multiTitle">マルチプレイ</h2></div><button id="multiBack" type="button">戻る</button></div>
@@ -268,6 +287,6 @@
   },true);
 })();
 </script>
-<script type="module" src="app.js?v=20261011chimeraSculptIVr4"></script>
+<script type="module" src="app.js?v=20261014deviceAccountTransfer01"></script>
 </body>
 </html>
