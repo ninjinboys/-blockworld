@@ -10,7 +10,7 @@ const HOST='blockworld_multi_host_v1:',MEMBER='blockworld_multi_member_v1:';
 const HANDOFF='blockworld_multi_handoff_v1:',FRIEND_ID='blockworld_friend_id_v1:';
 const FRIENDS='blockworld_friends_v1:',MAX_TRANSFER=35*1024*1024;
 const norm=name=>name.normalize('NFKC').trim().toLocaleLowerCase('ja-JP');
-let transferMode=null,pendingFile=null;
+let transferMode=null,pendingFile=null,lastEncryptedFile=null;
 
 function readRegistry(){
   const reg=JSON.parse(localStorage.getItem(REGISTRY)||'{"version":1,"accounts":{}}');
@@ -76,7 +76,8 @@ function message(value,isError=false){
   el.style.color=isError?'#ffaaa0':'#f5d091';
 }
 function openDialog(mode,file=null){
-  transferMode=mode;pendingFile=file;
+  transferMode=mode;pendingFile=file;lastEncryptedFile=null;
+  $('transferShare').hidden=true;
   $('accountTransferCover').hidden=false;
   $('transferPassword').value='';
   $('transferTitle').textContent=mode==='export'
@@ -96,7 +97,8 @@ function closeDialog(){
   $('accountTransferCover').hidden=true;
   $('transferPassword').value='';
   $('accountImportFile').value='';
-  pendingFile=null;transferMode=null;
+  pendingFile=null;transferMode=null;lastEncryptedFile=null;
+  $('transferShare').hidden=true;
 }
 function downloadBackup(fileText,name){
   const safeName=(name||'player').replace(/[^a-zA-Z0-9ぁ-んァ-ヶ一-龠_-]/g,'_').slice(0,25);
@@ -104,7 +106,9 @@ function downloadBackup(fileText,name){
   const blob=new Blob([fileText],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;a.download='NEXACRAFT_'+safeName+'_'+date+'.nexa';
+  const filename='NEXACRAFT_'+safeName+'_'+date+'.nexa';
+  lastEncryptedFile=new File([blob],filename,{type:'application/json'});
+  a.href=url;a.download=filename;
   a.style.display='none';
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),15000);
@@ -119,6 +123,8 @@ async function exportBundle(password){
   };
   const encrypted=await encryptAccountBundle(payload,password);
   downloadBackup(encrypted,account.name);
+  if(navigator.canShare?.({files:[lastEncryptedFile]}))
+    $('transferShare').hidden=false;
   return Object.keys(payload.entries).length;
 }
 function parseBundlePayload(payload){
@@ -186,6 +192,15 @@ $('accountImportFile')?.addEventListener('change',event=>{
   openDialog('import',file);
 });
 $('transferCancel')?.addEventListener('click',closeDialog);
+$('transferShare')?.addEventListener('click',async()=>{
+  if(!lastEncryptedFile)return;
+  try {
+    await navigator.share({files:[lastEncryptedFile],title:'NEXACRAFT アカウント引き継ぎ'});
+    message('共有しました。受け取った端末の「アカウントを引き継ぐ」から読み込んでください。');
+  }catch(e){
+    if(e?.name!=='AbortError')message('共有が使えませんでした。保存済みのファイルを使ってください。',true);
+  }
+});
 $('accountTransferCover')?.addEventListener('click',event=>{
   if(event.target===$('accountTransferCover'))closeDialog();
 });
