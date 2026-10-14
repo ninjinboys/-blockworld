@@ -457,6 +457,7 @@ let multiLastPose=0,multiLastProfile=0,multiPendingTimer=null,multiClosing=false
 let multiOriginName='',multiMigration=null,multiCheckpoint=null,multiRoster=[],multiWorldKind='multi';
 let singleWorldMembers={};
 let multiLastCheckpoint=0,multiMigrationGeneration=0;
+let lastCloudWorldSaveAt=0;
 const MULTI_HOST='blockworld_multi_host_v1:',MULTI_MEMBER='blockworld_multi_member_v1:';
 const MULTI_HANDOFF='blockworld_multi_handoff_v1:';
 const FRIEND_ID='blockworld_friend_id_v1:',FRIENDS_KEY='blockworld_friends_v1:';
@@ -544,7 +545,8 @@ async function cloudAuthSubmit(name,password,key,reg,mode){
       identity=await cloudRegister(name,password);
     }
   }
-  await setLocalCloudCache(identity.key,identity.name,password);
+  try{await setLocalCloudCache(identity.key,identity.name,password)}
+  catch(e){await cloudSignOut();throw e}
   currentAccount={key:identity.key,name:identity.name};
   rememberSession(identity.key);
   setSaveStatus('クラウド同期中…');
@@ -777,7 +779,8 @@ function saveCurrentGame(showMessage=false){
       payload.originName=currentAccount.name;
     }
     localStorage.setItem(key,JSON.stringify(payload));
-    if(cloudEnabled&&!multiRole&&(wasDirty||showMessage)){
+    if(cloudEnabled&&!multiRole&&(wasDirty||showMessage||Date.now()-lastCloudWorldSaveAt>120000)){
+      lastCloudWorldSaveAt=Date.now();
       const slot=currentWorldSlot;
       void cloudQueueSave(slot,payload).catch(e=>{
         console.warn('Cloud world save failed',e);
@@ -5778,6 +5781,9 @@ $('startBtn').addEventListener('click',()=>{
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
   void spawnChimeraVisualTest();
 });
-if(cloudEnabled)void restoreCloudSession();
-else if(!restoreSession())authName.focus();
+if(cloudEnabled){
+  const note=document.querySelector('.auth-note');
+  if(note)note.textContent='クラウド対応：同じユーザー名とパスワードで別の端末からログインできます。初回の旧アカウント移行は元の端末でログインしてください。';
+  void restoreCloudSession();
+}else if(!restoreSession())authName.focus();
 requestAnimationFrame(loop);
