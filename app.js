@@ -1,5 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
+import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
+  cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudAuth01';
 
 const $=id=>document.getElementById(id);
 const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill'),heartsEl=$('hearts'),deathScreen=$('deathScreen'),respawnBtn=$('respawnBtn');
@@ -488,6 +490,91 @@ function rememberSession(key){
 function clearSession(){
   try{localStorage.removeItem(SESSION_KEY)}catch{}
 }
+// Firebase is the authenticated source of truth when configured.
+// LocalStorage remains a speed/offline cache, not a global account registry.
+function verifyLocalPassword(acc,password){
+  return passwordHash(password,b64ToBytes(acc.salt))
+    .then(hash=>safeEqual(hash,acc.hash));
+}
+async function setLocalCloudCache(key,name,password){
+  const reg=loadAccountRegistry();
+  if(reg.accounts[key] && reg.accounts[key].salt && reg.accounts[key].hash){
+    if(!(await verifyLocalPassword(reg.accounts[key],password)))
+      throw Error('この端末には同じ名前の別アカウントがあります');
+  }else{
+    const salt=crypto.getRandomValues(new Uint8Array(16));
+    reg.accounts[key]={name,salt:bytesToB64(salt),
+      hash:await passwordHash(password,salt),createdAt:Date.now()};
+    saveAccountRegistry(reg);
+  }
+}
+async function cloudMergeWorlds(uploadLocal=false){
+  const remote=await cloudReadAll();
+  for(let slot=1;slot<=MAX_WORLDS;slot++){
+    const key=saveKeyForAccount(currentAccount.key,slot);
+    let local=null;
+    try{const raw=localStorage.getItem(key);if(raw)local=JSON.parse(raw)}catch{}
+    const distant=remote.get(slot);
+    const tLocal=Number(local?.savedAt)||0,tRemote=Number(distant?.savedAt)||0;
+    if(distant && (tRemote>=tLocal||!local)){
+      try{localStorage.setItem(key,JSON.stringify(distant))}
+      catch(e){console.warn('Cloud world does not fit local cache',e)}
+    }else if(local && (uploadLocal||tLocal>tRemote)){
+      await cloudQueueSave(slot,local);
+    }
+  }
+}
+async function cloudAuthSubmit(name,password,key,reg,mode){
+  let identity;
+  if(mode==='create'){
+    if(reg.accounts[key]?.hash){
+      if(!(await verifyLocalPassword(reg.accounts[key],password)))
+        throw Error('同名の端末内アカウントがあります');
+    }
+    identity=await cloudRegister(name,password);
+  }else{
+    try{
+      identity=await cloudLogin(name,password);
+    }catch(e){
+      // First sign-in by an existing local user securely registers their
+      // established username/password in Firebase and imports old saves.
+      const old=reg.accounts[key];
+      if(!old?.salt||!old?.hash||!(await verifyLocalPassword(old,password)))
+        throw e;
+      identity=await cloudRegister(name,password);
+    }
+  }
+  await setLocalCloudCache(identity.key,identity.name,password);
+  currentAccount={key:identity.key,name:identity.name};
+  rememberSession(identity.key);
+  setSaveStatus('クラウド同期中…');
+  try{await cloudMergeWorlds()}catch(e){
+    console.warn('Cloud worlds sync failed',e);
+    setSaveStatus('クラウド同期失敗（端末保存は有効）');
+  }
+  setSaveStatus('ワールド未選択');
+  showMainMenu();
+}
+async function restoreCloudSession(){
+  try{
+    const identity=await cloudRestore();
+    if(!identity){authName.focus();return}
+    const reg=loadAccountRegistry();
+    if(!reg.accounts[identity.key]){
+      reg.accounts[identity.key]={name:identity.name,cloud:true,createdAt:Date.now()};
+      saveAccountRegistry(reg);
+    }
+    currentAccount={key:identity.key,name:identity.name};
+    rememberSession(identity.key);
+    await cloudMergeWorlds();
+    setSaveStatus('ワールド未選択');
+    showMainMenu();
+  }catch(e){
+    console.warn('Cloud session restoration failed',e);
+    authError.textContent='クラウドへの接続に失敗しました。通信状態を確認してください。';
+    authName.focus();
+  }
+}
 function restoreSession(){
   try{
     const raw=localStorage.getItem(SESSION_KEY);
@@ -654,6 +741,7 @@ function makeSaveData(){
 }
 function saveCurrentGame(showMessage=false){
   if(!currentAccount||!currentWorldSlot||!worldReady)return false;
+  const wasDirty=saveDirty;
   try{
     if(multiRole==='guest'){
       const profile=multiProfile();
@@ -689,6 +777,13 @@ function saveCurrentGame(showMessage=false){
       payload.originName=currentAccount.name;
     }
     localStorage.setItem(key,JSON.stringify(payload));
+    if(cloudEnabled&&!multiRole&&(wasDirty||showMessage)){
+      const slot=currentWorldSlot;
+      void cloudQueueSave(slot,payload).catch(e=>{
+        console.warn('Cloud world save failed',e);
+        setSaveStatus('端末保存済 / クラウド保存失敗');
+      });
+    }
     saveDirty=false;
     const d=new Date(),hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');
     setSaveStatus('W'+currentWorldSlot+' 保存済 '+hh+':'+mm);
@@ -870,6 +965,11 @@ async function initializeAccountWorld(save,slot){
   renderHotbar();updateProgress();renderHealth();renderStamina();updateViewLabel();
   loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
+  if(cloudEnabled&&!save){
+    // New worlds need an initial cloud snapshot even without edits yet.
+    void cloudQueueSave(slot,makeSaveData()).catch(e=>
+      console.warn('Initial cloud world save failed',e));
+  }
   clearInterval(saveInterval);saveInterval=setInterval(()=>saveCurrentGame(false),20000);
 }
 function formatSavedAt(ms){
@@ -950,6 +1050,10 @@ async function submitAuth(e){
   const key=accountKey(name),reg=loadAccountRegistry(),mode=authForm.dataset.mode||'login';
   authSubmit.disabled=true;authSubmit.textContent=mode==='create'?'作成中...':'確認中...';
   try{
+    if(cloudEnabled){
+      await cloudAuthSubmit(name,password,key,reg,mode);
+      return;
+    }
     if(mode==='create'){
       if(reg.accounts[key]){authError.textContent='その名前はすでに使われています';return}
       const salt=crypto.getRandomValues(new Uint8Array(16)),hash=await passwordHash(password,salt);
@@ -5630,24 +5734,34 @@ setAuthMode('login');
 
 singlePlayBtn.addEventListener('click',showWorldSelection);
 worldBack.addEventListener('click',showMainMenu);
-menuLogout.addEventListener('click',()=>{clearSession();location.reload()});
+menuLogout.addEventListener('click',async()=>{
+  try{await cloudFlush();await cloudSignOut()}catch(e){console.warn('Cloud logout',e)}
+  clearSession();location.reload();
+});
 saveNowBtn.addEventListener('click',()=>saveCurrentGame(true));
 $('inviteFriendsBtn').addEventListener('click',()=>multiInviteFromGame());
 worldListBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
   if(multiRole)multiLeave();else showWorldSelection();
 });
-worldLogout.addEventListener('click',()=>{clearSession();location.reload()});
+worldLogout.addEventListener('click',async()=>{
+  try{await cloudFlush();await cloudSignOut()}catch(e){console.warn('Cloud logout',e)}
+  clearSession();location.reload();
+});
 logoutBtn.addEventListener('click',()=>{
   if(!currentAccount)return;
   if(confirm('セーブしてログアウトしますか？')){
     saveCurrentGame(false);
     const handoff=multiRole==='host'&&multiGuestRecords.size>0;
     if(multiRole)multiLeave(true);
-    clearInterval(saveInterval);clearSession();
-    // A reload right away would abort in-flight WebRTC world migration.
-    if(handoff)setTimeout(()=>location.reload(),900);
-    else location.reload();
+    clearInterval(saveInterval);
+    void (async()=>{
+      try{await cloudFlush();await cloudSignOut()}catch(e){console.warn('Cloud logout',e)}
+      clearSession();
+      // A reload right away would abort in-flight WebRTC world migration.
+      if(handoff)setTimeout(()=>location.reload(),900);
+      else location.reload();
+    })();
   }
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCurrentGame(false)});
@@ -5664,5 +5778,6 @@ $('startBtn').addEventListener('click',()=>{
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
   void spawnChimeraVisualTest();
 });
-if(!restoreSession())authName.focus();
+if(cloudEnabled)void restoreCloudSession();
+else if(!restoreSession())authName.focus();
 requestAnimationFrame(loop);
