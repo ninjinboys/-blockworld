@@ -52,11 +52,139 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
     });
     object=null;
   }
+  // The grip is at local Y=0. The palm visibly wraps the handle and the
+  // tool projects diagonally upward into the screen (not a flat hotbar icon).
+  const TIERS={
+    wood:{main:0x95602d,shine:0xc88f48,edge:0x603c23},
+    stone:{main:0x82888b,shine:0xbec5c6,edge:0x50565a},
+    iron:{main:0xc2ccd1,shine:0xf1f6fa,edge:0x87949f},
+    gold:{main:0xe0b432,shine:0xffe780,edge:0x986d14},
+    diamond:{main:0x36c6d6,shine:0xa2fbff,edge:0x16808c}
+  };
+  const swordIds=new Set([111,115,119,123]);
+  const pickIds=new Set([104,105,114,118,122]);
+  const axeIds=new Set([112,116,120,124,138]);
+  const shovelIds=new Set([113,117,121,125]);
+  function tierOf(id){
+    if([104,138].includes(id))return TIERS.wood;
+    if([105,111,112,113].includes(id))return TIERS.stone;
+    if([114,115,116,117].includes(id))return TIERS.iron;
+    if([118,119,120,121].includes(id))return TIERS.gold;
+    return TIERS.diamond;
+  }
+  function part(parent,w,h,d,material,x,y,z,rz=0){
+    const m=shape(parent,w,h,d,material,x,y,z);
+    m.rotation.z=rz;
+    return m;
+  }
+  function craftWeapon(id){
+    const tool=new THREE.Group(),metal=tierOf(id);
+    const main=itemMat(metal.main),shine=itemMat(metal.shine),
+      edge=itemMat(metal.edge),wood=itemMat(0x7e5331),
+      woodHi=itemMat(0xa97948),binding=itemMat(0x463729);
+    tool.name='3D voxel '+id;
+    const handle=(long=false)=>{
+      part(tool,.098,long?.69:.34,.108,wood,0,long?.29:0,0);
+      part(tool,.037,long?.64:.27,.013,woodHi,-.028,long?.29:0,-.059);
+      part(tool,.117,.12,.116,binding,0,-.11,0);
+    };
+    if(swordIds.has(id)){
+      handle();
+      // Pointy, elongated blade. Color changes with stone/iron/gold/diamond.
+      part(tool,.39,.090,.145,edge,0,.201,0); // crossguard
+      part(tool,.30,.071,.16,main,0,.233,0);
+      part(tool,.178,.45,.130,main,0,.475,0);
+      part(tool,.047,.433,.142,shine,-.045,.47,-.001);
+      part(tool,.148,.205,.116,main,0,.768,0);
+      part(tool,.077,.129,.099,shine,0,.907,0);
+      part(tool,.085,.08,.108,edge,0,.980,0);
+      tool.rotation.set(-.18,.23,-.16);
+      tool.scale.set(.91,.88,.91);
+    }else if(pickIds.has(id)){
+      handle(true);
+      // Pickaxe is horizontal at the TOP of the shaft, not a sword.
+      part(tool,.49,.135,.158,main,0,.683,0);
+      part(tool,.42,.048,.085,shine,0,.756,-.015);
+      part(tool,.16,.14,.145,edge,-.27,.658,0,.36);
+      part(tool,.16,.14,.145,edge,.27,.658,0,-.36);
+      part(tool,.105,.12,.115,main,-.371,.612,0,.47);
+      part(tool,.105,.12,.115,main,.371,.612,0,-.47);
+      tool.rotation.set(-.18,.36,-.18);
+      tool.scale.set(.88,.84,.88);
+    }else if(axeIds.has(id)){
+      handle(true);
+      // Heavy axe head sits to one side of the handle, with clear cutting edge.
+      part(tool,.32,.30,.18,main,-.12,.650,0);
+      part(tool,.135,.39,.169,shine,-.292,.658,0);
+      part(tool,.077,.36,.15,edge,-.385,.657,0);
+      part(tool,.17,.13,.17,edge,.047,.650,0);
+      tool.rotation.set(-.18,.45,-.23);
+      tool.scale.set(.94,.91,.94);
+    }else if(shovelIds.has(id)){
+      handle(true);
+      // Wide spade above a narrow shaft, not a flat 2D sprite.
+      part(tool,.25,.31,.115,main,0,.765,0);
+      part(tool,.215,.23,.052,shine,-.012,.769,-.063);
+      part(tool,.18,.10,.108,edge,0,.574,0);
+      part(tool,.12,.10,.10,main,0,.956,0);
+      tool.rotation.set(-.16,.40,-.19);
+      tool.scale.set(.89,.87,.89);
+    }
+    return tool;
+  }
+  function craftBow(){
+    const bow=new THREE.Group(),wood=itemMat(0x9d6133),
+      highlight=itemMat(0xdba463),string=itemMat(0xe4d8b4);
+    // Angled segmented wooden bow with a taut visible string.
+    for(let i=0;i<9;i++){
+      const t=i/8,y=(t-.5)*1.01,x=-.21*Math.sin(Math.PI*t);
+      part(bow,.067,.16,.078,i%2?wood:highlight,x,y,0,
+        (t-.5)*.55);
+    }
+    part(bow,.022,1.02,.021,string,.012,0,-.025);
+    part(bow,.13,.18,.12,wood,-.19,.0,0);
+    bow.rotation.set(-.15,.27,-.27);
+    bow.scale.set(.86,.88,.86);
+    return bow;
+  }
+  function fallbackSprite(id){
+    const cv=document.createElement('canvas');cv.width=16;cv.height=16;
+    const ctx=cv.getContext('2d');if(!ctx)return null;
+    ctx.imageSmoothingEnabled=false;drawItemIcon(ctx,id);
+    const tex=new THREE.CanvasTexture(cv);
+    tex.magFilter=THREE.NearestFilter;
+    tex.minFilter=THREE.NearestFilter;
+    tex.colorSpace=THREE.SRGBColorSpace;
+    const mat=new THREE.MeshBasicMaterial({
+      map:tex,transparent:true,alphaTest:.075,side:THREE.DoubleSide,
+      depthTest:false,depthWrite:false,toneMapped:false
+    });
+    const mesh=new THREE.Mesh(new THREE.PlaneGeometry(.40,.40),mat);
+    mesh.rotation.set(-.07,.13,-.32);
+    mesh.position.set(-.024,.115,-.012);
+    return mesh;
+  }
   function buildHeld(id){
     clearHeld();
     if(id==null)return;
-    const placeBlock = Object.hasOwn(blockColors,id) && id!==5;
-    if(placeBlock){
+    const placeBlock=Object.hasOwn(blockColors,id)&&id!==5;
+    if(swordIds.has(id)||pickIds.has(id)||axeIds.has(id)||shovelIds.has(id)){
+      object=craftWeapon(id);
+    }else if(id===149){
+      object=craftBow();
+    }else if(id===101||id===147||id===31){
+      // Sticks and torches are long objects gripped at their bottom.
+      object=new THREE.Group();
+      const wood=itemMat(0x936232);
+      part(object,.09,.57,.09,wood,0,.21,0);
+      if(id!==101){
+        const flame=itemMat(0xffc354),tip=itemMat(0xf18c20);
+        part(object,.154,.16,.154,tip,0,.56,0);
+        part(object,.105,.12,.105,flame,0,.66,0);
+      }
+      object.rotation.set(-.12,.28,-.16);
+      object.scale.set(.90,.87,.90);
+    }else if(placeBlock){
       const color=blockColors[id];
       const side=id===1?0x77532e:color;
       const top=id===1?0x6bb750:color;
@@ -65,27 +193,11 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       object.rotation.set(.18,.52,-.18);
       object.position.set(.005,.025,-.015);
     }else{
-      // Tools, swords, bow, food, torches and every special item keep their
-      // exact recognizable pixel-icon appearance from the NEXACRAFT hotbar.
-      const cv=document.createElement('canvas');cv.width=16;cv.height=16;
-      const ctx=cv.getContext('2d');
-      if(!ctx)return;
-      ctx.imageSmoothingEnabled=false;drawItemIcon(ctx,id);
-      const texture=new THREE.CanvasTexture(cv);
-      texture.magFilter=THREE.NearestFilter;
-      texture.minFilter=THREE.NearestFilter;
-      texture.colorSpace=THREE.SRGBColorSpace;
-      const material=new THREE.MeshBasicMaterial({
-        map:texture,transparent:true,alphaTest:.075,side:THREE.DoubleSide,
-        depthTest:false,depthWrite:false,toneMapped:false
-      });
-      object=new THREE.Mesh(new THREE.PlaneGeometry(.55,.55),material);
-      object.rotation.set(-.07,.12,-.29);
-      object.position.set(-.035,.095,-.025);
+      object=fallbackSprite(id);
     }
+    if(!object)return;
     object.name='Held item '+id;
-    object.frustumCulled=false;
-    object.renderOrder=10002;
+    object.traverse(n=>{if(n.isMesh||n.geometry){n.frustumCulled=false;n.renderOrder=10002}});
     held.add(object);
   }
   camera.add(root);
