@@ -1,4 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261015rightHand01';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -3038,6 +3039,16 @@ function buildPlayerAvatar(){
 const playerAvatar=buildPlayerAvatar();
 const VIEW_LABELS=['一人称','三人称（背面）','二人称風（正面）'];
 let cameraMode=0;
+// First-person hand is a true 3D viewmodel attached to the gameplay camera.
+// Selection follows the actual 9-slot inventory, including stack depletion.
+const firstPersonHand=makeFirstPersonHand(THREE,{
+  scene,camera,drawItemIcon,
+  getHeld:()=>inventorySlots[selectedHotbarIndex],
+  isVisible:()=>started&&worldReady&&!dead&&!sleeping&&!craftOpen&&
+    !inventoryOpen&&!chestOpen&&cameraMode===0,
+  getMovement:()=>Math.hypot(player.vel.x,player.vel.z),
+  isMining:()=>miningHeld
+});
 const cameraEye=new THREE.Vector3(),cameraWanted=new THREE.Vector3(),cameraVector=new THREE.Vector3(),cameraLook=new THREE.Vector3();
 const gameplayAimDirection=new THREE.Vector3(),gameplayAimOrigin=new THREE.Vector3();
 function updateViewLabel(){
@@ -4189,6 +4200,7 @@ function doorSupportedBaseY(x,aimY,z){
 }
 function place(){
   if(chestOpen||craftOpen||inventoryOpen)return;
+  if(started&&!dead&&!sleeping)firstPersonHand.swing(.6);
   if(ridingHorse){flash('攻撃ボタンで馬から降りられます');return}
   const horse=aimedHorse();
   if(horse&&useHorse(horse))return;
@@ -4548,6 +4560,7 @@ function updateEating(dt){
 function primaryActionStart(){
   if(!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
   if(ridingHorse){dismountHorse();return}
+  firstPersonHand.swing();
   if(selected===I.BOW){startBowDraw();return}
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
@@ -4963,6 +4976,7 @@ function loop(now){
   if(!started||dead||sleeping)playerAvatar.visible=false;
   if(chimeraVisualModel&&animateChimeraVisual)
     animateChimeraVisual(chimeraVisualModel,now*.001,false);
+  firstPersonHand.update(dt,now);
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
 }
