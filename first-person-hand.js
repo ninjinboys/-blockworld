@@ -118,7 +118,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       part(tool,.16,.14,.145,edge,.27,.658,0,-.36);
       part(tool,.105,.12,.115,main,-.371,.612,0,.47);
       part(tool,.105,.12,.115,main,.371,.612,0,-.47);
-      tool.rotation.set(-.18,1.23,-.51);
+      tool.rotation.set(-.18,-1.23,-.51);
       tool.scale.set(.88,.84,.88);
     }else if(axeIds.has(id)){
       handle(true);
@@ -127,7 +127,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       part(tool,.135,.39,.169,shine,-.292,.658,0);
       part(tool,.077,.36,.15,edge,-.385,.657,0);
       part(tool,.17,.13,.17,edge,.047,.650,0);
-      tool.rotation.set(-.18,1.23,-.51);
+      tool.rotation.set(-.18,-1.23,-.51);
       tool.scale.set(.94,.91,.94);
     }else if(shovelIds.has(id)){
       handle(true);
