@@ -16,7 +16,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
   const FIRST_PERSON_ARM_X=1.07;
   const FIRST_PERSON_ARM_Y=-.96;
   const FIRST_PERSON_ARM_Z=-1.08;
-  const FIRST_PERSON_ARM_TILT=.70;
+  const FIRST_PERSON_ARM_TILT=.35;
   root.position.set(FIRST_PERSON_ARM_X,FIRST_PERSON_ARM_Y,FIRST_PERSON_ARM_Z);
   root.rotation.z=FIRST_PERSON_ARM_TILT;
   const pivot=new THREE.Group();
