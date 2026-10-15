@@ -111,23 +111,23 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       tool.scale.set(.91,.88,.91);
     }else if(pickIds.has(id)){
       handle(true);
-      // Keep the pick shaft nearly vertical with just a slight leftward lean.
+      // Turn the pickaxe to face left/right: YAW +90deg. Keep Z tilt unchanged.
       part(tool,.49,.135,.158,main,0,.683,0);
       part(tool,.42,.048,.085,shine,0,.756,-.015);
       part(tool,.16,.14,.145,edge,-.27,.658,0,.36);
       part(tool,.16,.14,.145,edge,.27,.658,0,-.36);
       part(tool,.105,.12,.115,main,-.371,.612,0,.47);
       part(tool,.105,.12,.115,main,.371,.612,0,-.47);
-      tool.rotation.set(-.18,-.34,-2.08);
+      tool.rotation.set(-.18,1.23,-.51);
       tool.scale.set(.88,.84,.88);
     }else if(axeIds.has(id)){
       handle(true);
-      // Keep axe shaft nearly upright; blade slightly left, not far left.
+      // Turn the axe head left/right around vertical Y axis (not Z-roll).
       part(tool,.32,.30,.18,main,-.12,.650,0);
       part(tool,.135,.39,.169,shine,-.292,.658,0);
       part(tool,.077,.36,.15,edge,-.385,.657,0);
       part(tool,.17,.13,.17,edge,.047,.650,0);
-      tool.rotation.set(-.18,-.34,-2.08);
+      tool.rotation.set(-.18,1.23,-.51);
       tool.scale.set(.94,.91,.94);
     }else if(shovelIds.has(id)){
       handle(true);
