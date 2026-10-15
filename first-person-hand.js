@@ -111,25 +111,25 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       tool.scale.set(.91,.88,.91);
     }else if(pickIds.has(id)){
       handle(true);
-      // Rotate the pickaxe around its shaft so the horizontal head is shown
-      // diagonally in depth rather than as a wide flat bar across the screen.
+      // Lean the shaft from lower right to UPPER LEFT, with the pick head
+      // extending mostly left of the hand instead of pointing screen-right.
       part(tool,.49,.135,.158,main,0,.683,0);
       part(tool,.42,.048,.085,shine,0,.756,-.015);
       part(tool,.16,.14,.145,edge,-.27,.658,0,.36);
       part(tool,.16,.14,.145,edge,.27,.658,0,-.36);
       part(tool,.105,.12,.115,main,-.371,.612,0,.47);
       part(tool,.105,.12,.115,main,.371,.612,0,-.47);
-      tool.rotation.set(-.18,1.22,-.62);
+      tool.rotation.set(-.18,-.68,-.28);
       tool.scale.set(.88,.84,.88);
     }else if(axeIds.has(id)){
       handle(true);
-      // Turn the AXE BLADE toward the view direction instead of displaying
-      // its broad side flat across the screen. The handle stays in the fist.
+      // Point the AXE BLADE to the upper-left and keep the shaft almost
+      // vertical with a visible leftward lean (not a right-facing flat blade).
       part(tool,.32,.30,.18,main,-.12,.650,0);
       part(tool,.135,.39,.169,shine,-.292,.658,0);
       part(tool,.077,.36,.15,edge,-.385,.657,0);
       part(tool,.17,.13,.17,edge,.047,.650,0);
-      tool.rotation.set(-.18,1.30,-.62);
+      tool.rotation.set(-.18,-.68,-.28);
       tool.scale.set(.94,.91,.94);
     }else if(shovelIds.has(id)){
       handle(true);
