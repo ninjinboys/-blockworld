@@ -45,7 +45,9 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
     15:0xc18d53,16:0x7f8182,17:0xbddfe1,18:0x25252b,
     19:0x8c552e,20:0x767b81,21:0xae5250,32:0x8c572e
   };
-  let currentId=null,object=null,swingTime=0,walkPhase=0,lastMineSwing=0;
+  let currentId=null,object=null,swingTime=0,walkPhase=0,lastMineSwing=0,swingPower=1;
+  const SWING_DURATION=.49;
+  const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
   const itemMat=(c)=>basic(c);
   function clearHeld(){
     if(!object)return;
@@ -214,7 +216,11 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
   root.visible=false;
   return {
     swing(power=1){
-      swingTime=.39;
+      swingTime=SWING_DURATION;
+      swingPower=Math.max(.3,Math.min(1,Number(power)||1));
+      // The initial manual attack must not get retriggered immediately by
+      // the continuing hold-to-mine loop.
+      lastMineSwing=performance.now();
     },
     update(dt,now){
       const visible=Boolean(isVisible());
@@ -225,23 +231,46 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       if(id!==currentId){currentId=id;buildHeld(id)}
       const movement=Math.min(1,Math.max(0,Number(getMovement())||0)/4.4);
       walkPhase+=dt*(7.8+movement*2.9);
-      if(isMining() && now-lastMineSwing>440){
-        lastMineSwing=now;swingTime=.39;
+      if(isMining() && now-lastMineSwing>470){
+        lastMineSwing=now;
+        swingTime=SWING_DURATION;
+        swingPower=1;
       }
-      swingTime=Math.max(0,swingTime-dt);
-      const swing=swingTime>0?Math.sin(Math.PI*(1-swingTime/.39)):0;
+      swingTime=Math.max(0,swingTime-Math.max(0,dt));
+      const p=swingTime>0?1-swingTime/SWING_DURATION:1;
+      let windup=0,impact=0;
+      if(swingTime>0){
+        if(p<.23){
+          // Raise the fist and weapon a little before the stroke.
+          windup=smooth(p/.23);
+        }else if(p<.72){
+          // Large curved, upper-left -> lower-right strike (user sketch).
+          windup=1-smooth((p-.23)/.49);
+          impact=smooth((p-.23)/.49);
+        }else{
+          // Bring the arm back to its ready position without snapping.
+          impact=1-smooth((p-.72)/.28);
+        }
+      }
+      const strength=swingPower;
       const bob=movement*Math.sin(walkPhase)*.017;
       root.position.set(
-        FIRST_PERSON_ARM_X+bob*.45,
-        FIRST_PERSON_ARM_Y+movement*Math.abs(Math.sin(walkPhase))*.027,
-        FIRST_PERSON_ARM_Z
+        FIRST_PERSON_ARM_X+bob*.45+(windup*.025+impact*.17)*strength,
+        FIRST_PERSON_ARM_Y+movement*Math.abs(Math.sin(walkPhase))*.027
+          +(windup*.10-impact*.22)*strength,
+        FIRST_PERSON_ARM_Z-(windup*.05+impact*.08)*strength
       );
-      root.rotation.set(-swing*.18,0,FIRST_PERSON_ARM_TILT-swing*.46+bob*.25);
-      // Show the squared top of the hand rather than a flat horizontal palm.
-      pivot.rotation.x=.19-swing*.70;
-      pivot.rotation.y=-.09;
-      pivot.rotation.z=swing*.19;
-      held.rotation.set(swing*.08,0,-swing*.15);
+      root.rotation.set(
+        (-windup*.15+impact*.27)*strength,
+        (-windup*.09+impact*.20)*strength,
+        FIRST_PERSON_ARM_TILT+bob*.25+(windup*.23-impact*1.25)*strength
+      );
+      // Hold the wrist steady on the axe/pick handle. Drive the swing from
+      // the forearm, then tip the weapon toward the block on impact.
+      pivot.rotation.x=.19+(-windup*.12-impact*.73)*strength;
+      pivot.rotation.y=-.09+impact*.26*strength;
+      pivot.rotation.z=impact*.13*strength;
+      held.rotation.set(impact*.13*strength,0,-impact*.16*strength);
     }
   };
 }
