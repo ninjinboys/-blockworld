@@ -1,5 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {makeFirstPersonHand} from './first-person-hand.js?v=20261015balancedToolLean11';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261015toolRotate90v12';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
