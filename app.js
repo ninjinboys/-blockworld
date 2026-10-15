@@ -452,6 +452,10 @@ function chestApplyState(x,y,z,raw){
 
 let streamCX=NaN,streamCZ=NaN;
 let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=5;
+// Restoring a remembered local session must not depend on Firebase network.
+// Cloud writes are permitted only after THIS exact user has a verified
+// Firebase session. A legacy/local-only auto-login remains playable offline.
+let cloudSessionReady=false;
 let multiRole=null,multiHostSlot=null,multiHostId='',multiBusy=false,multiApplying=false,multiMembers={};
 const multiGuestRecords=new Map(),multiAvatars=new Map(),multiFriendsOnline=new Map();
 let multiLastPose=0,multiLastProfile=0,multiPendingTimer=null,multiClosing=false,multiProfileSaveTimer=null;
@@ -553,6 +557,7 @@ async function cloudAuthSubmit(name,password,key,reg,mode){
   try{await setLocalCloudCache(identity.key,identity.name,password)}
   catch(e){await cloudSignOut();throw e}
   currentAccount={key:identity.key,name:identity.name};
+  cloudSessionReady=true;
   rememberSession(identity.key);
   setSaveStatus('クラウド同期中…');
   try{await cloudMergeWorlds()}catch(e){
@@ -565,21 +570,46 @@ async function cloudAuthSubmit(name,password,key,reg,mode){
 async function restoreCloudSession(){
   try{
     const identity=await cloudRestore();
-    if(!identity){authName.focus();return}
+    // Existing remembered players can continue straight into their saved
+    // worlds. Without a Firebase account the game stays local-only until
+    // the player explicitly signs in with their existing password.
+    if(!identity){
+      if(!currentAccount)authName.focus();
+      return;
+    }
+    if(currentAccount && currentAccount.key!==identity.key){
+      // Never silently switch the current local player's identity or
+      // upload their saves to a different signed-in Firebase account.
+      console.warn('A different cloud account is signed in; local session retained');
+      setSaveStatus('端末保存中（クラウドのアカウントが異なります）');
+      return;
+    }
+    const alreadyRestored=!!currentAccount;
     const reg=loadAccountRegistry();
     if(!reg.accounts[identity.key]){
       reg.accounts[identity.key]={name:identity.name,cloud:true,createdAt:Date.now()};
       saveAccountRegistry(reg);
     }
     currentAccount={key:identity.key,name:identity.name};
+    cloudSessionReady=true;
     rememberSession(identity.key);
-    await cloudMergeWorlds();
-    setSaveStatus('ワールド未選択');
-    showMainMenu();
+    // An old local session may have entered a world while Firebase booted.
+    // Do not reload or discard the in-memory world when auth finishes.
+    if(!worldReady){
+      try{await cloudMergeWorlds()}
+      catch(e){console.warn('Cloud session world sync failed',e)}
+      setSaveStatus('ワールド未選択');
+    }
+    if(!alreadyRestored)showMainMenu();
   }catch(e){
-    console.warn('Cloud session restoration failed',e);
-    authError.textContent='クラウドへの接続に失敗しました。通信状態を確認してください。';
-    authName.focus();
+    console.warn('Cloud session restoration failed; using local account',e);
+    // Failure to load Firebase must never break legacy auto-login.
+    if(!currentAccount){
+      if(!restoreSession()){
+        authError.textContent='クラウド接続を確認してください。端末内アカウントは保持されています。';
+        authName.focus();
+      }
+    }
   }
 }
 function restoreSession(){
@@ -589,7 +619,8 @@ function restoreSession(){
     const saved=JSON.parse(raw),reg=loadAccountRegistry(),acc=reg.accounts?.[saved?.key];
     if(!acc){clearSession();return false}
     currentAccount={key:saved.key,name:acc.name||saved.key};
-    setSaveStatus('ワールド未選択');
+    cloudSessionReady=false;
+    setSaveStatus(cloudEnabled?'端末保存で自動ログイン':'ワールド未選択');
     showMainMenu();
     return true;
   }catch{
@@ -784,7 +815,7 @@ function saveCurrentGame(showMessage=false){
       payload.originName=currentAccount.name;
     }
     localStorage.setItem(key,JSON.stringify(payload));
-    if(cloudEnabled&&!multiRole&&(wasDirty||showMessage||Date.now()-lastCloudWorldSaveAt>120000)){
+    if(cloudEnabled&&cloudSessionReady&&!multiRole&&(wasDirty||showMessage||Date.now()-lastCloudWorldSaveAt>120000)){
       lastCloudWorldSaveAt=Date.now();
       const slot=currentWorldSlot;
       void cloudQueueSave(slot,payload).catch(e=>{
@@ -973,7 +1004,7 @@ async function initializeAccountWorld(save,slot){
   renderHotbar();updateProgress();renderHealth();renderStamina();updateViewLabel();
   loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
-  if(cloudEnabled&&!save){
+  if(cloudEnabled&&cloudSessionReady&&!save){
     // New worlds need an initial cloud snapshot even without edits yet.
     void cloudQueueSave(slot,makeSaveData()).catch(e=>
       console.warn('Initial cloud world save failed',e));
@@ -5806,6 +5837,9 @@ $('startBtn').addEventListener('click',()=>{
 if(cloudEnabled){
   const note=document.querySelector('.auth-note');
   if(note)note.textContent='クラウド対応：同じユーザー名とパスワードで別の端末からログインできます。初回の旧アカウント移行は元の端末でログインしてください。';
+  // Restore the existing remembered account immediately, without waiting
+  // for Firebase libraries, credentials or Firestore/network availability.
+  if(!restoreSession())authName.focus();
   void restoreCloudSession();
 }else if(!restoreSession())authName.focus();
 requestAnimationFrame(loop);
