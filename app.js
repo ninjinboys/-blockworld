@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261016shieldDown24';
-import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016avatarHeld02';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016avatarMotion03';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -3088,6 +3088,14 @@ function buildPlayerAvatar(){
 }
 const playerAvatar=buildPlayerAvatar();
 const avatarHeldItems=makeAvatarHeldItems(THREE,drawItemIcon);
+// One-shot gestures are local timestamps. Multiplayer sends their sequence
+// plus elapsed age, not a raw clock that differs between devices.
+let avatarActionSeq=0,avatarActionKind=null,avatarActionAt=-Infinity;
+function triggerAvatarAction(kind){
+  avatarActionKind=kind;
+  avatarActionAt=performance.now();
+  avatarActionSeq=(avatarActionSeq+1)%100000000;
+}
 const VIEW_LABELS=['一人称','三人称（背面）','二人称風（正面）'];
 let cameraMode=0;
 // First-person hand is a true 3D viewmodel attached to the gameplay camera.
@@ -3171,6 +3179,10 @@ function updatePlayerAvatar(now){
     limbs.rightArm.rotation.z=selectedStack?.qty>0?.30:0;
     limbs.leftArm.rotation.z=(offhandItem?.id===I.SHIELD||offhandItem?.id===I.TORCH)?-.34:0;
   }
+  avatarHeldItems.animate(playerAvatar,now,{
+    kind:avatarActionKind,at:avatarActionAt,
+    mining:miningHeld,drawing:bowDrawing,guarding:shieldGuarding,riding:!!ridingHorse
+  });
 }
 function updateGameCamera(){
   cameraEye.set(player.pos.x,player.pos.y+EYE,player.pos.z);
@@ -4319,7 +4331,10 @@ function doorSupportedBaseY(x,aimY,z){
 }
 function place(){
   if(chestOpen||craftOpen||inventoryOpen)return;
-  if(started&&!dead&&!sleeping)firstPersonHand.swing(.6);
+  if(started&&!dead&&!sleeping){
+    firstPersonHand.swing(.6);
+    triggerAvatarAction('use');
+  }
   if(ridingHorse){flash('攻撃ボタンで馬から降りられます');return}
   const horse=aimedHorse();
   if(horse&&useHorse(horse))return;
@@ -4574,6 +4589,7 @@ function endBowDraw(fire=false){
   const power=Math.max(.2,Math.min(1,duration/BOW_DRAW_MS));
   if(removeItem(I.ARROW,1)!==0){flash('矢がありません');return}
   bowLastShot=now;
+  triggerAvatarAction('fire');
   spawnFlyingArrow(origin,gameplayAimDirection,power);
   if(multiRole&&multiplayerNetwork.connected){
     multiplayerNetwork.send({t:'arrowShot',x:origin.x,y:origin.y,z:origin.z,
@@ -4680,6 +4696,7 @@ function primaryActionStart(){
   if(!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
   if(ridingHorse){dismountHorse();return}
   firstPersonHand.swing();
+  if(selected!==I.BOW)triggerAvatarAction('attack');
   if(selected===I.BOW){startBowDraw();return}
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
@@ -5179,7 +5196,10 @@ function multiCurrentPose(){
     speed:Math.hypot(player.vel.x,player.vel.z),
     onGround:player.onGround,armor:[...equippedArmor],
     held:inventorySlots[selectedHotbarIndex]?.id??null,
-    offhand:offhandItem?.id??null
+    offhand:offhandItem?.id??null,
+    actionSeq:avatarActionSeq,actionKind:avatarActionKind,
+    actionAge:Math.max(0,Math.min(1,(performance.now()-avatarActionAt)/1000)),
+    mining:miningHeld,drawing:bowDrawing,guarding:shieldGuarding
   };
 }
 function multiProfile(){
@@ -5351,7 +5371,8 @@ function multiShowAvatar(id,pose){
     model=createPlayerModel();
     model.userData.multiMove={
       target:new THREE.Vector3(pose.x,pose.y,pose.z),
-      yaw,speed:0,grounded:true,phase:0,swing:0,lastReceived:performance.now()
+      yaw,speed:0,grounded:true,phase:0,swing:0,lastReceived:performance.now(),
+      actionSeq:-1,actionKind:null,actionAt:-Infinity,mining:false,drawing:false,guarding:false
     };
     model.position.set(pose.x,pose.y,pose.z);
     model.rotation.y=yaw;
@@ -5368,6 +5389,17 @@ function multiShowAvatar(id,pose){
   const sampledSpeed=model.position.distanceTo(motion.target)/dt;
   motion.speed=Number.isFinite(pose.speed)?Math.max(0,Math.min(8,pose.speed)):Math.min(8,sampledSpeed);
   motion.grounded=pose.onGround!==false;
+  // Process only new action events, so the same attack never restarts on
+  // each 150ms network pose packet. Old clients simply have no motion fields.
+  if(Number.isSafeInteger(pose.actionSeq)&&pose.actionSeq>=0&&pose.actionSeq!==motion.actionSeq){
+    motion.actionSeq=pose.actionSeq;
+    motion.actionKind=['attack','use','fire'].includes(pose.actionKind)?pose.actionKind:null;
+    const age=Number(pose.actionAge);
+    motion.actionAt=performance.now()-Math.max(0,Math.min(1,Number.isFinite(age)?age:0))*1000;
+  }
+  motion.mining=pose.mining===true;
+  motion.drawing=pose.drawing===true;
+  motion.guarding=pose.guarding===true;
   motion.lastReceived=performance.now();
 }
 function multiAnimateAvatars(now){
@@ -5399,6 +5431,10 @@ function multiAnimateAvatars(now){
       limbs.leftLeg.rotation.x=.15;
       limbs.rightLeg.rotation.x=-.15;
     }
+    avatarHeldItems.animate(model,now,{
+      kind:m.actionKind,at:m.actionAt,
+      mining:fresh&&m.mining,drawing:fresh&&m.drawing,guarding:fresh&&m.guarding
+    });
   }
 }
 function multiClearAvatars(){
