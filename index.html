@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#172f33">
 <title>NEXACRAFT</title>
 <link rel="preload" href="assets/nexacraft-title.webp?v=20261011titleHD1672" as="image" type="image/webp">
-<link rel="stylesheet" href="style.css?v=20261016torchOffhand17">
+<link rel="stylesheet" href="style.css?v=20261016shieldOffhand18">
 </head>
 <body>
 <!-- The glowing monument in the title art is Nexa Gate,
@@ -141,7 +141,7 @@
 </div>
 <div id="mobile">
   <div class="pad"><button class="sprint" type="button" aria-label="前に走る">▲<span class="run-label">RUN</span></button><button class="up" type="button" aria-label="前に歩く">▲</button><button class="left">◀</button><button class="down">▼</button><button class="right">▶</button></div>
-  <button class="jump">ジャンプ</button>
+  <button class="jump">ジャンプ</button><button id="tapGuard" type="button" hidden aria-label="盾を構えて攻撃を防ぐ。押している間ガードします">🛡 ガード</button>
   <div id="tapbar"><button id="tapMine" aria-label="攻撃。長押しで採掘。弓を持っている時は長押しで狙いを溜め、離して矢を放つ">攻撃</button><button id="tapPlace" aria-label="ブロック設置・ドア開閉・食事">設置・使用</button><button id="tapInventory">持ち物</button><button id="tapCraft">CRAFT</button></div>
 </div>
 <div id="deathScreen" aria-hidden="true">
@@ -162,10 +162,10 @@
     </div>
     <div class="armor-title">装備 <span id="armorDefense">防御 0%</span></div>
     <div id="inventoryArmor" class="armor-grid" aria-label="装備欄。防具を選んで対応する場所をタップすると装備、選択していなければ装備中の防具をタップで外せます"></div>
-    <div class="offhand-row" aria-label="オフハンド。左手には松明だけを持てます">
-      <span class="offhand-caption">OFFHAND <small>左手 · 松明のみ</small></span>
+    <div class="offhand-row" aria-label="オフハンド。左手には松明または盾を持てます">
+      <span class="offhand-caption">OFFHAND <small>左手 · 松明 / 盾</small></span>
       <button id="inventoryOffhand" type="button" class="offhand-slot" aria-label="左手：空">左手</button>
-      <button id="inventoryOffhandEquip" type="button" disabled>選択した松明を左手に持つ</button>
+      <button id="inventoryOffhandEquip" type="button" disabled>選択した松明・盾を左手に持つ</button>
     </div>
     <div id="inventoryMainGrid" class="inventory-grid main-grid"></div>
     <div class="inventory-hotbar-label">HOTBAR</div>
@@ -183,7 +183,7 @@
         <button id="inventoryEquip" type="button">装備</button>
       </div>
     </div>
-    <div class="inventory-help">防具をタップして、上の対応する装備欄をタップでも装着できます。「装備」ボタンも使用可能。選択していない場合は、装備欄をタップすると外せます。</div>
+    <div class="inventory-help">防具は上の装備欄から、松明・盾はOFFHAND欄から装備できます。盾を持つとガードボタンが出ます。PCではGまたは右クリック長押しでガード。</div>
   </div>
 </div>
 <div id="chestScreen" aria-hidden="true">
@@ -293,7 +293,7 @@
   },true);
 })();
 </script>
-<script type="module" src="app.js?v=20261016torchOffhand17"></script>
+<script type="module" src="app.js?v=20261016shieldOffhand18"></script>
 <script type="module" src="device-account-transfer-ui.js?v=20261014deviceTransfer02"></script>
 </body>
 </html>
