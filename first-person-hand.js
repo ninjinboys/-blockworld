@@ -2,7 +2,7 @@
  * Camera-attached so it never changes world interaction/raycasting.
  * No external textures. Hotbar art uses the game's existing drawItemIcon().
  */
-export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isGuarding=()=>false,isVisible,getMovement,isMining}){
+export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isGuarding=()=>false,isVisible,getMovement,isMining,isHurt=()=>false}){
   const basic=(color)=>new THREE.MeshBasicMaterial({
     color,depthTest:true,depthWrite:true,toneMapped:false
   });
@@ -289,6 +289,12 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     object.traverse(n=>{if(n.isMesh||n.geometry){n.frustumCulled=false;n.renderOrder=10002}});
     held.add(object);
   }
+  // Flash only skin, sleeves, and offhand arm; never recolor equipped tools,
+  // torches or shields. Model and item materials are left untouched.
+  const armParts=[...pivot.children,...leftRoot.children].filter(mesh=>mesh.isMesh)
+    .map(mesh=>({mesh,original:mesh.material}));
+  const hurtArmMaterial=basic(0xff3333);
+  let armDamageFlashing=false;
   camera.add(root,leftRoot);
   if(!camera.parent)scene.add(camera);
   root.visible=false;
@@ -297,6 +303,12 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       swingTime=.39;
     },
     update(dt,now){
+      const hit=Boolean(isHurt());
+      if(hit!==armDamageFlashing){
+        armDamageFlashing=hit;
+        for(const {mesh,original} of armParts)
+          mesh.material=hit?hurtArmMaterial:original;
+      }
       const visible=Boolean(isVisible());
       root.visible=visible;
       const leftItem=getOffhand();
