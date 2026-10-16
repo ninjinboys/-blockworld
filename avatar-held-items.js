@@ -208,6 +208,62 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       state.offhandId=offhand;
     }
   }
+  // Overlay combat/use animations on top of the walking leg/arm pose.
+  // The arm pivots already own equipped armor and held tools, so their
+  // 3D models swing together. No changes to collision or hit detection.
+  function animate(model,now,{kind=null,at=-Infinity,mining=false,drawing=false,guarding=false,riding=false}={}){
+    if(!model?.userData?.limbs||riding)return;
+    const {leftArm,rightArm}=model.userData.limbs;
+    const state=model.userData.heldItemsView;
+    if(!state)return;
+    const ease=t=>{const x=Math.max(0,Math.min(1,t));return x*x*(3-2*x)};
+    if(drawing&&state.mainId===149){
+      // Two-handed bow stance: both arms reach forward, one draws the string.
+      rightArm.rotation.x=1.25;
+      rightArm.rotation.y=-.16;
+      rightArm.rotation.z=.20;
+      leftArm.rotation.x=1.17;
+      leftArm.rotation.y=.19;
+      leftArm.rotation.z=-.16;
+    }else if(mining){
+      // Continuous rhythmic pickaxe/hand swings while the attack button is held.
+      const phase=(now*.001/.46)*Math.PI*2;
+      const lift=(1-Math.cos(phase))*.5;
+      rightArm.rotation.x=.10+1.28*lift;
+      rightArm.rotation.y=-.22*Math.sin(phase);
+      rightArm.rotation.z=.24+.13*Math.sin(phase);
+    }else{
+      // Attack is wind-up -> decisive downward strike -> recovery.
+      // A single click still plays the full motion across subsequent frames.
+      const seconds=(now-at)/1000;
+      if(Number.isFinite(seconds)&&seconds>=0){
+        const baseX=rightArm.rotation.x,baseZ=rightArm.rotation.z;
+        if(kind==='attack'&&seconds<.46){
+          let x;
+          if(seconds<.12)x=baseX+(1.55-baseX)*ease(seconds/.12);
+          else if(seconds<.26)x=1.55+(-.53-1.55)*ease((seconds-.12)/.14);
+          else x=-.53+(baseX+.53)*ease((seconds-.26)/.20);
+          rightArm.rotation.x=x;
+          rightArm.rotation.y=-.28*Math.sin(Math.PI*seconds/.46);
+          rightArm.rotation.z=baseZ+.18*Math.sin(Math.PI*seconds/.46);
+        }else if(kind==='use'&&seconds<.34){
+          const reach=Math.sin(Math.PI*seconds/.34);
+          rightArm.rotation.x=baseX+1.02*reach;
+          rightArm.rotation.y=-.12*reach;
+        }else if(kind==='fire'&&seconds<.24){
+          const snap=1-ease(seconds/.24);
+          rightArm.rotation.x=baseX+.86*snap;
+          leftArm.rotation.x+=.42*snap;
+        }
+      }
+    }
+    if(guarding&&state.offhandId===156&&!drawing){
+      // Raise the equipped shield in front of the upper body.
+      leftArm.rotation.x=1.22;
+      leftArm.rotation.y=-.18;
+      leftArm.rotation.z=-.12;
+    }
+  }
   function dispose(model){
     const state=model?.userData?.heldItemsView;
     if(!state)return;
@@ -215,5 +271,5 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     state.right.removeFromParent();state.left.removeFromParent();
     delete model.userData.heldItemsView;
   }
-  return {sync,dispose};
+  return {sync,animate,dispose};
 }
