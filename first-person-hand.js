@@ -108,10 +108,12 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   for(const x of [-.39,.39])for(const y of [.67,.94]){
     shape(shield,.065,.065,.065,shieldBright,x,y,-.283);
   }
-  // Double ONLY the shield's vertical height. Width and depth stay fixed.
-  // Keep the pointed lower tip in the offhand grip; no arm or guard changes.
+  // Twice as tall DOWNWARD: anchor its top edge at its original
+  // screen height, and let the pointed end extend toward the bottom.
+  // The .98 -> 1.96 Y scale adds 1.078 units above the former top
+  // without compensation, so lower the entire shield by 1.078.
   shield.scale.set(.98,1.96,.98);
-  shield.position.set(-.08,.02,-.40);
+  shield.position.set(-.08,-1.058,-.40);
   shield.rotation.set(-.08,-.08,-.02);
   shield.visible=false;
   leftRoot.add(shield);
