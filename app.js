@@ -1,5 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {makeFirstPersonHand} from './first-person-hand.js?v=20261016halfLean16';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261016torchOffhand17';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -3976,14 +3976,14 @@ function renderInventoryUI(){
   if(!st){
     inventoryDetail.classList.add('empty');inventoryDetailName.textContent='アイテムを選択';inventoryDetailQty.textContent='';
     inventoryMove.disabled=true;inventorySplit.disabled=true;inventoryDrop.disabled=true;
-    $('inventoryEquip').disabled=true;$('inventoryOffhandEquip').disabled=true;renderArmorUI();return;
+    $('inventoryEquip').disabled=true;$('inventoryOffhandEquip').disabled=!offhandTorch;renderArmorUI();return;
   }
   inventoryDetail.classList.remove('empty');inventoryDetailIcon.appendChild(itemCanvas(st.id,'item-icon'));
   inventoryDetailName.textContent=names[st.id]||'ITEM';inventoryDetailQty.textContent='× '+st.qty;
   inventoryMove.disabled=false;inventoryMove.textContent=inventorySelectedSlot<9?'インベントリへ':'ホットバーへ';
   inventorySplit.disabled=st.qty<2;inventoryDrop.disabled=false;
   $('inventoryEquip').disabled=armorPartForId(st.id)<0;
-  $('inventoryOffhandEquip').disabled=st.id!==I.TORCH||!!offhandTorch;
+  $('inventoryOffhandEquip').disabled=!offhandTorch&&st.id!==I.TORCH;
   renderArmorUI();
 }
 // Chest transfer UI. Touch a bag item to store it, or a chest item to
@@ -4868,7 +4868,7 @@ inventoryMove.addEventListener('click',()=>{if(inventorySelectedSlot!=null)moveI
 inventorySplit.addEventListener('click',()=>{if(inventorySelectedSlot!=null)splitInventoryStack(inventorySelectedSlot)});
 inventoryDrop.addEventListener('click',()=>{if(inventorySelectedSlot!=null)dropInventoryStack(inventorySelectedSlot)});
 $('inventoryEquip').addEventListener('click',()=>{if(inventorySelectedSlot!=null)equipFromInventory(inventorySelectedSlot)});
-$('inventoryOffhandEquip').addEventListener('click',()=>{if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot)});
+$('inventoryOffhandEquip').addEventListener('click',()=>{if(offhandTorch)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot)});
 $('inventoryOffhand').addEventListener('click',()=>{if(offhandTorch)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot);else flash('インベントリの松明を選択してください')});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
 crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
