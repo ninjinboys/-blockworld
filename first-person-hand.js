@@ -63,35 +63,55 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   shape(leftTorch,.062,.10,.070,torchWhite,0,.77,-.025);
   const offhandGlow=new THREE.PointLight(0xffaa49,1.2,4,2);
   offhandGlow.position.set(0,.75,-.07);leftTorch.add(offhandGlow);
-  // Oversized layered shield: wood grain, raised iron rim and a solid boss.
+  // A proper angular heater shield, wide at the shoulders and pointed below.
   // Both the torch and shield use the same offhand; no item duplication.
   const shield=new THREE.Group();
-  shield.name='NEXACRAFT large shield';
+  shield.name='NEXACRAFT pointed offhand shield';
   const shieldWood=basic(0x795033),shieldPlank=basic(0x9e6d43);
   const shieldRim=basic(0x89969a),shieldBright=basic(0xc4d0d2);
   const shieldBoss=basic(0xb2c0c4),shieldDark=basic(0x48545a);
-  // A broad and tall kite silhouette, visibly thicker than an item sprite.
-  shape(shield,1.04,.99,.19,shieldWood,0,.62,-.10);
-  shape(shield,.80,.20,.195,shieldWood,0,.058,-.10);
-  shape(shield,.76,1.04,.205,shieldPlank,0,.62,-.215);
-  shape(shield,.89,.105,.255,shieldRim,0,1.105,-.16);
-  shape(shield,.89,.11,.255,shieldRim,0,.145,-.16);
-  shape(shield,.12,.96,.255,shieldRim,-.465,.62,-.16);
-  shape(shield,.12,.96,.255,shieldRim,.465,.62,-.16);
-  shape(shield,.105,.89,.047,shieldDark,0,.62,-.323);
-  shape(shield,.29,.29,.095,shieldBoss,0,.68,-.348);
-  shape(shield,.17,.17,.11,shieldBright,0,.695,-.405);
-  for(const x of [-.41,.41])for(const y of [.21,.99]){
-    shape(shield,.075,.075,.06,shieldBright,x,y,-.305);
+  // Extruded outlines give a single continuous shield silhouette instead of
+  // the old rectangular slab; negative local Z is toward the camera.
+  const shieldPlate=(points,z,depth,material)=>{
+    const outline=new THREE.Shape();
+    outline.moveTo(points[0][0],points[0][1]);
+    for(let i=1;i<points.length;i++)outline.lineTo(points[i][0],points[i][1]);
+    outline.closePath();
+    const mesh=new THREE.Mesh(new THREE.ExtrudeGeometry(outline,{
+      depth,steps:1,bevelEnabled:false,curveSegments:1
+    }),material);
+    mesh.position.z=z;
+    mesh.renderOrder=10000;
+    mesh.frustumCulled=false;
+    shield.add(mesh);
+  };
+  // Dark metal edge, brighter raised steel rim, inset wooden face.
+  shieldPlate([
+    [-.44,1.10],[.44,1.10],[.52,1.00],[.52,.63],[.43,.38],
+    [0,.04],[-.43,.38],[-.52,.63],[-.52,1.00]
+  ],-.13,.20,shieldDark);
+  shieldPlate([
+    [-.42,1.075],[.42,1.075],[.49,.98],[.49,.63],[.39,.40],
+    [0,.085],[-.39,.40],[-.49,.63],[-.49,.98]
+  ],-.20,.07,shieldRim);
+  shieldPlate([
+    [-.36,1.015],[.36,1.015],[.425,.945],[.425,.64],[.34,.44],
+    [0,.175],[-.34,.44],[-.425,.64],[-.425,.945]
+  ],-.255,.045,shieldPlank);
+  // Visible timber boards remain inside the tapered silhouette.
+  shape(shield,.012,.65,.014,shieldWood,-.165,.68,-.281);
+  shape(shield,.012,.65,.014,shieldWood,.165,.68,-.281);
+  shape(shield,.050,.61,.022,shieldWood,0,.68,-.294);
+  // Solid, squared iron boss and rivets emphasize that this is a shield.
+  shape(shield,.29,.29,.080,shieldBoss,0,.69,-.340);
+  shape(shield,.17,.17,.090,shieldBright,0,.69,-.392);
+  for(const x of [-.39,.39])for(const y of [.67,.94]){
+    shape(shield,.065,.065,.065,shieldBright,x,y,-.283);
   }
-  // Offhand shield: about one-fifth of the iPad screen width at rest.
-  // Keep it above the left fist and below/left of the crosshair; guarding
-  // raises the entire arm without blocking the player's forward view.
-  // Only adjust first-person visuals: shield size, inventory and defense
-  // mechanics remain unchanged.
-  shield.scale.setScalar(.74);
-  shield.position.set(-.04,.04,-.38);
-  shield.rotation.set(-.10,-.08,-.015);
+  // Mid-size: larger than the previous .74 version, but not screen-filling.
+  shield.scale.setScalar(.98);
+  shield.position.set(-.08,.02,-.40);
+  shield.rotation.set(-.08,-.08,-.02);
   shield.visible=false;
   leftRoot.add(shield);
   leftRoot.visible=false;
