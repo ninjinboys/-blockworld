@@ -887,7 +887,7 @@ function applySaveData(data){
   const previousOffhand=data.offhandItem??data.offhandTorch;
   offhandItem=([I.TORCH,I.SHIELD].includes(Number(previousOffhand?.id))&&Number(previousOffhand.qty)>0)
     ?{id:Number(previousOffhand.id),qty:1}:null;
-  shieldGuarding=false;
+  shieldGuarding=false;refreshShieldControl();
   syncDerivedInventory();
   normalizeArmor(data.equippedArmor);applyArmorAppearance(playerAvatar,equippedArmor);
   restoreEdits(data.edits,Number(data.version)||3);
@@ -976,7 +976,7 @@ function resetWorldRuntime(){
   ridingHorse=null;
   resetSprint();
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
-  equippedArmor.fill(null);offhandItem=null;applyArmorAppearance(playerAvatar,equippedArmor);
+  equippedArmor.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
   clearFlyingArrows();
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
@@ -1008,7 +1008,7 @@ async function initializeAccountWorld(save,slot){
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
-    clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;offhandItem=null;syncDerivedInventory();
+    clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;offhandItem=null;shieldGuarding=false;refreshShieldControl();syncDerivedInventory();
     editChunks.clear();torchLocations.clear();chestContents.clear();clearWorldDrops();
   }
   await new Promise(r=>setTimeout(r,30));
@@ -3094,6 +3094,7 @@ const firstPersonHand=makeFirstPersonHand(THREE,{
   scene,camera,drawItemIcon,
   getHeld:()=>inventorySlots[selectedHotbarIndex],
   getOffhand:()=>offhandItem,
+  isGuarding:()=>shieldGuarding,
   isVisible:()=>started&&worldReady&&!dead&&!sleeping&&!craftOpen&&
     !inventoryOpen&&!chestOpen&&cameraMode===0,
   getMovement:()=>Math.hypot(player.vel.x,player.vel.z),
@@ -3485,6 +3486,7 @@ function updateStaminaRecovery(dt,isRunning){
 }
 function showDeathScreen(){
   ridingHorse=null;
+  setShieldGuard(false);
   dead=true;health=0;renderHealth();primaryActionStop();
   Object.keys(keys).forEach(k=>keys[k]=false);
   resetSprint();
@@ -3496,6 +3498,9 @@ function showDeathScreen(){
 }
 function damagePlayer(points,source='ダメージ'){
   if(dead||points<=0)return;
+  if(shieldGuarding&&offhandItem?.id===I.SHIELD&&/攻撃|噛みつき|突進/.test(source)){
+    flash('盾で攻撃を防いだ！');return;
+  }
   healthRegenTimer=0;
   const taken=Math.max(1,Math.ceil(points*(1-armorReduction())));
   health=Math.max(0,health-taken);renderHealth();markSaveDirty();
@@ -4159,6 +4164,7 @@ $('chestClose').addEventListener('click',()=>setChestOpen(false));
 $('chestScreen').addEventListener('pointerdown',e=>{if(e.target===$('chestScreen'))setChestOpen(false)});
 $('chestSingle').addEventListener('click',()=>{chestOneAtATime=!chestOneAtATime;renderChestUI()});
 function setInventoryOpen(v){
+  setShieldGuard(false);
   inventoryOpen=v;inventoryScreen.classList.toggle('open',v);inventoryScreen.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
   resetSprint();
@@ -4806,6 +4812,7 @@ addEventListener('blur',()=>{
   Object.keys(keys).forEach(k=>keys[k]=false);
   resetSprint();
   primaryActionStop();
+  setShieldGuard(false);
 });
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
@@ -4815,6 +4822,7 @@ addEventListener('keydown',e=>{
   if(k==='e'&&started){e.preventDefault();setInventoryOpen(!inventoryOpen);return}
   if(k==='c'&&started){e.preventDefault();setCraftOpen(!craftOpen);return}
   if(craftOpen||inventoryOpen||sleeping)return;
+  if(k==='g'&&started){e.preventDefault();setShieldGuard(true);return}
   keys[k]=true;
   if((k==='w'||k==='arrowup'||k==='shift')&&started)updateSprintIntent();
   if(e.code==='Space'){e.preventDefault();jump()}
@@ -4823,6 +4831,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{
   const k=e.key.toLowerCase();
+  if(k==='g'){setShieldGuard(false);return}
   keys[k]=false;
   if(k==='w'||k==='arrowup'||k==='shift')updateSprintIntent();
 });
@@ -4850,8 +4859,8 @@ function jump(){
 
 renderer.domElement.addEventListener('click',()=>{if(!dead&&!craftOpen&&!inventoryOpen&&!chestOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
-renderer.domElement.addEventListener('mousedown',e=>{if(!started||dead||craftOpen||inventoryOpen||chestOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2)place()});
-addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop(true)});
+renderer.domElement.addEventListener('mousedown',e=>{if(!started||dead||craftOpen||inventoryOpen||chestOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2){if(offhandItem?.id===I.SHIELD&&!e.shiftKey)setShieldGuard(true);else place()}});
+addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop(true);if(e.button===2)setShieldGuard(false)});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
 let touchLook=null;
@@ -4892,6 +4901,15 @@ jumpBtn.addEventListener('pointerdown',e=>{e.preventDefault();keys.swimup=true;j
 $('tapMine').addEventListener('pointerdown',e=>{e.preventDefault();primaryActionStart()});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>$('tapMine').addEventListener(t,e=>{e.preventDefault();primaryActionStop(t==='pointerup')}));
 $('tapPlace').addEventListener('pointerdown',e=>{e.preventDefault();place()});
+const guardBtn=$('tapGuard');
+guardBtn.addEventListener('pointerdown',e=>{
+  e.preventDefault();setShieldGuard(true);
+  try{guardBtn.setPointerCapture(e.pointerId)}catch{}
+});
+for(const type of ['pointerup','pointercancel','pointerleave','lostpointercapture']){
+  guardBtn.addEventListener(type,e=>{e.preventDefault();setShieldGuard(false)});
+}
+guardBtn.addEventListener('contextmenu',e=>e.preventDefault());
 $('tapInventory').addEventListener('pointerdown',e=>{e.preventDefault();setInventoryOpen(true)});
 $('tapCraft').addEventListener('pointerdown',e=>{e.preventDefault();setCraftOpen(true)});
 inventoryClose.addEventListener('click',()=>setInventoryOpen(false));
