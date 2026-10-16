@@ -2275,7 +2275,7 @@ function useHorse(horse){
   }
   ridingHorse=horse;horse.userData.fleeTime=0;horse.userData.ridingMoved=false;
   syncRiderToHorse();markSaveDirty();
-  flash('乗馬中！ 方向キーで移動・RUNで疾走・攻撃ボタンで降りる');
+  flash('乗馬中！ 方向キーで移動・青い上矢印で疾走・攻撃ボタンで降りる');
   return true;
 }
 function dismountHorse(){
@@ -4916,7 +4916,6 @@ function isForwardHeld(){
 function updateSprintIntent(){
   const wantsSprint=!!(keys.mobileSprint||(keys.shift&&(keys.w||keys.arrowup)));
   const next=stamina>0&&wantsSprint;
-  if(next&&!sprinting)flash('ダッシュ！');
   sprinting=next;
   showSprintState();
 }
