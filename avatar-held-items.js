@@ -150,10 +150,13 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     let state=model.userData.heldItemsView;
     if(!state){
       const right=group(),left=group();
-      right.position.set(0,-.67,-.18);
-      right.rotation.set(-1.00,.08,-.10);
-      left.position.set(0,-.63,-.26);
-      left.rotation.set(-.36,0,.06);
+      // Anchor both objects in front of the fists. Their arms are slightly
+      // spread while equipped, so the items stay outside the torso from
+      // both front-facing and rear-facing camera views.
+      right.position.set(.035,-.62,-.33);
+      right.rotation.set(-.24,.08,-.22);
+      left.position.set(-.045,-.62,-.34);
+      left.rotation.set(-.12,0,.08);
       model.userData.limbs.rightArm.add(right);
       model.userData.limbs.leftArm.add(left);
       state={right,left,mainId:null,offhandId:null};
@@ -164,11 +167,22 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       removeParts(state.right);
       if(main!=null){
         const item=build(main);
-        // Weapons stay large enough to recognize in both camera directions.
-        if(main===156){item.scale.setScalar(.74);item.rotation.y=-.3}
-        else if(main===147||main===31){item.scale.setScalar(.85)}
-        else if(swords.has(main)||picks.has(main)||axes.has(main)||shovels.has(main)){
-          item.scale.setScalar(.74);
+        // Held tools were 0.74x, leaned far forward and disappeared inside
+        // the torso. Keep recognizable 3D proportions next to the hand.
+        if(main===156){
+          item.scale.setScalar(1.12);
+          item.position.set(.07,.22,-.08);
+          item.rotation.y=-.20;
+        }else if(main===147||main===31){
+          item.scale.setScalar(1.25);
+        }else if(swords.has(main)||picks.has(main)||axes.has(main)||shovels.has(main)){
+          item.scale.setScalar(1.35);
+        }else if(main===149){
+          item.scale.setScalar(1.35);
+        }else if(Object.hasOwn(blockColors,main)){
+          item.scale.setScalar(1.65);
+        }else{
+          item.scale.setScalar(1.55);
         }
         state.right.add(item);
       }
@@ -179,13 +193,15 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       if(offhand!=null){
         const item=build(offhand);
         if(offhand===156){
-          // Raise the top of the shield but let its pointed end hang below the hand.
-          item.position.set(0,.10,-.06);
-          item.rotation.set(.22,-.20,.11);
-          item.scale.setScalar(.90);
+          // The heater shield covers the forearm, with its point downward
+          // and the outer edge clear of the character's body.
+          item.position.set(-.12,.24,-.10);
+          item.rotation.set(.12,-.13,.04);
+          item.scale.setScalar(1.08);
         }else{
-          item.rotation.x=-.05;item.position.y=-.09;
-          item.scale.setScalar(.85);
+          item.position.set(-.02,-.04,-.02);
+          item.rotation.x=-.06;
+          item.scale.setScalar(1.26);
         }
         state.left.add(item);
       }
