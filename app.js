@@ -1,5 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261016shieldDown24';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016avatarHeld01';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -3086,6 +3087,7 @@ function buildPlayerAvatar(){
   return g;
 }
 const playerAvatar=buildPlayerAvatar();
+const avatarHeldItems=makeAvatarHeldItems(THREE,drawItemIcon);
 const VIEW_LABELS=['一人称','三人称（背面）','二人称風（正面）'];
 let cameraMode=0;
 // First-person hand is a true 3D viewmodel attached to the gameplay camera.
@@ -3127,6 +3129,9 @@ function updatePlayerAvatar(now){
   applyArmorAppearance(playerAvatar,equippedArmor);
   playerAvatar.visible=started&&!dead&&!sleeping&&cameraMode!==0;
   if(!playerAvatar.visible)return;
+  const selectedStack=inventorySlots[selectedHotbarIndex];
+  avatarHeldItems.sync(playerAvatar,
+    selectedStack&&selectedStack.qty>0?selectedStack.id:null,offhandItem?.id??null);
   playerAvatar.position.copy(player.pos);
   playerAvatar.rotation.y=ridingHorse?ridingHorse.rotation.y:player.yaw;
   const moving=Math.hypot(player.vel.x,player.vel.z);
@@ -5168,7 +5173,9 @@ function multiCurrentPose(){
     x:player.pos.x,y:player.pos.y,z:player.pos.z,
     yaw:player.yaw,pitch:player.pitch,
     speed:Math.hypot(player.vel.x,player.vel.z),
-    onGround:player.onGround,armor:[...equippedArmor]
+    onGround:player.onGround,armor:[...equippedArmor],
+    held:inventorySlots[selectedHotbarIndex]?.id??null,
+    offhand:offhandItem?.id??null
   };
 }
 function multiProfile(){
@@ -5349,6 +5356,7 @@ function multiShowAvatar(id,pose){
   }
   const motion=model.userData.multiMove;
   if(Array.isArray(pose.armor))applyArmorAppearance(model,pose.armor);
+  avatarHeldItems.sync(model,pose.held??null,pose.offhand??null);
   motion.target.set(pose.x,pose.y,pose.z);
   motion.yaw=yaw;
   // Older clients only send a position; estimate speed as fallback.
@@ -5388,6 +5396,7 @@ function multiAnimateAvatars(now){
 }
 function multiClearAvatars(){
   for(const model of multiAvatars.values()){
+    avatarHeldItems.dispose(model);
     scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});
   }
   multiAvatars.clear();multiLastVisualFrame=0;
@@ -5540,6 +5549,7 @@ function multiMigrationMembers(snapshot){
 function multiRemoveAvatar(id){
   const model=multiAvatars.get(id);
   if(!model)return;
+  avatarHeldItems.dispose(model);
   scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(id);
 }
 function multiPrepareMigration(checkpoint,plannedLeader=null){
@@ -5750,7 +5760,7 @@ function multiEvent(e){
     if(guest){
       multiGuestRecords.delete(e.peerId);
       const model=multiAvatars.get(guest.id);
-      if(model){scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(guest.id)}
+      if(model){avatarHeldItems.dispose(model);scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(guest.id)}
       multiplayerNetwork.send({t:'peerLeft',id:guest.id});
       multiplayerNetwork.send({t:'roster',people:multiRosterSnapshot()});
       multiPeople();
