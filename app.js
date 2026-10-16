@@ -3391,7 +3391,7 @@ function updateWorldDrops(dt,now){
         const left=addItem(d.id,d.qty),picked=d.qty-left;
         if(picked>0){
           d.qty=left;
-          if(left<=0){flash((names[d.id]||'アイテム')+'を拾った');removeWorldDrop(d);continue}
+          if(left<=0){removeWorldDrop(d);continue}
         }
       }
     }
@@ -3584,7 +3584,7 @@ function showDeathScreen(){
 function damagePlayer(points,source='ダメージ',attacker=null){
   if(dead||points<=0)return;
   if(shieldGuarding&&offhandItem?.id===I.SHIELD&&/攻撃|噛みつき|突進/.test(source)){
-    flash('盾で攻撃を防いだ！');return;
+    return;
   }
   healthRegenTimer=0;
   const taken=Math.max(1,Math.ceil(points*(1-armorReduction())));
@@ -3613,8 +3613,8 @@ function damagePlayer(points,source='ダメージ',attacker=null){
   }
   health=Math.max(0,health-taken);renderHealth();markSaveDirty();
   if(health<=0){showDeathScreen();return}
-  const heartsLost=taken/2;
-  flash(source+' -'+heartsLost.toFixed(heartsLost%1?1:0)+'♥');
+  // Red flash, health HUD and knockback already signal the hit.
+  // No large floating combat message over the hotbar.
 }
 function applyFallDamage(distance){
   const blocks=Math.round(Math.max(0,distance));
@@ -3659,8 +3659,9 @@ function gainXP(amount,source=''){
     const rs=[...recipes,...workbenchRecipes].filter(r=>r.unlockLevel===level);unlocked.push(...rs.map(r=>r.name.replace(/ ×\d+$/,'')));
   }
   updateProgress();markSaveDirty();
+  // XP increases are already visible in the permanent XP bar.
+  // Keep the infrequent level-up / blueprint notice only.
   if(unlocked.length)flash('LEVEL UP! LV '+level+'　設計図獲得：'+unlocked.join(' / '));
-  else flash('+'+amount+' XP'+(source?'　'+source:''));
 }
 function pickTier(){
   if(selected===I.DIAMOND_PICK)return 4;
@@ -4387,7 +4388,7 @@ function doorUse(x,y,z){
     }
   }
   set(x,bottomY,z,next);set(x,bottomY+1,z,upper);
-  rebuildEdited({x,z});flash(DOOR_OPEN.has(next)?'ドアを開けた':'ドアを閉めた');return true;
+  rebuildEdited({x,z});return true;
 }
 function aimedDoor(){
   aimPlayerRay();
@@ -4468,14 +4469,14 @@ function place(){
     if(mobs.some(m=>mobOverlapsBlock(m,x,y,z))){flash('モブの中には設置できません');return}
     set(x,y,z,B.CHEST);
     if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);rebuildEdited({x,z});return}
-    consumeSelected(1);rebuildEdited({x,z});flash('チェストを設置！ 設置・使用で開けます');return;
+    consumeSelected(1);rebuildEdited({x,z});return;
   }
   if(selected===I.TORCH){
     if(!solid(get(x,y-1,z))){
       flash('松明はブロックの上に設置してください');return;
     }
     set(x,y,z,B.TORCH);
-    consumeSelected(1);rebuildEdited({x,z});flash('松明を設置！ 周囲8ブロックが明るくなります');return;
+    consumeSelected(1);rebuildEdited({x,z});return;
   }
   if(selected===I.DOOR){
     const baseY=doorSupportedBaseY(x,y,z);
@@ -4492,7 +4493,7 @@ function place(){
     const alongZ=Math.abs(Math.cos(player.yaw))>Math.abs(Math.sin(player.yaw));
     const bottom=alongZ?B.DOOR_X:B.DOOR_Z;
     set(x,baseY,z,bottom);set(x,upper,z,bottom+1);
-    consumeSelected(1);rebuildEdited({x,z});flash('床に木のドアを設置');return;
+    consumeSelected(1);rebuildEdited({x,z});return;
   }
   if(selected===I.BED){
     const dir=bedDirectionFromYaw(),x2=x+dir.dx,z2=z+dir.dz;
@@ -4509,7 +4510,7 @@ function place(){
       set(x,y,z,B.AIR);set(x2,y,z2,B.AIR);rebuildEdited({x,z},{x:x2,z:z2});
       return;
     }
-    consumeSelected(1);rebuildEdited({x,z},{x:x2,z:z2});renderHotbar();flash('ベッドを設置');
+    consumeSelected(1);rebuildEdited({x,z},{x:x2,z:z2});renderHotbar();
     return;
   }
 
@@ -4520,7 +4521,7 @@ function place(){
   }
   set(x,y,z,blockId);
   if(blocked(player.pos.x,player.pos.y,player.pos.z)){set(x,y,z,B.AIR);return}
-  const placedName=names[selected]||names[blockId]||'ブロック';consumeSelected(1);rebuildEdited({x,z});renderHotbar();flash(placedName+'を設置')
+  consumeSelected(1);rebuildEdited({x,z});renderHotbar();
 }
 
 function prepareMobHitMaterials(root){
@@ -4726,8 +4727,6 @@ function damageMob(root,damage){
     if(root.userData.type==='zombie')removeZombie(root);
     else {scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1)}
     gainXP(earned,name+'を倒した');
-  }else{
-    flash((root.userData.name||'動物')+'に攻撃　HP '+root.userData.hp);
   }
   return true;
 }
@@ -4757,7 +4756,7 @@ function startEating(){
   const recovered=Math.min(MAX_HEALTH-health,FOOD_HEAL_POINTS[food]);
   health=Math.min(MAX_HEALTH,health+FOOD_HEAL_POINTS[food]);
   healthRegenTimer=0;renderHealth();markSaveDirty();
-  flash((names[food]||'肉')+'を食べた ♥+'+(recovered/2));
+  // Updated hearts provide eating feedback without a toast.
   return true;
 }
 function updateEating(dt){
@@ -4781,7 +4780,7 @@ function updateEating(dt){
   const restored=Math.min(MAX_HEALTH-health,FOOD_HEAL_POINTS[item]);
   health=Math.min(MAX_HEALTH,health+FOOD_HEAL_POINTS[item]);
   healthRegenTimer=0;renderHealth();markSaveDirty();
-  flash((names[item]||'肉')+'を食べた　♥+'+(restored/2));
+  // Health HUD reflects the restored hearts.
 }
 function primaryActionStart(){
   if(!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
@@ -4886,7 +4885,7 @@ function craftRecipe(i){
   r.needs.forEach(([id,n])=>removeItem(id,n));
   addItem(r.out,r.qty);
   if(craftMode==='furnace'&&r.xp)gainXP(r.xp,r.name+'を精錬');
-  renderHotbar();renderCrafting();flash(r.name+(craftMode==='furnace'?'が完成！':'をクラフト'));
+  renderHotbar();renderCrafting();
 }
 function setCraftOpen(v){
   craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
