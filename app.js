@@ -3946,41 +3946,57 @@ function renderInventorySlot(index){
   });
   return d;
 }
-// Torch-only offhand owns one physical item; never copy the stack.
-function equipTorchOffhand(index){
+// Torch or shield shares one physical offhand slot; items are never duplicated.
+function canEquipOffhand(id){return id===I.TORCH||id===I.SHIELD}
+function setShieldGuard(value){
+  shieldGuarding=!!(value&&offhandItem?.id===I.SHIELD&&started&&!dead&&!inventoryOpen&&!craftOpen&&!chestOpen&&!sleeping);
+  const btn=$('tapGuard');if(btn)btn.classList.toggle('active',shieldGuarding);
+}
+function refreshShieldControl(){
+  const btn=$('tapGuard');if(!btn)return;
+  btn.hidden=offhandItem?.id!==I.SHIELD;
+  btn.classList.toggle('active',shieldGuarding);
+}
+function equipOffhand(index){
   const st=inventorySlots[index];
-  if(!st||st.id!==I.TORCH||st.qty<=0){flash('オフハンドに持てるのは松明だけです');return}
-  if(offhandItem){flash('左手にはすでに松明を持っています');return}
+  if(!st||!canEquipOffhand(st.id)||st.qty<=0){flash('左手に持てるのは松明か盾です');return}
+  if(offhandItem){flash('先に左手のアイテムを外してください');return}
+  const id=st.id;
   st.qty-=1;
   if(st.qty<=0)inventorySlots[index]=null;
-  offhandItem={id:I.TORCH,qty:1};
+  offhandItem={id,qty:1};
   if(!inventorySlots[index])inventorySelectedSlot=null;
   syncDerivedInventory();markSaveDirty();renderHotbar();renderInventoryUI();
-  flash('左手に松明を持ちました');
+  refreshShieldControl();
+  flash('左手に'+names[id]+'を持ちました');
 }
-function unequipTorchOffhand(){
+function unequipOffhand(){
   if(!offhandItem)return;
-  if(!canFitItem(I.TORCH,1)){flash('持ち物がいっぱいで松明を戻せません');return}
-  const leftover=addItem(I.TORCH,1);
-  if(leftover){flash('松明を戻せません');return}
-  offhandItem=null;markSaveDirty();renderHotbar();renderInventoryUI();
-  flash('左手の松明を外しました');
+  const id=offhandItem.id;
+  if(!canFitItem(id,1)){flash('持ち物がいっぱいで'+names[id]+'を戻せません');return}
+  const left=addItem(id,1);
+  if(left){flash(names[id]+'を戻せません');return}
+  offhandItem=null;setShieldGuard(false);
+  markSaveDirty();renderHotbar();renderInventoryUI();refreshShieldControl();
+  flash('左手の'+names[id]+'を外しました');
 }
 function renderOffhandUI(){
   const slot=$('inventoryOffhand'),button=$('inventoryOffhandEquip');
   slot.replaceChildren();
+  const selected=inventorySelectedSlot==null?null:inventorySlots[inventorySelectedSlot];
   slot.classList.toggle('wearing',!!offhandItem);
-  slot.classList.toggle('equip-target',!offhandItem&&inventorySelectedSlot!=null&&inventorySlots[inventorySelectedSlot]?.id===I.TORCH);
+  slot.classList.toggle('equip-target',!offhandItem&&!!selected&&canEquipOffhand(selected.id));
   if(offhandItem){
-    slot.appendChild(itemCanvas(I.TORCH,'item-icon'));
-    slot.title='左手：松明（タップで外す）';
-    slot.setAttribute('aria-label',slot.title);
+    const id=offhandItem.id;
+    slot.appendChild(itemCanvas(id,'item-icon'));
+    slot.title='左手：'+names[id]+'（タップで外す）';
   }else{
     const label=document.createElement('span');label.textContent='左手';slot.appendChild(label);
-    slot.title='左手：空（松明を選んでタップ）';
-    slot.setAttribute('aria-label',slot.title);
+    slot.title='左手：空（松明か盾を選んでタップ）';
   }
-  button.textContent=offhandItem?'装備中：タップで外す':'選択した松明を左手に持つ';
+  slot.setAttribute('aria-label',slot.title);
+  button.textContent=offhandItem?'装備中：タップで外す':'選択した松明・盾を左手に持つ';
+  refreshShieldControl();
 }
 function renderInventoryUI(){
   renderOffhandUI();
@@ -3999,7 +4015,7 @@ function renderInventoryUI(){
   inventoryMove.disabled=false;inventoryMove.textContent=inventorySelectedSlot<9?'インベントリへ':'ホットバーへ';
   inventorySplit.disabled=st.qty<2;inventoryDrop.disabled=false;
   $('inventoryEquip').disabled=armorPartForId(st.id)<0;
-  $('inventoryOffhandEquip').disabled=!offhandItem&&st.id!==I.TORCH;
+  $('inventoryOffhandEquip').disabled=!offhandItem&&!canEquipOffhand(st.id);
   renderArmorUI();
 }
 // Chest transfer UI. Touch a bag item to store it, or a chest item to
@@ -4884,8 +4900,8 @@ inventoryMove.addEventListener('click',()=>{if(inventorySelectedSlot!=null)moveI
 inventorySplit.addEventListener('click',()=>{if(inventorySelectedSlot!=null)splitInventoryStack(inventorySelectedSlot)});
 inventoryDrop.addEventListener('click',()=>{if(inventorySelectedSlot!=null)dropInventoryStack(inventorySelectedSlot)});
 $('inventoryEquip').addEventListener('click',()=>{if(inventorySelectedSlot!=null)equipFromInventory(inventorySelectedSlot)});
-$('inventoryOffhandEquip').addEventListener('click',()=>{if(offhandItem)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot)});
-$('inventoryOffhand').addEventListener('click',()=>{if(offhandItem)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot);else flash('インベントリの松明を選択してください')});
+$('inventoryOffhandEquip').addEventListener('click',()=>{if(offhandItem)unequipOffhand();else if(inventorySelectedSlot!=null)equipOffhand(inventorySelectedSlot)});
+$('inventoryOffhand').addEventListener('click',()=>{if(offhandItem)unequipOffhand();else if(inventorySelectedSlot!=null)equipOffhand(inventorySelectedSlot);else flash('インベントリの松明か盾を選択してください')});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
 crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
 
