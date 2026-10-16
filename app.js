@@ -90,6 +90,7 @@ const inventory={
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
 const equippedArmor=[null,null,null,null]; // helmet / chest / legs / boots
+let offhandTorch=null; // single item moved from inventory, not duplicated
 let selectedHotbarIndex=0,inventorySelectedSlot=null,inventoryOpen=false;
 const itemColors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',8:'#454545',9:'#b78770',10:'#d6b33d',11:'#4ccbd2',15:'#ad7b46',16:'#686c6c',17:'#ccebee'};
 const itemGlyphs={
@@ -769,7 +770,7 @@ function makeSaveData(){
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
     inventorySlots:inventorySlots.map(v=>v?{id:v.id,qty:v.qty}:null),selectedHotbarIndex,
-    equippedArmor:[...equippedArmor],
+    equippedArmor:[...equippedArmor],offhandTorch:offhandTorch?{...offhandTorch}:null,
     worldDrops:serializeWorldDrops(),
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits(),chests:serializeChests(),
@@ -870,6 +871,7 @@ function applySaveData(data){
     const oldSelected=Number(data.selected),idx=inventorySlots.findIndex((v,i)=>i<9&&v?.id===oldSelected);
     if(idx>=0)selectedHotbarIndex=idx;
   }
+  offhandTorch=(data.offhandTorch?.id===I.TORCH&&Number(data.offhandTorch.qty)>0)?{id:I.TORCH,qty:1}:null;
   syncDerivedInventory();
   normalizeArmor(data.equippedArmor);applyArmorAppearance(playerAvatar,equippedArmor);
   restoreEdits(data.edits,Number(data.version)||3);
@@ -958,7 +960,7 @@ function resetWorldRuntime(){
   ridingHorse=null;
   resetSprint();
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
-  equippedArmor.fill(null);applyArmorAppearance(playerAvatar,equippedArmor);
+  equippedArmor.fill(null);offhandTorch=null;applyArmorAppearance(playerAvatar,equippedArmor);
   clearFlyingArrows();
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
@@ -990,7 +992,7 @@ async function initializeAccountWorld(save,slot){
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
-    clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;syncDerivedInventory();
+    clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;offhandTorch=null;syncDerivedInventory();
     editChunks.clear();torchLocations.clear();chestContents.clear();clearWorldDrops();
   }
   await new Promise(r=>setTimeout(r,30));
@@ -3075,6 +3077,7 @@ let cameraMode=0;
 const firstPersonHand=makeFirstPersonHand(THREE,{
   scene,camera,drawItemIcon,
   getHeld:()=>inventorySlots[selectedHotbarIndex],
+  getOffhand:()=>offhandTorch,
   isVisible:()=>started&&worldReady&&!dead&&!sleeping&&!craftOpen&&
     !inventoryOpen&&!chestOpen&&cameraMode===0,
   getMovement:()=>Math.hypot(player.vel.x,player.vel.z),
@@ -3770,7 +3773,7 @@ function applyArmorAppearance(model,armor){
 }
 
 function clearInventorySlots(){
-  inventorySlots.fill(null);equippedArmor.fill(null);hotbarSlots.fill(null);acquiredOrder.length=0;
+  inventorySlots.fill(null);equippedArmor.fill(null);hotbarSlots.fill(null);acquiredOrder.length=0;offhandTorch=null;
   for(const k of Object.keys(inventory))inventory[k]=0;
   selected=null;inventorySelectedSlot=null;
 }
@@ -3927,7 +3930,44 @@ function renderInventorySlot(index){
   });
   return d;
 }
+// Torch-only offhand owns one physical item; never copy the stack.
+function equipTorchOffhand(index){
+  const st=inventorySlots[index];
+  if(!st||st.id!==I.TORCH||st.qty<=0){flash('オフハンドに持てるのは松明だけです');return}
+  if(offhandTorch){flash('左手にはすでに松明を持っています');return}
+  st.qty-=1;
+  if(st.qty<=0)inventorySlots[index]=null;
+  offhandTorch={id:I.TORCH,qty:1};
+  if(!inventorySlots[index])inventorySelectedSlot=null;
+  syncDerivedInventory();markSaveDirty();renderHotbar();renderInventoryUI();
+  flash('左手に松明を持ちました');
+}
+function unequipTorchOffhand(){
+  if(!offhandTorch)return;
+  if(!canFitItem(I.TORCH,1)){flash('持ち物がいっぱいで松明を戻せません');return}
+  const leftover=addItem(I.TORCH,1);
+  if(leftover){flash('松明を戻せません');return}
+  offhandTorch=null;markSaveDirty();renderHotbar();renderInventoryUI();
+  flash('左手の松明を外しました');
+}
+function renderOffhandUI(){
+  const slot=$('inventoryOffhand'),button=$('inventoryOffhandEquip');
+  slot.replaceChildren();
+  slot.classList.toggle('wearing',!!offhandTorch);
+  slot.classList.toggle('equip-target',!offhandTorch&&inventorySelectedSlot!=null&&inventorySlots[inventorySelectedSlot]?.id===I.TORCH);
+  if(offhandTorch){
+    slot.appendChild(itemCanvas(I.TORCH,'item-icon'));
+    slot.title='左手：松明（タップで外す）';
+    slot.setAttribute('aria-label',slot.title);
+  }else{
+    const label=document.createElement('span');label.textContent='左手';slot.appendChild(label);
+    slot.title='左手：空（松明を選んでタップ）';
+    slot.setAttribute('aria-label',slot.title);
+  }
+  button.textContent=offhandTorch?'装備中：タップで外す':'選択した松明を左手に持つ';
+}
 function renderInventoryUI(){
+  renderOffhandUI();
   inventoryMainGrid.innerHTML='';inventoryHotbarGrid.innerHTML='';
   for(let i=9;i<36;i++)inventoryMainGrid.appendChild(renderInventorySlot(i));
   for(let i=0;i<9;i++)inventoryHotbarGrid.appendChild(renderInventorySlot(i));
@@ -3936,13 +3976,14 @@ function renderInventoryUI(){
   if(!st){
     inventoryDetail.classList.add('empty');inventoryDetailName.textContent='アイテムを選択';inventoryDetailQty.textContent='';
     inventoryMove.disabled=true;inventorySplit.disabled=true;inventoryDrop.disabled=true;
-    $('inventoryEquip').disabled=true;renderArmorUI();return;
+    $('inventoryEquip').disabled=true;$('inventoryOffhandEquip').disabled=true;renderArmorUI();return;
   }
   inventoryDetail.classList.remove('empty');inventoryDetailIcon.appendChild(itemCanvas(st.id,'item-icon'));
   inventoryDetailName.textContent=names[st.id]||'ITEM';inventoryDetailQty.textContent='× '+st.qty;
   inventoryMove.disabled=false;inventoryMove.textContent=inventorySelectedSlot<9?'インベントリへ':'ホットバーへ';
   inventorySplit.disabled=st.qty<2;inventoryDrop.disabled=false;
   $('inventoryEquip').disabled=armorPartForId(st.id)<0;
+  $('inventoryOffhandEquip').disabled=st.id!==I.TORCH||!!offhandTorch;
   renderArmorUI();
 }
 // Chest transfer UI. Touch a bag item to store it, or a chest item to
@@ -4827,6 +4868,8 @@ inventoryMove.addEventListener('click',()=>{if(inventorySelectedSlot!=null)moveI
 inventorySplit.addEventListener('click',()=>{if(inventorySelectedSlot!=null)splitInventoryStack(inventorySelectedSlot)});
 inventoryDrop.addEventListener('click',()=>{if(inventorySelectedSlot!=null)dropInventoryStack(inventorySelectedSlot)});
 $('inventoryEquip').addEventListener('click',()=>{if(inventorySelectedSlot!=null)equipFromInventory(inventorySelectedSlot)});
+$('inventoryOffhandEquip').addEventListener('click',()=>{if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot)});
+$('inventoryOffhand').addEventListener('click',()=>{if(offhandTorch)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot);else flash('インベントリの松明を選択してください')});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
 crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
 
@@ -5082,7 +5125,7 @@ function multiProfile(){
   return {name:currentAccount.name,savedAt:Date.now(),level,xp,health,stamina,staminaRunSeconds,
     staminaRegenSeconds,cameraMode,selectedHotbarIndex,
     inventorySlots:inventorySlots.map(s=>s?{id:s.id,qty:s.qty}:null),
-    equippedArmor:[...equippedArmor],
+    equippedArmor:[...equippedArmor],offhandTorch:offhandTorch?{...offhandTorch}:null,
     bedSpawn:bedSpawn?{...bedSpawn}:null,
     player:multiCurrentPose()};
 }
@@ -5395,10 +5438,10 @@ async function multiWelcome(message){
   const stored=message.member;
   const who=backup&&(!stored||backup.savedAt>stored.savedAt)?backup:stored;
   const data={...message.world,version:4,inventorySlots:Array(36).fill(null),
-    equippedArmor:[null,null,null,null],
+    equippedArmor:[null,null,null,null],offhandTorch:null,
     selectedHotbarIndex:0,level:1,xp:0,health:20,stamina:20,staminaRunSeconds:0,
     staminaRegenSeconds:0,cameraMode:0,player:null,bedSpawn:null};
-  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor'])
+  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor','offhandTorch'])
     if(Object.hasOwn(who,field))data[field]=who[field];
   try{
     await initializeAccountWorld(data,message.slot);
