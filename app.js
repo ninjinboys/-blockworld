@@ -1,5 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {makeFirstPersonHand} from './first-person-hand.js?v=20261016torchOffhand17';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261016shieldOffhand18';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -50,7 +50,7 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,BUFFALO_MEAT:154,ANACONDA_HIDE:155
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,BUFFALO_MEAT:154,ANACONDA_HIDE:155,SHIELD:156
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -65,7 +65,7 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',154:'バッファローの肉',155:'オオアナコンダの革',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',154:'バッファローの肉',155:'オオアナコンダの革',156:'盾',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
@@ -85,12 +85,13 @@ const inventory={
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.BUFFALO_MEAT]:0,[I.ANACONDA_HIDE]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
 const equippedArmor=[null,null,null,null]; // helmet / chest / legs / boots
-let offhandTorch=null; // single item moved from inventory, not duplicated
+let offhandItem=null; // torch or shield: a single physical item moved from inventory
+let shieldGuarding=false;
 let selectedHotbarIndex=0,inventorySelectedSlot=null,inventoryOpen=false;
 const itemColors={1:'#61a14b',2:'#845735',3:'#808487',4:'#d7c889',6:'#79532f',7:'#417b3b',8:'#454545',9:'#b78770',10:'#d6b33d',11:'#4ccbd2',15:'#ad7b46',16:'#686c6c',17:'#ccebee'};
 const itemGlyphs={
@@ -105,7 +106,7 @@ const itemGlyphs={
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.BUFFALO_MEAT]:'肉',[I.ANACONDA_HIDE]:'蛇革',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
 };
 
 const ICON_MAT={
@@ -294,6 +295,17 @@ function drawItemIcon(g,id){
     ir(g,7,7,3,6,'#463c28');ir(g,8,8,1,4,'#f8d568');return;
   }
   if(id===I.TORCH){ir(g,7,6,3,9,'#58391e');ir(g,8,7,1,8,'#c59054');ir(g,6,3,5,5,'#ec7424');ir(g,7,1,3,6,'#ffb431');ir(g,8,0,1,6,'#fff2a1');return}
+  if(id===I.SHIELD){
+    // Full-size embossed shield icon: wooden center surrounded by steel edging.
+    poly(g,[[2,1],[13,1],[14,9],[8,15],[2,9]],'#505b60');
+    poly(g,[[3,2],[12,2],[12,9],[8,13],[3,9]],'#c5d0d3');
+    poly(g,[[4,3],[11,3],[11,9],[8,12],[4,9]],'#7b5131');
+    ir(g,6,3,3,8,'#a47147');
+    ir(g,4,5,8,1,'#5e3c24');
+    ir(g,7,5,2,4,'#e4e8e6');
+    ir(g,8,7,1,2,'#879399');
+    return;
+  }
   if(id===I.SADDLE){
     // Leather saddle, curved seat, straps and brass buckle.
     ir(g,2,7,12,5,'#4d2e20');ir(g,3,6,10,5,'#92552f');
@@ -336,6 +348,7 @@ const workbenchRecipes=[
   {name:'ベッド',out:I.BED,qty:1,needs:[[I.WOOL,3],[B.PLANK,3]],unlockLevel:6},
   {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
   {name:'チェスト',out:I.CHEST,qty:1,needs:[[B.PLANK,8]],unlockLevel:6},
+  {name:'盾',out:I.SHIELD,qty:1,needs:[[B.PLANK,6],[I.IRON_INGOT,1]],unlockLevel:8},
   {name:'弓',out:I.BOW,qty:1,needs:[[I.STICK,3],[I.WOOL,3]],unlockLevel:7},
   {name:'鞍',out:I.SADDLE,qty:1,needs:[[I.LEATHER,5]],unlockLevel:7},
   {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
@@ -770,7 +783,7 @@ function makeSaveData(){
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
     inventorySlots:inventorySlots.map(v=>v?{id:v.id,qty:v.qty}:null),selectedHotbarIndex,
-    equippedArmor:[...equippedArmor],offhandTorch:offhandTorch?{...offhandTorch}:null,
+    equippedArmor:[...equippedArmor],offhandItem:offhandItem?{...offhandItem}:null,
     worldDrops:serializeWorldDrops(),
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits(),chests:serializeChests(),
@@ -871,7 +884,10 @@ function applySaveData(data){
     const oldSelected=Number(data.selected),idx=inventorySlots.findIndex((v,i)=>i<9&&v?.id===oldSelected);
     if(idx>=0)selectedHotbarIndex=idx;
   }
-  offhandTorch=(data.offhandTorch?.id===I.TORCH&&Number(data.offhandTorch.qty)>0)?{id:I.TORCH,qty:1}:null;
+  const previousOffhand=data.offhandItem??data.offhandTorch;
+  offhandItem=([I.TORCH,I.SHIELD].includes(Number(previousOffhand?.id))&&Number(previousOffhand.qty)>0)
+    ?{id:Number(previousOffhand.id),qty:1}:null;
+  shieldGuarding=false;
   syncDerivedInventory();
   normalizeArmor(data.equippedArmor);applyArmorAppearance(playerAvatar,equippedArmor);
   restoreEdits(data.edits,Number(data.version)||3);
@@ -960,7 +976,7 @@ function resetWorldRuntime(){
   ridingHorse=null;
   resetSprint();
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
-  equippedArmor.fill(null);offhandTorch=null;applyArmorAppearance(playerAvatar,equippedArmor);
+  equippedArmor.fill(null);offhandItem=null;applyArmorAppearance(playerAvatar,equippedArmor);
   clearFlyingArrows();
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
@@ -992,7 +1008,7 @@ async function initializeAccountWorld(save,slot){
     seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
-    clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;offhandTorch=null;syncDerivedInventory();
+    clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;offhandItem=null;syncDerivedInventory();
     editChunks.clear();torchLocations.clear();chestContents.clear();clearWorldDrops();
   }
   await new Promise(r=>setTimeout(r,30));
@@ -3077,7 +3093,7 @@ let cameraMode=0;
 const firstPersonHand=makeFirstPersonHand(THREE,{
   scene,camera,drawItemIcon,
   getHeld:()=>inventorySlots[selectedHotbarIndex],
-  getOffhand:()=>offhandTorch,
+  getOffhand:()=>offhandItem,
   isVisible:()=>started&&worldReady&&!dead&&!sleeping&&!craftOpen&&
     !inventoryOpen&&!chestOpen&&cameraMode===0,
   getMovement:()=>Math.hypot(player.vel.x,player.vel.z),
@@ -3570,7 +3586,7 @@ const NON_STACKABLE=new Set([
   I.IRON_HELMET,I.IRON_CHEST,I.IRON_LEGS,I.IRON_BOOTS,
   I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS,
   I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS,
-  I.BED,I.BOW,I.SADDLE
+  I.BED,I.BOW,I.SADDLE,I.SHIELD
 ]);
 function maxStackFor(id){return NON_STACKABLE.has(id)?1:64}
 const ARMOR_NAMES=['頭','胸','脚','足'];
@@ -3773,7 +3789,7 @@ function applyArmorAppearance(model,armor){
 }
 
 function clearInventorySlots(){
-  inventorySlots.fill(null);equippedArmor.fill(null);hotbarSlots.fill(null);acquiredOrder.length=0;offhandTorch=null;
+  inventorySlots.fill(null);equippedArmor.fill(null);hotbarSlots.fill(null);acquiredOrder.length=0;offhandItem=null;
   for(const k of Object.keys(inventory))inventory[k]=0;
   selected=null;inventorySelectedSlot=null;
 }
@@ -3934,28 +3950,28 @@ function renderInventorySlot(index){
 function equipTorchOffhand(index){
   const st=inventorySlots[index];
   if(!st||st.id!==I.TORCH||st.qty<=0){flash('オフハンドに持てるのは松明だけです');return}
-  if(offhandTorch){flash('左手にはすでに松明を持っています');return}
+  if(offhandItem){flash('左手にはすでに松明を持っています');return}
   st.qty-=1;
   if(st.qty<=0)inventorySlots[index]=null;
-  offhandTorch={id:I.TORCH,qty:1};
+  offhandItem={id:I.TORCH,qty:1};
   if(!inventorySlots[index])inventorySelectedSlot=null;
   syncDerivedInventory();markSaveDirty();renderHotbar();renderInventoryUI();
   flash('左手に松明を持ちました');
 }
 function unequipTorchOffhand(){
-  if(!offhandTorch)return;
+  if(!offhandItem)return;
   if(!canFitItem(I.TORCH,1)){flash('持ち物がいっぱいで松明を戻せません');return}
   const leftover=addItem(I.TORCH,1);
   if(leftover){flash('松明を戻せません');return}
-  offhandTorch=null;markSaveDirty();renderHotbar();renderInventoryUI();
+  offhandItem=null;markSaveDirty();renderHotbar();renderInventoryUI();
   flash('左手の松明を外しました');
 }
 function renderOffhandUI(){
   const slot=$('inventoryOffhand'),button=$('inventoryOffhandEquip');
   slot.replaceChildren();
-  slot.classList.toggle('wearing',!!offhandTorch);
-  slot.classList.toggle('equip-target',!offhandTorch&&inventorySelectedSlot!=null&&inventorySlots[inventorySelectedSlot]?.id===I.TORCH);
-  if(offhandTorch){
+  slot.classList.toggle('wearing',!!offhandItem);
+  slot.classList.toggle('equip-target',!offhandItem&&inventorySelectedSlot!=null&&inventorySlots[inventorySelectedSlot]?.id===I.TORCH);
+  if(offhandItem){
     slot.appendChild(itemCanvas(I.TORCH,'item-icon'));
     slot.title='左手：松明（タップで外す）';
     slot.setAttribute('aria-label',slot.title);
@@ -3964,7 +3980,7 @@ function renderOffhandUI(){
     slot.title='左手：空（松明を選んでタップ）';
     slot.setAttribute('aria-label',slot.title);
   }
-  button.textContent=offhandTorch?'装備中：タップで外す':'選択した松明を左手に持つ';
+  button.textContent=offhandItem?'装備中：タップで外す':'選択した松明を左手に持つ';
 }
 function renderInventoryUI(){
   renderOffhandUI();
@@ -3976,14 +3992,14 @@ function renderInventoryUI(){
   if(!st){
     inventoryDetail.classList.add('empty');inventoryDetailName.textContent='アイテムを選択';inventoryDetailQty.textContent='';
     inventoryMove.disabled=true;inventorySplit.disabled=true;inventoryDrop.disabled=true;
-    $('inventoryEquip').disabled=true;$('inventoryOffhandEquip').disabled=!offhandTorch;renderArmorUI();return;
+    $('inventoryEquip').disabled=true;$('inventoryOffhandEquip').disabled=!offhandItem;renderArmorUI();return;
   }
   inventoryDetail.classList.remove('empty');inventoryDetailIcon.appendChild(itemCanvas(st.id,'item-icon'));
   inventoryDetailName.textContent=names[st.id]||'ITEM';inventoryDetailQty.textContent='× '+st.qty;
   inventoryMove.disabled=false;inventoryMove.textContent=inventorySelectedSlot<9?'インベントリへ':'ホットバーへ';
   inventorySplit.disabled=st.qty<2;inventoryDrop.disabled=false;
   $('inventoryEquip').disabled=armorPartForId(st.id)<0;
-  $('inventoryOffhandEquip').disabled=!offhandTorch&&st.id!==I.TORCH;
+  $('inventoryOffhandEquip').disabled=!offhandItem&&st.id!==I.TORCH;
   renderArmorUI();
 }
 // Chest transfer UI. Touch a bag item to store it, or a chest item to
@@ -4868,8 +4884,8 @@ inventoryMove.addEventListener('click',()=>{if(inventorySelectedSlot!=null)moveI
 inventorySplit.addEventListener('click',()=>{if(inventorySelectedSlot!=null)splitInventoryStack(inventorySelectedSlot)});
 inventoryDrop.addEventListener('click',()=>{if(inventorySelectedSlot!=null)dropInventoryStack(inventorySelectedSlot)});
 $('inventoryEquip').addEventListener('click',()=>{if(inventorySelectedSlot!=null)equipFromInventory(inventorySelectedSlot)});
-$('inventoryOffhandEquip').addEventListener('click',()=>{if(offhandTorch)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot)});
-$('inventoryOffhand').addEventListener('click',()=>{if(offhandTorch)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot);else flash('インベントリの松明を選択してください')});
+$('inventoryOffhandEquip').addEventListener('click',()=>{if(offhandItem)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot)});
+$('inventoryOffhand').addEventListener('click',()=>{if(offhandItem)unequipTorchOffhand();else if(inventorySelectedSlot!=null)equipTorchOffhand(inventorySelectedSlot);else flash('インベントリの松明を選択してください')});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
 crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
 
@@ -5125,7 +5141,7 @@ function multiProfile(){
   return {name:currentAccount.name,savedAt:Date.now(),level,xp,health,stamina,staminaRunSeconds,
     staminaRegenSeconds,cameraMode,selectedHotbarIndex,
     inventorySlots:inventorySlots.map(s=>s?{id:s.id,qty:s.qty}:null),
-    equippedArmor:[...equippedArmor],offhandTorch:offhandTorch?{...offhandTorch}:null,
+    equippedArmor:[...equippedArmor],offhandItem:offhandItem?{...offhandItem}:null,
     bedSpawn:bedSpawn?{...bedSpawn}:null,
     player:multiCurrentPose()};
 }
@@ -5438,10 +5454,10 @@ async function multiWelcome(message){
   const stored=message.member;
   const who=backup&&(!stored||backup.savedAt>stored.savedAt)?backup:stored;
   const data={...message.world,version:4,inventorySlots:Array(36).fill(null),
-    equippedArmor:[null,null,null,null],offhandTorch:null,
+    equippedArmor:[null,null,null,null],offhandItem:null,
     selectedHotbarIndex:0,level:1,xp:0,health:20,stamina:20,staminaRunSeconds:0,
     staminaRegenSeconds:0,cameraMode:0,player:null,bedSpawn:null};
-  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor','offhandTorch'])
+  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor','offhandItem','offhandTorch'])
     if(Object.hasOwn(who,field))data[field]=who[field];
   try{
     await initializeAccountWorld(data,message.slot);
