@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {makeFirstPersonHand} from './first-person-hand.js?v=20261016shieldDown24';
-import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016avatarMotion03';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261016playerHurtFlash25';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016playerHurtFlash25';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -976,6 +976,9 @@ function resetWorldRuntime(){
   removeChimeraVisualTest();
   ridingHorse=null;
   resetSprint();
+  playerHurtAt=-Infinity;playerHurtUntil=0;playerHurtSeq=0;
+  playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
+  setAvatarDamageFlash(playerAvatar,false);
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   equippedArmor.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
   clearFlyingArrows();
@@ -2829,7 +2832,7 @@ function updateZombie(m,dt,now){
     m.rotation.y=ud.angle+Math.PI;
     if(distance<ZOMBIE_ATTACK_RANGE&&Math.abs(player.pos.y-m.position.y)<1.8&&ud.attackCooldown<=0){
       ud.attackCooldown=1.8;
-      damagePlayer(1,'ゾンビの攻撃');
+      damagePlayer(1,'ゾンビの攻撃',m.position);
     }
   }else{
     // Distant zombies idle; only nearby enemies seek the player.
@@ -2885,7 +2888,7 @@ function updateDangerousMob(m,dt,now){
   }
   if(headDist()<=reach&&heightDiff<(snake?2.65:2.1)&&d.attackCooldown<=0){
     d.attackCooldown=snake?1.6:d.type==='bison'?1.5:1.3;
-    damagePlayer(10,snake?'オオアナコンダの噛みつき':d.type==='bison'?'バイソンの突進':'ライオンの攻撃');
+    damagePlayer(10,snake?'オオアナコンダの噛みつき':d.type==='bison'?'バイソンの突進':'ライオンの攻撃',m.position);
   }
   return true;
 }
@@ -3025,6 +3028,12 @@ const rain=new THREE.Points(rainG,new THREE.PointsMaterial({color:0xb8d7f0,size:
 rain.visible=false;scene.add(rain);
 
 const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false},PR=.28,PH=1.78,EYE=1.62;
+// Transient hurt feedback is not part of the save data or the player stats.
+// The knockback impulse is kept separate from walking velocity, otherwise the
+// movement controller would immediately cancel it on the following frame.
+const PLAYER_HURT_FLASH_MS=450;
+let playerHurtAt=-Infinity,playerHurtUntil=0,playerHurtSeq=0;
+let playerKnockbackX=0,playerKnockbackZ=0,playerKnockbackTime=0;
 
 /* Original voxel explorer model: teal coat, amber pack, denim trousers. */
 function createPlayerModel(){
@@ -3088,6 +3097,32 @@ function buildPlayerAvatar(){
 }
 const playerAvatar=buildPlayerAvatar();
 const avatarHeldItems=makeAvatarHeldItems(THREE,drawItemIcon);
+// Body and armor flash red without recoloring any shared mob/player materials.
+// Exclude meshes inside the hand-held item pivots: the body takes the hit,
+// while the sword, torch and shield retain their normal colors.
+const avatarDamageRed=new THREE.MeshBasicMaterial({color:0xff3333});
+function setAvatarDamageFlash(model,active){
+  if(!model)return;
+  let originals=model.userData.damageFlashOriginals;
+  if(active){
+    if(originals)return;
+    originals=new Map();
+    const equipped=model.userData.heldItemsView;
+    const roots=new Set([equipped?.right,equipped?.left]);
+    model.traverse(mesh=>{
+      if(!mesh.isMesh)return;
+      for(let node=mesh;node&&node!==model;node=node.parent){
+        if(roots.has(node))return;
+      }
+      originals.set(mesh,mesh.material);
+      mesh.material=avatarDamageRed;
+    });
+    model.userData.damageFlashOriginals=originals;
+  }else if(originals){
+    for(const [mesh,original] of originals)mesh.material=original;
+    delete model.userData.damageFlashOriginals;
+  }
+}
 // One-shot gestures are local timestamps. Multiplayer sends their sequence
 // plus elapsed age, not a raw clock that differs between devices.
 let avatarActionSeq=0,avatarActionKind=null,avatarActionAt=-Infinity;
@@ -3108,7 +3143,8 @@ const firstPersonHand=makeFirstPersonHand(THREE,{
   isVisible:()=>started&&worldReady&&!dead&&!sleeping&&!craftOpen&&
     !inventoryOpen&&!chestOpen&&cameraMode===0,
   getMovement:()=>Math.hypot(player.vel.x,player.vel.z),
-  isMining:()=>miningHeld
+  isMining:()=>miningHeld,
+  isHurt:()=>performance.now()<playerHurtUntil
 });
 const cameraEye=new THREE.Vector3(),cameraWanted=new THREE.Vector3(),cameraVector=new THREE.Vector3(),cameraLook=new THREE.Vector3();
 const gameplayAimDirection=new THREE.Vector3(),gameplayAimOrigin=new THREE.Vector3();
@@ -3136,10 +3172,14 @@ function aimPlayerRay(){
 function updatePlayerAvatar(now){
   applyArmorAppearance(playerAvatar,equippedArmor);
   playerAvatar.visible=started&&!dead&&!sleeping&&cameraMode!==0;
-  if(!playerAvatar.visible)return;
+  if(!playerAvatar.visible){
+    setAvatarDamageFlash(playerAvatar,false);
+    return;
+  }
   const selectedStack=inventorySlots[selectedHotbarIndex];
   avatarHeldItems.sync(playerAvatar,
     selectedStack&&selectedStack.qty>0?selectedStack.id:null,offhandItem?.id??null);
+  setAvatarDamageFlash(playerAvatar,now<playerHurtUntil);
   playerAvatar.position.copy(player.pos);
   playerAvatar.rotation.y=ridingHorse?ridingHorse.rotation.y:player.yaw;
   const moving=Math.hypot(player.vel.x,player.vel.z);
@@ -3421,6 +3461,7 @@ function spawn(useBed=false){
   const p=useBed?activeRespawnPoint():ensureInitialSpawn();
   player.pos.set(p.x,p.y,p.z);
   player.vel.set(0,0,0);player.onGround=false;fallOriginY=null;
+  playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
   for(let i=0;i<16&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
 }
 
@@ -3506,6 +3547,7 @@ function updateStaminaRecovery(dt,isRunning){
   }
 }
 function showDeathScreen(){
+  playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
   ridingHorse=null;
   setShieldGuard(false);
   dead=true;health=0;renderHealth();primaryActionStop();
@@ -3517,13 +3559,33 @@ function showDeathScreen(){
   deathScreen.classList.add('open');deathScreen.setAttribute('aria-hidden','false');
   document.exitPointerLock?.();markSaveDirty();saveCurrentGame(false);
 }
-function damagePlayer(points,source='ダメージ'){
+function damagePlayer(points,source='ダメージ',attacker=null){
   if(dead||points<=0)return;
   if(shieldGuarding&&offhandItem?.id===I.SHIELD&&/攻撃|噛みつき|突進/.test(source)){
     flash('盾で攻撃を防いだ！');return;
   }
   healthRegenTimer=0;
   const taken=Math.max(1,Math.ceil(points*(1-armorReduction())));
+  const hitAt=performance.now();
+  playerHurtAt=hitAt;
+  playerHurtUntil=hitAt+PLAYER_HURT_FLASH_MS;
+  playerHurtSeq=(playerHurtSeq+1)%100000000;
+  // Fall impacts flash red too, but don't bounce the player off the ground.
+  // Hostile attacks push away from the actual attacking creature.
+  if(source!=='落下ダメージ'&&!ridingHorse){
+    let dx=Number.isFinite(attacker?.x)?player.pos.x-attacker.x:Math.sin(player.yaw);
+    let dz=Number.isFinite(attacker?.z)?player.pos.z-attacker.z:Math.cos(player.yaw);
+    const length=Math.hypot(dx,dz);
+    if(length<.001){dx=Math.sin(player.yaw);dz=Math.cos(player.yaw)}
+    else{dx/=length;dz/=length}
+    const strength=/突進/.test(source)?7.0:5.3;
+    playerKnockbackX=dx*strength;
+    playerKnockbackZ=dz*strength;
+    playerKnockbackTime=.50;
+    player.vel.y=Math.max(player.vel.y,2.6);
+    player.onGround=false;
+    fallOriginY=null;
+  }
   health=Math.max(0,health-taken);renderHealth();markSaveDirty();
   if(health<=0){showDeathScreen();return}
   const heartsLost=taken/2;
@@ -3545,6 +3607,9 @@ function updateHealthRegen(dt){
 }
 function respawnPlayer(){
   health=MAX_HEALTH;dead=false;fallOriginY=null;healthRegenTimer=0;
+  playerHurtAt=-Infinity;playerHurtUntil=0;
+  playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
+  setAvatarDamageFlash(playerAvatar,false);
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
   spawn(true);streamChunks(true);
@@ -5031,8 +5096,19 @@ function loop(now){
     }else{
       player.vel.y-=18*dt;
     }
-    movePlayerAxis('x',player.vel.x*dt);
-    movePlayerAxis('z',player.vel.z*dt);
+    // Collision-aware hit recoil. The separate impulse decays over half a
+    // second, even if the player holds a movement button during the impact.
+    const recoiling=playerKnockbackTime>0;
+    const recoilX=recoiling?playerKnockbackX:0;
+    const recoilZ=recoiling?playerKnockbackZ:0;
+    if(!movePlayerAxis('x',(player.vel.x+recoilX)*dt))playerKnockbackX=0;
+    if(!movePlayerAxis('z',(player.vel.z+recoilZ)*dt))playerKnockbackZ=0;
+    if(recoiling){
+      const decay=Math.exp(-5.0*dt);
+      playerKnockbackX*=decay;playerKnockbackZ*=decay;
+      playerKnockbackTime=Math.max(0,playerKnockbackTime-dt);
+      if(playerKnockbackTime===0){playerKnockbackX=0;playerKnockbackZ=0}
+    }
     const preVerticalY=player.pos.y,wasGrounded=player.onGround,vy=player.vel.y;
     player.onGround=false;
     movePlayerAxis('y',vy*dt);
@@ -5199,7 +5275,9 @@ function multiCurrentPose(){
     offhand:offhandItem?.id??null,
     actionSeq:avatarActionSeq,actionKind:avatarActionKind,
     actionAge:Math.max(0,Math.min(1,(performance.now()-avatarActionAt)/1000)),
-    mining:miningHeld,drawing:bowDrawing,guarding:shieldGuarding
+    mining:miningHeld,drawing:bowDrawing,guarding:shieldGuarding,
+    hurtSeq:playerHurtSeq,
+    hurtAge:Math.max(0,Math.min(1,(performance.now()-playerHurtAt)/1000))
   };
 }
 function multiProfile(){
@@ -5372,7 +5450,8 @@ function multiShowAvatar(id,pose){
     model.userData.multiMove={
       target:new THREE.Vector3(pose.x,pose.y,pose.z),
       yaw,speed:0,grounded:true,phase:0,swing:0,lastReceived:performance.now(),
-      actionSeq:-1,actionKind:null,actionAt:-Infinity,mining:false,drawing:false,guarding:false
+      actionSeq:-1,actionKind:null,actionAt:-Infinity,mining:false,drawing:false,guarding:false,
+      hurtSeq:-1,hurtUntil:0
     };
     model.position.set(pose.x,pose.y,pose.z);
     model.rotation.y=yaw;
@@ -5400,6 +5479,12 @@ function multiShowAvatar(id,pose){
   motion.mining=pose.mining===true;
   motion.drawing=pose.drawing===true;
   motion.guarding=pose.guarding===true;
+  if(Number.isSafeInteger(pose.hurtSeq)&&pose.hurtSeq>=0&&pose.hurtSeq!==motion.hurtSeq){
+    motion.hurtSeq=pose.hurtSeq;
+    const age=Number(pose.hurtAge);
+    const elapsed=Number.isFinite(age)?Math.max(0,Math.min(1,age))*1000:1000;
+    motion.hurtUntil=performance.now()+Math.max(0,PLAYER_HURT_FLASH_MS-elapsed);
+  }
   motion.lastReceived=performance.now();
 }
 function multiAnimateAvatars(now){
@@ -5435,10 +5520,12 @@ function multiAnimateAvatars(now){
       kind:m.actionKind,at:m.actionAt,
       mining:fresh&&m.mining,drawing:fresh&&m.drawing,guarding:fresh&&m.guarding
     });
+    setAvatarDamageFlash(model,now<m.hurtUntil);
   }
 }
 function multiClearAvatars(){
   for(const model of multiAvatars.values()){
+    setAvatarDamageFlash(model,false);
     avatarHeldItems.dispose(model);
     scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});
   }
@@ -5593,6 +5680,7 @@ function multiRemoveAvatar(id){
   const model=multiAvatars.get(id);
   if(!model)return;
   avatarHeldItems.dispose(model);
+  setAvatarDamageFlash(model,false);
   scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(id);
 }
 function multiPrepareMigration(checkpoint,plannedLeader=null){
@@ -5803,7 +5891,7 @@ function multiEvent(e){
     if(guest){
       multiGuestRecords.delete(e.peerId);
       const model=multiAvatars.get(guest.id);
-      if(model){avatarHeldItems.dispose(model);scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(guest.id)}
+      if(model){setAvatarDamageFlash(model,false);avatarHeldItems.dispose(model);scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(guest.id)}
       multiplayerNetwork.send({t:'peerLeft',id:guest.id});
       multiplayerNetwork.send({t:'roster',people:multiRosterSnapshot()});
       multiPeople();
