@@ -293,7 +293,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   // torches or shields. Model and item materials are left untouched.
   const armParts=[...pivot.children,...leftRoot.children].filter(mesh=>mesh.isMesh)
     .map(mesh=>({mesh,original:mesh.material}));
-  const hurtArmMaterial=basic(0xff2222);
+  const hurtArmMaterial=basic(0xdb4545);
   let armDamageFlashing=false;
   camera.add(root,leftRoot);
   if(!camera.parent)scene.add(camera);
