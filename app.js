@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {makeFirstPersonHand} from './first-person-hand.js?v=20261016playerHurtFlash25';
-import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016playerHurtFlash25';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261016hurtFixed26';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016hurtFixed26';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -978,6 +978,7 @@ function resetWorldRuntime(){
   resetSprint();
   playerHurtAt=-Infinity;playerHurtUntil=0;playerHurtSeq=0;
   playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
+  damageScreenTint.style.opacity='0';
   setAvatarDamageFlash(playerAvatar,false);
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   equippedArmor.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
@@ -3031,7 +3032,7 @@ const player={pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,onGr
 // Transient hurt feedback is not part of the save data or the player stats.
 // The knockback impulse is kept separate from walking velocity, otherwise the
 // movement controller would immediately cancel it on the following frame.
-const PLAYER_HURT_FLASH_MS=450;
+const PLAYER_HURT_FLASH_MS=720;
 let playerHurtAt=-Infinity,playerHurtUntil=0,playerHurtSeq=0;
 let playerKnockbackX=0,playerKnockbackZ=0,playerKnockbackTime=0;
 
@@ -3100,7 +3101,28 @@ const avatarHeldItems=makeAvatarHeldItems(THREE,drawItemIcon);
 // Body and armor flash red without recoloring any shared mob/player materials.
 // Exclude meshes inside the hand-held item pivots: the body takes the hit,
 // while the sword, torch and shield retain their normal colors.
-const avatarDamageRed=new THREE.MeshBasicMaterial({color:0xff3333});
+const avatarDamageRed=new THREE.MeshBasicMaterial({
+  color:0xff2222,depthTest:true,depthWrite:true,toneMapped:false
+});
+// A screen hit pulse makes the damage unmistakable in first person,
+// even when the held item covers most of the arm.
+const damageScreenTint=document.createElement('div');
+damageScreenTint.id='nexacraft-hurt-pulse';
+Object.assign(damageScreenTint.style,{
+  position:'fixed',inset:'0',pointerEvents:'none',zIndex:'19',
+  background:'rgba(255,16,16,.42)',opacity:'0',
+  willChange:'opacity'
+});
+document.body.appendChild(damageScreenTint);
+function updateDamageScreenTint(now){
+  const remaining=Math.max(0,playerHurtUntil-now);
+  if(!remaining){damageScreenTint.style.opacity='0';return}
+  const fraction=remaining/PLAYER_HURT_FLASH_MS;
+  const flicker=.82+.18*Math.cos((1-fraction)*Math.PI*6);
+  damageScreenTint.style.opacity=String(Math.min(1,fraction*1.1)*flicker);
+}
+const HURT_TEST_MODE=new URLSearchParams(location.search).get('hurtTest')==='1';
+let hurtTestPlayed=false;
 function setAvatarDamageFlash(model,active){
   if(!model)return;
   let originals=model.userData.damageFlashOriginals;
@@ -3578,11 +3600,14 @@ function damagePlayer(points,source='ダメージ',attacker=null){
     const length=Math.hypot(dx,dz);
     if(length<.001){dx=Math.sin(player.yaw);dz=Math.cos(player.yaw)}
     else{dx/=length;dz/=length}
-    const strength=/突進/.test(source)?7.0:5.3;
+    const strength=/突進/.test(source)?10.5:8.2;
     playerKnockbackX=dx*strength;
     playerKnockbackZ=dz*strength;
-    playerKnockbackTime=.50;
-    player.vel.y=Math.max(player.vel.y,2.6);
+    playerKnockbackTime=.62;
+    // Instant collision-tested nudge, then a longer eased recoil.
+    movePlayerAxis('x',dx*.13);
+    movePlayerAxis('z',dz*.13);
+    player.vel.y=Math.max(player.vel.y,2.8);
     player.onGround=false;
     fallOriginY=null;
   }
@@ -3609,6 +3634,7 @@ function respawnPlayer(){
   health=MAX_HEALTH;dead=false;fallOriginY=null;healthRegenTimer=0;
   playerHurtAt=-Infinity;playerHurtUntil=0;
   playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
+  damageScreenTint.style.opacity='0';
   setAvatarDamageFlash(playerAvatar,false);
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
@@ -5104,7 +5130,7 @@ function loop(now){
     if(!movePlayerAxis('x',(player.vel.x+recoilX)*dt))playerKnockbackX=0;
     if(!movePlayerAxis('z',(player.vel.z+recoilZ)*dt))playerKnockbackZ=0;
     if(recoiling){
-      const decay=Math.exp(-5.0*dt);
+      const decay=Math.exp(-3.9*dt);
       playerKnockbackX*=decay;playerKnockbackZ*=decay;
       playerKnockbackTime=Math.max(0,playerKnockbackTime-dt);
       if(playerKnockbackTime===0){playerKnockbackX=0;playerKnockbackZ=0}
@@ -5203,6 +5229,14 @@ function loop(now){
   if(chimeraVisualModel&&animateChimeraVisual)
     animateChimeraVisual(chimeraVisualModel,now*.001,false);
   firstPersonHand.update(dt,now);
+  updateDamageScreenTint(now);
+  // Render-only micro-shake after updating the follow camera. Aim, raycasts
+  // and actual collision use player.pos and remain unaffected.
+  if(now<playerHurtUntil&&started&&!dead&&cameraMode===0){
+    const remaining=(playerHurtUntil-now)/PLAYER_HURT_FLASH_MS;
+    camera.translateX(Math.sin(now*.067)*.06*remaining);
+    camera.translateY(Math.cos(now*.054)*.035*remaining);
+  }
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
 }
@@ -6067,6 +6101,17 @@ $('startBtn').addEventListener('click',()=>{
   if(dead){showDeathScreen();return}
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
   void spawnChimeraVisualTest();
+  // Opt-in visual QA: opening the game with ?hurtTest=1 fires exactly one
+  // real damage event after entering a world, no zombie required.
+  if(HURT_TEST_MODE&&!hurtTestPlayed){
+    hurtTestPlayed=true;
+    setTimeout(()=>{
+      if(!started||dead||!worldReady)return;
+      damagePlayer(1,'ダメージ演出テスト',{
+        x:player.pos.x+1,z:player.pos.z
+      });
+    },1100);
+  }
 });
 if(cloudEnabled){
   const note=document.querySelector('.auth-note');
