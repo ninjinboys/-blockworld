@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261016shieldDown24';
-import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016avatarHeld01';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261016avatarHeld02';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -3166,6 +3166,10 @@ function updatePlayerAvatar(now){
       limbs.leftLeg.rotation.x=.15;
       limbs.rightLeg.rotation.x=-.15;
     }
+    // Slightly separate held hands from the torso rather than floating the
+    // tools away from the hands. Both first-person and horse reins are unchanged.
+    limbs.rightArm.rotation.z=selectedStack?.qty>0?.30:0;
+    limbs.leftArm.rotation.z=(offhandItem?.id===I.SHIELD||offhandItem?.id===I.TORCH)?-.34:0;
   }
 }
 function updateGameCamera(){
@@ -5388,6 +5392,9 @@ function multiAnimateAvatars(now){
     limbs.rightLeg.rotation.x=-stride;
     limbs.leftArm.rotation.x=-stride*.8;
     limbs.rightArm.rotation.x=stride*.8;
+    // Identical hand spacing for other players seen in multiplayer.
+    limbs.rightArm.rotation.z=model.userData.heldItemsView?.mainId!=null?.30:0;
+    limbs.leftArm.rotation.z=model.userData.heldItemsView?.offhandId!=null?-.34:0;
     if(!m.grounded){
       limbs.leftLeg.rotation.x=.15;
       limbs.rightLeg.rotation.x=-.15;
