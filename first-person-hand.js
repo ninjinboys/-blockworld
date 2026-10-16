@@ -84,12 +84,14 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   for(const x of [-.41,.41])for(const y of [.21,.99]){
     shape(shield,.075,.075,.06,shieldBright,x,y,-.305);
   }
-  // The shield is genuinely broad, but stays at the LOWER LEFT of the
-  // first-person screen. Do not multiply the whole model by 3 at arm's length:
-  // that covered the crosshair and most of the world.
-  shield.scale.setScalar(1.6);
-  shield.position.set(-.72,-.52,-.55);
-  shield.rotation.set(-.11,-.10,-.03);
+  // Offhand shield: about one-fifth of the iPad screen width at rest.
+  // Keep it above the left fist and below/left of the crosshair; guarding
+  // raises the entire arm without blocking the player's forward view.
+  // Only adjust first-person visuals: shield size, inventory and defense
+  // mechanics remain unchanged.
+  shield.scale.setScalar(.74);
+  shield.position.set(-.04,.04,-.38);
+  shield.rotation.set(-.10,-.08,-.015);
   shield.visible=false;
   leftRoot.add(shield);
   leftRoot.visible=false;
