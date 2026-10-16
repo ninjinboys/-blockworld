@@ -84,9 +84,11 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   for(const x of [-.41,.41])for(const y of [.21,.99]){
     shape(shield,.075,.075,.06,shieldBright,x,y,-.305);
   }
-  // Make the equipped offhand shield three times larger without enlarging the left arm.
-  shield.scale.setScalar(3);
-  shield.position.set(0,.52,-.35);
+  // The shield is genuinely broad, but stays at the LOWER LEFT of the
+  // first-person screen. Do not multiply the whole model by 3 at arm's length:
+  // that covered the crosshair and most of the world.
+  shield.scale.setScalar(1.6);
+  shield.position.set(-.72,-.52,-.55);
   shield.rotation.set(-.11,-.10,-.03);
   shield.visible=false;
   leftRoot.add(shield);
