@@ -2,7 +2,7 @@
  * Camera-attached so it never changes world interaction/raycasting.
  * No external textures. Hotbar art uses the game's existing drawItemIcon().
  */
-export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isVisible,getMovement,isMining}){
+export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isGuarding=()=>false,isVisible,getMovement,isMining}){
   const basic=(color)=>new THREE.MeshBasicMaterial({
     color,depthTest:true,depthWrite:true,toneMapped:false
   });
@@ -41,7 +41,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   // A separate left-arm rig appears only while a torch occupies offhand.
   // It enters from the bottom-left, without moving the right-hand tool.
   const leftRoot=new THREE.Group();
-  leftRoot.name='NEXACRAFT offhand left arm with torch';
+  leftRoot.name='NEXACRAFT offhand left arm';
   const OFFHAND_X=-1.18,OFFHAND_Y=-.99,OFFHAND_Z=-1.14,OFFHAND_TILT=-.43;
   leftRoot.position.set(OFFHAND_X,OFFHAND_Y,OFFHAND_Z);
   leftRoot.rotation.z=OFFHAND_TILT;
@@ -63,6 +63,31 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   shape(leftTorch,.062,.10,.070,torchWhite,0,.77,-.025);
   const offhandGlow=new THREE.PointLight(0xffaa49,1.2,4,2);
   offhandGlow.position.set(0,.75,-.07);leftTorch.add(offhandGlow);
+  // Oversized layered shield: wood grain, raised iron rim and a solid boss.
+  // Both the torch and shield use the same offhand; no item duplication.
+  const shield=new THREE.Group();
+  shield.name='NEXACRAFT large shield';
+  const shieldWood=basic(0x795033),shieldPlank=basic(0x9e6d43);
+  const shieldRim=basic(0x89969a),shieldBright=basic(0xc4d0d2);
+  const shieldBoss=basic(0xb2c0c4),shieldDark=basic(0x48545a);
+  // A broad and tall kite silhouette, visibly thicker than an item sprite.
+  shape(shield,1.04,.99,.19,shieldWood,0,.62,-.10);
+  shape(shield,.80,.20,.195,shieldWood,0,.058,-.10);
+  shape(shield,.76,1.04,.205,shieldPlank,0,.62,-.215);
+  shape(shield,.89,.105,.255,shieldRim,0,1.105,-.16);
+  shape(shield,.89,.11,.255,shieldRim,0,.145,-.16);
+  shape(shield,.12,.96,.255,shieldRim,-.465,.62,-.16);
+  shape(shield,.12,.96,.255,shieldRim,.465,.62,-.16);
+  shape(shield,.105,.89,.047,shieldDark,0,.62,-.323);
+  shape(shield,.29,.29,.095,shieldBoss,0,.68,-.348);
+  shape(shield,.17,.17,.11,shieldBright,0,.695,-.405);
+  for(const x of [-.41,.41])for(const y of [.21,.99]){
+    shape(shield,.075,.075,.06,shieldBright,x,y,-.305);
+  }
+  shield.position.set(0,.52,-.35);
+  shield.rotation.set(-.11,-.10,-.03);
+  shield.visible=false;
+  leftRoot.add(shield);
   leftRoot.visible=false;
   const blockColors={
     1:0x6a9b3c,2:0x81532f,3:0x888d8e,4:0xd6c28b,5:0x3486bc,
@@ -246,7 +271,11 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       const visible=Boolean(isVisible());
       root.visible=visible;
       const leftItem=getOffhand();
-      leftRoot.visible=visible&&leftItem?.id===147&&Number(leftItem.qty)>0;
+      const torchEquipped=leftItem?.id===147&&Number(leftItem.qty)>0;
+      const shieldEquipped=leftItem?.id===156&&Number(leftItem.qty)>0;
+      leftRoot.visible=visible&&(torchEquipped||shieldEquipped);
+      leftTorch.visible=torchEquipped;
+      shield.visible=shieldEquipped;
       if(!visible)return;
       const st=getHeld();
       const id=(st && Number(st.qty)>0)?st.id:null;
@@ -260,8 +289,13 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       const swing=swingTime>0?Math.sin(Math.PI*(1-swingTime/.39)):0;
       const bob=movement*Math.sin(walkPhase)*.017;
       if(leftRoot.visible){
-        leftRoot.position.set(OFFHAND_X-bob*.40,OFFHAND_Y+movement*Math.abs(Math.sin(walkPhase))*.02,OFFHAND_Z);
-        leftRoot.rotation.set(-swing*.035,0,OFFHAND_TILT-bob*.18);
+        const guarding=shieldEquipped&&isGuarding();
+        leftRoot.position.set(
+          OFFHAND_X+(guarding?.30:0)-bob*.40,
+          OFFHAND_Y+(guarding?.27:0)+movement*Math.abs(Math.sin(walkPhase))*.02,
+          OFFHAND_Z+(guarding?.11:0)
+        );
+        leftRoot.rotation.set(-swing*.035,0,OFFHAND_TILT+(guarding?.19:0)-bob*.18);
       }
       root.position.set(
         FIRST_PERSON_ARM_X+bob*.45,
