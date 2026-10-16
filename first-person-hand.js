@@ -2,7 +2,7 @@
  * Camera-attached so it never changes world interaction/raycasting.
  * No external textures. Hotbar art uses the game's existing drawItemIcon().
  */
-export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isVisible,getMovement,isMining}){
+export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isVisible,getMovement,isMining}){
   const basic=(color)=>new THREE.MeshBasicMaterial({
     color,depthTest:true,depthWrite:true,toneMapped:false
   });
@@ -38,6 +38,32 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
   const held=new THREE.Group();
   held.position.set(-.018,.60,-.155);
   pivot.add(held);
+  // A separate left-arm rig appears only while a torch occupies offhand.
+  // It enters from the bottom-left, without moving the right-hand tool.
+  const leftRoot=new THREE.Group();
+  leftRoot.name='NEXACRAFT offhand left arm with torch';
+  const OFFHAND_X=-1.18,OFFHAND_Y=-.99,OFFHAND_Z=-1.14,OFFHAND_TILT=-.43;
+  leftRoot.position.set(OFFHAND_X,OFFHAND_Y,OFFHAND_Z);
+  leftRoot.rotation.z=OFFHAND_TILT;
+  shape(leftRoot,.28,.68,.31,jacket,0,-.14,0);
+  shape(leftRoot,.30,.11,.33,jacketShade,0,.18,0);
+  shape(leftRoot,.292,.065,.337,cuff,0,.24,0);
+  shape(leftRoot,.258,.25,.287,skin,0,.385,-.012);
+  shape(leftRoot,.084,.135,.11,skinSide,.157,.39,-.085);
+  const leftTorch=new THREE.Group();
+  leftTorch.position.set(0,.60,-.155);
+  leftRoot.add(leftTorch);
+  const torchBrown=basic(0x825025),torchLightWood=basic(0xb77a39),torchBand=basic(0x4b3528);
+  const torchOrange=basic(0xff8b12),torchYellow=basic(0xffd850),torchWhite=basic(0xfff4b0);
+  shape(leftTorch,.11,.49,.11,torchBrown,0,.20,0);
+  shape(leftTorch,.044,.43,.018,torchLightWood,-.035,.20,-.055);
+  shape(leftTorch,.135,.11,.13,torchBand,0,.49,0);
+  shape(leftTorch,.16,.21,.16,torchOrange,0,.64,0);
+  shape(leftTorch,.105,.17,.11,torchYellow,0,.72,-.012);
+  shape(leftTorch,.062,.10,.070,torchWhite,0,.77,-.025);
+  const offhandGlow=new THREE.PointLight(0xffaa49,1.2,4,2);
+  offhandGlow.position.set(0,.75,-.07);leftTorch.add(offhandGlow);
+  leftRoot.visible=false;
   const blockColors={
     1:0x6a9b3c,2:0x81532f,3:0x888d8e,4:0xd6c28b,5:0x3486bc,
     6:0x946332,7:0x508b39,8:0x383a41,9:0xa39b8d,10:0xc7a13b,
@@ -209,7 +235,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
     object.traverse(n=>{if(n.isMesh||n.geometry){n.frustumCulled=false;n.renderOrder=10002}});
     held.add(object);
   }
-  camera.add(root);
+  camera.add(root,leftRoot);
   if(!camera.parent)scene.add(camera);
   root.visible=false;
   return {
@@ -219,6 +245,8 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
     update(dt,now){
       const visible=Boolean(isVisible());
       root.visible=visible;
+      const leftItem=getOffhand();
+      leftRoot.visible=visible&&leftItem?.id===147&&Number(leftItem.qty)>0;
       if(!visible)return;
       const st=getHeld();
       const id=(st && Number(st.qty)>0)?st.id:null;
@@ -231,6 +259,10 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,isV
       swingTime=Math.max(0,swingTime-dt);
       const swing=swingTime>0?Math.sin(Math.PI*(1-swingTime/.39)):0;
       const bob=movement*Math.sin(walkPhase)*.017;
+      if(leftRoot.visible){
+        leftRoot.position.set(OFFHAND_X-bob*.40,OFFHAND_Y+movement*Math.abs(Math.sin(walkPhase))*.02,OFFHAND_Z);
+        leftRoot.rotation.set(-swing*.035,0,OFFHAND_TILT-bob*.18);
+      }
       root.position.set(
         FIRST_PERSON_ARM_X+bob*.45,
         FIRST_PERSON_ARM_Y+movement*Math.abs(Math.sin(walkPhase))*.027,
