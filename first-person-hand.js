@@ -108,8 +108,9 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   for(const x of [-.39,.39])for(const y of [.67,.94]){
     shape(shield,.065,.065,.065,shieldBright,x,y,-.283);
   }
-  // Mid-size: larger than the previous .74 version, but not screen-filling.
-  shield.scale.setScalar(.98);
+  // Double ONLY the shield's vertical height. Width and depth stay fixed.
+  // Keep the pointed lower tip in the offhand grip; no arm or guard changes.
+  shield.scale.set(.98,1.96,.98);
   shield.position.set(-.08,.02,-.40);
   shield.rotation.set(-.08,-.08,-.02);
   shield.visible=false;
