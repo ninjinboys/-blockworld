@@ -5,7 +5,7 @@ import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261017villageModel03';
 import {createVillageSystem} from './village-system.js?v=20261017village01';
-import {createVillagerModels} from './villager-model.js?v=20261017villager01';
+import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
 
