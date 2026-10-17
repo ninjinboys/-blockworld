@@ -994,6 +994,7 @@ function resetWorldRuntime(){
     else scene.remove(m);
   }
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;nightZombieWaveStarted=false;
+  multiLastMobSync=0;multiMobSeq=0;multiAppliedMobSeq=-1;
   clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
   $('chestScreen').classList.remove('open');
   chunks.clear();torchLocations.clear();clearTorchLights();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
@@ -1995,6 +1996,10 @@ function rebuildEdited(...positions){
 }
 
 const mobs=[];
+function ensureMobId(m){
+  if(!m.userData.netId)m.userData.netId=crypto.randomUUID();
+  return m.userData.netId;
+}
 let ridingHorse=null; // Only saddled horses persist. Unridden horses stay at their chosen spot.
 const mobMaterials=new Map();
 function mobMat(color){
@@ -2213,12 +2218,13 @@ function saddledHorsesForSave(){
 function serializeSaddledHorses(){
   return saddledHorsesForSave().map(m=>({
     x:m.position.x,y:m.position.y,z:m.position.z,
-    angle:m.userData.angle,hp:m.userData.hp
+    angle:m.userData.angle,hp:m.userData.hp,netId:ensureMobId(m)
   }));
 }
 function restoreSaddledHorses(data){
   ridingHorse=null;
-  if(!Array.isArray(data?.saddledHorses))return;
+  // Guests receive the host's live horses; don't restore duplicates.
+  if(multiRole==='guest'||!Array.isArray(data?.saddledHorses))return;
   const entries=data.saddledHorses.slice(0,64);
   const savedRider=Number.isInteger(data.ridingHorseIndex)?data.ridingHorseIndex:-1;
   for(let i=0;i<entries.length;i++){
@@ -2229,7 +2235,8 @@ function restoreSaddledHorses(data){
     h.position.set(v.x,v.y,v.z);h.userData={
       ...h.userData,type:'horse',name:'馬',angle:v.angle,
       t:2,speed:.70,hp:Math.max(1,Math.min(10,Number(v.hp)||10)),xp:24,
-      hostile:false,attackCooldown:0,chaseTime:0,phase:0,saddled:true
+      hostile:false,attackCooldown:0,chaseTime:0,phase:0,saddled:true,
+      netId:typeof v.netId==='string'&&/^[0-9a-f-]{36}$/.test(v.netId)?v.netId:crypto.randomUUID()
     };
     h.rotation.y=v.angle+Math.PI;
     setupMobStepAnimation(h);
@@ -2923,6 +2930,7 @@ function updateSkeleton(m,dt,now){
   }
 }
 function updateZombieSpawning(dt){
+  if(multiRole==='guest')return;
   if(!isNightTime()){
     zombieSpawnCooldown=1;
     skeletonSpawnCooldown=7;
@@ -3078,9 +3086,9 @@ function chooseWildMob(){
 // silently discarding a rare roll because the enlarged animal needs room.
 const MAX_WILD_ANIMALS=18;
 const WILD_COMMON_LIFETIME_MS=3*60*1000,WILD_RARE_LIFETIME_MS=8*60*1000;
-function spawnPassiveMob(){
+function spawnPassiveMob(anchor=player.pos){
   const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&!m.userData.saddled).length;
-  if(wildCount>=MAX_WILD_ANIMALS)return false;
+  if(wildCount>=(multiRole==='host'?30:MAX_WILD_ANIMALS))return false;
 
   // Choose the species ONCE before checking locations. A bison failing its
   // first flat-ground test still gets a chance to spawn as a bison.
@@ -3092,8 +3100,8 @@ function spawnPassiveMob(){
   for(let attempt=0;attempt<tries;attempt++){
     const angle=phase+attempt*2.399963229728653; // Spread attempts around the player.
     const dist=19+Math.random()*17;
-    const x=Math.floor(player.pos.x+Math.cos(angle)*dist);
-    const z=Math.floor(player.pos.z+Math.sin(angle)*dist);
+    const x=Math.floor(anchor.x+Math.cos(angle)*dist);
+    const z=Math.floor(anchor.z+Math.sin(angle)*dist);
     const h=surfaceAt(x,z),bio=biomeAt(x,z);
     if(h<=SEA||bio===2||bio===6||bio===7)continue;
     if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<(large?6:5)))continue;
@@ -3132,10 +3140,23 @@ function spawnPassiveMob(){
   });
   return false;
 }
+function multiSpawnAnchors(){
+  const anchors=[player.pos];
+  if(multiRole==='host'){
+    const now=performance.now();
+    for(const guest of multiGuestRecords.values())
+      if(guest.player&&now-(guest.lastPoseAt||0)<5000&&
+         Number.isFinite(guest.player.x)&&Number.isFinite(guest.player.z))
+        anchors.push(guest.player);
+  }
+  return anchors;
+}
 function updatePassiveSpawning(dt){
+  if(multiRole==='guest')return;
   passiveSpawnCooldown-=dt;
   if(passiveSpawnCooldown>0)return;
   passiveSpawnCooldown=25;
+  const anchors=multiSpawnAnchors();
 
   // Before, spawning stopped permanently once only SIX animals were nearby.
   // Retire old wild animals beyond close range so stationary worlds continue
@@ -3144,7 +3165,7 @@ function updatePassiveSpawning(dt){
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i],ud=m.userData;
     if(ud.saddled||ud.type==='zombie'||ud.type==='skeleton')continue;
-    const distance=Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z);
+    const distance=Math.min(...anchors.map(p=>Math.hypot(m.position.x-p.x,m.position.z-p.z)));
     const rare=ud.type==='bison'||ud.type==='lion'||ud.type==='anaconda';
     const age=now-(ud.spawnedAt??now);
     if(distance>180||(distance>25&&age>(rare?WILD_RARE_LIFETIME_MS:WILD_COMMON_LIFETIME_MS))){
@@ -3152,10 +3173,12 @@ function updatePassiveSpawning(dt){
     }
   }
 
-  const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&
-    Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)<55).length;
-  const attempts=nearby<4?3:nearby<10?2:nearby<15?1:0;
-  for(let i=0;i<attempts;i++)spawnPassiveMob();
+  for(const anchor of anchors){
+    const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&
+      !m.userData.saddled&&Math.hypot(m.position.x-anchor.x,m.position.z-anchor.z)<55).length;
+    const attempts=nearby<4?3:nearby<10?2:nearby<15?1:0;
+    for(let i=0;i<attempts;i++)spawnPassiveMob(anchor);
+  }
 }
 
 // Clouds float well above the tallest terrain (world height is 48 blocks).
@@ -4864,7 +4887,7 @@ function arrowHitNearbyMob(point,power){
       if(high!=null&&point.y>m.position.y+high+.1)continue;
       const dx=point.x-x,dz=point.z-z;
       if(dx*dx+dz*dz>(r+.10)*(r+.10))continue;
-      damageMob(m,Math.max(1,Math.round(1+3*power)));
+      damageMob(m,Math.max(1,Math.round(1+3*power)),'arrow',power);
       return true;
     }
   }
@@ -4922,12 +4945,23 @@ function attackMob(){
   if(now-lastPlayerMeleeAt<PLAYER_MELEE_COOLDOWN_MS)return true;
   lastPlayerMeleeAt=now;
 
-  const damage=selected===I.DIAMOND_SWORD?4:selected===I.IRON_SWORD?3:selected===I.GOLD_SWORD?2:selected===I.STONE_SWORD?2:1;
+  const damage=meleeMobDamage(selected);
   damageMob(root,damage);
   return true;
 }
-function damageMob(root,damage){
+function meleeMobDamage(weapon){
+  return weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
+    weapon===I.GOLD_SWORD?2:weapon===I.STONE_SWORD?2:1;
+}
+function damageMob(root,damage,via='melee',power=1){
   if(!root||!mobs.includes(root)||root.userData.hp<=0)return;
+  if(multiRole==='guest'){
+    const id=root.userData.netId;
+    if(!id||!multiplayerNetwork.connected)return;
+    setMobHitFlash(root);
+    multiplayerNetwork.send({t:'mobHit',id,via,power});
+    return true;
+  }
   root.userData.hp-=damage;
   setMobHitFlash(root);
   if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'){
@@ -5407,6 +5441,28 @@ function loop(now){
         m.userData.hitFlash-=dt;
         if(m.userData.hitFlash<=0)restoreMobColors(m);
       }
+      if(multiRole==='guest'){
+        const target=m.userData.netTarget;
+        if(target){
+          const offset=m.position.distanceTo(target);
+          if(offset>7)m.position.copy(target);
+          else m.position.lerp(target,Math.min(1,dt*10));
+          const yaw=(m.userData.netAngle??0)+Math.PI;
+          m.rotation.y+=Math.atan2(Math.sin(yaw-m.rotation.y),Math.cos(yaw-m.rotation.y))*Math.min(1,dt*13);
+          const moving=offset>.035;
+          if(m.userData.type==='zombie'||m.userData.type==='skeleton'){
+            const parts=m.userData.parts;
+            if(parts){
+              const stride=moving?Math.sin(now*.008+m.userData.phase)*.34:0;
+              parts.leftLeg.rotation.x=stride;parts.rightLeg.rotation.x=-stride;
+              if(m.userData.type==='zombie'){
+                parts.leftArm.rotation.x=1.38+stride*.12;parts.rightArm.rotation.x=1.38-stride*.12;
+              }
+            }
+          }else animateWildMob(m,dt,now,moving);
+        }
+        return;
+      }
       if(m.userData.type==='zombie'){
         updateZombie(m,dt,now);
         return;
@@ -5448,7 +5504,7 @@ function loop(now){
     });
 
     updateFlyingArrows(dt);
-    updateSkeletonArrows(dt);
+    if(multiRole!=='guest')updateSkeletonArrows(dt);
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');
