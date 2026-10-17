@@ -2099,7 +2099,7 @@ const NEW_MOB_STATS={
   shark:{name:'サメ',hp:32,xp:58,speed:1.7,height:1.89,kind:'swimming',damage:4},
   elephant:{name:'ゾウ',hp:80,xp:105,speed:.22,height:3.50,kind:'predator',damage:6}
 };
-// Stone golem is intentionally reserved for the future village update.
+// Village guardian golems spawn only beside generated villages (never as wildlife).
 const mobs=[];
 function ensureMobId(m){
   if(!m.userData.netId)m.userData.netId=crypto.randomUUID();
@@ -2896,7 +2896,18 @@ function mobWalkStep(m,angle,distance,isZombie=false){
     const nx=m.position.x+Math.sin(angle)*step;
     const nz=m.position.z+Math.cos(angle)*step;
     const bx=Math.round(nx),bz=Math.round(nz);
-    const ground=surfaceAt(bx,bz);
+    let ground=surfaceAt(bx,bz);
+    // Village paths and houses are flattened at the village's base elevation.
+    // The procedural terrain sampler has not changed, so consult the actual
+    // placed foundation for villagers and their guardians when inside villages.
+    // Without this they can treat old buried terrain as a step or an open hole.
+    const ud=m.userData;
+    if((ud.type==='villager'||ud.type==='golem')&&Number.isFinite(ud.homeY)&&
+       Math.abs(bx-ud.homeX)<=18&&Math.abs(bz-ud.homeZ)<=18){
+      const floorY=ud.homeY;
+      if(solid(get(bx,floorY,bz))&&!solid(get(bx,floorY+1,bz)))
+        ground=floorY;
+    }
     if(ground<(isZombie?SEA:SEA+1)||ground>WORLD_TOP-3)break;
     if(!isZombie&&biomeAt(bx,bz)===6)break;
     // Even a mined-away floor must be verified. A shallow hole can be walked into.
@@ -3635,7 +3646,7 @@ function spawnVillager(site,idx){
   g.position.set(x,y,z);
   g.rotation.y=angle+Math.PI;
   g.userData={...g.userData,type:'villager',name:['村人','農民','職人','学者'][idx%4],
-    hp:20,xp:2,villageKey:site.key,homeX:site.x,homeZ:site.z,
+    hp:20,xp:2,villageKey:site.key,homeX:site.x,homeY:site.y,homeZ:site.z,
     variant:idx%4,angle,speed:.68,t:1+Math.random()*3,
     phase:Math.random()*Math.PI*2,fleeTime:0,hitFlash:0,
     spawnedAt:performance.now()};
@@ -3649,7 +3660,7 @@ function spawnVillageGuardian(site){
   if(!solid(get(x,site.y,z))||get(x,site.y+1,z)!==B.AIR)return false;
   const g=createNewMob('golem',x,y,z);
   g.userData.villageKey=site.key;
-  g.userData.homeX=site.x;g.userData.homeZ=site.z;
+  g.userData.homeX=site.x;g.userData.homeY=site.y;g.userData.homeZ=site.z;
   g.userData.t=2.0;
   if(!mobSpaceFree(g,x,y,z,g.userData.angle)){disposeUnusedNewMob(g);return false}
   scene.add(g);mobs.push(g);return true;
