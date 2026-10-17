@@ -3641,13 +3641,54 @@ function bedDirectionFromYaw(){
   const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);
   return Math.abs(fx)>Math.abs(fz)?{dx:Math.sign(fx)||1,dz:0}:{dx:0,dz:Math.sign(fz)||-1};
 }
+// Respawn beside the bed at the same floor height, not by climbing through
+// the ceiling. The previous "raise Y until not blocked" could move a player
+// through a house roof and into a tree growing over the house.
+function safeBedRespawn(foot,head){
+  const floorY=foot.y-1;
+  const positions=new Map();
+  function consider(x,z){
+    const key=x+','+z;
+    if((x===foot.x&&z===foot.z)||(x===head.x&&z===head.z)||positions.has(key))return;
+    const distance=Math.min(
+      Math.hypot(x-foot.x,z-foot.z),Math.hypot(x-head.x,z-head.z));
+    positions.set(key,{x,z,distance});
+  }
+  // Side and end spaces closest to the two halves are preferred.
+  for(const half of [foot,head]){
+    for(const radius of [1,2,3,4])
+      for(let dx=-radius;dx<=radius;dx++)
+        for(let dz=-radius;dz<=radius;dz++){
+          if(Math.max(Math.abs(dx),Math.abs(dz))!==radius)continue;
+          consider(half.x+dx,half.z+dz);
+        }
+  }
+  const candidates=[...positions.values()].sort((a,b)=>a.distance-b.distance);
+  for(const tile of candidates){
+    const {x,z}=tile,y=foot.y-.44;
+    // A floor must actually exist at the bed's level and both body blocks
+    // must fit; never search upward to an exposed rooftop/tree canopy.
+    const floor=get(x,floorY,z);
+    if(!solid(floor)||floor===B.LEAF||floor===B.CACTUS||isBedBlock(floor))continue;
+    if(!blocked(x,y,z)&&blocked(x,y-.12,z))return {x,y,z};
+  }
+  // Only as a backup, allow standing ON a bed if there is enough headroom.
+  for(const half of [foot,head]){
+    const p={x:half.x,y:half.y+.56,z:half.z};
+    if(!blocked(p.x,p.y,p.z)&&blocked(p.x,p.y-.12,p.z))return p;
+  }
+  return null;
+}
 function activeRespawnPoint(){
   if(bedSpawn){
     const foot=canonicalBedFoot(bedSpawn.x,bedSpawn.y,bedSpawn.z);
-    if(foot&&findBedOtherHalf(foot.x,foot.y,foot.z,B.BED)){
-      return {x:foot.x,y:foot.y+1.05,z:foot.z};
-    }
-    bedSpawn=null;
+    const head=foot&&findBedOtherHalf(foot.x,foot.y,foot.z,B.BED);
+    if(foot&&head){
+      const safe=safeBedRespawn(foot,head);
+      if(safe)return safe;
+      // Keep the bed assignment. A rebuilt house might create room later.
+      flash('ベッドの周囲に安全な空間がないため初期地点に復活しました');
+    }else bedSpawn=null;
   }
   return ensureInitialSpawn();
 }
@@ -3656,7 +3697,13 @@ function spawn(useBed=false){
   player.pos.set(p.x,p.y,p.z);
   player.vel.set(0,0,0);player.onGround=false;fallOriginY=null;
   playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
-  for(let i=0;i<16&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
+  // The bed candidate was collision checked at its actual floor height.
+  // Never lift a bed respawn vertically onto the roof.
+  if(blocked(p.x,p.y,p.z)){
+    const fallback=ensureInitialSpawn();
+    player.pos.set(fallback.x,fallback.y,fallback.z);
+    for(let i=0;i<16&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
+  }
 }
 
 const ray=new THREE.Raycaster();ray.far=6;
