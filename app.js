@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {makeFirstPersonHand} from './first-person-hand.js?v=20261017chimeraWeapons07';
-import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017chimeraWeapons07';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261017katanaArmor08';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017katanaArmor08';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
