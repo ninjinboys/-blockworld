@@ -52,11 +52,11 @@ aside{padding:9px}#mobList button{padding:7px;gap:6px;min-height:42px}
  <p id="helper">👆 画面を指で左右に動かすと回転 / 上下で角度変更。ピンチ操作で拡大・縮小できます。</p>
 </section>
 <aside><h2>🐾 モブ一覧</h2><div id="mobList"></div>
-<p id="status">これは3Dモデルの確認用です。まだワールド内に出現しません。気に入ったデザインを選んで、出現場所・能力・動きを決めていきます。</p></aside>
+<p id="status">シカ・オオカミ・ヒグマ・イノシシ・巨大クモ・ワシ・ワニ・サメ・ゾウの9体がワールドに登場します。クモは夜のみ出現、ワシは空を飛ぶ中立モブ。ストーンゴーレムは村の実装後に登場予定です。</p></aside>
 </main>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {NEW_MOBS,createNewMobModels} from './new-mob-models.js?v=20261017newMobs01';
+import {NEW_MOBS,createNewMobModels} from './new-mob-models.js?v=20261017mobRelease02';
 const $=id=>document.getElementById(id);
 const descriptions={
  deer:'枝分かれした大きな角・長い脚・白い腹',
