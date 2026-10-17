@@ -3079,7 +3079,7 @@ function summonChimeraAt(x,groundY,z,summoner=player.pos){
   if(!mobSpaceFree(probe,x,y,z,angle))
     return {ok:false,reason:'キメラの召喚には周囲と上空に広い空間が必要です'};
   const m=makeChimeraMob(x,y,z,angle);
-  markSaveDirty();saveCurrentGame(false);
+  markSaveDirty();
   if(multiRole==='host'&&multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
   return {ok:true,mob:m};
 }
@@ -3101,7 +3101,7 @@ function useChimeraSoul(x,y,z){
   const result=summonChimeraAt(x,y,z);
   if(!result.ok){flash(result.reason);return}
   removeItem(I.CHIMERA_SOUL,1);
-  renderHotbar();flash('キメラを召喚した！');
+  renderHotbar();saveCurrentGame(false);flash('キメラを召喚した！');
 }
 function hostHandleChimeraSummon(message,from,peerId){
   if(typeof message.requestId!=='string'||message.requestId.length>90||
@@ -3116,6 +3116,7 @@ function hostHandleChimeraSummon(message,from,peerId){
   else{
     from.lastSummonAt=performance.now();
     result=summonChimeraAt(message.x,message.y,message.z,p);
+    if(result.ok)saveCurrentGame(false);
   }
   multiplayerNetwork.send({t:'chimeraSummonResult',requestId:message.requestId,
     ok:result.ok,reason:result.reason||''},peerId);
