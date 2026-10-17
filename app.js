@@ -5828,6 +5828,9 @@ async function multiJoin(code){
 // hair, eyes, mouth, backpack, clothing details and pivoting arms/legs.
 let multiLastVisualFrame=0;
 function multiShowAvatar(id,pose){
+  // Host pose packets used to omit the id, accidentally creating a second
+  // unnamed copy of the same player on guests.
+  if(typeof id!=='string'||!/^[A-Z2-9]{10}$/.test(id))return;
   if(id===multiOwnId()||!pose||!Number.isFinite(pose.x)||!Number.isFinite(pose.y)||!Number.isFinite(pose.z))return;
   if(Math.abs(pose.x)>1000000||Math.abs(pose.y)>1000000||Math.abs(pose.z)>1000000)return;
   const yaw=Number.isFinite(pose.yaw)?pose.yaw:0;
@@ -5878,10 +5881,13 @@ function multiAnimateAvatars(now){
   const dt=multiLastVisualFrame?Math.max(0,Math.min(.05,(now-multiLastVisualFrame)/1000)):1/60;
   multiLastVisualFrame=now;
   const lerp=Math.min(1,dt*14),turnLerp=Math.min(1,dt*13),swingLerp=Math.min(1,dt*12);
-  for(const model of multiAvatars.values()){
-    model.visible=started;
-    if(!started)continue;
+  for(const [id,model] of multiAvatars){
     const m=model.userData.multiMove;
+    const age=now-m.lastReceived;
+    // Lost connections can miss peerLeft; never leave a frozen silhouette.
+    if(age>12000){multiRemoveAvatar(id);continue}
+    model.visible=started&&age<3500;
+    if(!model.visible)continue;
     // Teleports/respawns should be instant; ordinary walking is smoothed.
     if(model.position.distanceToSquared(m.target)>81)model.position.copy(m.target);
     else model.position.lerp(m.target,lerp);
@@ -6049,6 +6055,11 @@ function multiUpdateRoster(people){
     seen.add(p.id);valid.push({id:p.id,name:String(p.name||'プレイヤー').slice(0,20),player:p.player||null});
   }
   multiRoster=valid;
+  // Host-supplied roster is authoritative: immediately discard departed
+  // or legacy phantom avatars, rather than keeping them visible forever.
+  if(multiRole==='guest')
+    for(const id of [...multiAvatars.keys()])
+      if(!seen.has(id))multiRemoveAvatar(id);
 }
 function multiProfileFromWorld(world){
   const fields=['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds',
@@ -6253,7 +6264,12 @@ function multiRoomData(message,peerId){
     else if(message.t==='dropAdd'||message.t==='dropRemove'){multiApplyDrop(message);multiplayerNetwork.send(message)}
   }else{
     if(message.t==='chat')chatGuestReceive(message);
-    if(message.t==='pose')multiShowAvatar(message.id,message.player);
+    if(message.t==='pose'){
+      // Gracefully handle an old host version which sent poses without IDs.
+      const id=typeof message.id==='string'?message.id:multiCheckpoint?.hostId;
+      if(id===multiCheckpoint?.hostId||multiRoster.some(p=>p.id===id))
+        multiShowAvatar(id,message.player);
+    }
     if(message.t==='block')multiApplyBlock(message);
     if(message.t==='arrowShot')showRemoteArrow(message);
     if(message.t==='chestState'&&[message.x,message.y,message.z].every(Number.isInteger))
@@ -6280,8 +6296,7 @@ function multiEvent(e){
     const guest=multiGuestRecords.get(e.peerId);
     if(guest){
       multiGuestRecords.delete(e.peerId);
-      const model=multiAvatars.get(guest.id);
-      if(model){setAvatarDamageFlash(model,false);avatarHeldItems.dispose(model);scene.remove(model);model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});multiAvatars.delete(guest.id)}
+      multiRemoveAvatar(guest.id);
       multiplayerNetwork.send({t:'peerLeft',id:guest.id});
       multiplayerNetwork.send({t:'roster',people:multiRosterSnapshot()});
       multiPeople();
@@ -6312,7 +6327,7 @@ function multiTick(now){
   if(now-multiLastPose>150){
     multiLastPose=now;
     if(multiplayerNetwork.connected){
-      multiplayerNetwork.send({t:'pose',player:multiCurrentPose()});
+      multiplayerNetwork.send({t:'pose',id:multiOwnId(),player:multiCurrentPose()});
       if(multiRole==='host'&&Math.floor(now/2200)!==Math.floor((now-150)/2200))
         multiplayerNetwork.send({t:'time',dayTime,weather});
       // Periodic backup so a sudden tab closure also has a recovery path.
