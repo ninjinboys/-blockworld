@@ -52,11 +52,11 @@ aside{padding:9px}#mobList button{padding:7px;gap:6px;min-height:42px}
  <p id="helper">👆 画面を指で左右に動かすと回転 / 上下で角度変更。ピンチ操作で拡大・縮小できます。</p>
 </section>
 <aside><h2>🐾 モブ・ボス一覧</h2><div id="mobList"></div>
-<p id="status">新モブ9体と召喚ボス「キメラ」の3Dモデルを確認できます。巨大クモは夜限定、ワシは飛行する中立モブ。ストーンゴーレムは村の実装待ちです。新モブ・新ボスは今後もこの図鑑に追加します。</p></aside>
+<p id="status">新たに村・村人4職種・村を守るストーンゴーレムを追加！ 既存の新モブ9体とキメラも3Dで見られます。巨大クモは夜限定、ワシは空を飛ぶ中立モブです。新モブ・新ボスもここに登録します。</p></aside>
 </main>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {CREATURE_CATALOG,createCreatureCatalogue} from './creature-catalog.js?v=20261017bossGallery01';
+import {CREATURE_CATALOG,createCreatureCatalogue} from './creature-catalog.js?v=20261017villageRelease02';
 const $=id=>document.getElementById(id);
 const descriptions={
  deer:'枝分かれした大きな角・長い脚・白い腹',
