@@ -3,6 +3,7 @@ import {makeFirstPersonHand} from './first-person-hand.js?v=20261017longKatana09
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017standardKatana10';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
+import {createNewMobModels} from './new-mob-models.js?v=20261017mobRelease02';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
 
@@ -2067,6 +2068,21 @@ function rebuildEdited(...positions){
   }
 }
 
+const newMobModels=createNewMobModels(THREE);
+const NEW_WILD_TYPES=new Set(['deer','wolf','bear','boar','eagle','crocodile','shark','elephant']);
+const NEW_MOB_TYPES=new Set([...NEW_WILD_TYPES,'spider']);
+const NEW_MOB_STATS={
+  deer:{name:'シカ',hp:12,xp:20,speed:.54,height:3.73,kind:'passive'},
+  wolf:{name:'オオカミ',hp:20,xp:32,speed:.62,height:2.07,kind:'predator',damage:2},
+  bear:{name:'ヒグマ',hp:50,xp:75,speed:.38,height:2.59,kind:'predator',damage:5},
+  boar:{name:'イノシシ',hp:24,xp:31,speed:.57,height:1.88,kind:'predator',damage:3},
+  spider:{name:'巨大クモ',hp:16,xp:29,speed:2.1,height:1.42,kind:'night',damage:2},
+  eagle:{name:'ワシ',hp:14,xp:36,speed:2.7,height:2.35,kind:'flying'},
+  crocodile:{name:'ワニ',hp:36,xp:58,speed:.30,height:1.38,kind:'predator',damage:4},
+  shark:{name:'サメ',hp:32,xp:58,speed:1.7,height:1.89,kind:'swimming',damage:4},
+  elephant:{name:'ゾウ',hp:80,xp:105,speed:.22,height:3.50,kind:'predator',damage:6}
+};
+// Stone golem is intentionally reserved for the future village update.
 const mobs=[];
 function ensureMobId(m){
   if(!m.userData.netId)m.userData.netId=crypto.randomUUID();
@@ -2726,6 +2742,21 @@ function buildSkeleton(){
 function mobCollisionShape(m,x,z,angle=m.userData.angle){
   const type=m.userData.type;
   if(type==='zombie'||type==='skeleton')return [[x,z,.34]];
+  if(NEW_MOB_TYPES.has(type)){
+    const direction=Number.isFinite(angle)?angle:0,fx=Math.sin(direction),fz=Math.cos(direction);
+    const dims={
+      deer:[[0,.45],[.72,.32],[-.52,.36]],
+      wolf:[[0,.52],[.75,.36],[-.66,.36]],
+      bear:[[0,.80],[.94,.70],[-.74,.69]],
+      boar:[[0,.60],[.69,.50],[-.59,.48]],
+      spider:[[0,.83],[.48,.62]],
+      eagle:[[0,.48]],
+      crocodile:[[0,.64],[1.32,.50],[-1.02,.56]],
+      shark:[[0,.65],[1.19,.44],[-1.14,.43]],
+      elephant:[[0,1.19],[1.17,1.03],[-.95,1.04]]
+    }[type]||[[0,.52]];
+    return dims.map(([offset,r])=>[x+fx*offset,z+fz*offset,r]);
+  }
   if(type==='chimera'){
     // Approximate the sculpt's broad lion chest and long serpent tail.
     const a=Number.isFinite(angle)?angle:0,fx=Math.sin(a),fz=Math.cos(a);
@@ -2770,11 +2801,11 @@ function mobCollisionShape(m,x,z,angle=m.userData.angle){
 function mobVerticalBounds(m,rootY=m.position.y){
   const type=m.userData.type;
   // Unlike feet, the larger animals' ears/hump/mane reach well above 2 blocks.
-  const foot=type==='chimera'?rootY:rootY+((type==='zombie'||type==='skeleton')?.025:.50);
-  const height=type==='chimera'?5.05:type==='zombie'||type==='skeleton'?1.74:type==='horse'?2.40:
+  const foot=type==='chimera'?rootY:rootY+((type==='zombie'||type==='skeleton'||type==='spider')?.025:.50);
+  const height=NEW_MOB_STATS[type]?.height??(type==='chimera'?5.05:type==='zombie'||type==='skeleton'?1.74:type==='horse'?2.40:
     type==='bison'?2.11*LARGE_PREDATOR_SCALE:
     type==='lion'?1.98*LARGE_PREDATOR_SCALE:
-    type==='anaconda'?1.67:1.14;
+    type==='anaconda'?1.67:1.14);
   return [foot,foot+height];
 }
 function mobCircleTouchesBlock(x,z,r,bx,bz){
