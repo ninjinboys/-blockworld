@@ -5980,6 +5980,99 @@ function multiClearAvatars(){
   }
   multiAvatars.clear();multiLastVisualFrame=0;
 }
+
+// Share the same host-owned animals across all connected players. Snapshots
+// include removals, which prevents dead/despawned creatures from lingering.
+let multiLastMobSync=0,multiMobSeq=0,multiAppliedMobSeq=-1;
+const MULTI_MOB_TYPES=new Set([0,1,2,'horse','bison','lion','anaconda','zombie','skeleton']);
+function multiMobSnapshot(){
+  return {t:'mobState',seq:++multiMobSeq,mobs:mobs.slice(0,110).map(m=>({
+    id:ensureMobId(m),type:m.userData.type,
+    x:+m.position.x.toFixed(2),y:+m.position.y.toFixed(2),
+    z:+m.position.z.toFixed(2),angle:+(m.userData.angle||0).toFixed(3),
+    hp:m.userData.hp,phase:m.userData.phase||0,
+    saddled:!!m.userData.saddled,hostile:!!m.userData.hostile,
+    hit:m.userData.hitFlash>0
+  }))};
+}
+function multiCreateSharedMob(type){
+  if(type===0)return buildSheep();
+  if(type===1)return buildPig();
+  if(type===2)return buildCow();
+  if(type==='horse')return buildHorse();
+  if(type==='lion')return buildLion();
+  if(type==='bison')return buildBison();
+  if(type==='anaconda')return buildAnaconda();
+  if(type==='zombie')return buildZombie();
+  if(type==='skeleton')return buildSkeleton();
+  return null;
+}
+function multiApplyMobSnapshot(packet){
+  if(multiRole!=='guest'||!worldReady||!packet||!Array.isArray(packet.mobs)||
+     packet.mobs.length>110||!Number.isSafeInteger(packet.seq)||packet.seq<0||
+     packet.seq<=multiAppliedMobSeq)return;
+  const seen=new Set(),existing=new Map();
+  for(const m of mobs)if(m.userData.netId)existing.set(m.userData.netId,m);
+  const prepared=[];
+  for(const d of packet.mobs){
+    if(!d||typeof d.id!=='string'||!/^[0-9a-f-]{36}$/.test(d.id)||
+      !MULTI_MOB_TYPES.has(d.type)||seen.has(d.id)||
+      ![d.x,d.y,d.z,d.angle,d.hp].every(Number.isFinite)||
+      Math.abs(d.x)>1e6||Math.abs(d.z)>1e6||d.y<Y_MIN-5||
+      d.y>WORLD_TOP+6||d.hp<=0||d.hp>200)continue;
+    seen.add(d.id);
+    prepared.push(d);
+  }
+  multiAppliedMobSeq=packet.seq;
+  for(const d of prepared){
+    let m=existing.get(d.id);
+    if(m&&m.userData.type!==d.type){removeZombie(m);m=null}
+    if(!m){
+      m=multiCreateSharedMob(d.type);
+      if(!m)continue;
+      m.position.set(d.x,d.y,d.z);
+      m.userData={...m.userData,type:d.type,netId:d.id,hp:d.hp,
+        angle:d.angle,netAngle:d.angle,phase:Number(d.phase)||0,
+        hostile:d.hostile===true,attackCooldown:0,hitFlash:0,
+        speed:0,t:1,fleeTime:0,saddled:d.saddled===true};
+      m.rotation.y=d.angle+Math.PI;
+      setupMobStepAnimation(m);
+      if(d.type==='horse'&&d.saddled)showHorseSaddle(m);
+      scene.add(m);mobs.push(m);
+    }
+    m.userData.netTarget=new THREE.Vector3(d.x,d.y,d.z);
+    m.userData.netAngle=d.angle;
+    m.userData.angle=d.angle;
+    m.userData.hp=d.hp;
+    m.userData.phase=Number(d.phase)||0;
+    m.userData.hostile=d.hostile===true;
+    if(d.type==='horse'&&d.saddled&&!m.userData.saddleVisual)
+      showHorseSaddle(m);
+    if(d.hit&&m.userData.hitFlash<=0)setMobHitFlash(m);
+  }
+  for(const m of [...mobs])
+    if(!seen.has(m.userData.netId))removeZombie(m);
+}
+function multiProcessMobHit(message,from){
+  if(multiRole!=='host'||!from?.player||
+     typeof message.id!=='string'||!/^[0-9a-f-]{36}$/.test(message.id))return;
+  const m=mobs.find(m=>ensureMobId(m)===message.id);
+  if(!m||m.userData.hp<=0)return;
+  const pose=from.player;
+  if(![pose.x,pose.y,pose.z].every(Number.isFinite))return;
+  const via=message.via==='arrow'?'arrow':'melee';
+  const dist=Math.hypot(pose.x-m.position.x,pose.y-m.position.y,pose.z-m.position.z);
+  if(dist>(via==='arrow'?70:5.5))return;
+  const now=performance.now(),delay=via==='arrow'?140:320;
+  if(now-(from.lastMobHitAt??-Infinity)<delay)return;
+  from.lastMobHitAt=now;
+  const power=Number(message.power);
+  const damage=via==='arrow'
+    ?Math.max(1,Math.round(1+3*Math.max(.15,Math.min(1,Number.isFinite(power)?power:0))))
+    :meleeMobDamage(pose.held);
+  damageMob(m,damage);
+  if(multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
+}
 // Host processes guest chest transfers in a single serial handler.
 // Receipts are cached for retransmission so duplicate packets cannot
 // withdraw or deposit the same stack twice.
@@ -6061,6 +6154,7 @@ async function multiWelcome(message){
       world:{...message.world,members:message.members||{}},people:message.people||[]};
     if(Array.isArray(message.people))multiUpdateRoster(message.people);
     for(const p of message.people||[])multiShowAvatar(p.id,p.player);
+    multiApplyMobSnapshot(message.mobState);
     // Rejoining an ongoing migrated room must not reset this player's items.
     multiplayerNetwork.send({t:'profile',profile:multiProfile()});
     return;
@@ -6085,6 +6179,7 @@ async function multiWelcome(message){
     await initializeAccountWorld(data,message.slot);
     $('multiCover').style.display='none';$('startBtn').click();
     for(const p of message.people||[])multiShowAvatar(p.id,p.player);
+    multiApplyMobSnapshot(message.mobState);
     multiplayerNetwork.send({t:'profile',profile:multiProfile()});
   }catch(e){multiLeave(true);multiShow('multiJoin');multiStatus('読み込みに失敗：'+e.message)}
 }
@@ -6100,7 +6195,7 @@ function multiCheckpointNow(){
     t:'checkpoint',originId:multiHostId,originName:multiOriginName||currentAccount.name,
     worldKind:multiWorldKind,hostId:multiOwnId(),slot:currentWorldSlot,
     world:{...makeSaveData(),members:{...multiMembers}},
-    people:multiRosterSnapshot()
+    mobState:multiMobSnapshot(),people:multiRosterSnapshot()
   };
 }
 function multiUpdateRoster(people){
@@ -6156,6 +6251,7 @@ function multiPrepareMigration(checkpoint,plannedLeader=null){
   };
   multiCheckpoint=checkpoint;
   multiUpdateRoster(participants);
+  multiApplyMobSnapshot(checkpoint.mobState);
   // The departing host must disappear from *every* remaining player's
   // screen, not only the guest who becomes the successor.
   multiRemoveAvatar(checkpoint.hostId);
@@ -6202,6 +6298,7 @@ async function multiPromoteHost(job){
   multiMembers=multiMigrationMembers(job.checkpoint);
   // A successor must not retain another player's old saved host profile as
   // its own inventory. Its own current inventory stays entirely untouched.
+  multiMobSeq=Math.max(multiMobSeq,multiAppliedMobSeq);
   multiRole='host';multiGuestRecords.clear();
   multiRemoveAvatar(job.checkpoint.hostId);
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -6282,6 +6379,10 @@ function multiRoomData(message,peerId){
   }
   if(message.t==='welcome'){multiWelcome(message);return}
   if(!multiRole||!multiplayerNetwork.connected)return;
+  if(message.t==='mobState'){
+    if(multiRole==='guest')multiApplyMobSnapshot(message);
+    return;
+  }
   if(multiRole==='host'){
     if(message.t==='hello'){
       if(typeof message.name!=='string'||!/^[A-Z2-9]{10}$/.test(message.id||''))return;
@@ -6295,7 +6396,8 @@ function multiRoomData(message,peerId){
         t:'welcome',world:makeSaveData(),hostId:multiHostId,
         originName:multiOriginName,worldKind:multiWorldKind,
         currentHostId:multiOwnId(),members:multiMembers,
-        slot:currentWorldSlot,member:multiMembers[record.id]||null,people
+        slot:currentWorldSlot,member:multiMembers[record.id]||null,
+        mobState:multiMobSnapshot(),people
       },peerId);
       multiplayerNetwork.send({t:'roster',people});
       multiplayerNetwork.send({t:'joinNotice',name:record.name});
@@ -6303,8 +6405,10 @@ function multiRoomData(message,peerId){
     }
     const from=multiGuestRecords.get(peerId);if(!from)return;
     if(message.t==='chat'){chatHostReceive(message,peerId,from);return}
+    if(message.t==='mobHit'){multiProcessMobHit(message,from);return}
     if(message.t==='pose'&&message.player&&Number.isFinite(message.player.x)){
-      from.player=message.player;multiShowAvatar(from.id,from.player);
+      from.player=message.player;from.lastPoseAt=performance.now();
+      multiShowAvatar(from.id,from.player);
       multiplayerNetwork.send({t:'pose',id:from.id,player:from.player});
     }else if(message.t==='profile'&&Array.isArray(message.profile?.inventorySlots)){
       multiMembers[from.id]={...message.profile,name:from.name};markSaveDirty();
@@ -6380,6 +6484,11 @@ function multiEvent(e){
   if(e.type==='friendAccepted'){multiSaveFriend(e.id,e.name);multiStatus('フレンドになりました：'+e.name)}
 }
 function multiTick(now){
+  if(multiRole==='host'&&worldReady&&multiplayerNetwork.connected&&
+     now-multiLastMobSync>450){
+    multiLastMobSync=now;
+    if(multiGuestRecords.size)multiplayerNetwork.send(multiMobSnapshot());
+  }
   if(now-multiLastPose>150){
     multiLastPose=now;
     if(multiplayerNetwork.connected){
