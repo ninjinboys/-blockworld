@@ -1070,7 +1070,7 @@ function resetWorldRuntime(){
   chimeraSummonPending=null;
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;spiderSpawnCooldown=10;nightZombieWaveStarted=false;
   cachedVillageWorld=null;cachedVillageSeed=null;cachedVillageGenerator=null;
-  villagerSpawnCooldown=3;villageLastVisitedKey=null;villageCitizenLastSpawn.clear();
+  villagerSpawnCooldown=3;villageLastVisitedKey=null;villageCitizenLastSpawn.clear();villageGuardianLastSpawn.clear();
   multiLastMobSync=0;multiMobSeq=0;multiAppliedMobSeq=-1;
   clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
   $('chestScreen').classList.remove('open');
@@ -2086,13 +2086,14 @@ function rebuildEdited(...positions){
 const newMobModels=createNewMobModels(THREE);
 const villagerModels=createVillagerModels(THREE);
 const NEW_WILD_TYPES=new Set(['deer','wolf','bear','boar','eagle','crocodile','shark','elephant']);
-const NEW_MOB_TYPES=new Set([...NEW_WILD_TYPES,'spider']);
+const NEW_MOB_TYPES=new Set([...NEW_WILD_TYPES,'spider','golem']);
 const NEW_MOB_STATS={
   deer:{name:'シカ',hp:12,xp:20,speed:.54,height:3.73,kind:'passive'},
   wolf:{name:'オオカミ',hp:20,xp:32,speed:.62,height:2.07,kind:'predator',damage:2},
   bear:{name:'ヒグマ',hp:50,xp:75,speed:.38,height:2.59,kind:'predator',damage:5},
   boar:{name:'イノシシ',hp:24,xp:31,speed:.57,height:1.88,kind:'predator',damage:3},
   spider:{name:'巨大クモ',hp:16,xp:29,speed:2.1,height:1.42,kind:'night',damage:2},
+  golem:{name:'ストーンゴーレム',hp:120,xp:0,speed:.85,height:3.6,kind:'guardian',damage:7},
   eagle:{name:'ワシ',hp:14,xp:36,speed:2.7,height:2.35,kind:'flying'},
   crocodile:{name:'ワニ',hp:36,xp:58,speed:.30,height:1.38,kind:'predator',damage:4},
   shark:{name:'サメ',hp:32,xp:58,speed:1.7,height:1.89,kind:'swimming',damage:4},
@@ -2767,6 +2768,7 @@ function mobCollisionShape(m,x,z,angle=m.userData.angle){
       bear:[[0,.80],[.94,.70],[-.74,.69]],
       boar:[[0,.60],[.69,.50],[-.59,.48]],
       spider:[[0,.83],[.48,.62]],
+      golem:[[0,.79]],
       eagle:[[0,.48]],
       crocodile:[[0,.64],[1.32,.50],[-1.02,.56]],
       shark:[[0,.65],[1.19,.44],[-1.14,.43]],
@@ -3541,7 +3543,7 @@ function chooseWildMob(){
 const MAX_WILD_ANIMALS=18;
 const WILD_COMMON_LIFETIME_MS=3*60*1000,WILD_RARE_LIFETIME_MS=8*60*1000;
 function spawnPassiveMob(anchor=player.pos){
-  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='spider'&&m.userData.type!=='chimera'&&m.userData.type!=='villager'&&!m.userData.saddled).length;
+  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='spider'&&m.userData.type!=='chimera'&&m.userData.type!=='villager'&&m.userData.type!=='golem'&&!m.userData.saddled).length;
   if(wildCount>=(multiRole==='host'?30:MAX_WILD_ANIMALS))return false;
 
   // Choose the species ONCE before checking locations. A bison failing its
@@ -3621,7 +3623,7 @@ function multiSpawnAnchors(){
 // Four profession variants per village; villagers are regenerated on demand
 // near the player, not stored as disposable passive wildlife. Host owns them.
 let villagerSpawnCooldown=3,villageLastVisitedKey=null;
-const villageCitizenLastSpawn=new Map(),MAX_VILLAGERS=20;
+const villageCitizenLastSpawn=new Map(),villageGuardianLastSpawn=new Map(),MAX_VILLAGERS=20;
 const VILLAGER_WANDER_RADIUS=14;
 function spawnVillager(site,idx){
   const locations=[[-11,-5],[11,-5],[-11,5],[11,5]];
@@ -3640,6 +3642,58 @@ function spawnVillager(site,idx){
   if(!mobSpaceFree(g,x,y,z,angle)){disposeUnusedNewMob(g);return false}
   setupMobStepAnimation(g);
   scene.add(g);mobs.push(g);return true;
+}
+function spawnVillageGuardian(site){
+  const x=site.x+2,z=site.z+7,y=site.y+.04;
+  if(!chunks.has(chunkKey(chunkCoord(x),chunkCoord(z))))return false;
+  if(!solid(get(x,site.y,z))||get(x,site.y+1,z)!==B.AIR)return false;
+  const g=createNewMob('golem',x,y,z);
+  g.userData.villageKey=site.key;
+  g.userData.homeX=site.x;g.userData.homeZ=site.z;
+  g.userData.t=2.0;
+  if(!mobSpaceFree(g,x,y,z,g.userData.angle)){disposeUnusedNewMob(g);return false}
+  scene.add(g);mobs.push(g);return true;
+}
+function updateVillageGuardian(m,dt,now){
+  const d=m.userData;
+  const villains=mobs.filter(other=>other!==m&&other.userData.hp>0&&
+    ['zombie','skeleton','spider','wolf','bear','lion'].includes(other.userData.type)&&
+    Math.hypot(other.position.x-d.homeX,other.position.z-d.homeZ)<24);
+  let enemy=null,range=Infinity;
+  for(const v of villains){
+    const dd=Math.hypot(v.position.x-m.position.x,v.position.z-m.position.z);
+    if(dd<range){range=dd;enemy=v}
+  }
+  d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
+  let moving=false;
+  if(enemy&&range<17){
+    const dx=enemy.position.x-m.position.x,dz=enemy.position.z-m.position.z;
+    d.angle=Math.atan2(dx,dz);
+    if(range>2.15){
+      moving=mobWalkStep(m,d.angle,1.45*dt);
+      if(!moving)moving=mobWalkStep(m,d.angle+Math.PI*.5,.9*dt);
+    }
+    if(range<=2.55&&Math.abs(enemy.position.y-m.position.y)<3.1&&d.attackCooldown<=0){
+      d.attackCooldown=1.85;
+      enemy.userData.hp-=NEW_MOB_STATS.golem.damage;
+      setMobHitFlash(enemy);
+      if(enemy.userData.hp<=0){
+        dropMobLoot(enemy);
+        removeZombie(enemy);
+      }
+    }
+  }else{
+    const dx=d.homeX-m.position.x,dz=d.homeZ-m.position.z;
+    const dist=Math.hypot(dx,dz);
+    if(dist>11){d.angle=Math.atan2(dx,dz);d.t=1;}
+    else{
+      d.t=Math.max(0,(d.t||0)-dt);
+      if(d.t<=0){d.t=2+Math.random()*3;d.angle+=(Math.random()-.5)*2}
+    }
+    moving=mobWalkStep(m,d.angle,.58*dt);
+  }
+  m.rotation.y=d.angle+Math.PI;
+  newMobModels.animate(m,now*.001,moving);
 }
 function updateVillager(m,dt,now){
   const d=m.userData;
@@ -3674,13 +3728,19 @@ function updateVillagerSpawning(dt){
   // Only a small number of occupied villages are loaded. Do not keep NPCs
   // hundreds of blocks away (or drain mobile Safari's GPU).
   for(const m of [...mobs]){
-    if(m.userData.type!=='villager')continue;
+    if(m.userData.type!=='villager'&&m.userData.type!=='golem')continue;
     const nearby=Math.min(...anchors.map(a=>Math.hypot(m.position.x-a.x,m.position.z-a.z)));
     if(nearby>105)removeZombie(m);
   }
   for(const anchor of anchors){
     for(const site of villageWorld().nearby(anchor.x,anchor.z,55)){
       if(Math.hypot(anchor.x-site.x,anchor.z-site.z)>60)continue;
+      if(!mobs.some(m=>m.userData.type==='golem'&&m.userData.villageKey===site.key)){
+        const since=now-(villageGuardianLastSpawn.get(site.key)||0);
+        if(since>120_000||!villageGuardianLastSpawn.has(site.key)){
+          if(spawnVillageGuardian(site))villageGuardianLastSpawn.set(site.key,now);
+        }
+      }
       if(mobs.filter(m=>m.userData.type==='villager').length>=MAX_VILLAGERS)return;
       const existing=new Set(mobs.filter(m=>m.userData.type==='villager'&&
         m.userData.villageKey===site.key).map(m=>m.userData.variant));
@@ -3708,7 +3768,7 @@ function updatePassiveSpawning(dt){
   const now=performance.now();
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i],ud=m.userData;
-    if(ud.saddled||ud.type==='zombie'||ud.type==='skeleton'||ud.type==='spider'||ud.type==='chimera'||ud.type==='villager')continue;
+    if(ud.saddled||ud.type==='zombie'||ud.type==='skeleton'||ud.type==='spider'||ud.type==='chimera'||ud.type==='villager'||ud.type==='golem')continue;
     const distance=Math.min(...anchors.map(p=>Math.hypot(m.position.x-p.x,m.position.z-p.z)));
     const rare=ud.type==='bison'||ud.type==='lion'||ud.type==='anaconda'||
       NEW_WILD_TYPES.has(ud.type);
@@ -3719,7 +3779,7 @@ function updatePassiveSpawning(dt){
   }
 
   for(const anchor of anchors){
-    const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='spider'&&m.userData.type!=='chimera'&&m.userData.type!=='villager'&&
+    const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='spider'&&m.userData.type!=='chimera'&&m.userData.type!=='villager'&&m.userData.type!=='golem'&&
       !m.userData.saddled&&Math.hypot(m.position.x-anchor.x,m.position.z-anchor.z)<55).length;
     const attempts=nearby<4?3:nearby<10?2:nearby<15?1:0;
     for(let i=0;i<attempts;i++)spawnPassiveMob(anchor);
@@ -5411,6 +5471,10 @@ function dropMobLoot(root){
     return;
   }
   if(type==='zombie'||type==='spider'||type==='eagle'||type==='shark'||type==='villager')return;
+  if(type==='golem'){
+    spawnWorldDrop(B.COBBLE,2+Math.floor(Math.random()*4),x,y,z,{scatter:true,pickupDelay:.55});
+    return;
+  }
   if(type==='deer'||type==='wolf'||type==='bear'||type==='crocodile'||type==='elephant'){
     spawnWorldDrop(I.LEATHER,type==='elephant'?3:1+Math.floor(Math.random()*2),
       x,y,z,{scatter:true,pickupDelay:.55});return;
@@ -6178,6 +6242,10 @@ function loop(now){
       }
       if(m.userData.type==='villager'){
         updateVillager(m,dt,now);
+        return;
+      }
+      if(m.userData.type==='golem'){
+        updateVillageGuardian(m,dt,now);
         return;
       }
       if(m.userData.type==='eagle'||m.userData.type==='shark'){
