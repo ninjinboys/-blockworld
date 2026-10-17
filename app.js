@@ -989,7 +989,7 @@ function resetWorldRuntime(){
   meshes=[];lookup.clear();pendingChunkLoads.length=0;pendingChunkJob=null;dirtyMeshKeys.clear();
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i];
-    if(m.userData.type==='zombie')removeZombie(m);
+    if(m.userData.type==='zombie'||m.userData.type==='skeleton')removeZombie(m);
     else scene.remove(m);
   }
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;nightZombieWaveStarted=false;
@@ -2539,7 +2539,8 @@ function animateAnaconda(m,dt,now,moving){
 // Night-time hostile mob: a green version of the player silhouette.
 // Face points along local -Z. Both arms are kept in front, even while moving.
 const ZOMBIE_LIMIT=7,ZOMBIE_AGGRO_RANGE=28,ZOMBIE_ATTACK_RANGE=1.35;
-let zombieSpawnCooldown=1,nightZombieWaveStarted=false;
+const SKELETON_LIMIT=3,SKELETON_AGGRO_RANGE=24,SKELETON_SHOOT_RANGE=17;
+let zombieSpawnCooldown=1,skeletonSpawnCooldown=7,nightZombieWaveStarted=false;
 function buildZombie(){
   const g=new THREE.Group();
   const skin=0x6fbf5f,skinLight=0x8bd275,skinDark=0x447c3c;
@@ -2584,12 +2585,66 @@ function buildZombie(){
   g.scale.z=.88;
   return g;
 }
-// Solid block collision for every walking mob (cow/pig/sheep/zombie).
+// The skeleton is entirely voxel-built so its silhouette matches NEXACRAFT.
+// All bones have open space around them; a visible bow sits beside its left hand.
+function buildSkeleton(){
+  const g=new THREE.Group();
+  const bone=0xe7e3d6,light=0xf6f3e8,shadow=0xb8b3a7,dark=0x27282d;
+  const wood=0x87552f,string=0xeee8cf;
+  // Angular skull with recessed dark eyes and an open toothy jaw.
+  cube(g,.63,.55,.53,bone,0,1.50,0);
+  cube(g,.57,.09,.55,light,0,1.78,0);
+  cube(g,.17,.17,.035,dark,-.16,1.52,-.281);
+  cube(g,.17,.17,.035,dark,.16,1.52,-.281);
+  cube(g,.10,.12,.035,shadow,0,1.40,-.285);
+  cube(g,.46,.105,.43,shadow,0,1.25,.01);
+  for(const x of [-.15,-.05,.05,.15])cube(g,.057,.075,.036,light,x,1.24,-.215);
+  // Spine, collarbone, and thin ribs with visible dark gaps.
+  cube(g,.11,.68,.12,shadow,0,.98,.03);
+  cube(g,.64,.085,.15,light,0,1.36,.01);
+  for(const y of [1.27,1.13,.99,.85]){
+    cube(g,.57,.077,.13,bone,0,y,-.025);
+    cube(g,.49,.055,.10,shadow,0,y+.013,.10);
+  }
+  cube(g,.53,.14,.23,bone,0,.69,0);
+  const leftArm=new THREE.Group(),rightArm=new THREE.Group();
+  const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();
+  for(const [side,arm,leg] of [[-1,leftArm,leftLeg],[1,rightArm,rightLeg]]){
+    arm.position.set(side*.36,1.32,0);
+    cube(arm,.15,.34,.16,bone,0,-.20,0);
+    cube(arm,.18,.13,.18,shadow,0,-.41,0);
+    cube(arm,.14,.28,.14,light,0,-.56,-.02);
+    cube(arm,.21,.12,.18,bone,0,-.72,-.02);
+    g.add(arm);
+    leg.position.set(side*.19,.67,0);
+    cube(leg,.17,.34,.19,bone,0,-.20,0);
+    cube(leg,.20,.14,.21,shadow,0,-.40,0);
+    cube(leg,.16,.28,.18,light,0,-.55,0);
+    cube(leg,.26,.10,.35,bone,0,-.71,-.07);
+    g.add(leg);
+  }
+  // Wooden recurved bow attached to the left wrist, string on the right.
+  const bow=new THREE.Group();
+  bow.position.set(-.065,-.69,-.18);
+  bow.rotation.set(.12,-.18,-.04);
+  for(let i=0;i<=8;i++){
+    const t=i/8,y=(t-.5)*1.02;
+    const slat=cube(bow,.085,.16,.10,i%2?wood:0xb27c44,
+      -.25*Math.sin(Math.PI*t),y,0);
+    slat.rotation.z=(t-.5)*.7;
+  }
+  cube(bow,.024,1.10,.022,string,.025,0,-.03);
+  leftArm.add(bow);
+  g.userData.parts={leftArm,rightArm,leftLeg,rightLeg};
+  g.scale.x=.80;g.scale.z=.88;
+  return g;
+}
+// Solid block collision for every walking mob (cow/pig/sheep/zombie/skeleton).
 // surfaceAt() describes generated ground only. Placed blocks and removed
 // blocks live in get(), so height checks alone let mobs pass through walls.
 function mobCollisionShape(m,x,z,angle=m.userData.angle){
   const type=m.userData.type;
-  if(type==='zombie')return [[x,z,.34]];
+  if(type==='zombie'||type==='skeleton')return [[x,z,.34]];
   const direction=Number.isFinite(angle)?angle:0;
   const fx=Math.sin(direction),fz=Math.cos(direction);
   if(type==='horse')return [
@@ -2628,8 +2683,8 @@ function mobCollisionShape(m,x,z,angle=m.userData.angle){
 function mobVerticalBounds(m,rootY=m.position.y){
   const type=m.userData.type;
   // Unlike feet, the larger animals' ears/hump/mane reach well above 2 blocks.
-  const foot=rootY+(type==='zombie'?.025:.50);
-  const height=type==='zombie'?1.74:type==='horse'?2.40:
+  const foot=rootY+((type==='zombie'||type==='skeleton')?.025:.50);
+  const height=type==='zombie'||type==='skeleton'?1.74:type==='horse'?2.40:
     type==='bison'?2.11*LARGE_PREDATOR_SCALE:
     type==='lion'?1.98*LARGE_PREDATOR_SCALE:
     type==='anaconda'?1.67:1.14;
@@ -2783,27 +2838,119 @@ function spawnZombie(){
   }
   return false;
 }
+function countSkeletons(){
+  return mobs.reduce((sum,m)=>sum+(m.userData.type==='skeleton'?1:0),0);
+}
+function spawnSkeleton(){
+  if(countSkeletons()>=SKELETON_LIMIT)return false;
+  const phase=Math.random()*Math.PI*2;
+  for(let attempt=0;attempt<64;attempt++){
+    const angle=phase+attempt*2.399963229728653;
+    const radius=12+Math.random()*14;
+    const x=Math.round(player.pos.x+Math.cos(angle)*radius);
+    const z=Math.round(player.pos.z+Math.sin(angle)*radius);
+    if(!isZombieGround(x,z))continue;
+    const y=surfaceAt(x,z);
+    if(Math.abs(y+.51-player.pos.y)>5)continue;
+    if(torchProtectsSpawn(x,y+1,z))continue;
+    if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<4))continue;
+    const skeleton=buildSkeleton();
+    skeleton.position.set(x,y+.51,z);
+    skeleton.userData={...skeleton.userData,type:'skeleton',name:'スケルトン',
+      hp:8,xp:26,angle:Math.random()*Math.PI*2,speed:1.10,
+      attackCooldown:1.2+Math.random(),hitFlash:0,phase:Math.random()*Math.PI*2};
+    setupMobStepAnimation(skeleton);
+    scene.add(skeleton);mobs.push(skeleton);
+    return true;
+  }
+  return false;
+}
+// Check solid world blocks between the bow and player, including houses and walls.
+function skeletonHasLineOfSight(origin,target){
+  const dx=target.x-origin.x,dy=target.y-origin.y,dz=target.z-origin.z;
+  const dist=Math.hypot(dx,dy,dz);
+  const steps=Math.max(1,Math.ceil(dist/.22));
+  for(let i=2;i<steps-1;i++){
+    const t=i/steps;
+    if(solid(get(Math.round(origin.x+dx*t),Math.round(origin.y+dy*t),
+      Math.round(origin.z+dz*t))))return false;
+  }
+  return true;
+}
+function updateSkeleton(m,dt,now){
+  const dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
+  const distance=Math.hypot(dx,dz),ud=m.userData;
+  ud.attackCooldown=Math.max(0,ud.attackCooldown-dt);
+  if(distance<SKELETON_AGGRO_RANGE&&Math.abs(player.pos.y-m.position.y)<5){
+    ud.angle=Math.atan2(dx,dz);
+    // Keep enough space to use the bow; backpedal if cornered.
+    let direction=ud.angle,step=0;
+    if(distance>12)step=ud.speed*dt;
+    else if(distance<5){direction+=Math.PI;step=ud.speed*.83*dt}
+    else if(distance>7&&distance<11){
+      direction+=Math.sin(ud.phase)>0?Math.PI/2:-Math.PI/2;
+      step=ud.speed*.37*dt;
+    }
+    if(step&&!mobWalkStep(m,direction,step,true))
+      mobWalkStep(m,direction+.65,step*.6,true);
+    m.rotation.y=ud.angle+Math.PI;
+    if(distance>3.0&&distance<SKELETON_SHOOT_RANGE&&ud.attackCooldown<=0){
+      const origin=new THREE.Vector3(
+        m.position.x+Math.sin(ud.angle)*.48,m.position.y+1.28,
+        m.position.z+Math.cos(ud.angle)*.48);
+      const target=new THREE.Vector3(player.pos.x,player.pos.y+1.10,player.pos.z);
+      if(skeletonHasLineOfSight(origin,target)){
+        if(shootSkeletonArrow(origin,target,m.position))ud.attackCooldown=2.3+Math.random()*.5;
+      }else ud.attackCooldown=.45;
+    }
+  }else{
+    ud.angle+=Math.sin(now*.0007+ud.phase)*dt*.14;
+    m.rotation.y=ud.angle+Math.PI;
+  }
+  const limbs=ud.parts;
+  if(limbs){
+    const walking=distance>12||distance<5;
+    const stride=walking?Math.sin(now*.008+ud.phase)*.35:0;
+    limbs.leftLeg.rotation.x=stride;
+    limbs.rightLeg.rotation.x=-stride;
+    // Keep the bow raised and the draw hand near the string while aiming.
+    limbs.leftArm.rotation.x=1.05+stride*.13;
+    limbs.leftArm.rotation.z=-.20;
+    limbs.rightArm.rotation.x=1.16+(ud.attackCooldown>.9?.07:0);
+    limbs.rightArm.rotation.y=-.20;
+  }
+}
 function updateZombieSpawning(dt){
   if(!isNightTime()){
     zombieSpawnCooldown=1;
+    skeletonSpawnCooldown=7;
     nightZombieWaveStarted=false;
-    // Zombies disappear at sunrise, regardless of the player's location.
+    // Both undead enemies and their flying arrows disappear at dawn.
     for(let i=mobs.length-1;i>=0;i--)
-      if(mobs[i].userData.type==='zombie')removeZombie(mobs[i]);
+      if(mobs[i].userData.type==='zombie'||mobs[i].userData.type==='skeleton')
+        removeZombie(mobs[i]);
+    if(skeletonArrows.length)clearSkeletonArrows();
     return;
   }
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i];
-    if(m.userData.type==='zombie'&&Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>75)
+    if((m.userData.type==='zombie'||m.userData.type==='skeleton')&&
+      Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>75)
       removeZombie(m);
   }
   if(!nightZombieWaveStarted){
     nightZombieWaveStarted=true;
     zombieSpawnCooldown=4;
     // An opening wave makes the enemies easy to spot at the start of night.
-    spawnZombie();spawnZombie();
-    if(dayTime>=DAY_END)flash('夜になった！ ゾンビに注意！');
+    spawnZombie();spawnZombie();spawnSkeleton();
+    skeletonSpawnCooldown=9;
+    if(dayTime>=DAY_END)flash('夜になった！ 敵に注意！');
     return;
+  }
+  skeletonSpawnCooldown-=dt;
+  if(skeletonSpawnCooldown<=0){
+    skeletonSpawnCooldown=countSkeletons()<SKELETON_LIMIT?8:13;
+    spawnSkeleton();
   }
   zombieSpawnCooldown-=dt;
   if(zombieSpawnCooldown>0)return;
@@ -2930,7 +3077,7 @@ function chooseWildMob(){
 const MAX_WILD_ANIMALS=18;
 const WILD_COMMON_LIFETIME_MS=3*60*1000,WILD_RARE_LIFETIME_MS=8*60*1000;
 function spawnPassiveMob(){
-  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&!m.userData.saddled).length;
+  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&!m.userData.saddled).length;
   if(wildCount>=MAX_WILD_ANIMALS)return false;
 
   // Choose the species ONCE before checking locations. A bison failing its
@@ -2994,7 +3141,7 @@ function updatePassiveSpawning(dt){
   const now=performance.now();
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i],ud=m.userData;
-    if(ud.saddled||ud.type==='zombie')continue;
+    if(ud.saddled||ud.type==='zombie'||ud.type==='skeleton')continue;
     const distance=Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z);
     const rare=ud.type==='bison'||ud.type==='lion'||ud.type==='anaconda';
     const age=now-(ud.spawnedAt??now);
@@ -3003,7 +3150,7 @@ function updatePassiveSpawning(dt){
     }
   }
 
-  const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&
+  const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&
     Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)<55).length;
   const attempts=nearby<4?3:nearby<10?2:nearby<15?1:0;
   for(let i=0;i<attempts;i++)spawnPassiveMob();
@@ -4556,6 +4703,11 @@ function dropMobLoot(root){
   const x=root.position.x,y=root.position.y+.75,z=root.position.z;
   const type=root.userData.type;
   if(type==='zombie')return; // Zombie kills grant XP; no animal meat drops.
+  if(type==='skeleton'){
+    spawnWorldDrop(I.ARROW,1+Math.floor(Math.random()*2),x,y,z,
+      {scatter:true,pickupDelay:.55});
+    return;
+  }
   if(type==='lion'){
     spawnWorldDrop(I.LION_FANG,1+Math.floor(Math.random()*2),x,y,z,{scatter:true,pickupDelay:.55});
     return;
@@ -4602,7 +4754,71 @@ function removeFlyingArrow(index){
 }
 function clearFlyingArrows(){
   while(flyingArrows.length)removeFlyingArrow(flyingArrows.length-1);
+  clearSkeletonArrows();
   bowDrawing=false;bowDrawStart=0;
+}
+// Enemy projectiles have their OWN hit test; they cannot harm the skeleton,
+// never consume the player's arrows and cannot harm other mobs.
+const skeletonArrows=[];
+function removeSkeletonArrow(index){
+  const shot=skeletonArrows[index];
+  if(!shot)return;
+  scene.remove(shot.model);
+  shot.model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});
+  skeletonArrows.splice(index,1);
+}
+function clearSkeletonArrows(){
+  while(skeletonArrows.length)removeSkeletonArrow(skeletonArrows.length-1);
+}
+function shootSkeletonArrow(origin,target,attacker){
+  const dx=target.x-origin.x,dz=target.z-origin.z;
+  const horizontal=Math.hypot(dx,dz);
+  if(horizontal<.5||horizontal>23)return false;
+  const speed=17.0,time=horizontal/speed,gravity=10.5;
+  const velocity=new THREE.Vector3(
+    dx/horizontal*speed,
+    (target.y-origin.y+.5*gravity*time*time)/time,
+    dz/horizontal*speed);
+  if(Math.abs(velocity.y)>17)return false;
+  if(skeletonArrows.length>=22)removeSkeletonArrow(0);
+  const model=arrowModel();
+  model.position.copy(origin);
+  model.quaternion.setFromUnitVectors(arrowForward,velocity.clone().normalize());
+  scene.add(model);
+  skeletonArrows.push({model,velocity,age:0,attacker:{
+    x:attacker.x,y:attacker.y,z:attacker.z
+  }});
+  return true;
+}
+function updateSkeletonArrows(dt){
+  for(let i=skeletonArrows.length-1;i>=0;i--){
+    const shot=skeletonArrows[i];
+    shot.age+=dt;
+    if(shot.age>3.2){removeSkeletonArrow(i);continue}
+    const velocity=shot.velocity;
+    const displacement=velocity.clone().multiplyScalar(dt);
+    const steps=Math.max(1,Math.ceil(displacement.length()/.12));
+    const advance=displacement.divideScalar(steps);
+    const pos=shot.model.position.clone();
+    let stopped=false;
+    for(let j=0;j<steps;j++){
+      pos.add(advance);
+      if(pos.y<Y_MIN||pos.y>WORLD_TOP+2){stopped=true;break}
+      if(solid(get(Math.round(pos.x),Math.round(pos.y),Math.round(pos.z)))){
+        stopped=true;break;
+      }
+      const dx=pos.x-player.pos.x,dz=pos.z-player.pos.z;
+      if(dx*dx+dz*dz<.39*.39&&pos.y>player.pos.y+.06&&
+        pos.y<player.pos.y+PH-.08){
+        damagePlayer(2,'スケルトンの矢の攻撃',shot.attacker);
+        stopped=true;break;
+      }
+    }
+    if(stopped){removeSkeletonArrow(i);continue}
+    shot.model.position.copy(pos);
+    velocity.y-=10.5*dt;
+    shot.model.quaternion.setFromUnitVectors(arrowForward,velocity.clone().normalize());
+  }
 }
 function spawnFlyingArrow(origin,direction,power=1,visualOnly=false){
   const vec=new THREE.Vector3(direction.x,direction.y,direction.z);
@@ -4715,7 +4931,7 @@ function damageMob(root,damage){
   if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'){
     root.userData.hostile=true;
     root.userData.attackCooldown=Math.max(root.userData.attackCooldown||0,.45);
-  }else if(root.userData.type!=='zombie')makeMobFlee(root);
+  }else if(root.userData.type!=='zombie'&&root.userData.type!=='skeleton')makeMobFlee(root);
 
   if(root.userData.hp<=0){
     if(root.userData.type==='horse'&&root.userData.saddled){
@@ -4724,7 +4940,7 @@ function damageMob(root,damage){
     }
     const earned=root.userData.xp||12,name=root.userData.name||'動物';
     dropMobLoot(root);
-    if(root.userData.type==='zombie')removeZombie(root);
+    if(root.userData.type==='zombie'||root.userData.type==='skeleton')removeZombie(root);
     else {scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1)}
     gainXP(earned,name+'を倒した');
   }
@@ -5183,6 +5399,10 @@ function loop(now){
         updateZombie(m,dt,now);
         return;
       }
+      if(m.userData.type==='skeleton'){
+        updateSkeleton(m,dt,now);
+        return;
+      }
       if(m.userData.saddled){
         animateWildMob(m,dt,now,m===ridingHorse&&!!m.userData.ridingMoved);
         return;
@@ -5216,10 +5436,12 @@ function loop(now){
     });
 
     updateFlyingArrows(dt);
+    updateSkeletonArrows(dt);
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');
-    clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm+(isNightTime()?'  🧟 '+countZombies():'');
+    clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm+
+      (isNightTime()?'  🧟 '+countZombies()+' 🏹 '+countSkeletons():'');
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
   if(started&&multiRole)multiTick(now);
