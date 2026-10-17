@@ -32,11 +32,26 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     box(g,.04,.56,.012,0xb98756,-.025,.245,-.055);
     box(g,.12,.10,.12,dark,0,-.065,0);
     if(swords.has(id)){
-      box(g,.40,.09,.14,dark,0,.23,0);
-      box(g,.18,.53,.13,base,0,.55,0);
-      box(g,.054,.46,.14,light,-.047,.54,-.004);
-      box(g,.12,.17,.12,base,0,.87,0);
-      box(g,.075,.065,.11,light,0,.98,0);
+      // Every material tier shares a broad, curved, one-edged katana profile.
+      box(g,.16,.38,.16,0x38323c,0,.065,0);
+      for(let j=0;j<5;j++)
+        box(g,.17,.032,.17,j%2?0xc9b58f:dark,0,-.06+j*.085,0);
+      box(g,.49,.077,.34,dark,0,.315,0);
+      box(g,.40,.092,.40,base,0,.326,0);
+      box(g,.24,.10,.19,light,0,.378,0);
+      for(let j=0;j<5;j++){
+        const x=[.005,.024,.052,.098,.151][j],y=.47+j*.175,w=j===4?.22:.285;
+        const segment=box(g,w,.205,.175,base,x,y,0);
+        segment.rotation.z=-.045-j*.027;
+        const cutting=box(g,.067,.205,.179,light,x-w*.31,y,-.005);
+        cutting.rotation.z=segment.rotation.z;
+        const spine=box(g,.046,.199,.177,dark,x+w*.33,y,.006);
+        spine.rotation.z=segment.rotation.z;
+      }
+      const point=box(g,.174,.151,.12,base,.196,1.28,0);
+      point.rotation.z=-.22;
+      const tipEdge=box(g,.068,.155,.122,light,.133,1.28,-.008);
+      tipEdge.rotation.z=-.22;
     }else if(picks.has(id)){
       box(g,.63,.15,.15,base,0,.65,0);
       box(g,.55,.045,.09,light,0,.74,-.01);
@@ -53,14 +68,22 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     return g;
   }
   function chimeraDagger(){
+    // A short fang-edged wakizashi, matching the other katana swords.
     const g=group();
-    box(g,.12,.39,.15,0x34232e,0,.12,0);
-    box(g,.05,.28,.018,0x77536d,-.05,.12,-.086);
-    box(g,.35,.10,.18,0xc4a77d,0,.30,0);
-    box(g,.19,.43,.16,0xd8c7a5,0,.55,0);
-    box(g,.08,.37,.17,0xffeed0,-.058,.56,-.02);
-    const tip=box(g,.14,.19,.12,0xf4ddba,0,.86,0);
-    tip.rotation.z=-.15;
+    box(g,.15,.35,.15,0x392939,0,.07,0);
+    for(let i=0;i<4;i++)
+      box(g,.165,.036,.166,i%2?0x77536d:0xd1af7b,0,-.05+i*.086,0);
+    box(g,.43,.08,.35,0xc39e78,0,.32,0);
+    box(g,.32,.09,.37,0x332b3d,0,.34,0);
+    for(let j=0;j<4;j++){
+      const x=[0,.025,.064,.116][j],y=.47+j*.165,w=j===3?.21:.28;
+      const segment=box(g,w,.202,.17,0xd8c7a5,x,y,0);
+      segment.rotation.z=-.05-j*.032;
+      const edge=box(g,.072,.198,.17,0xffeed0,x-w*.31,y,-.005);
+      edge.rotation.z=segment.rotation.z;
+    }
+    const tip=box(g,.16,.14,.12,0xf4ddba,.163,1.115,0);
+    tip.rotation.z=-.22;
     return g;
   }
   function chimeraBow(){
