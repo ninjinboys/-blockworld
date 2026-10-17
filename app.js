@@ -4,6 +4,8 @@ import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017standardKata
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261017mobRelease02';
+import {createVillageSystem} from './village-system.js?v=20261017village01';
+import {createVillagerModels} from './villager-model.js?v=20261017villager01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
 
@@ -1067,6 +1069,8 @@ function resetWorldRuntime(){
   }
   chimeraSummonPending=null;
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;spiderSpawnCooldown=10;nightZombieWaveStarted=false;
+  cachedVillageWorld=null;cachedVillageSeed=null;cachedVillageGenerator=null;
+  villagerSpawnCooldown=3;villageLastVisitedKey=null;
   multiLastMobSync=0;multiMobSeq=0;multiAppliedMobSeq=-1;
   clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
   $('chestScreen').classList.remove('open');
@@ -1699,9 +1703,20 @@ function* generateChunkSteps(cx,cz){
     yield; // Pause after each surface feature slice.
   }
 
+  // Settlements respect player construction: world edits are applied LAST.
+  villageWorld().decorate(data,cx,cz);
   const edits=editChunks.get(chunkKey(cx,cz));
   if(edits)for(const [i,v] of edits)data[i]=v;
   return {cx,cz,data};
+}
+let cachedVillageWorld=null,cachedVillageSeed=null,cachedVillageGenerator=null;
+function villageWorld(){
+  if(!cachedVillageWorld||cachedVillageSeed!==seed||cachedVillageGenerator!==generatorVersion){
+    cachedVillageSeed=seed;cachedVillageGenerator=generatorVersion;
+    cachedVillageWorld=createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,
+      WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord});
+  }
+  return cachedVillageWorld;
 }
 function generateChunk(cx,cz){
   const iter=generateChunkSteps(cx,cz);
@@ -2069,6 +2084,7 @@ function rebuildEdited(...positions){
 }
 
 const newMobModels=createNewMobModels(THREE);
+const villagerModels=createVillagerModels(THREE);
 const NEW_WILD_TYPES=new Set(['deer','wolf','bear','boar','eagle','crocodile','shark','elephant']);
 const NEW_MOB_TYPES=new Set([...NEW_WILD_TYPES,'spider']);
 const NEW_MOB_STATS={
@@ -2742,7 +2758,7 @@ function buildSkeleton(){
 // blocks live in get(), so height checks alone let mobs pass through walls.
 function mobCollisionShape(m,x,z,angle=m.userData.angle){
   const type=m.userData.type;
-  if(type==='zombie'||type==='skeleton')return [[x,z,.34]];
+  if(type==='zombie'||type==='skeleton'||type==='villager')return [[x,z,.34]];
   if(NEW_MOB_TYPES.has(type)){
     const direction=Number.isFinite(angle)?angle:0,fx=Math.sin(direction),fz=Math.cos(direction);
     const dims={
@@ -2803,7 +2819,7 @@ function mobVerticalBounds(m,rootY=m.position.y){
   const type=m.userData.type;
   // Unlike feet, the larger animals' ears/hump/mane reach well above 2 blocks.
   const foot=type==='chimera'?rootY:rootY+((type==='zombie'||type==='skeleton'||type==='spider')?.025:.50);
-  const height=NEW_MOB_STATS[type]?.height??(type==='chimera'?5.05:type==='zombie'||type==='skeleton'?1.74:type==='horse'?2.40:
+  const height=type==='villager'?1.93:NEW_MOB_STATS[type]?.height??(type==='chimera'?5.05:type==='zombie'||type==='skeleton'?1.74:type==='horse'?2.40:
     type==='bison'?2.11*LARGE_PREDATOR_SCALE:
     type==='lion'?1.98*LARGE_PREDATOR_SCALE:
     type==='anaconda'?1.67:1.14);
@@ -5317,7 +5333,7 @@ function dropMobLoot(root){
     spawnWorldDrop(I.CHIMERA_HORN,6,x,root.position.y+1.5,z+.35,{scatter:true,pickupDelay:.55});
     return;
   }
-  if(type==='zombie'||type==='spider'||type==='eagle'||type==='shark')return;
+  if(type==='zombie'||type==='spider'||type==='eagle'||type==='shark'||type==='villager')return;
   if(type==='deer'||type==='wolf'||type==='bear'||type==='crocodile'||type==='elephant'){
     spawnWorldDrop(I.LEATHER,type==='elephant'?3:1+Math.floor(Math.random()*2),
       x,y,z,{scatter:true,pickupDelay:.55});return;
@@ -5954,7 +5970,7 @@ const forward=new THREE.Vector3(),right=new THREE.Vector3(),move=new THREE.Vecto
 function loop(now){
   const dt=Math.min(.035,(now-last)/1000);last=now;
   if(started&&!dead&&!sleeping&&!chestOpen){
-    updateWorldDrops(dt,now);updatePassiveSpawning(dt);updateHealthRegen(dt);
+    updateWorldDrops(dt,now);updatePassiveSpawning(dt);updateVillagerSpawning(dt);updateHealthRegen(dt);
     const activelySprinting=!craftOpen&&!inventoryOpen&&sprinting&&stamina>0&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!playerInWater();
     updateStaminaRecovery(dt,activelySprinting);
   }
@@ -6062,6 +6078,7 @@ function loop(now){
               }
             }
           }else if(m.userData.type==='chimera')animateChimera(m,now*.001,moving?'walk':'idle');
+          else if(m.userData.type==='villager')villagerModels.animate(m,now*.001,moving);
           else animateWildMob(m,dt,now,moving);
         }
         return;
@@ -6080,6 +6097,10 @@ function loop(now){
       }
       if(m.userData.type==='spider'){
         updateSpider(m,dt,now);
+        return;
+      }
+      if(m.userData.type==='villager'){
+        updateVillager(m,dt,now);
         return;
       }
       if(m.userData.type==='eagle'||m.userData.type==='shark'){
@@ -6124,7 +6145,12 @@ function loop(now){
     updateFlyingArrows(dt);
     if(multiRole!=='guest')updateSkeletonArrows(dt);
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
-    coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
+    coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;
+    const atVillage=villageWorld().nearby(bx,bz,4).find(v=>Math.hypot(v.x-bx,v.z-bz)<v.radius);
+    biomeEl.textContent=atVillage?'🏠 村':(biomeNames[biomeAt(bx,bz)]||'Unknown');
+    if(atVillage&&atVillage.key!==villageLastVisitedKey){
+      villageLastVisitedKey=atVillage.key;flash('村を発見！ 村人が暮らしています');
+    }else if(!atVillage)villageLastVisitedKey=null;
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');
     clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm+
       (isNightTime()?'  🧟 '+countZombies()+' 🏹 '+countSkeletons()+' 🕷 '+countSpiders():'');
@@ -6602,7 +6628,7 @@ function multiClearAvatars(){
 // Share the same host-owned animals across all connected players. Snapshots
 // include removals, which prevents dead/despawned creatures from lingering.
 let multiLastMobSync=0,multiMobSeq=0,multiAppliedMobSeq=-1;
-const MULTI_MOB_TYPES=new Set([0,1,2,'horse','bison','lion','anaconda','zombie','skeleton','chimera',...NEW_MOB_TYPES]);
+const MULTI_MOB_TYPES=new Set([0,1,2,'horse','bison','lion','anaconda','zombie','skeleton','chimera','villager',...NEW_MOB_TYPES]);
 function multiMobSnapshot(){
   return {t:'mobState',seq:++multiMobSeq,mobs:mobs.slice(0,110).map(m=>({
     id:ensureMobId(m),type:m.userData.type,
@@ -6610,6 +6636,7 @@ function multiMobSnapshot(){
     z:+m.position.z.toFixed(2),angle:+(m.userData.angle||0).toFixed(3),
     hp:m.userData.hp,phase:m.userData.phase||0,
     saddled:!!m.userData.saddled,hostile:!!m.userData.hostile,
+    variant:m.userData.type==='villager'?m.userData.variant:undefined,
     hit:m.userData.hitFlash>0
   }))};
 }
@@ -6624,6 +6651,7 @@ function multiCreateSharedMob(type){
   if(type==='zombie')return buildZombie();
   if(type==='skeleton')return buildSkeleton();
   if(type==='chimera')return buildChimera(THREE);
+  if(type==='villager')return villagerModels.build();
   if(NEW_MOB_TYPES.has(type))return newMobModels.build(type);
   return null;
 }
@@ -6648,13 +6676,14 @@ function multiApplyMobSnapshot(packet){
     let m=existing.get(d.id);
     if(m&&m.userData.type!==d.type){removeZombie(m);m=null}
     if(!m){
-      m=multiCreateSharedMob(d.type);
+      m=d.type==='villager'?villagerModels.build(Number.isInteger(d.variant)?d.variant:0):multiCreateSharedMob(d.type);
       if(!m)continue;
       m.position.set(d.x,d.y,d.z);
       m.userData={...m.userData,type:d.type,netId:d.id,hp:d.hp,
         angle:d.angle,netAngle:d.angle,phase:Number(d.phase)||0,
         hostile:d.hostile===true,attackCooldown:0,hitFlash:0,
-        speed:0,t:1,fleeTime:0,saddled:d.saddled===true};
+        speed:0,t:1,fleeTime:0,saddled:d.saddled===true,
+        variant:d.type==='villager'&&Number.isInteger(d.variant)?Math.max(0,Math.min(3,d.variant)):0};
       m.rotation.y=d.angle+Math.PI;
       setupMobStepAnimation(m);
       if(d.type==='horse'&&d.saddled)showHorseSaddle(m);
