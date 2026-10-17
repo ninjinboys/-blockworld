@@ -22,7 +22,7 @@ export const BOSS_MOBS=[
 // A single listing used by the gallery; future wildlife are added to
 // NEW_MOBS, future bosses to BOSS_MOBS with a matching builder/animator.
 export const CREATURE_CATALOG=[
-  ...NEW_MOBS.map(entry=>({...entry,boss:false,status:entry.id==='golem'?'村の実装待ち':'実装済'})),
+  ...NEW_MOBS.map(entry=>({...entry,boss:false,status:'実装済'})),
   ...VILLAGE_NPCS,
   ...BOSS_MOBS
 ];
