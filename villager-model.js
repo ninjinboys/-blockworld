@@ -34,13 +34,16 @@ export function createVillagerModels(T){
    block(leg,.27,.39,.30,0x4b3c36,0,-.18,0);
    block(leg,.29,.16,.36,0x302b29,0,-.36,-.04);
    g.add(leg);
-   const arm=new T.Group();arm.position.set(side*.50,1.65,0);
-   block(arm,.25,.57,.31,robe,0,-.28,0);
-   block(arm,.26,.13,.34,trim,0,-.53,0);
-   block(arm,.19,.21,.26,skin,0,-.65,0);
-   // Villagers' arms are usually held together in front.
-   arm.rotation.x=-.44;arm.rotation.z=side*.12;
-   g.add(arm);
+  }
+  // Minecraft-style folded arms: shoulders hang close to the torso,
+  // while both forearms meet and slightly overlap horizontally in front.
+  // The arms remain fixed when walking; only the legs are animated.
+  for(const side of [-1,1]){
+   block(g,.255,.44,.30,robe,side*.425,1.47,-.16);
+   block(g,.27,.18,.34,trim,side*.425,1.23,-.29);
+   const frontZ=side===-1?-.535:-.475;
+   block(g,.47,.24,.30,robe,side*.205,1.285,frontZ);
+   block(g,.09,.255,.32,trim,side*.015,1.285,frontZ-.01);
   }
   // Substantial head with prominent nose and eyebrows, not a player skin.
   block(g,.62,.61,.56,skin,0,1.97,-.01);
