@@ -2,6 +2,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261017hurtSubtle27';
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017hurtSubtle27';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
+import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
 
@@ -51,7 +52,7 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,BUFFALO_MEAT:154,ANACONDA_HIDE:155,SHIELD:156
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,BUFFALO_MEAT:154,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -66,7 +67,7 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',154:'バッファローの肉',155:'オオアナコンダの革',156:'盾',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',154:'バッファローの肉',155:'オオアナコンダの革',156:'盾',157:'キメラの魂',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
@@ -85,7 +86,7 @@ const inventory={
   [I.GOLD_HELMET]:0,[I.GOLD_CHEST]:0,[I.GOLD_LEGS]:0,[I.GOLD_BOOTS]:0,
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.WOOD_AXE]:0,
-  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.BUFFALO_MEAT]:0,[I.ANACONDA_HIDE]:0,[I.BED]:0,
+  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.BUFFALO_MEAT]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.BED]:0,
   [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
@@ -106,7 +107,7 @@ const itemGlyphs={
   [I.GOLD_HELMET]:'金頭',[I.GOLD_CHEST]:'金胴',[I.GOLD_LEGS]:'金脚',[I.GOLD_BOOTS]:'金靴',
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.WOOD_AXE]:'木斧',
-  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.BUFFALO_MEAT]:'肉',[I.ANACONDA_HIDE]:'蛇革',[I.BED]:'床',
+  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.BUFFALO_MEAT]:'肉',[I.ANACONDA_HIDE]:'蛇革',[I.CHIMERA_SOUL]:'魂',[I.BED]:'床',
   [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
 };
 
@@ -296,6 +297,14 @@ function drawItemIcon(g,id){
     ir(g,7,7,3,6,'#463c28');ir(g,8,8,1,4,'#f8d568');return;
   }
   if(id===I.TORCH){ir(g,7,6,3,9,'#58391e');ir(g,8,7,1,8,'#c59054');ir(g,6,3,5,5,'#ec7424');ir(g,7,1,3,6,'#ffb431');ir(g,8,0,1,6,'#fff2a1');return}
+  if(id===I.CHIMERA_SOUL){
+    // Glowing violet soul enclosed by ivory horn fragments.
+    poly(g,[[8,0],[11,3],[14,7],[12,12],[8,15],[4,12],[2,7],[5,3]],'#3c204c');
+    poly(g,[[8,2],[11,5],[12,9],[8,13],[4,9],[5,5]],'#9151cd');
+    ir(g,7,4,3,6,'#e7baff');ir(g,8,3,1,8,'#fff2fb');
+    ir(g,3,4,2,3,'#eee1ba');ir(g,11,4,2,3,'#eee1ba');
+    ir(g,5,11,2,2,'#704ca0');return;
+  }
   if(id===I.SHIELD){
     // Full-size embossed shield icon: wooden center surrounded by steel edging.
     poly(g,[[2,1],[13,1],[14,9],[8,15],[2,9]],'#505b60');
@@ -346,6 +355,7 @@ const recipes=[
   {name:'矢 ×4',out:I.ARROW,qty:4,needs:[[B.COBBLE,1],[I.STICK,1]],unlockLevel:5}
 ];
 const workbenchRecipes=[
+  {name:'キメラの魂',out:I.CHIMERA_SOUL,qty:1,needs:[[I.LION_FANG,1],[I.ANACONDA_HIDE,1],[I.BUFFALO_HORN,1]],unlockLevel:1},
   {name:'ベッド',out:I.BED,qty:1,needs:[[I.WOOL,3],[B.PLANK,3]],unlockLevel:6},
   {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
   {name:'チェスト',out:I.CHEST,qty:1,needs:[[B.PLANK,8]],unlockLevel:6},
@@ -789,6 +799,7 @@ function makeSaveData(){
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits(),chests:serializeChests(),
     saddledHorses:serializeSaddledHorses(),
+    summonedChimeras:serializeSummonedChimeras(),
     ridingHorseIndex:ridingHorse?saddledHorsesForSave().indexOf(ridingHorse):-1
   };
 }
@@ -896,6 +907,7 @@ function applySaveData(data){
   if(correctedDoors)console.info('BLOCKWORLD: corrected '+correctedDoors+' floating door(s) in saved world.');
   restoreChests(data.chests);
   restoreSaddledHorses(data);
+  restoreSummonedChimeras(data);
   restoreWorldDrops(data.worldDrops);
 
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
@@ -990,9 +1002,9 @@ function resetWorldRuntime(){
   meshes=[];lookup.clear();pendingChunkLoads.length=0;pendingChunkJob=null;dirtyMeshKeys.clear();
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i];
-    if(m.userData.type==='zombie'||m.userData.type==='skeleton')removeZombie(m);
-    else scene.remove(m);
+    removeZombie(m);
   }
+  chimeraSummonPending=null;
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;nightZombieWaveStarted=false;
   multiLastMobSync=0;multiMobSeq=0;multiAppliedMobSeq=-1;
   clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
@@ -2654,6 +2666,12 @@ function buildSkeleton(){
 function mobCollisionShape(m,x,z,angle=m.userData.angle){
   const type=m.userData.type;
   if(type==='zombie'||type==='skeleton')return [[x,z,.34]];
+  if(type==='chimera'){
+    // Approximate the sculpt's broad lion chest and long serpent tail.
+    const a=Number.isFinite(angle)?angle:0,fx=Math.sin(a),fz=Math.cos(a);
+    return [[0,1.15],[1.25,1.15],[-1.25,1.12],[2.30,.82],[-2.45,.84]]
+      .map(([forward,r])=>[x+fx*forward,z+fz*forward,r]);
+  }
   const direction=Number.isFinite(angle)?angle:0;
   const fx=Math.sin(direction),fz=Math.cos(direction);
   if(type==='horse')return [
@@ -2692,8 +2710,8 @@ function mobCollisionShape(m,x,z,angle=m.userData.angle){
 function mobVerticalBounds(m,rootY=m.position.y){
   const type=m.userData.type;
   // Unlike feet, the larger animals' ears/hump/mane reach well above 2 blocks.
-  const foot=rootY+((type==='zombie'||type==='skeleton')?.025:.50);
-  const height=type==='zombie'||type==='skeleton'?1.74:type==='horse'?2.40:
+  const foot=type==='chimera'?rootY:rootY+((type==='zombie'||type==='skeleton')?.025:.50);
+  const height=type==='chimera'?5.05:type==='zombie'||type==='skeleton'?1.74:type==='horse'?2.40:
     type==='bison'?2.11*LARGE_PREDATOR_SCALE:
     type==='lion'?1.98*LARGE_PREDATOR_SCALE:
     type==='anaconda'?1.67:1.14;
@@ -3013,6 +3031,142 @@ function updateZombie(m,dt,now){
   }
 }
 
+
+/* Provisional summonable Chimera boss using the latest Sculpt IV 3D mesh.
+ * One boss per world, never a random spawn. Its full 300 HP is preserved.
+ */
+const CHIMERA_MAX_HEALTH=300,CHIMERA_HIT_DAMAGE=8;
+let chimeraSummonPending=null;
+function chimeraBoss(){
+  return mobs.find(m=>m.userData.type==='chimera'&&m.userData.hp>0)||null;
+}
+function serializeSummonedChimeras(){
+  return mobs.filter(m=>m.userData.type==='chimera'&&m.userData.hp>0).slice(0,1)
+    .map(m=>({x:m.position.x,y:m.position.y,z:m.position.z,
+      angle:m.userData.angle,hp:m.userData.hp,netId:ensureMobId(m)}));
+}
+function makeChimeraMob(x,y,z,angle,hp=CHIMERA_MAX_HEALTH,netId=null){
+  const m=buildChimera(THREE);
+  m.position.set(x,y,z);m.rotation.y=angle+Math.PI;
+  m.userData={...m.userData,type:'chimera',name:'キメラ',
+    hp:Math.max(1,Math.min(CHIMERA_MAX_HEALTH,Math.floor(hp))),
+    xp:300,angle,netId:netId||crypto.randomUUID(),
+    attackCooldown:1.8,hitFlash:0,phase:0,hostile:true,spawnedAt:performance.now(),
+    speed:2.3,fleeTime:0,t:2};
+  scene.add(m);mobs.push(m);
+  return m;
+}
+function restoreSummonedChimeras(data){
+  if(multiRole==='guest'||!Array.isArray(data?.summonedChimeras))return;
+  for(const row of data.summonedChimeras.slice(0,1)){
+    if(!row||![row.x,row.y,row.z,row.angle,row.hp].every(Number.isFinite)||
+      Math.abs(row.x)>1e6||Math.abs(row.z)>1e6||row.y<Y_MIN||
+      row.y>WORLD_TOP||row.hp<=0)continue;
+    makeChimeraMob(row.x,row.y,row.z,row.angle,row.hp,
+      typeof row.netId==='string'&&/^[0-9a-f-]{36}$/.test(row.netId)?row.netId:null);
+  }
+}
+function summonChimeraAt(x,groundY,z,summoner=player.pos){
+  if(chimeraBoss())return {ok:false,reason:'すでにキメラが召喚されています'};
+  if(![x,groundY,z].every(Number.isInteger)||!inside(x,groundY,z)||
+    groundY>WORLD_TOP-7)return {ok:false,reason:'召喚する場所が高すぎます'};
+  const floor=get(x,groundY,z);
+  if(!solid(floor)||floor===B.LEAF||floor===B.CACTUS||isBedBlock(floor))
+    return {ok:false,reason:'キメラの魂は地面や床の上で使用してください'};
+  // Existing terrain geometry, ceilings and homes are respected.
+  const y=groundY+.51,angle=Math.atan2(summoner.x-x,summoner.z-z);
+  const probe={userData:{type:'chimera',angle},position:{x,y,z}};
+  if(!mobSpaceFree(probe,x,y,z,angle))
+    return {ok:false,reason:'キメラの召喚には周囲と上空に広い空間が必要です'};
+  const m=makeChimeraMob(x,y,z,angle);
+  markSaveDirty();saveCurrentGame(false);
+  if(multiRole==='host'&&multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
+  return {ok:true,mob:m};
+}
+function useChimeraSoul(x,y,z){
+  if(!started||dead||sleeping||(inventory[I.CHIMERA_SOUL]||0)<1)return;
+  if(multiRole==='guest'){
+    if(!multiplayerNetwork.connected){flash('マルチプレイの接続がありません');return}
+    if(chimeraSummonPending){flash('召喚を確認中です');return}
+    const requestId=crypto.randomUUID();
+    chimeraSummonPending=requestId;
+    multiplayerNetwork.send({t:'chimeraSummon',requestId,x,y,z});
+    setTimeout(()=>{
+      if(chimeraSummonPending===requestId){
+        chimeraSummonPending=null;flash('召喚の応答がありませんでした');
+      }
+    },9000);
+    return;
+  }
+  const result=summonChimeraAt(x,y,z);
+  if(!result.ok){flash(result.reason);return}
+  removeItem(I.CHIMERA_SOUL,1);
+  renderHotbar();flash('キメラを召喚した！');
+}
+function hostHandleChimeraSummon(message,from,peerId){
+  if(typeof message.requestId!=='string'||message.requestId.length>90||
+    ![message.x,message.y,message.z].every(Number.isInteger))return;
+  const p=from.player;
+  if(!p||![p.x,p.y,p.z].every(Number.isFinite))return;
+  const dist=Math.hypot(p.x-message.x,p.y-message.y,p.z-message.z);
+  let result={ok:false,reason:'召喚できませんでした'};
+  if(dist>8)result.reason='離れた場所には召喚できません';
+  else if(performance.now()-(from.lastSummonAt??-Infinity)<1200)
+    result.reason='少し待ってから召喚してください';
+  else{
+    from.lastSummonAt=performance.now();
+    result=summonChimeraAt(message.x,message.y,message.z,p);
+  }
+  multiplayerNetwork.send({t:'chimeraSummonResult',requestId:message.requestId,
+    ok:result.ok,reason:result.reason||''},peerId);
+}
+function guestHandleChimeraSummonResult(message){
+  if(!chimeraSummonPending||message.requestId!==chimeraSummonPending)return;
+  chimeraSummonPending=null;
+  if(message.ok){
+    removeItem(I.CHIMERA_SOUL,1);renderHotbar();markSaveDirty();
+    saveCurrentGame(false);flash('キメラを召喚した！');
+  }else flash(message.reason||'召喚に失敗しました');
+}
+function updateChimera(m,dt,now){
+  const d=m.userData;
+  d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
+  const candidates=[{position:player.pos,peerId:null}];
+  if(multiRole==='host'){
+    for(const [peerId,g] of multiGuestRecords){
+      if(g.player&&performance.now()-(g.lastPoseAt||0)<5000)
+        candidates.push({position:g.player,peerId});
+    }
+  }
+  let nearest=null,best=Infinity;
+  for(const entry of candidates){
+    const p=entry.position;
+    if(![p.x,p.y,p.z].every(Number.isFinite))continue;
+    const dist=Math.hypot(p.x-m.position.x,p.z-m.position.z);
+    if(dist<best&&Math.abs(p.y-m.position.y)<5.5){
+      nearest=entry;best=dist;
+    }
+  }
+  let moving=false;
+  if(nearest&&best<38){
+    const p=nearest.position;
+    const dx=p.x-m.position.x,dz=p.z-m.position.z;
+    d.angle=Math.atan2(dx,dz);m.rotation.y=d.angle+Math.PI;
+    if(best>3.0){
+      moving=mobWalkStep(m,d.angle,Math.min(dt*2.4,Math.max(0,best-2.9)),true);
+      if(!moving)moving=mobWalkStep(m,d.angle+.72,dt*1.4,true);
+    }
+    if(best<=3.65&&d.attackCooldown<=0){
+      d.attackCooldown=1.65;
+      if(nearest.peerId){
+        multiplayerNetwork.send({t:'chimeraStrike',x:m.position.x,
+          y:m.position.y,z:m.position.z,id:ensureMobId(m)},nearest.peerId);
+      }else if(!dead)damagePlayer(CHIMERA_HIT_DAMAGE,'キメラの攻撃',m.position);
+    }
+  }
+  animateChimera(m,now*.001,moving?'walk':'idle');
+}
+
 // Bison fight back; lions and giant anacondas actively hunt nearby players.
 // Anacondas bite using their raised HEAD, not their distant body center.
 function updateDangerousMob(m,dt,now){
@@ -3087,7 +3241,7 @@ function chooseWildMob(){
 const MAX_WILD_ANIMALS=18;
 const WILD_COMMON_LIFETIME_MS=3*60*1000,WILD_RARE_LIFETIME_MS=8*60*1000;
 function spawnPassiveMob(anchor=player.pos){
-  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&!m.userData.saddled).length;
+  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='chimera'&&!m.userData.saddled).length;
   if(wildCount>=(multiRole==='host'?30:MAX_WILD_ANIMALS))return false;
 
   // Choose the species ONCE before checking locations. A bison failing its
@@ -3164,7 +3318,7 @@ function updatePassiveSpawning(dt){
   const now=performance.now();
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i],ud=m.userData;
-    if(ud.saddled||ud.type==='zombie'||ud.type==='skeleton')continue;
+    if(ud.saddled||ud.type==='zombie'||ud.type==='skeleton'||ud.type==='chimera')continue;
     const distance=Math.min(...anchors.map(p=>Math.hypot(m.position.x-p.x,m.position.z-p.z)));
     const rare=ud.type==='bison'||ud.type==='lion'||ud.type==='anaconda';
     const age=now-(ud.spawnedAt??now);
@@ -3174,7 +3328,7 @@ function updatePassiveSpawning(dt){
   }
 
   for(const anchor of anchors){
-    const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&
+    const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='chimera'&&
       !m.userData.saddled&&Math.hypot(m.position.x-anchor.x,m.position.z-anchor.z)<55).length;
     const attempts=nearby<4?3:nearby<10?2:nearby<15?1:0;
     for(let i=0;i<attempts;i++)spawnPassiveMob(anchor);
@@ -4648,7 +4802,15 @@ function place(){
   }
   if(ridingHorse){flash('攻撃ボタンで馬から降りられます');return}
   const horse=aimedHorse();
-  if(horse&&useHorse(horse))return;
+  if(horse&&selected!==I.CHIMERA_SOUL&&useHorse(horse))return;
+  if(selected===I.CHIMERA_SOUL){
+    const hit=target(),ground=hit&&hit.distance<=5?lookup.get(hit.object.uuid)?.[hit.instanceId]:null;
+    if(!ground||!hit.face||hit.face.normal.y<.5){
+      flash('キメラの魂は地面の上面に向けて使用してください');return;
+    }
+    useChimeraSoul(ground.x,ground.y,ground.z);
+    return;
+  }
   // Interacting with a chest takes priority even when holding food or
   // a placeable block. Players can always open their storage.
   const h=target();
@@ -4749,8 +4911,9 @@ function prepareMobHitMaterials(root){
     if(!o.userData.mobOwnMaterial){
       o.material=o.material.clone();
       o.userData.mobOwnMaterial=true;
-      o.userData.mobBaseColor=o.material.color.getHex();
     }
+    if(o.userData.mobBaseColor==null&&o.material?.color)
+      o.userData.mobBaseColor=o.material.color.getHex();
   });
 }
 function setMobHitFlash(root){
@@ -4774,7 +4937,7 @@ function makeMobFlee(root){
 function dropMobLoot(root){
   const x=root.position.x,y=root.position.y+.75,z=root.position.z;
   const type=root.userData.type;
-  if(type==='zombie')return; // Zombie kills grant XP; no animal meat drops.
+  if(type==='zombie'||type==='chimera')return; // Provisional Chimera has no item drop.
   if(type==='skeleton'){
     spawnWorldDrop(I.ARROW,1+Math.floor(Math.random()*2),x,y,z,
       {scatter:true,pickupDelay:.55});
@@ -5011,7 +5174,7 @@ function damageMob(root,damage,via='melee',power=1){
   }
   root.userData.hp-=damage;
   setMobHitFlash(root);
-  if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'){
+  if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'||root.userData.type==='chimera'){
     root.userData.hostile=true;
     root.userData.attackCooldown=Math.max(root.userData.attackCooldown||0,.45);
   }else if(root.userData.type!=='zombie'&&root.userData.type!=='skeleton')makeMobFlee(root);
@@ -5023,7 +5186,7 @@ function damageMob(root,damage,via='melee',power=1){
     }
     const earned=root.userData.xp||12,name=root.userData.name||'動物';
     dropMobLoot(root);
-    if(root.userData.type==='zombie'||root.userData.type==='skeleton')removeZombie(root);
+    if(root.userData.type==='zombie'||root.userData.type==='skeleton'||root.userData.type==='chimera')removeZombie(root);
     else {scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1)}
     gainXP(earned,name+'を倒した');
   }
@@ -5506,8 +5669,13 @@ function loop(now){
                 parts.leftArm.rotation.x=1.38+stride*.12;parts.rightArm.rotation.x=1.38-stride*.12;
               }
             }
-          }else animateWildMob(m,dt,now,moving);
+          }else if(m.userData.type==='chimera')animateChimera(m,now*.001,moving?'walk':'idle');
+          else animateWildMob(m,dt,now,moving);
         }
+        return;
+      }
+      if(m.userData.type==='chimera'){
+        updateChimera(m,dt,now);
         return;
       }
       if(m.userData.type==='zombie'){
@@ -6031,7 +6199,7 @@ function multiClearAvatars(){
 // Share the same host-owned animals across all connected players. Snapshots
 // include removals, which prevents dead/despawned creatures from lingering.
 let multiLastMobSync=0,multiMobSeq=0,multiAppliedMobSeq=-1;
-const MULTI_MOB_TYPES=new Set([0,1,2,'horse','bison','lion','anaconda','zombie','skeleton']);
+const MULTI_MOB_TYPES=new Set([0,1,2,'horse','bison','lion','anaconda','zombie','skeleton','chimera']);
 function multiMobSnapshot(){
   return {t:'mobState',seq:++multiMobSeq,mobs:mobs.slice(0,110).map(m=>({
     id:ensureMobId(m),type:m.userData.type,
@@ -6052,6 +6220,7 @@ function multiCreateSharedMob(type){
   if(type==='anaconda')return buildAnaconda();
   if(type==='zombie')return buildZombie();
   if(type==='skeleton')return buildSkeleton();
+  if(type==='chimera')return buildChimera(THREE);
   return null;
 }
 function multiApplyMobSnapshot(packet){
@@ -6066,7 +6235,7 @@ function multiApplyMobSnapshot(packet){
       !MULTI_MOB_TYPES.has(d.type)||seen.has(d.id)||
       ![d.x,d.y,d.z,d.angle,d.hp].every(Number.isFinite)||
       Math.abs(d.x)>1e6||Math.abs(d.z)>1e6||d.y<Y_MIN-5||
-      d.y>WORLD_TOP+6||d.hp<=0||d.hp>200)continue;
+      d.y>WORLD_TOP+6||d.hp<=0||d.hp>(d.type==='chimera'?CHIMERA_MAX_HEALTH:200))continue;
     seen.add(d.id);
     prepared.push(d);
   }
@@ -6452,6 +6621,7 @@ function multiRoomData(message,peerId){
     }
     const from=multiGuestRecords.get(peerId);if(!from)return;
     if(message.t==='chat'){chatHostReceive(message,peerId,from);return}
+    if(message.t==='chimeraSummon'){hostHandleChimeraSummon(message,from,peerId);return}
     if(message.t==='mobHit'){multiProcessMobHit(message,from);return}
     if(message.t==='pose'&&message.player&&Number.isFinite(message.player.x)){
       from.player=message.player;from.lastPoseAt=performance.now();
@@ -6471,6 +6641,11 @@ function multiRoomData(message,peerId){
     else if(message.t==='dropAdd'||message.t==='dropRemove'){multiApplyDrop(message);multiplayerNetwork.send(message)}
   }else{
     if(message.t==='chat')chatGuestReceive(message);
+    if(message.t==='chimeraSummonResult')guestHandleChimeraSummonResult(message);
+    if(message.t==='chimeraStrike'&&Number.isFinite(message.x)&&Number.isFinite(message.z)&&
+       mobs.some(m=>m.userData.type==='chimera'&&m.userData.netId===message.id)&&
+       Math.hypot(player.pos.x-message.x,player.pos.z-message.z)<7)
+      damagePlayer(CHIMERA_HIT_DAMAGE,'キメラの攻撃',message);
     if(message.t==='pose'){
       // Gracefully handle an old host version which sent poses without IDs.
       const id=typeof message.id==='string'?message.id:multiCheckpoint?.hostId;
@@ -6563,6 +6738,7 @@ function multiLeave(silent=false){
   multiMigration=null;multiCheckpoint=null;multiRoster=[];
   multiplayerNetwork.leaveRoom({handoff});
   multiGuestRecords.clear();multiMembers={};chestReceipts.clear();multiClearAvatars();
+  chimeraSummonPending=null;
   chatReset();
   clearInterval(saveInterval);saveInterval=null;
   if(worldReady){resetWorldRuntime();worldReady=false;currentWorldSlot=null}
