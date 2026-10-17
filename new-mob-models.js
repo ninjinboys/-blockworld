@@ -311,7 +311,10 @@ export function createNewMobModels(THREE){
       if(rig.trunk)rig.trunk.rotation.x=Math.sin(t*1.9)*.10;
       for(const {p,side}of rig.arms||[])
         p.rotation.x=side*Math.sin(t*2.3)*.19;
-      if(rig.floatY)g.position.y=rig.baseY+Math.sin(t*2)*rig.floatY;
+      // Movement and network snapshots own the root position. Bob only the
+      // display rig so flying/swimming mobs never teleport back to spawn height.
+      if(rig.floatY&&rig.stepVisual)
+        rig.stepVisual.position.y=Math.sin(t*2)*rig.floatY;
     }
   };
 }
