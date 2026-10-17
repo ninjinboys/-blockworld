@@ -3410,12 +3410,20 @@ function updateFlyingOrSwimmingMob(m,dt,now){
   const top=surfaceAt(bx,bz);
   const drift=Math.sin(now*.0015+d.phase);
   if(isEagle){
-    // Real sustained flight: altitude relative to terrain, never land walking.
-    const targetY=Math.max(top+3.8,Math.min(WORLD_TOP-3,top+6.2+drift*.5));
-    const dy=Math.max(-2,Math.min(2,(targetY-m.position.y)*.75));
-    const vx=Math.sin(d.angle)*d.speed*dt;
-    const vz=Math.cos(d.angle)*d.speed*dt;
-    const nextY=Math.min(WORLD_TOP-2,Math.max(top+2.5,m.position.y+dy*dt));
+    // Neutral in the wild: circles overhead, only dives and pecks back
+    // when a player has attacked it first.
+    const dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
+    const dist=Math.hypot(dx,dz);
+    const provoked=d.hostile===true&&dist<24&&!dead;
+    if(d.hostile&&!provoked)d.hostile=false;
+    if(provoked)d.angle=Math.atan2(dx,dz);
+    const targetY=provoked
+      ?Math.max(top+2.20,Math.min(WORLD_TOP-3,player.pos.y+1.8))
+      :Math.max(top+3.8,Math.min(WORLD_TOP-3,top+6.2+drift*.5));
+    const dy=Math.max(-3.0,Math.min(3.0,(targetY-m.position.y)*(provoked?1.35:.75)));
+    const vx=Math.sin(d.angle)*d.speed*(provoked?1.35:1)*dt;
+    const vz=Math.cos(d.angle)*d.speed*(provoked?1.35:1)*dt;
+    const nextY=Math.min(WORLD_TOP-2,Math.max(top+(provoked?2.12:2.5),m.position.y+dy*dt));
     const nx=m.position.x+vx,nz=m.position.z+vz;
     if(!solid(get(Math.round(nx),Math.round(nextY),Math.round(nz)))&&
        !solid(get(Math.round(nx),Math.round(nextY+1),Math.round(nz)))&&
@@ -3424,6 +3432,11 @@ function updateFlyingOrSwimmingMob(m,dt,now){
     }else{
       d.angle+=Math.PI*.57;
       m.position.y=Math.min(WORLD_TOP-2,m.position.y+dt*.7);
+    }
+    d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
+    if(provoked&&dist<2.3&&Math.abs(player.pos.y-m.position.y)<3.1&&d.attackCooldown<=0){
+      d.attackCooldown=1.75;
+      damagePlayer(2,'ワシの急降下攻撃',m.position);
     }
   }else{
     // Sharks stay submerged. Reject any proposed tile lacking actual water.
@@ -5553,7 +5566,7 @@ function damageMob(root,damage,via='melee',power=1){
   root.userData.hp-=damage;
   setMobHitFlash(root);
   if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'||root.userData.type==='chimera'||
-      ['wolf','bear','boar','crocodile','elephant','spider','shark'].includes(root.userData.type)){
+      ['wolf','bear','boar','crocodile','elephant','spider','shark','eagle'].includes(root.userData.type)){
     root.userData.hostile=true;
     root.userData.attackCooldown=Math.max(root.userData.attackCooldown||0,.45);
   }else if(root.userData.type!=='zombie'&&root.userData.type!=='skeleton')makeMobFlee(root);
