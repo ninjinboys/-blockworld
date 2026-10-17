@@ -6,7 +6,7 @@
  */
 import {NEW_MOBS,createNewMobModels} from './new-mob-models.js?v=20261017villageModel03';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
-import {createVillagerModels} from './villager-model.js?v=20261017villager01';
+import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 
 export const VILLAGE_NPCS=[
   {id:'villager',name:'村人',kind:'村・一般住民',height:'約2ブロック',npc:true,status:'実装済'},
