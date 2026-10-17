@@ -149,6 +149,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     diamond:{main:0x36c6d6,shine:0xa2fbff,edge:0x16808c}
   };
   const swordIds=new Set([111,115,119,123]);
+  const CHIMERA_DAGGER=164,CHIMERA_BOW=166;
   const pickIds=new Set([104,105,114,118,122]);
   const axeIds=new Set([112,116,120,124,138]);
   const shovelIds=new Set([113,117,121,125]);
@@ -221,6 +222,35 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     }
     return tool;
   }
+  function craftChimeraDagger(){
+    const dagger=new THREE.Group();
+    const grip=itemMat(0x372530),guard=itemMat(0xc39e78);
+    const blade=itemMat(0xd8c8a8),edge=itemMat(0xf2e6c6);
+    part(dagger,.12,.34,.12,grip,0,.06,0);
+    part(dagger,.05,.26,.02,itemMat(0x84556c),-.04,.07,-.075);
+    part(dagger,.37,.095,.17,guard,0,.30,0);
+    part(dagger,.20,.43,.15,blade,0,.56,0);
+    part(dagger,.062,.41,.08,edge,-.072,.56,-.06);
+    part(dagger,.12,.18,.12,edge,0,.865,0,-.12);
+    dagger.rotation.set(-.18,.27,-.60);
+    dagger.scale.set(.96,.96,.96);
+    return dagger;
+  }
+  function craftChimeraBow(){
+    const bow=new THREE.Group();
+    const horn=itemMat(0x827781),hornEdge=itemMat(0xd0c1aa),string=itemMat(0xe9c97e);
+    for(let i=0;i<=8;i++){
+      const t=i/8,y=(t-.5)*1.19,x=-.29*Math.sin(Math.PI*t);
+      part(bow,.10,.175,.12,i%2?horn:hornEdge,x,y,0,(t-.5)*.82);
+    }
+    part(bow,.024,1.22,.023,string,.07,0,-.04);
+    part(bow,.16,.20,.16,itemMat(0x382639),-.3,0,0);
+    part(bow,.085,.14,.08,hornEdge,.048,.625,0);
+    part(bow,.085,.14,.08,hornEdge,.048,-.625,0);
+    bow.rotation.set(-.13,.24,-.62);
+    bow.scale.set(.90,.92,.90);
+    return bow;
+  }
   function craftBow(){
     const bow=new THREE.Group(),wood=itemMat(0x9d6133),
       highlight=itemMat(0xdba463),string=itemMat(0xe4d8b4);
@@ -257,7 +287,11 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     clearHeld();
     if(id==null)return;
     const placeBlock=Object.hasOwn(blockColors,id)&&id!==5;
-    if(swordIds.has(id)||pickIds.has(id)||axeIds.has(id)||shovelIds.has(id)){
+    if(id===CHIMERA_DAGGER){
+      object=craftChimeraDagger();
+    }else if(id===CHIMERA_BOW){
+      object=craftChimeraBow();
+    }else if(swordIds.has(id)||pickIds.has(id)||axeIds.has(id)||shovelIds.has(id)){
       object=craftWeapon(id);
     }else if(id===149){
       object=craftBow();
