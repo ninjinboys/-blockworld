@@ -3348,6 +3348,9 @@ function updateDangerousMob(m,dt,now){
   return true;
 }
 function animateWildMob(m,dt,now,moving){
+  if(NEW_MOB_TYPES.has(m.userData.type)){
+    newMobModels.animate(m,now*.001,moving);return;
+  }
   if(m.userData.type==='anaconda'){animateAnaconda(m,dt,now,moving);return}
   const legs=m.userData.walkLegs;
   if(!legs?.length)return;
@@ -3358,6 +3361,127 @@ function animateWildMob(m,dt,now,moving){
     legs[i].rotation.x+=(swing*sign-legs[i].rotation.x)*Math.min(1,dt*12);
   }
 }
+// Build one of the nine released wildlife models. Golem remains preview-only.
+function createNewMob(type,x,y,z){
+  const stats=NEW_MOB_STATS[type];
+  if(!stats)throw new Error('Unregistered mob '+type);
+  const g=newMobModels.build(type);
+  const heading=Math.random()*Math.PI*2;
+  g.position.set(x,y,z);g.rotation.y=heading+Math.PI;
+  g.userData={...g.userData,type,name:stats.name,hp:stats.hp,xp:stats.xp,
+    angle:heading,t:1.5+Math.random()*3,speed:stats.speed,
+    hostile:type==='spider'||type==='shark',fleeTime:0,
+    attackCooldown:.6,hitFlash:0,phase:Math.random()*Math.PI*2,
+    spawnedAt:performance.now(),turnTime:0};
+  setupMobStepAnimation(g);
+  return g;
+}
+function disposeUnusedNewMob(g){
+  g.traverse(o=>{
+    if(o.isMesh){o.geometry?.dispose();if(o.userData.mobOwnMaterial)o.material?.dispose()}
+  });
+}
+function newMobBiomeOK(type,bio,h,x,z){
+  if(type==='deer')return [0,1,3].includes(bio);
+  if(type==='wolf')return [1,3,4,5].includes(bio);
+  if(type==='bear')return [1,3,4].includes(bio);
+  if(type==='boar')return [0,1,5].includes(bio);
+  if(type==='crocodile')return [5,7].includes(bio)&&h<=SEA+6;
+  if(type==='elephant')return bio===0&&h<SEA+17;
+  if(type==='eagle')return [0,1,3,4].includes(bio)&&h<WORLD_TOP-8;
+  if(type==='shark')return (bio===6||bio===7)&&h<SEA-2&&get(x,SEA-1,z)===B.WATER;
+  return false;
+}
+// Winged animals and sharks need continuous movement through three dimensions.
+// Collision tests sample actual voxels so they cannot fly through roofs/stone.
+function updateFlyingOrSwimmingMob(m,dt,now){
+  const d=m.userData,type=d.type,isEagle=type==='eagle';
+  const bx=Math.round(m.position.x),bz=Math.round(m.position.z);
+  d.t=Math.max(0,(d.t||0)-dt);
+  if(d.t<=0){
+    d.t=2.8+Math.random()*3.5;
+    d.angle+=(Math.random()-.5)*(isEagle?1.3:1.7);
+  }
+  if(d.fleeTime>0){
+    d.fleeTime-=dt;
+    const awayX=m.position.x-player.pos.x,awayZ=m.position.z-player.pos.z;
+    if(awayX*awayX+awayZ*awayZ>1)d.angle=Math.atan2(awayX,awayZ);
+  }
+  const top=surfaceAt(bx,bz);
+  const drift=Math.sin(now*.0015+d.phase);
+  if(isEagle){
+    // Real sustained flight: altitude relative to terrain, never land walking.
+    const targetY=Math.max(top+3.8,Math.min(WORLD_TOP-3,top+6.2+drift*.5));
+    const dy=Math.max(-2,Math.min(2,(targetY-m.position.y)*.75));
+    const vx=Math.sin(d.angle)*d.speed*dt;
+    const vz=Math.cos(d.angle)*d.speed*dt;
+    const nextY=Math.min(WORLD_TOP-2,Math.max(top+2.5,m.position.y+dy*dt));
+    const nx=m.position.x+vx,nz=m.position.z+vz;
+    if(!solid(get(Math.round(nx),Math.round(nextY),Math.round(nz)))&&
+       !solid(get(Math.round(nx),Math.round(nextY+1),Math.round(nz)))&&
+       surfaceAt(Math.round(nx),Math.round(nz))<nextY-2.2){
+      m.position.set(nx,nextY,nz);
+    }else{
+      d.angle+=Math.PI*.57;
+      m.position.y=Math.min(WORLD_TOP-2,m.position.y+dt*.7);
+    }
+  }else{
+    // Sharks stay submerged. Reject any proposed tile lacking actual water.
+    const swimY=Math.min(SEA-1.05,Math.max(top+1.15,m.position.y+drift*dt*.11));
+    const nx=m.position.x+Math.sin(d.angle)*d.speed*dt;
+    const nz=m.position.z+Math.cos(d.angle)*d.speed*dt;
+    const iy=Math.round(swimY);
+    if(get(Math.round(nx),iy,Math.round(nz))===B.WATER&&
+       get(Math.round(nx),iy+1,Math.round(nz))===B.WATER&&
+       !solid(get(Math.round(nx),iy-1,Math.round(nz)))){
+      m.position.set(nx,swimY,nz);
+    }else d.angle+=(Math.PI*.47)+(Math.random()-.5)*.60;
+    // Ocean predator: only follows/attacks swimmers, never walks ashore.
+    const dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
+    const dist=Math.hypot(dx,dz);
+    d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
+    if(dist<9&&Math.abs(player.pos.y-m.position.y)<4&&playerInWater()){
+      d.angle=Math.atan2(dx,dz);
+      if(dist<1.8&&d.attackCooldown<=0){
+        d.attackCooldown=1.7;
+        damagePlayer(NEW_MOB_STATS.shark.damage,'サメの噛みつき',m.position);
+      }
+    }
+  }
+  m.rotation.y=d.angle+Math.PI;
+  newMobModels.animate(m,now*.001,true);
+}
+function updateNewLandMob(m,dt,now){
+  const d=m.userData,info=NEW_MOB_STATS[d.type];
+  if(!info)return false;
+  const dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
+  const dist=Math.hypot(dx,dz),diffY=Math.abs(player.pos.y-m.position.y);
+  d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
+  // Wolves and bears notice nearby players; boars and elephants fight back
+  // only when provoked; crocodiles hunt near water and swamp banks.
+  if((d.type==='wolf'&&dist<7&&diffY<2.5)||
+     (d.type==='bear'&&dist<5&&diffY<2.6)||
+     (d.type==='crocodile'&&dist<6&&diffY<2.6&&playerInWater()))
+    d.hostile=true;
+  if(!d.hostile||dist>23||diffY>4)return false;
+  d.angle=Math.atan2(dx,dz);
+  m.rotation.y=d.angle+Math.PI;
+  const reach=d.type==='elephant'?2.5:d.type==='bear'?2.0:d.type==='crocodile'?2.25:1.48;
+  let moved=false;
+  if(dist>reach*.77){
+    const chaseSpeed=d.type==='elephant'?2.4:d.type==='bear'?2.3:d.type==='crocodile'?1.6:d.type==='boar'?3.2:3.1;
+    const step=chaseSpeed*dt;
+    moved=mobWalkStep(m,d.angle,step);
+    if(!moved)moved=mobWalkStep(m,d.angle+.70,step*.8);
+  }
+  if(dist<=reach&&diffY<2.3&&d.attackCooldown<=0){
+    d.attackCooldown=d.type==='elephant'?2.4:1.4;
+    damagePlayer(info.damage||2,info.name+'の攻撃',m.position);
+  }
+  newMobModels.animate(m,now*.001,moved);
+  return true;
+}
+
 let passiveSpawnCooldown=20;
 const MOB_SPAWN_WEIGHTS=[
   {type:0,weight:24},      // sheep: common
@@ -3366,7 +3490,11 @@ const MOB_SPAWN_WEIGHTS=[
   {type:'horse',weight:18},// horse: a little rarer than normal farm animals
   {type:'bison',weight:5}, // bison: rare, dangerous if provoked
   {type:'lion',weight:5},  // lion: rare, attacks within six blocks
-  {type:'anaconda',weight:5} // giant anaconda: the same rare tier
+  {type:'anaconda',weight:5}, // original giant anaconda
+  {type:'deer',weight:15},{type:'wolf',weight:9},
+  {type:'bear',weight:5},{type:'boar',weight:12},
+  {type:'crocodile',weight:7},{type:'eagle',weight:11},
+  {type:'shark',weight:12},{type:'elephant',weight:4}
 ];
 function chooseWildMob(){
   // Normalize against the actual total: adding a fifth-weight snake must
@@ -3384,14 +3512,15 @@ function chooseWildMob(){
 const MAX_WILD_ANIMALS=18;
 const WILD_COMMON_LIFETIME_MS=3*60*1000,WILD_RARE_LIFETIME_MS=8*60*1000;
 function spawnPassiveMob(anchor=player.pos){
-  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='chimera'&&!m.userData.saddled).length;
+  const wildCount=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='spider'&&m.userData.type!=='chimera'&&!m.userData.saddled).length;
   if(wildCount>=(multiRole==='host'?30:MAX_WILD_ANIMALS))return false;
 
   // Choose the species ONCE before checking locations. A bison failing its
   // first flat-ground test still gets a chance to spawn as a bison.
   const type=chooseWildMob();
-  const large=type==='bison'||type==='lion'||type==='anaconda';
-  const tries=type==='anaconda'?30:large?18:8;
+  const large=type==='bison'||type==='lion'||type==='anaconda'||type==='elephant'||type==='bear'||type==='crocodile';
+  const special=type==='eagle'||type==='shark';
+  const tries=special?90:type==='anaconda'?30:NEW_WILD_TYPES.has(type)?45:large?18:8;
   const phase=Math.random()*Math.PI*2;
   let g=null;
   for(let attempt=0;attempt<tries;attempt++){
@@ -3400,41 +3529,53 @@ function spawnPassiveMob(anchor=player.pos){
     const x=Math.floor(anchor.x+Math.cos(angle)*dist);
     const z=Math.floor(anchor.z+Math.sin(angle)*dist);
     const h=surfaceAt(x,z),bio=biomeAt(x,z);
-    if(h<=SEA||bio===2||bio===6||bio===7)continue;
-    if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<(large?6:5)))continue;
+    if(NEW_WILD_TYPES.has(type)){
+      if(!newMobBiomeOK(type,bio,h,x,z))continue;
+      if(type==='shark'){
+        if(get(x,SEA-1,z)!==B.WATER||get(x,SEA-2,z)!==B.WATER)continue;
+      }else if(h<=SEA||bio===2||bio===6||(bio===7&&type!=='crocodile'))continue;
+    }else if(h<=SEA||bio===2||bio===6||bio===7)continue;
+    if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<(large?7:5)))continue;
 
-    // Only allocate the geometry when we first find a plausible location.
-    if(!g)g=type===0?buildSheep():type===1?buildPig():type===2?buildCow():
+    // Only allocate geometry after a plausible terrain/biome match.
+    const initialY=type==='eagle'?Math.min(WORLD_TOP-3,h+6):
+      type==='shark'?SEA-1.5:h+.04;
+    if(!g)g=NEW_WILD_TYPES.has(type)?createNewMob(type,x,initialY,z):
+      type===0?buildSheep():type===1?buildPig():type===2?buildCow():
       type==='horse'?buildHorse():type==='bison'?buildBison():
       type==='lion'?buildLion():buildAnaconda();
-    g.position.set(x,h+.04,z);
+    g.position.set(x,initialY,z);
     const heading=hash2(x,z)*Math.PI*2;
     g.userData.type=type;g.userData.angle=heading;
-    if(!mobSpaceFree(g,x,g.position.y,z,heading))continue;
+    if(type!=='shark'&&!mobSpaceFree(g,x,g.position.y,z,heading))continue;
+    if(type==='eagle'&&solid(get(x,Math.round(initialY+1),z)))continue;
 
     // Turn the model to match the tested collision footprint immediately.
     g.rotation.y=heading+Math.PI;
-    g.userData={
-      ...g.userData,
-      angle:heading,
-      t:2+hash2(z,x)*3,
-      speed:type==='horse'?.70:type==='bison'?.28:type==='lion'?.38:type==='anaconda'?.31:.22+hash2(x+4,z+2)*.24,
-      hp:type==='horse'?10:large?100:type===2?5:3,
-      xp:type==='horse'?24:type==='bison'?85:type==='lion'||type==='anaconda'?90:type===2?18:type===1?14:12,
-      name:type===0?'ヒツジ':type===1?'ブタ':type===2?'ウシ':
-        type==='horse'?'馬':type==='bison'?'バイソン':type==='lion'?'ライオン':'オオアナコンダ',
-      type,
-      spawnedAt:performance.now(),
-      hostile:false,attackCooldown:0,chaseTime:0,phase:Math.random()*Math.PI*2
-    };
-    setupMobStepAnimation(g);
+    if(!NEW_WILD_TYPES.has(type)){
+      g.userData={
+        ...g.userData,
+        angle:heading,
+        t:2+hash2(z,x)*3,
+        speed:type==='horse'?.70:type==='bison'?.28:type==='lion'?.38:type==='anaconda'?.31:.22+hash2(x+4,z+2)*.24,
+        hp:type==='horse'?10:large?100:type===2?5:3,
+        xp:type==='horse'?24:type==='bison'?85:type==='lion'||type==='anaconda'?90:type===2?18:type===1?14:12,
+        name:type===0?'ヒツジ':type===1?'ブタ':type===2?'ウシ':
+          type==='horse'?'馬':type==='bison'?'バイソン':type==='lion'?'ライオン':'オオアナコンダ',
+        type,
+        spawnedAt:performance.now(),
+        hostile:false,attackCooldown:0,chaseTime:0,phase:Math.random()*Math.PI*2
+      };
+      setupMobStepAnimation(g);
+    }else{
+      // Actual names, HP and behavior are registered by createNewMob.
+      g.userData.angle=heading;g.userData.t=2+hash2(z,x)*3;
+    }
     scene.add(g);mobs.push(g);
     return true;
   }
   // All sampled locations were unsuitable, not an invalid animal species.
-  if(g)g.traverse(o=>{
-    if(o.isMesh){o.geometry?.dispose();if(o.userData.mobOwnMaterial)o.material?.dispose()}
-  });
+  if(g)disposeUnusedNewMob(g);
   return false;
 }
 function multiSpawnAnchors(){
@@ -3461,9 +3602,10 @@ function updatePassiveSpawning(dt){
   const now=performance.now();
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i],ud=m.userData;
-    if(ud.saddled||ud.type==='zombie'||ud.type==='skeleton'||ud.type==='chimera')continue;
+    if(ud.saddled||ud.type==='zombie'||ud.type==='skeleton'||ud.type==='spider'||ud.type==='chimera')continue;
     const distance=Math.min(...anchors.map(p=>Math.hypot(m.position.x-p.x,m.position.z-p.z)));
-    const rare=ud.type==='bison'||ud.type==='lion'||ud.type==='anaconda';
+    const rare=ud.type==='bison'||ud.type==='lion'||ud.type==='anaconda'||
+      NEW_WILD_TYPES.has(ud.type);
     const age=now-(ud.spawnedAt??now);
     if(distance>180||(distance>25&&age>(rare?WILD_RARE_LIFETIME_MS:WILD_COMMON_LIFETIME_MS))){
       removeZombie(m); // Shared safe scene/memory cleanup, not just for zombies.
@@ -3471,7 +3613,7 @@ function updatePassiveSpawning(dt){
   }
 
   for(const anchor of anchors){
-    const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='chimera'&&
+    const nearby=mobs.filter(m=>m.userData.type!=='zombie'&&m.userData.type!=='skeleton'&&m.userData.type!=='spider'&&m.userData.type!=='chimera'&&
       !m.userData.saddled&&Math.hypot(m.position.x-anchor.x,m.position.z-anchor.z)<55).length;
     const attempts=nearby<4?3:nearby<10?2:nearby<15?1:0;
     for(let i=0;i<attempts;i++)spawnPassiveMob(anchor);
