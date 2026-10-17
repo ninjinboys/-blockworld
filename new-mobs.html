@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#172a2b">
-<title>NEXACRAFT | 新モブ 3D 図鑑</title>
+<title>NEXACRAFT | 新モブ・ボス 3D 図鑑</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;background:#102023;color:#f3f6f2}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100dvh;background:radial-gradient(ellipse at 50% 0%,#365c53 0%,#172a2c 54%,#10191f 100%)}
@@ -25,7 +25,7 @@ aside{background:#132423dd;border:1px solid #668475;border-radius:11px;padding:1
 aside h2{font-size:16px;margin:2px 0 10px;color:#e4f3e4}
 #mobList{display:grid;grid-template-columns:1fr;gap:7px}
 #mobList button{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid #567566;border-radius:8px;background:#243a32;color:#f6f4e9;padding:10px;font-size:13px;cursor:pointer;min-height:48px}
-#mobList button strong{display:block;font-size:14px}#mobList button small{font-size:10px;color:#a9cbb7;display:block;margin-top:1px}#mobList button.active{border:2px solid #d5f8bc;background:#3a6547}#mobList .num{font:800 12px monospace;background:#10251d;border-radius:5px;padding:5px 7px;color:#bde2c5}
+#mobList button strong{display:block;font-size:14px}#mobList button small{font-size:10px;color:#a9cbb7;display:block;margin-top:1px}#mobList button.active{border:2px solid #d5f8bc;background:#3a6547}#mobList button.boss{border-color:#bda3ff;background:#392d4b}#mobList button.boss.active{background:#654b85;border-color:#e9caff}#mobList button.pending{opacity:.75;border-style:dashed}#mobList .badge{font:800 10px system-ui,sans-serif;padding:3px 5px;border-radius:4px;background:#5e4677;color:#f5e7ff;margin-left:auto}#mobList .badge.pending{background:#46595a;color:#d1e4dd}#mobList .num{font:800 12px monospace;background:#10251d;border-radius:5px;padding:5px 7px;color:#bde2c5}
 #status{font-size:11px;color:#bed6ca;line-height:1.6;margin:12px 1px 2px}
 #message{padding:15px;text-align:center;color:#d4e6db}
 @media(max-width:780px){
@@ -42,7 +42,7 @@ aside{padding:9px}#mobList button{padding:7px;gap:6px;min-height:42px}
 </style>
 </head>
 <body>
-<header><a href="./">← ゲームへ戻る</a><div><h1>NEXACRAFT <span style="color:#b9e2b4">NEW MOBS</span></h1><small>新モブ10体 · 3Dモデル試作ギャラリー</small></div></header>
+<header><a href="./">← ゲームへ戻る</a><div><h1>NEXACRAFT <span style="color:#b9e2b4">NEW MOBS</span></h1><small>新モブ・ボス · 3D図鑑</small></div></header>
 <main>
 <section>
  <div id="stage" aria-label="選択したモブの3Dモデルを回転させて見る">
@@ -51,12 +51,12 @@ aside{padding:9px}#mobList button{padding:7px;gap:6px;min-height:42px}
  </div>
  <p id="helper">👆 画面を指で左右に動かすと回転 / 上下で角度変更。ピンチ操作で拡大・縮小できます。</p>
 </section>
-<aside><h2>🐾 モブ一覧</h2><div id="mobList"></div>
-<p id="status">シカ・オオカミ・ヒグマ・イノシシ・巨大クモ・ワシ・ワニ・サメ・ゾウの9体がワールドに登場します。クモは夜のみ出現、ワシは空を飛ぶ中立モブ。ストーンゴーレムは村の実装後に登場予定です。</p></aside>
+<aside><h2>🐾 モブ・ボス一覧</h2><div id="mobList"></div>
+<p id="status">新モブ9体と召喚ボス「キメラ」の3Dモデルを確認できます。巨大クモは夜限定、ワシは飛行する中立モブ。ストーンゴーレムは村の実装待ちです。新モブ・新ボスは今後もこの図鑑に追加します。</p></aside>
 </main>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {NEW_MOBS,createNewMobModels} from './new-mob-models.js?v=20261017mobRelease02';
+import {CREATURE_CATALOG,createCreatureCatalogue} from './creature-catalog.js?v=20261017bossGallery01';
 const $=id=>document.getElementById(id);
 const descriptions={
  deer:'枝分かれした大きな角・長い脚・白い腹',
@@ -68,7 +68,8 @@ const descriptions={
  crocodile:'長い口・背中の鱗板・しなる尾',
  shark:'背びれ・胸びれ・左右に動く尾びれ',
  elephant:'大きな耳・長く動く鼻・左右の牙',
- golem:'ゴツゴツした岩の体・苔・光る胸の核'
+ golem:'ゴツゴツした岩の体・苔・光る胸の核',
+ chimera:'ライオンのたてがみ・巻き上がる角・巨大なアナコンダの尾'
 };
 const stage=$('stage');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x506a73);
@@ -92,16 +93,17 @@ const ground=new THREE.Mesh(new THREE.BoxGeometry(24,.3,24),groundMat);
 ground.position.y=-.25;ground.receiveShadow=true;podium.add(ground);
 const grid=new THREE.GridHelper(24,24,0xbad5b3,0x6a997a);
 grid.position.y=-.093;grid.material.transparent=true;grid.material.opacity=.23;podium.add(grid);
-const factory=createNewMobModels(THREE),cache=new Map();
+const factory=createCreatureCatalogue(THREE),cache=new Map();
 const display=new THREE.Group();scene.add(display);
 let current=0,camYaw=.72,camPitch=.33,distance=7,targetY=1.5,auto=true,lastTime=0;
 function choose(index){
- current=(index+NEW_MOBS.length)%NEW_MOBS.length;
- const entry=NEW_MOBS[current];
+ current=(index+CREATURE_CATALOG.length)%CREATURE_CATALOG.length;
+ const entry=CREATURE_CATALOG[current];
  display.clear();
  let cached=cache.get(entry.id);
  if(!cached){
   const model=factory.build(entry.id);
+  if(entry.boss)model.userData.galleryBossType=entry.id;
   const bounds=new THREE.Box3().setFromObject(model);
   const dims=new THREE.Vector3();bounds.getSize(dims);
   model.position.y=-bounds.min.y;
@@ -111,19 +113,27 @@ function choose(index){
  }
  display.add(cached.model);
  targetY=Math.max(.85,cached.height*.46);
- distance=Math.max(5.4,Math.min(12.5,3.6+Math.max(cached.height,cached.width)*1.13));
- $('name').textContent=entry.name;
- $('desc').textContent=entry.kind+' ／ '+entry.height+'\n'+descriptions[entry.id];
+ distance=Math.max(5.4,Math.min(26,(3.6+Math.max(cached.height,cached.width)*1.35)*
+   Math.max(1,1/Math.sqrt(Math.max(.5,camera.aspect)))));
+ $('name').textContent=(entry.boss?'⚔️ ':'')+entry.name;
+ $('desc').textContent=entry.kind+' ／ '+entry.height+' ／ '+entry.status+'\n'+
+  (entry.description||descriptions[entry.id]||'');
  for(const [i,b]of [...$('mobList').children].entries()){
   b.classList.toggle('active',i===current);
   b.setAttribute('aria-pressed',String(i===current));
  }
 }
-NEW_MOBS.forEach((m,i)=>{
+CREATURE_CATALOG.forEach((m,i)=>{
  const b=document.createElement('button');b.type='button';
+ if(m.boss)b.classList.add('boss');
+ if(m.status!=='実装済')b.classList.add('pending');
  const n=document.createElement('span');n.className='num';n.textContent=String(i+1).padStart(2,'0');
  const label=document.createElement('span'),strong=document.createElement('strong'),small=document.createElement('small');
  strong.textContent=m.name;small.textContent=m.kind;label.append(strong,small);b.append(n,label);
+ if(m.boss||m.status!=='実装済'){
+  const badge=document.createElement('span');badge.className='badge'+(m.boss?'':' pending');
+  badge.textContent=m.boss?'BOSS':'準備中';b.appendChild(badge);
+ }
  b.addEventListener('click',()=>choose(i));$('mobList').append(b);
 });
 $('prev').addEventListener('click',()=>choose(current-1));
@@ -170,7 +180,7 @@ function frame(now){
  const dt=Math.min(.07,Math.max(0,(now-lastTime)/1000));lastTime=now;
  if(auto)camYaw+=dt*.25;
  const t=now*.001;
- for(const [id,c]of cache)if(id===NEW_MOBS[current].id)factory.animate(c.model,t,true);
+ for(const [id,c]of cache)if(id===CREATURE_CATALOG[current].id)factory.animate(c.model,t,true);
  camera.position.set(Math.sin(camYaw)*Math.cos(camPitch)*distance,
   targetY+Math.sin(camPitch)*distance,
   Math.cos(camYaw)*Math.cos(camPitch)*distance);
