@@ -976,6 +976,7 @@ function resetWorldRuntime(){
   removeChimeraVisualTest();
   ridingHorse=null;
   resetSprint();
+  chatReset();
   playerHurtAt=-Infinity;playerHurtUntil=0;playerHurtSeq=0;
   playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
   damageScreenTint.style.opacity='0';
@@ -1094,6 +1095,7 @@ function showWorldSelection(){
   if(worldReady)saveCurrentGame(false);
   clearInterval(saveInterval);saveInterval=null;
   resetWorldRuntime();worldReady=false;currentWorldSlot=null;
+  chatReset();
   cover.style.display='none';accountBox.style.display='none';menuCover.style.display='none';worldCover.style.display='flex';
   document.exitPointerLock?.();renderWorldSelection();
 }
@@ -4569,7 +4571,7 @@ function doorSupportedBaseY(x,aimY,z){
   return null;
 }
 function place(){
-  if(chestOpen||craftOpen||inventoryOpen)return;
+  if(chatViewActive||chestOpen||craftOpen||inventoryOpen)return;
   if(started&&!dead&&!sleeping){
     firstPersonHand.swing(.6);
     triggerAvatarAction('use');
@@ -4999,7 +5001,7 @@ function updateEating(dt){
   // Health HUD reflects the restored hearts.
 }
 function primaryActionStart(){
-  if(!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
+  if(chatViewActive||!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
   if(ridingHorse){dismountHorse();return}
   firstPersonHand.swing();
   if(selected!==I.BOW)triggerAvatarAction('attack');
@@ -5147,6 +5149,15 @@ addEventListener('blur',()=>{
 });
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
+  if(chatViewActive){
+    if(k==='escape'){e.preventDefault();chatCloseView(true)}
+    return;
+  }
+  // Never interpret chat/login text as walking or game hotkeys.
+  if(e.target?.closest?.('input, textarea, [contenteditable="true"]'))return;
+  if((k==='t'||k==='enter')&&chatAvailable()&&!craftOpen&&!inventoryOpen&&!chestOpen&&!sleeping){
+    e.preventDefault();if(!e.repeat)chatOpenView();return;
+  }
   if(dead)return;
   if(chestOpen){if(k==='escape'){e.preventDefault();setChestOpen(false)}return}
   if((k==='v'||e.code==='F5')&&started){e.preventDefault();if(!e.repeat)cycleCameraMode();return}
@@ -5161,6 +5172,7 @@ addEventListener('keydown',e=>{
   if(k==='r'){weather=weather==='clear'?'rain':'clear';rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear'}
 });
 addEventListener('keyup',e=>{
+  if(chatViewActive||e.target?.closest?.('input, textarea, [contenteditable="true"]'))return;
   const k=e.key.toLowerCase();
   if(k==='g'){setShieldGuard(false);return}
   keys[k]=false;
@@ -5190,7 +5202,7 @@ function jump(){
 
 renderer.domElement.addEventListener('click',()=>{if(!dead&&!craftOpen&&!inventoryOpen&&!chestOpen&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.()});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){player.yaw-=e.movementX*.0022;player.pitch-=e.movementY*.0022;player.pitch=Math.max(-1.48,Math.min(1.48,player.pitch))}});
-renderer.domElement.addEventListener('mousedown',e=>{if(!started||dead||craftOpen||inventoryOpen||chestOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2){if(offhandItem?.id===I.SHIELD&&!e.shiftKey)setShieldGuard(true);else place()}});
+renderer.domElement.addEventListener('mousedown',e=>{if(chatViewActive||!started||dead||craftOpen||inventoryOpen||chestOpen)return;if(e.button===0&&document.pointerLockElement===renderer.domElement)primaryActionStart();if(e.button===2){if(offhandItem?.id===I.SHIELD&&!e.shiftKey)setShieldGuard(true);else place()}});
 addEventListener('mouseup',e=>{if(e.button===0)primaryActionStop(true);if(e.button===2)setShieldGuard(false)});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -5444,6 +5456,7 @@ function loop(now){
       (isNightTime()?'  🧟 '+countZombies()+' 🏹 '+countSkeletons():'');
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
+  chatSyncVisible();
   if(started&&multiRole)multiTick(now);
   if(!started||dead||sleeping)playerAvatar.visible=false;
   if(chimeraVisualModel&&animateChimeraVisual)
@@ -5469,6 +5482,126 @@ addEventListener('resize',resize);resize();
 const multiplayerNetwork=createBlockworldNetwork(multiEvent,()=>({
   roomCode:multiplayerNetwork.connected?multiplayerNetwork.code:''
 }));
+
+/* Compact, temporary multiplayer chat. No accounts beyond the room see it,
+ * no messages are included in local saves, and all text uses textContent. */
+const chatRoot=$('gameChat'),chatToggle=$('chatToggle'),chatPanel=$('chatPanel');
+const chatMessages=$('chatMessages'),chatInput=$('chatInput'),chatUnreadBadge=$('chatUnread');
+const chatHint=$('chatHint'),chatPeerLastSent=new Map();
+let chatUnreadCount=0,chatLocalLastSent=-Infinity,chatViewActive=false;
+function chatCleanText(value){
+  if(typeof value!=='string'||value.length>640)return '';
+  return Array.from(value.replace(/[\u0000-\u001f\u007f-\u009f]/g,' ').trim()).slice(0,160).join('');
+}
+function chatAvailable(){
+  return !!(started&&worldReady&&!dead&&multiRole&&multiplayerNetwork.connected);
+}
+function chatShowUnread(){
+  chatUnreadBadge.hidden=chatUnreadCount<=0;
+  chatUnreadBadge.textContent=chatUnreadCount>9?'9+':String(chatUnreadCount);
+  chatToggle.setAttribute('aria-label',chatUnreadCount?'チャットを開く、未読'+chatUnreadCount+'件':'チャットを開く');
+}
+function chatCloseView(refocusGame=false){
+  if(chatPanel.hidden)return;
+  chatViewActive=false;chatPanel.hidden=true;
+  chatToggle.setAttribute('aria-expanded','false');
+  chatInput.blur();
+  if(refocusGame&&started&&!dead&&!matchMedia('(pointer:coarse)').matches)
+    renderer.domElement.requestPointerLock?.();
+}
+function chatOpenView(){
+  if(!chatAvailable())return;
+  chatViewActive=true;chatPanel.hidden=false;
+  chatToggle.setAttribute('aria-expanded','true');
+  chatUnreadCount=0;chatShowUnread();
+  Object.keys(keys).forEach(k=>keys[k]=false);
+  resetSprint();primaryActionStop();setShieldGuard(false);
+  document.exitPointerLock?.();
+  chatHint.textContent='同じワールドのプレイヤーに届きます';
+  chatInput.focus({preventScroll:true});
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+function chatSyncVisible(){
+  const available=chatAvailable();
+  if(chatRoot.hidden===available)chatRoot.hidden=!available;
+  if(!available&&chatViewActive)chatCloseView();
+}
+function chatReset(){
+  chatCloseView();
+  chatUnreadCount=0;chatLocalLastSent=-Infinity;chatPeerLastSent.clear();
+  chatShowUnread();
+  chatMessages.replaceChildren();
+  const p=document.createElement('p');p.className='chat-empty';
+  p.textContent='メッセージはまだありません。';chatMessages.append(p);
+  chatRoot.hidden=true;
+  chatInput.value='';
+}
+function chatAppend(sender,message,id){
+  if(typeof sender!=='string'||typeof id!=='string'||!/^[A-Z2-9]{10}$/.test(id))return;
+  const clean=chatCleanText(message);
+  if(!clean||clean!==message)return;
+  const empty=chatMessages.querySelector('.chat-empty');
+  if(empty)empty.remove();
+  const nearBottom=chatMessages.scrollHeight-chatMessages.scrollTop-chatMessages.clientHeight<48;
+  const row=document.createElement('div');
+  row.className='chat-line'+(id===multiOwnId()?' own':'');
+  const stamp=document.createElement('span');stamp.className='chat-time';
+  stamp.textContent=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  const name=document.createElement('strong');name.className='chat-name';
+  name.textContent=sender.slice(0,20)+':';
+  const content=document.createElement('span');content.className='chat-text';
+  content.textContent=clean;
+  row.append(stamp,name,content);chatMessages.append(row);
+  while(chatMessages.children.length>55)chatMessages.firstElementChild?.remove();
+  if(chatViewActive&&nearBottom)chatMessages.scrollTop=chatMessages.scrollHeight;
+  if(!chatViewActive){
+    chatUnreadCount=Math.min(99,chatUnreadCount+1);chatShowUnread();
+  }
+}
+function chatSendMessage(event){
+  event.preventDefault();
+  if(!chatAvailable()){chatHint.textContent='マルチプレイ接続中のみ送信できます';return}
+  const text=chatCleanText(chatInput.value);
+  if(!text)return;
+  const now=performance.now();
+  if(now-chatLocalLastSent<850){chatHint.textContent='少し待ってから送信してください';return}
+  chatLocalLastSent=now;
+  chatHint.textContent='同じワールドのプレイヤーに届きます';
+  chatInput.value='';
+  if(multiRole==='host'){
+    const packet={t:'chat',id:multiOwnId(),name:currentAccount.name.slice(0,20),text};
+    chatAppend(packet.name,packet.text,packet.id);
+    multiplayerNetwork.send(packet);
+  }else multiplayerNetwork.send({t:'chat',text});
+  chatInput.focus({preventScroll:true});
+}
+function chatHostReceive(message,peerId,from){
+  const raw=message?.text;
+  const text=chatCleanText(raw);
+  if(!text||raw!==text)return;
+  const now=performance.now();
+  if(now-(chatPeerLastSent.get(peerId)||-Infinity)<850)return;
+  chatPeerLastSent.set(peerId,now);
+  // Host sets sender identity from the authenticated room connection.
+  const packet={t:'chat',id:from.id,name:from.name.slice(0,20),text};
+  chatAppend(packet.name,packet.text,packet.id);
+  multiplayerNetwork.send(packet);
+}
+function chatGuestReceive(message){
+  if(typeof message?.name!=='string'||message.name.length>20)return;
+  chatAppend(message.name,message.text,message.id);
+}
+chatToggle.addEventListener('click',()=>chatPanel.hidden?chatOpenView():chatCloseView(true));
+$('chatClose').addEventListener('click',()=>chatCloseView(true));
+$('chatForm').addEventListener('submit',chatSendMessage);
+// iOS Safari shrinks the visual viewport when the keyboard opens.
+function chatResizeForKeyboard(){
+  if(window.visualViewport){
+    chatPanel.style.maxHeight=Math.max(116,window.visualViewport.height-20)+'px';
+  }
+}
+window.visualViewport?.addEventListener('resize',chatResizeForKeyboard);
+chatResizeForKeyboard();
 const multiViews=['multiHome','multiSlots','multiJoin','multiFriends','multiLobby'];
 let multiViewId='multiHome',multiPresenceBusy=false,friendRefreshBusy=false;
 function multiWorldKey(slot){return MULTI_HOST+currentAccount.key+':'+slot}
@@ -6102,6 +6235,7 @@ function multiRoomData(message,peerId){
       multiPeople();return;
     }
     const from=multiGuestRecords.get(peerId);if(!from)return;
+    if(message.t==='chat'){chatHostReceive(message,peerId,from);return}
     if(message.t==='pose'&&message.player&&Number.isFinite(message.player.x)){
       from.player=message.player;multiShowAvatar(from.id,from.player);
       multiplayerNetwork.send({t:'pose',id:from.id,player:from.player});
@@ -6118,6 +6252,7 @@ function multiRoomData(message,peerId){
     }else if(message.t==='block'){multiApplyBlock(message);multiplayerNetwork.send(message)}
     else if(message.t==='dropAdd'||message.t==='dropRemove'){multiApplyDrop(message);multiplayerNetwork.send(message)}
   }else{
+    if(message.t==='chat')chatGuestReceive(message);
     if(message.t==='pose')multiShowAvatar(message.id,message.player);
     if(message.t==='block')multiApplyBlock(message);
     if(message.t==='arrowShot')showRemoteArrow(message);
@@ -6141,6 +6276,7 @@ function multiRoomData(message,peerId){
 function multiEvent(e){
   if(e.type==='roomData'){multiRoomData(e.message,e.peerId);return}
   if(e.type==='peerLeft'){
+    chatPeerLastSent.delete(e.peerId);
     const guest=multiGuestRecords.get(e.peerId);
     if(guest){
       multiGuestRecords.delete(e.peerId);
@@ -6200,6 +6336,7 @@ function multiLeave(silent=false){
   multiMigration=null;multiCheckpoint=null;multiRoster=[];
   multiplayerNetwork.leaveRoom({handoff});
   multiGuestRecords.clear();multiMembers={};chestReceipts.clear();multiClearAvatars();
+  chatReset();
   clearInterval(saveInterval);saveInterval=null;
   if(worldReady){resetWorldRuntime();worldReady=false;currentWorldSlot=null}
   cover.style.display='none';accountBox.style.display='none';
@@ -6318,6 +6455,7 @@ updateViewLabel();
 $('startBtn').addEventListener('click',()=>{
   if(!worldReady||!currentAccount)return;
   started=true;cover.style.display='none';last=performance.now();renderHealth();
+  chatSyncVisible();
   if(dead){showDeathScreen();return}
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
   void spawnChimeraVisualTest();
