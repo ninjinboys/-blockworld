@@ -192,19 +192,26 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       part(tool,.50,.075,.36,edge,0,.322,0);
       part(tool,.39,.093,.43,main,0,.331,0);
       part(tool,.24,.115,.18,shine,0,.382,0);
-      for(let j=0;j<5;j++){
-        const x=[.005,.024,.052,.098,.151][j];
-        const y=.47+j*.175;
-        const w=j===4?.22:.285;
-        // Overlapping stepped sections build a swept katana silhouette.
-        part(tool,w,.205,.175,main,x,y,0,-.045-j*.027);
-        part(tool,.060,.203,.183,shine,x-w*.32,y,-.001,-.045-j*.027);
-        part(tool,.051,.196,.181,edge,x+w*.33,y,.004,-.045-j*.027);
+      // Extend the BLADE, not the grip: six sweeping sections with a
+      // recognizable long katana tip. Previous tip was at Y=1.28.
+      const katanaBlade=[
+        [.005,.50,.295,-.040],
+        [.028,.71,.300,-.060],
+        [.060,.93,.292,-.085],
+        [.108,1.16,.270,-.115],
+        [.170,1.38,.238,-.155],
+        [.235,1.56,.180,-.230]
+      ];
+      for(const [x,y,w,tilt] of katanaBlade){
+        part(tool,w,.235,.175,main,x,y,0,tilt);
+        part(tool,.062,.231,.183,shine,x-w*.31,y,-.001,tilt);
+        part(tool,.050,.225,.181,edge,x+w*.33,y,.004,tilt);
       }
-      part(tool,.181,.152,.13,main,.198,1.282,0,-.22);
-      part(tool,.072,.16,.135,shine,.135,1.28,-.012,-.22);
+      part(tool,.145,.180,.120,main,.285,1.73,0,-.34);
+      part(tool,.060,.170,.125,shine,.225,1.72,-.010,-.34);
+      part(tool,.042,.145,.105,edge,.332,1.75,.008,-.34);
       tool.rotation.set(-.18,.26,-.60);
-      tool.scale.set(.88,.83,.88);
+      tool.scale.set(.90,.90,.90);
     }else if(pickIds.has(id)){
       handle(true);
       // Turn the pickaxe to face left/right: YAW +90deg. Keep Z tilt unchanged.
