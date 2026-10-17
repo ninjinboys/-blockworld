@@ -190,14 +190,22 @@ function toolIcon(g,id){
     ir(g,4,3,7,1,m.light);ir(g,3,4,9,1,m.main);ir(g,11,5,2,1,m.dark);
     pixelLine(g,8,6,4,13,outline,3);pixelLine(g,8,6,4,13,handle,2);pixelLine(g,8,6,5,11,handleHi,1);
   }else if(t==='sword'){
-    pixelLine(g,10,2,5,10,outline,3);pixelLine(g,10,2,5,10,m.main,2);pixelLine(g,9,3,6,8,m.light,1);
-    ir(g,3,9,6,2,outline);ir(g,4,9,4,1,m.dark);pixelLine(g,5,11,3,14,outline,3);pixelLine(g,5,11,3,14,handle,2);
+    // Curved single-edge katana: broad blade, bright cutting edge, wrapped
+    // handle and a compact tsuba instead of a straight rapier crossguard.
+    poly(g,[[4,11],[7,7],[9,4],[12,2],[14,1],[13,4],[11,6],[9,9],[6,12]],outline);
+    poly(g,[[6,10],[8,7],[10,4],[13,2],[12,5],[10,7],[8,10]],m.main);
+    pixelLine(g,12,3,7,10,m.light,1);
+    ir(g,3,10,6,2,m.dark);ir(g,4,10,4,1,m.light);
+    pixelLine(g,5,11,2,15,handle,3);
+    ir(g,3,12,2,1,m.light);ir(g,2,14,2,1,m.light);
   }else if(t==='dagger'){
-    // Short fang-blade and dark hand guard, visually shorter than swords.
-    pixelLine(g,12,2,6,9,'#261f2d',3);pixelLine(g,12,2,6,9,m.light,2);
-    pixelLine(g,11,3,7,8,'#f4e3b7',1);
-    ir(g,4,9,6,2,'#38283d');pixelLine(g,6,11,3,14,'#36262d',3);
-    ir(g,3,13,2,2,'#c39b77');
+    // The Chimera fang-blade is a short, broad wakizashi-style katana.
+    poly(g,[[5,10],[7,7],[10,4],[13,2],[12,5],[9,8],[7,11]],'#251d2b');
+    poly(g,[[6,9],[8,7],[11,4],[12,3],[11,6],[8,9]],m.light);
+    pixelLine(g,11,4,7,9,'#fff1cf',1);
+    ir(g,4,10,5,2,'#3c293d');ir(g,4,10,3,1,'#d1aa7d');
+    pixelLine(g,5,12,3,15,'#37252f',3);
+    ir(g,3,13,2,1,'#c9a572');
   }else if(t==='axe'){
     pixelLine(g,8,6,4,14,outline,3);pixelLine(g,8,6,4,14,handle,2);pixelLine(g,8,6,5,12,handleHi,1);
     poly(g,[[6,3],[11,2],[13,4],[11,8],[7,7]],outline);poly(g,[[7,4],[11,3],[12,4],[10,7],[7,6]],m.main);ir(g,8,4,3,1,m.light);
@@ -4269,12 +4277,25 @@ function applyArmorAppearance(model,armor){
       plate(model,.16,.085,.105,emblem,0,1.735,-.435);
       plate(model,.11,.055,.115,light,0,1.786,-.432);
       if(id===I.CHIMERA_HELMET){
-        // Forward-curving horn pair above the helmet, not just a recolor.
+        // Thick swept buffalo horns + distinct lion mane wrapping the head.
+        // Every part has depth; don't just repaint the old metal helmet.
         for(const side of [-1,1]){
-          plate(model,.15,.31,.15,edge,side*.33,2.02,-.025,0,0,-side*.22);
-          plate(model,.11,.27,.11,light,side*.39,2.23,-.12,-.27,0,-side*.40);
-          plate(model,.065,.17,.07,0xf1dfb8,side*.46,2.37,-.21,-.38,0,-side*.48);
+          plate(model,.31,.29,.33,0x544856,side*.34,1.99,.02,0,0,-side*.23);
+          plate(model,.27,.25,.29,0xab987f,side*.49,2.16,-.09,0,0,-side*.47);
+          plate(model,.20,.24,.22,0xe3d3b3,side*.57,2.31,-.19,-.10,0,-side*.52);
+          plate(model,.12,.19,.14,0xf2e7d1,side*.62,2.44,-.28,-.22,0,-side*.53);
+          for(let tuft=0;tuft<3;tuft++)
+            plate(model,.19,.30,.23,tuft%2?0x8a5c36:0xc68b49,
+              side*(.42+tuft*.025),1.48-tuft*.17,.15+tuft*.045,
+              0,0,side*(.15+tuft*.17));
         }
+        for(let tuft=0;tuft<5;tuft++){
+          const x=(tuft-2)*.17;
+          plate(model,.21,.23+(tuft%2)*.08,.21,
+            tuft%2?0xb77e41:0x8e5a32,x,1.48,-.41,0,0,x*.4);
+        }
+        plate(model,.31,.20,.14,0xcda36a,0,1.82,-.40);
+        plate(model,.15,.115,.085,0xf0dbb6,0,1.85,-.486);
       }
     }
     if(i===1){
@@ -4292,10 +4313,18 @@ function applyArmorAppearance(model,armor){
       plate(model,.24,.24,.14,edge,0,1.230,-.532,0,0,Math.PI/4);
       plate(model,.135,.135,.08,emblem,0,1.230,-.640,0,0,Math.PI/4);
       if(id===I.CHIMERA_CHEST){
-        // Twin fangs over a scaled beast-hide cuirass.
+        // Layered anaconda-scale breastplate, lion fur collar and trophy fangs.
+        for(let row=0;row<3;row++)for(let col=-1;col<=1;col++){
+          plate(model,.18,.16,.075,(row+col)%2?0x467665:0x274b43,
+            col*.207,1.29-row*.18,-.505+row*.016,0,0,col*.10);
+          plate(model,.095,.038,.036,0x8ab5a1,col*.207,1.33-row*.18,-.555);
+        }
         for(const side of [-1,1]){
-          plate(model,.12,.23,.11,0xe7d3a7,side*.23,1.05,-.52,0,0,side*.19);
-          plate(model,.06,.13,.08,0xf5e7c9,side*.24,.90,-.55,0,0,side*.22);
+          for(let tuft=0;tuft<3;tuft++)
+            plate(model,.17,.19,.21,tuft%2?0xba7c42:0xd29e5b,
+              side*(.26+tuft*.07),1.46-tuft*.14,-.28,0,0,side*(.10+tuft*.1));
+          plate(model,.16,.31,.17,0xc8b38f,side*.30,1.12,-.54,0,0,side*.17);
+          plate(model,.08,.17,.105,0xf6e9c9,side*.33,.91,-.60,0,0,side*.17);
         }
       }
       for(const side of [-1,1]){
@@ -4312,6 +4341,15 @@ function applyArmorAppearance(model,armor){
         plate(arm,.39,.24,.37,shade,side*.036,-.295,0);
         plate(arm,.36,.095,.40,edge,side*.025,-.436,0);
         plate(arm,.09,.14,.06,emblem,side*.086,-.282,-.217);
+        if(id===I.CHIMERA_CHEST){
+          // Each shoulder has a raised buffalo-horn crest and lion fur tufts.
+          plate(arm,.26,.22,.32,0x5a473c,side*.07,-.03,-.08);
+          plate(arm,.19,.25,.22,0xc7af8e,side*.11,.14,-.09,0,0,-side*.22);
+          plate(arm,.115,.20,.135,0xf1e2c5,side*.16,.34,-.12,0,0,-side*.35);
+          for(let row=0;row<2;row++)
+            plate(arm,.20,.15,.095,row?0x437160:0x284a42,
+              side*.06,-.24-row*.155,-.27);
+        }
       }
     }
     if(i===2){
@@ -4330,6 +4368,15 @@ function applyArmorAppearance(model,armor){
         plate(leg,.33,.14,.52,base,0,-.489,-.083);
         plate(leg,.17,.10,.06,emblem,0,-.476,-.375);
         plate(leg,.10,.28,.08,shade,side*.154,-.235,-.105);
+        if(id===I.CHIMERA_LEGS){
+          // Overlapping serpent scales with ridged bison bone along the sides.
+          for(let row=0;row<3;row++){
+            plate(leg,.26,.12,.12,row%2?0x3f6b5c:0x558475,
+              0,-.08-row*.145,-.333-row*.004);
+            plate(leg,.085,.18,.12,0xd1b48c,side*.17,-.17-row*.14,-.20);
+          }
+          plate(leg,.19,.13,.16,0x765566,0,-.49,-.32);
+        }
       }
     }
     if(i===3){
@@ -4347,6 +4394,17 @@ function applyArmorAppearance(model,armor){
         plate(leg,.435,.067,.61,edge,0,-.702,-.092);
         plate(leg,.28,.13,.15,shade,0,-.615,.22);
         plate(leg,.085,.095,.052,emblem,0,-.442,-.319);
+        if(id===I.CHIMERA_BOOTS){
+          // Clawed beast paws: three pronounced ivory talons per boot.
+          for(const claw of [-1,0,1]){
+            plate(leg,.13,.12,.29,0x684b55,claw*.145,-.65,-.425,0,0,-claw*.08);
+            plate(leg,.095,.10,.17,0xe9dbc3,claw*.145,-.66,-.593,-.23,0,-claw*.13);
+            plate(leg,.052,.06,.10,0xf8eddb,claw*.145,-.68,-.704,-.30,0,-claw*.13);
+          }
+          for(let row=0;row<2;row++)
+            plate(leg,.25,.11,.11,row?0x427160:0x31584b,
+              0,-.38+row*.14,-.322);
+        }
       }
     }
   }
