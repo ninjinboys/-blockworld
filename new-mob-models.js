@@ -1,6 +1,6 @@
-/* NEXACRAFT | New creature models v1: sculpt/preview only, not world spawns.
+/* NEXACRAFT | New creature models v2: shared by the game and 3D gallery.
  * All species face local -Z and use no downloaded textures.
- * Their rig groups can be animated by animateNewMob() in a future AI system.
+ * Nine animals are live; stone golem stays preview-only until villages exist.
  */
 export const NEW_MOBS=[
   {id:'deer',name:'シカ',kind:'草食・森',height:'約2.8ブロック'},
