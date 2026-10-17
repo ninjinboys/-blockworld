@@ -5304,7 +5304,15 @@ function dropMobLoot(root){
     spawnWorldDrop(I.CHIMERA_HORN,6,x,root.position.y+1.5,z+.35,{scatter:true,pickupDelay:.55});
     return;
   }
-  if(type==='zombie')return; // Zombies have no item drop.
+  if(type==='zombie'||type==='spider'||type==='eagle'||type==='shark')return;
+  if(type==='deer'||type==='wolf'||type==='bear'||type==='crocodile'||type==='elephant'){
+    spawnWorldDrop(I.LEATHER,type==='elephant'?3:1+Math.floor(Math.random()*2),
+      x,y,z,{scatter:true,pickupDelay:.55});return;
+  }
+  if(type==='boar'){
+    spawnWorldDrop(I.RAW_PORK,1+Math.floor(Math.random()*3),x,y,z,{scatter:true,pickupDelay:.55});
+    return;
+  }
   if(type==='skeleton'){
     spawnWorldDrop(I.ARROW,1+Math.floor(Math.random()*2),x,y,z,
       {scatter:true,pickupDelay:.55});
@@ -5544,7 +5552,8 @@ function damageMob(root,damage,via='melee',power=1){
   }
   root.userData.hp-=damage;
   setMobHitFlash(root);
-  if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'||root.userData.type==='chimera'){
+  if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'||root.userData.type==='chimera'||
+      ['wolf','bear','boar','crocodile','elephant','spider','shark'].includes(root.userData.type)){
     root.userData.hostile=true;
     root.userData.attackCooldown=Math.max(root.userData.attackCooldown||0,.45);
   }else if(root.userData.type!=='zombie'&&root.userData.type!=='skeleton')makeMobFlee(root);
@@ -5556,7 +5565,7 @@ function damageMob(root,damage,via='melee',power=1){
     }
     const earned=root.userData.xp||12,name=root.userData.name||'動物';
     dropMobLoot(root);
-    if(root.userData.type==='zombie'||root.userData.type==='skeleton'||root.userData.type==='chimera')removeZombie(root);
+    if(root.userData.type==='zombie'||root.userData.type==='skeleton'||root.userData.type==='chimera'||NEW_MOB_TYPES.has(root.userData.type))removeZombie(root);
     else {scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1)}
     gainXP(earned,name+'を倒した');
   }
@@ -6056,6 +6065,14 @@ function loop(now){
         updateSkeleton(m,dt,now);
         return;
       }
+      if(m.userData.type==='spider'){
+        updateSpider(m,dt,now);
+        return;
+      }
+      if(m.userData.type==='eagle'||m.userData.type==='shark'){
+        updateFlyingOrSwimmingMob(m,dt,now);
+        return;
+      }
       if(m.userData.saddled){
         animateWildMob(m,dt,now,m===ridingHorse&&!!m.userData.ridingMoved);
         return;
@@ -6064,6 +6081,9 @@ function loop(now){
         animateWildMob(m,dt,now,true);
         return;
       }
+      if(NEW_WILD_TYPES.has(m.userData.type)&&
+         NEW_MOB_STATS[m.userData.type]?.kind==='predator'&&
+         updateNewLandMob(m,dt,now))return;
       if(m.userData.fleeTime>0){
         m.userData.fleeTime-=dt;
         const dx=m.position.x-player.pos.x,dz=m.position.z-player.pos.z;
@@ -6094,7 +6114,7 @@ function loop(now){
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');
     clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm+
-      (isNightTime()?'  🧟 '+countZombies()+' 🏹 '+countSkeletons():'');
+      (isNightTime()?'  🧟 '+countZombies()+' 🏹 '+countSkeletons()+' 🕷 '+countSpiders():'');
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
   chatSyncVisible();
@@ -6569,7 +6589,7 @@ function multiClearAvatars(){
 // Share the same host-owned animals across all connected players. Snapshots
 // include removals, which prevents dead/despawned creatures from lingering.
 let multiLastMobSync=0,multiMobSeq=0,multiAppliedMobSeq=-1;
-const MULTI_MOB_TYPES=new Set([0,1,2,'horse','bison','lion','anaconda','zombie','skeleton','chimera']);
+const MULTI_MOB_TYPES=new Set([0,1,2,'horse','bison','lion','anaconda','zombie','skeleton','chimera',...NEW_MOB_TYPES]);
 function multiMobSnapshot(){
   return {t:'mobState',seq:++multiMobSeq,mobs:mobs.slice(0,110).map(m=>({
     id:ensureMobId(m),type:m.userData.type,
@@ -6591,6 +6611,7 @@ function multiCreateSharedMob(type){
   if(type==='zombie')return buildZombie();
   if(type==='skeleton')return buildSkeleton();
   if(type==='chimera')return buildChimera(THREE);
+  if(NEW_MOB_TYPES.has(type))return newMobModels.build(type);
   return null;
 }
 function multiApplyMobSnapshot(packet){
