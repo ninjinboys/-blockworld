@@ -39,27 +39,19 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       box(g,.49,.077,.34,dark,0,.315,0);
       box(g,.40,.092,.40,base,0,.326,0);
       box(g,.24,.10,.19,light,0,.378,0);
-      // Match the longer first-person katana in third-person and multiplayer.
-      const katanaBlade=[
-        [.005,.50,.295,-.040],
-        [.028,.71,.300,-.060],
-        [.060,.93,.292,-.085],
-        [.108,1.16,.270,-.115],
-        [.170,1.38,.238,-.155],
-        [.235,1.56,.180,-.230]
-      ];
-      for(const [x,y,w,tilt] of katanaBlade){
-        const segment=box(g,w,.235,.175,base,x,y,0);
-        segment.rotation.z=tilt;
-        const cutting=box(g,.067,.231,.179,light,x-w*.31,y,-.005);
-        cutting.rotation.z=tilt;
-        const spine=box(g,.046,.225,.177,dark,x+w*.33,y,.006);
-        spine.rotation.z=tilt;
+      for(let j=0;j<5;j++){
+        const x=[.005,.024,.052,.098,.151][j],y=.47+j*.175,w=j===4?.22:.285;
+        const segment=box(g,w,.205,.175,base,x,y,0);
+        segment.rotation.z=-.045-j*.027;
+        const cutting=box(g,.067,.205,.179,light,x-w*.31,y,-.005);
+        cutting.rotation.z=segment.rotation.z;
+        const spine=box(g,.046,.199,.177,dark,x+w*.33,y,.006);
+        spine.rotation.z=segment.rotation.z;
       }
-      const point=box(g,.145,.180,.120,base,.285,1.73,0);
-      point.rotation.z=-.34;
-      const tipEdge=box(g,.060,.170,.122,light,.225,1.72,-.008);
-      tipEdge.rotation.z=-.34;
+      const point=box(g,.174,.151,.12,base,.196,1.28,0);
+      point.rotation.z=-.22;
+      const tipEdge=box(g,.068,.155,.122,light,.133,1.28,-.008);
+      tipEdge.rotation.z=-.22;
     }else if(picks.has(id)){
       box(g,.63,.15,.15,base,0,.65,0);
       box(g,.55,.045,.09,light,0,.74,-.01);
