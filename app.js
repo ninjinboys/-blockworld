@@ -52,7 +52,8 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,BUFFALO_MEAT:154,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,BUFFALO_MEAT:154,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157,CHIMERA_HIDE:158,
+  CHIMERA_HELMET:159,CHIMERA_CHEST:160,CHIMERA_LEGS:161,CHIMERA_BOOTS:162
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -67,7 +68,8 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',154:'バッファローの肉',155:'オオアナコンダの革',156:'盾',157:'キメラの魂',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',154:'バッファローの肉',155:'オオアナコンダの革',156:'盾',157:'キメラの魂',158:'キメラの革',
+  159:'キメラのヘルメット',160:'キメラのチェストプレート',161:'キメラのレギンス',162:'キメラのブーツ',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
@@ -85,8 +87,9 @@ const inventory={
   [I.IRON_HELMET]:0,[I.IRON_CHEST]:0,[I.IRON_LEGS]:0,[I.IRON_BOOTS]:0,
   [I.GOLD_HELMET]:0,[I.GOLD_CHEST]:0,[I.GOLD_LEGS]:0,[I.GOLD_BOOTS]:0,
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
+  [I.CHIMERA_HELMET]:0,[I.CHIMERA_CHEST]:0,[I.CHIMERA_LEGS]:0,[I.CHIMERA_BOOTS]:0,
   [I.WOOD_AXE]:0,
-  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.BUFFALO_MEAT]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.BED]:0,
+  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.BUFFALO_MEAT]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.CHIMERA_HIDE]:0,[I.BED]:0,
   [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0
 };
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
@@ -106,8 +109,9 @@ const itemGlyphs={
   [I.IRON_HELMET]:'鉄頭',[I.IRON_CHEST]:'鉄胴',[I.IRON_LEGS]:'鉄脚',[I.IRON_BOOTS]:'鉄靴',
   [I.GOLD_HELMET]:'金頭',[I.GOLD_CHEST]:'金胴',[I.GOLD_LEGS]:'金脚',[I.GOLD_BOOTS]:'金靴',
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
+  [I.CHIMERA_HELMET]:'キ頭',[I.CHIMERA_CHEST]:'キ胴',[I.CHIMERA_LEGS]:'キ脚',[I.CHIMERA_BOOTS]:'キ靴',
   [I.WOOD_AXE]:'木斧',
-  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.BUFFALO_MEAT]:'肉',[I.ANACONDA_HIDE]:'蛇革',[I.CHIMERA_SOUL]:'魂',[I.BED]:'床',
+  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.BUFFALO_MEAT]:'肉',[I.ANACONDA_HIDE]:'蛇革',[I.CHIMERA_SOUL]:'魂',[I.CHIMERA_HIDE]:'キ革',[I.BED]:'床',
   [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
 };
 
@@ -116,7 +120,8 @@ const ICON_MAT={
   stone:{main:'#8b9096',light:'#b8bdc2',dark:'#555b60'},
   iron:{main:'#c8d0d7',light:'#f0f4f6',dark:'#7b858d'},
   gold:{main:'#e0b52e',light:'#ffe16a',dark:'#9d7613'},
-  diamond:{main:'#43d7df',light:'#9affff',dark:'#168891'}
+  diamond:{main:'#43d7df',light:'#9affff',dark:'#168891'},
+  chimera:{main:'#59415e',light:'#c99e6b',dark:'#251c2c'}
 };
 function itemCanvas(id,cls='item-icon'){
   const c=document.createElement('canvas');
@@ -189,13 +194,20 @@ function toolIcon(g,id){
 }
 function armorIcon(g,id){
   const iron=[I.IRON_HELMET,I.IRON_CHEST,I.IRON_LEGS,I.IRON_BOOTS],gold=[I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS];
-  const m=iron.includes(id)?ICON_MAT.iron:gold.includes(id)?ICON_MAT.gold:ICON_MAT.diamond;
-  const group=iron.includes(id)?iron:gold.includes(id)?gold:[I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS];
+  const chimera=[I.CHIMERA_HELMET,I.CHIMERA_CHEST,I.CHIMERA_LEGS,I.CHIMERA_BOOTS];
+  const m=chimera.includes(id)?ICON_MAT.chimera:iron.includes(id)?ICON_MAT.iron:gold.includes(id)?ICON_MAT.gold:ICON_MAT.diamond;
+  const group=chimera.includes(id)?chimera:iron.includes(id)?iron:gold.includes(id)?gold:[I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS];
   const idx=group.indexOf(id),o='#2b2b2b';
   if(idx===0){ir(g,4,3,8,2,o);ir(g,3,5,10,6,o);ir(g,4,4,8,2,m.light);ir(g,4,6,8,4,m.main);ir(g,5,9,2,2,m.dark);ir(g,9,9,2,2,m.dark)}
   if(idx===1){poly(g,[[5,2],[11,2],[14,5],[12,8],[11,14],[5,14],[4,8],[2,5]],o);poly(g,[[6,3],[10,3],[12,5],[10,7],[10,13],[6,13],[6,7],[4,5]],m.main);ir(g,6,3,4,1,m.light);ir(g,6,8,4,1,m.dark)}
   if(idx===2){ir(g,4,3,8,4,o);ir(g,4,6,4,8,o);ir(g,8,6,4,8,o);ir(g,5,4,6,2,m.light);ir(g,5,6,3,7,m.main);ir(g,9,6,2,7,m.main);ir(g,6,10,1,3,m.dark);ir(g,10,10,1,3,m.dark)}
   if(idx===3){ir(g,3,7,5,7,o);ir(g,9,7,4,7,o);ir(g,4,8,3,4,m.main);ir(g,10,8,2,4,m.main);ir(g,3,12,5,1,m.light);ir(g,9,12,4,1,m.light)}
+  if(chimera.includes(id)){
+    if(idx===0){ir(g,3,1,2,4,'#e4d6b5');ir(g,11,1,2,4,'#e4d6b5')}
+    if(idx===1){ir(g,5,8,2,3,'#e6ce98');ir(g,9,8,2,3,'#e6ce98')}
+    if(idx===2){ir(g,5,10,1,3,'#d2ad81');ir(g,10,10,1,3,'#d2ad81')}
+    if(idx===3){ir(g,3,13,4,1,'#e6ce98');ir(g,9,13,4,1,'#e6ce98')}
+  }
 }
 function rawChunkIcon(g,main,bright,dark){
   poly(g,[[3,6],[6,3],[11,4],[14,8],[11,13],[5,12],[2,9]],'#2d2d2d');
@@ -232,6 +244,12 @@ function mobDropIcon(g,id){
     ir(g,5,5,3,2,'#2c4226');ir(g,9,8,3,2,'#293e24');
     ir(g,5,10,4,2,'#b2a675');return;
   }
+  if(id===I.CHIMERA_HIDE){
+    // Thick layered beast hide: dark mane, scaled tail and golden edge.
+    poly(g,[[3,3],[6,2],[9,4],[12,3],[14,7],[12,10],[13,13],[9,14],[6,12],[2,13],[3,9],[1,7]],'#33283a');
+    poly(g,[[4,4],[7,3],[9,5],[11,4],[13,7],[10,10],[11,12],[7,11],[4,12],[4,9],[2,7]],'#715568');
+    ir(g,5,5,4,2,'#be926a');ir(g,6,9,5,2,'#4a6857');ir(g,10,5,2,2,'#d4b07f');return;
+  }
   if(id===I.WOOL){
     ir(g,4,4,8,8,'#f4f1e9');ir(g,3,6,2,5,'#ded9cf');ir(g,11,5,2,6,'#ffffff');
     ir(g,5,3,3,2,'#ffffff');ir(g,8,3,3,2,'#e7e2d8');ir(g,6,11,5,2,'#c9c4bb');return;
@@ -256,7 +274,7 @@ function drawItemIcon(g,id){
   g.clearRect(0,0,16,16);
   if(id===I.WOOL||id===I.RAW_PORK||id===I.RAW_BEEF||id===I.LEATHER||
     id===I.COOKED_PORK||id===I.COOKED_BEEF||id===I.LION_FANG||
-    id===I.BUFFALO_HORN||id===I.BUFFALO_MEAT||id===I.ANACONDA_HIDE)return mobDropIcon(g,id);
+    id===I.BUFFALO_HORN||id===I.BUFFALO_MEAT||id===I.ANACONDA_HIDE||id===I.CHIMERA_HIDE)return mobDropIcon(g,id);
   if(id===B.GRASS)return blockIcon(g,'#78b85c','#785032','#5f4028','grass');
   if(id===B.DIRT)return blockIcon(g,'#98643c','#7c4e31','#684029','plain');
   if(id===B.STONE)return blockIcon(g,'#a3a7aa','#888d91','#6f7478','stone');
@@ -342,7 +360,7 @@ function drawItemIcon(g,id){
   if(id===I.GOLD_INGOT)return ingotIcon(g,ICON_MAT.gold);
   if(id===I.DIAMOND)return gemIcon(g,ICON_MAT.diamond);
   if(toolType(id))return toolIcon(g,id);
-  if(id>=I.IRON_HELMET&&id<=I.DIAMOND_BOOTS)return armorIcon(g,id);
+  if(armorPartForId(id)>=0)return armorIcon(g,id);
   ir(g,3,3,10,10,'#777');ir(g,5,5,6,6,'#aaa');
 }
 const recipes=[
@@ -356,6 +374,10 @@ const recipes=[
 ];
 const workbenchRecipes=[
   {name:'キメラの魂',out:I.CHIMERA_SOUL,qty:1,needs:[[I.LION_FANG,1],[I.ANACONDA_HIDE,1],[I.BUFFALO_HORN,1]],unlockLevel:1},
+  {name:'キメラのヘルメット',out:I.CHIMERA_HELMET,qty:1,needs:[[I.CHIMERA_HIDE,3]],unlockLevel:1},
+  {name:'キメラのチェストプレート',out:I.CHIMERA_CHEST,qty:1,needs:[[I.CHIMERA_HIDE,3]],unlockLevel:1},
+  {name:'キメラのレギンス',out:I.CHIMERA_LEGS,qty:1,needs:[[I.CHIMERA_HIDE,3]],unlockLevel:1},
+  {name:'キメラのブーツ',out:I.CHIMERA_BOOTS,qty:1,needs:[[I.CHIMERA_HIDE,3]],unlockLevel:1},
   {name:'ベッド',out:I.BED,qty:1,needs:[[I.WOOL,3],[B.PLANK,3]],unlockLevel:6},
   {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
   {name:'チェスト',out:I.CHEST,qty:1,needs:[[B.PLANK,8]],unlockLevel:6},
@@ -4078,14 +4100,18 @@ const NON_STACKABLE=new Set([
   I.IRON_HELMET,I.IRON_CHEST,I.IRON_LEGS,I.IRON_BOOTS,
   I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS,
   I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS,
+  I.CHIMERA_HELMET,I.CHIMERA_CHEST,I.CHIMERA_LEGS,I.CHIMERA_BOOTS,
   I.BED,I.BOW,I.SADDLE,I.SHIELD
 ]);
 function maxStackFor(id){return NON_STACKABLE.has(id)?1:64}
 const ARMOR_NAMES=['頭','胸','脚','足'];
 function armorPartForId(id){
+  if(Number.isInteger(id)&&id>=I.CHIMERA_HELMET&&id<=I.CHIMERA_BOOTS)
+    return id-I.CHIMERA_HELMET;
   return Number.isInteger(id)&&id>=I.IRON_HELMET&&id<=I.DIAMOND_BOOTS?(id-I.IRON_HELMET)%4:-1;
 }
 function armorColor(id){
+  if(id>=I.CHIMERA_HELMET&&id<=I.CHIMERA_BOOTS)return 0x695273;
   if(id>=I.DIAMOND_HELMET)return 0x58d6e9;
   if(id>=I.GOLD_HELMET)return 0xebc149;
   return 0xabb6c1;
@@ -4094,7 +4120,7 @@ function armorReduction(){
   let protection=0;
   for(const id of equippedArmor){
     if(armorPartForId(id)<0)continue;
-    protection+=id>=I.DIAMOND_HELMET?.12:id>=I.GOLD_HELMET?.07:.09;
+    protection+=id>=I.CHIMERA_HELMET?.14:id>=I.DIAMOND_HELMET?.12:id>=I.GOLD_HELMET?.07:.09;
   }
   return Math.min(.55,protection);
 }
@@ -4182,12 +4208,14 @@ function applyArmorAppearance(model,armor){
   const colorSchemes={
     iron:{base:0xadb9c4,light:0xe4edf0,edge:0x566675,shade:0x8797a3,emblem:0x446c8c},
     gold:{base:0xe4af33,light:0xffe18a,edge:0x805321,shade:0xb17c24,emblem:0xb75d31},
-    diamond:{base:0x42ced9,light:0xb0ffed,edge:0x226c89,shade:0x279baf,emblem:0x3160bc}
+    diamond:{base:0x42ced9,light:0xb0ffed,edge:0x226c89,shade:0x279baf,emblem:0x3160bc},
+    chimera:{base:0x59465e,light:0xc99e70,edge:0x24202d,shade:0x8a6854,emblem:0x9960b0}
   };
   for(let i=0;i<4;i++){
     const id=Number(accepted[i]);
     if(armorPartForId(id)!==i)continue;
-    const p=id>=I.DIAMOND_HELMET?colorSchemes.diamond:
+    const p=id>=I.CHIMERA_HELMET?colorSchemes.chimera:
+      id>=I.DIAMOND_HELMET?colorSchemes.diamond:
       id>=I.GOLD_HELMET?colorSchemes.gold:colorSchemes.iron;
     const {base,light,edge,shade,emblem}=p;
     if(i===0){
@@ -4209,6 +4237,14 @@ function applyArmorAppearance(model,armor){
       }
       plate(model,.16,.085,.105,emblem,0,1.735,-.435);
       plate(model,.11,.055,.115,light,0,1.786,-.432);
+      if(id===I.CHIMERA_HELMET){
+        // Forward-curving horn pair above the helmet, not just a recolor.
+        for(const side of [-1,1]){
+          plate(model,.15,.31,.15,edge,side*.33,2.02,-.025,0,0,-side*.22);
+          plate(model,.11,.27,.11,light,side*.39,2.23,-.12,-.27,0,-side*.40);
+          plate(model,.065,.17,.07,0xf1dfb8,side*.46,2.37,-.21,-.38,0,-side*.48);
+        }
+      }
     }
     if(i===1){
       // Cuirass: thick chest / back shells and chunky shoulder pauldrons.
@@ -4224,6 +4260,13 @@ function applyArmorAppearance(model,armor){
       plate(model,.13,.33,.05,light,0,1.070,-.567);
       plate(model,.24,.24,.14,edge,0,1.230,-.532,0,0,Math.PI/4);
       plate(model,.135,.135,.08,emblem,0,1.230,-.640,0,0,Math.PI/4);
+      if(id===I.CHIMERA_CHEST){
+        // Twin fangs over a scaled beast-hide cuirass.
+        for(const side of [-1,1]){
+          plate(model,.12,.23,.11,0xe7d3a7,side*.23,1.05,-.52,0,0,side*.19);
+          plate(model,.06,.13,.08,0xf5e7c9,side*.24,.90,-.55,0,0,side*.22);
+        }
+      }
       for(const side of [-1,1]){
         plate(model,.14,.58,.39,base,side*.426,1.08,0);
         plate(model,.075,.50,.12,edge,side*.496,1.10,-.187);
@@ -4938,7 +4981,12 @@ function makeMobFlee(root){
 function dropMobLoot(root){
   const x=root.position.x,y=root.position.y+.75,z=root.position.z;
   const type=root.userData.type;
-  if(type==='zombie'||type==='chimera')return; // Provisional Chimera has no item drop.
+  if(type==='chimera'){
+    // Temporary boss loot quantity: exactly 20 hides per kill.
+    spawnWorldDrop(I.CHIMERA_HIDE,20,x,root.position.y+1.5,z,{scatter:true,pickupDelay:.55});
+    return;
+  }
+  if(type==='zombie')return; // Zombies have no item drop.
   if(type==='skeleton'){
     spawnWorldDrop(I.ARROW,1+Math.floor(Math.random()*2),x,y,z,
       {scatter:true,pickupDelay:.55});
