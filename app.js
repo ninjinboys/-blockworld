@@ -52,8 +52,9 @@ const I={
   DIAMOND_HELMET:134,DIAMOND_CHEST:135,DIAMOND_LEGS:136,DIAMOND_BOOTS:137,
   WOOD_AXE:138,
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
-  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,BUFFALO_MEAT:154,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157,CHIMERA_HIDE:158,
-  CHIMERA_HELMET:159,CHIMERA_CHEST:160,CHIMERA_LEGS:161,CHIMERA_BOOTS:162
+  COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157,CHIMERA_HIDE:158,
+  CHIMERA_HELMET:159,CHIMERA_CHEST:160,CHIMERA_LEGS:161,CHIMERA_BOOTS:162,
+  CHIMERA_FANG:163,CHIMERA_DAGGER:164,CHIMERA_HORN:165,CHIMERA_BOW:166
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
@@ -68,8 +69,9 @@ const names={
   134:'ダイヤのヘルメット',135:'ダイヤのチェストプレート',136:'ダイヤのレギンス',137:'ダイヤのブーツ',
   138:'木の斧',
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
-  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',154:'バッファローの肉',155:'オオアナコンダの革',156:'盾',157:'キメラの魂',158:'キメラの革',
-  159:'キメラのヘルメット',160:'キメラのチェストプレート',161:'キメラのレギンス',162:'キメラのブーツ',
+  144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',155:'オオアナコンダの革',156:'盾',157:'キメラの魂',158:'キメラの革',
+  159:'キメラのヘルメット',160:'キメラのチェストプレート',161:'キメラのレギンス',162:'キメラのブーツ',163:'キメラの牙',164:'キメラのダガー',
+  165:'キメラの角',166:'キメラの弓',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
@@ -89,9 +91,12 @@ const inventory={
   [I.DIAMOND_HELMET]:0,[I.DIAMOND_CHEST]:0,[I.DIAMOND_LEGS]:0,[I.DIAMOND_BOOTS]:0,
   [I.CHIMERA_HELMET]:0,[I.CHIMERA_CHEST]:0,[I.CHIMERA_LEGS]:0,[I.CHIMERA_BOOTS]:0,
   [I.WOOD_AXE]:0,
-  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.BUFFALO_MEAT]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.CHIMERA_HIDE]:0,[I.BED]:0,
+  [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.CHIMERA_HIDE]:0,
+  [I.CHIMERA_FANG]:0,[I.CHIMERA_DAGGER]:0,[I.CHIMERA_HORN]:0,[I.CHIMERA_BOW]:0,[I.BED]:0,
   [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0
 };
+// Legacy saves may contain buffalo meat (retired item 154). Convert it to beef.
+const migrateOldMeat=id=>Number(id)===154?I.RAW_BEEF:Number(id);
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
 const equippedArmor=[null,null,null,null]; // helmet / chest / legs / boots
@@ -111,7 +116,8 @@ const itemGlyphs={
   [I.DIAMOND_HELMET]:'ダ頭',[I.DIAMOND_CHEST]:'ダ胴',[I.DIAMOND_LEGS]:'ダ脚',[I.DIAMOND_BOOTS]:'ダ靴',
   [I.CHIMERA_HELMET]:'キ頭',[I.CHIMERA_CHEST]:'キ胴',[I.CHIMERA_LEGS]:'キ脚',[I.CHIMERA_BOOTS]:'キ靴',
   [I.WOOD_AXE]:'木斧',
-  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.BUFFALO_MEAT]:'肉',[I.ANACONDA_HIDE]:'蛇革',[I.CHIMERA_SOUL]:'魂',[I.CHIMERA_HIDE]:'キ革',[I.BED]:'床',
+  [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.ANACONDA_HIDE]:'蛇革',[I.CHIMERA_SOUL]:'魂',[I.CHIMERA_HIDE]:'キ革',[I.CHIMERA_FANG]:'キ牙',[I.CHIMERA_DAGGER]:'短剣',
+  [I.CHIMERA_HORN]:'キ角',[I.CHIMERA_BOW]:'キ弓',[I.BED]:'床',
   [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
 };
 
@@ -162,6 +168,7 @@ function blockIcon(g,top,front,side,kind='plain'){
   if(kind==='furnace'){ir(g,3,7,5,2,'#3d4144');ir(g,4,10,4,3,'#202224');ir(g,10,8,3,1,'#4d5154');ir(g,10,10,3,2,'#d0732d')}
 }
 function materialForTool(id){
+  if(id===I.CHIMERA_DAGGER)return ICON_MAT.chimera;
   if([I.WOOD_PICK,I.WOOD_AXE].includes(id))return ICON_MAT.wood;
   if([I.STONE_PICK,I.STONE_SWORD,I.STONE_AXE,I.STONE_SHOVEL].includes(id))return ICON_MAT.stone;
   if([I.IRON_PICK,I.IRON_SWORD,I.IRON_AXE,I.IRON_SHOVEL].includes(id))return ICON_MAT.iron;
@@ -170,6 +177,7 @@ function materialForTool(id){
 }
 function toolType(id){
   if([I.WOOD_PICK,I.STONE_PICK,I.IRON_PICK,I.GOLD_PICK,I.DIAMOND_PICK].includes(id))return 'pick';
+  if(id===I.CHIMERA_DAGGER)return 'dagger';
   if([I.STONE_SWORD,I.IRON_SWORD,I.GOLD_SWORD,I.DIAMOND_SWORD].includes(id))return 'sword';
   if([I.WOOD_AXE,I.STONE_AXE,I.IRON_AXE,I.GOLD_AXE,I.DIAMOND_AXE].includes(id))return 'axe';
   if([I.STONE_SHOVEL,I.IRON_SHOVEL,I.GOLD_SHOVEL,I.DIAMOND_SHOVEL].includes(id))return 'shovel';
@@ -184,6 +192,12 @@ function toolIcon(g,id){
   }else if(t==='sword'){
     pixelLine(g,10,2,5,10,outline,3);pixelLine(g,10,2,5,10,m.main,2);pixelLine(g,9,3,6,8,m.light,1);
     ir(g,3,9,6,2,outline);ir(g,4,9,4,1,m.dark);pixelLine(g,5,11,3,14,outline,3);pixelLine(g,5,11,3,14,handle,2);
+  }else if(t==='dagger'){
+    // Short fang-blade and dark hand guard, visually shorter than swords.
+    pixelLine(g,12,2,6,9,'#261f2d',3);pixelLine(g,12,2,6,9,m.light,2);
+    pixelLine(g,11,3,7,8,'#f4e3b7',1);
+    ir(g,4,9,6,2,'#38283d');pixelLine(g,6,11,3,14,'#36262d',3);
+    ir(g,3,13,2,2,'#c39b77');
   }else if(t==='axe'){
     pixelLine(g,8,6,4,14,outline,3);pixelLine(g,8,6,4,14,handle,2);pixelLine(g,8,6,5,12,handleHi,1);
     poly(g,[[6,3],[11,2],[13,4],[11,8],[7,7]],outline);poly(g,[[7,4],[11,3],[12,4],[10,7],[7,6]],m.main);ir(g,8,4,3,1,m.light);
@@ -235,9 +249,15 @@ function mobDropIcon(g,id){
     poly(g,[[2,4],[4,3],[7,8],[10,10],[13,7],[14,5],[14,10],[12,13],[8,13],[5,11]],'#c4b89a');
     ir(g,3,4,2,3,'#f1e7ce');ir(g,10,11,3,2,'#867962');return;
   }
-  if(id===I.BUFFALO_MEAT){
-    poly(g,[[3,5],[6,3],[11,4],[13,7],[11,12],[6,13],[3,10]],'#812c35');
-    ir(g,6,5,4,2,'#bd535a');ir(g,4,9,3,2,'#572029');return;
+  if(id===I.CHIMERA_FANG){
+    poly(g,[[4,1],[8,2],[11,5],[10,10],[7,15],[6,11],[5,7]],'#29232e');
+    poly(g,[[5,2],[8,3],[10,5],[9,9],[7,13],[7,8],[6,5]],'#f2e1bb');
+    ir(g,7,3,2,2,'#fff7e1');ir(g,6,11,2,2,'#ad8c81');return;
+  }
+  if(id===I.CHIMERA_HORN){
+    poly(g,[[2,13],[3,7],[5,3],[10,1],[8,4],[7,8],[11,13],[8,14],[5,12]],'#2d2833');
+    poly(g,[[3,11],[4,7],[6,4],[9,2],[7,6],[6,9],[9,12],[7,13]],'#777179');
+    ir(g,5,5,2,2,'#bcb1af');return;
   }
   if(id===I.ANACONDA_HIDE){
     poly(g,[[4,2],[7,3],[10,2],[13,5],[11,8],[13,12],[9,14],[6,12],[3,13],[2,9],[4,6]],'#5a7439');
@@ -274,7 +294,8 @@ function drawItemIcon(g,id){
   g.clearRect(0,0,16,16);
   if(id===I.WOOL||id===I.RAW_PORK||id===I.RAW_BEEF||id===I.LEATHER||
     id===I.COOKED_PORK||id===I.COOKED_BEEF||id===I.LION_FANG||
-    id===I.BUFFALO_HORN||id===I.BUFFALO_MEAT||id===I.ANACONDA_HIDE||id===I.CHIMERA_HIDE)return mobDropIcon(g,id);
+    id===I.BUFFALO_HORN||id===I.ANACONDA_HIDE||id===I.CHIMERA_HIDE||
+    id===I.CHIMERA_FANG||id===I.CHIMERA_HORN)return mobDropIcon(g,id);
   if(id===B.GRASS)return blockIcon(g,'#78b85c','#785032','#5f4028','grass');
   if(id===B.DIRT)return blockIcon(g,'#98643c','#7c4e31','#684029','plain');
   if(id===B.STONE)return blockIcon(g,'#a3a7aa','#888d91','#6f7478','stone');
@@ -342,6 +363,13 @@ function drawItemIcon(g,id){
     ir(g,2,8,2,3,'#d6b35f');ir(g,12,8,2,3,'#d6b35f');
     ir(g,6,8,4,1,'#e1ac70');return;
   }
+  if(id===I.CHIMERA_BOW){
+    // Heavy horn bow with pale horn tips and a gold string.
+    pixelLine(g,11,1,5,4,'#ddd0bb',3);pixelLine(g,5,4,4,11,'#4c3b4f',3);
+    pixelLine(g,4,11,10,15,'#a99a8c',3);pixelLine(g,11,2,11,14,'#e1b96a',1);
+    ir(g,3,7,3,3,'#3c273a');ir(g,10,2,2,2,'#f8e5cd');
+    ir(g,9,13,3,2,'#f8e5cd');return;
+  }
   if(id===I.BOW){
     // Dark curved wood with a taut pale string and grip.
     pixelLine(g,11,1,5,4,'#58331b',2);pixelLine(g,5,4,4,11,'#a5713c',2);
@@ -378,6 +406,8 @@ const workbenchRecipes=[
   {name:'キメラのチェストプレート',out:I.CHIMERA_CHEST,qty:1,needs:[[I.CHIMERA_HIDE,3]],unlockLevel:1},
   {name:'キメラのレギンス',out:I.CHIMERA_LEGS,qty:1,needs:[[I.CHIMERA_HIDE,3]],unlockLevel:1},
   {name:'キメラのブーツ',out:I.CHIMERA_BOOTS,qty:1,needs:[[I.CHIMERA_HIDE,3]],unlockLevel:1},
+  {name:'キメラのダガー',out:I.CHIMERA_DAGGER,qty:1,needs:[[I.CHIMERA_FANG,3]],unlockLevel:1},
+  {name:'キメラの弓',out:I.CHIMERA_BOW,qty:1,needs:[[I.CHIMERA_HORN,3]],unlockLevel:1},
   {name:'ベッド',out:I.BED,qty:1,needs:[[I.WOOL,3],[B.PLANK,3]],unlockLevel:6},
   {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
   {name:'チェスト',out:I.CHEST,qty:1,needs:[[B.PLANK,8]],unlockLevel:6},
@@ -443,7 +473,7 @@ let chestOpen=false,chestLocation=null,chestOneAtATime=false,chestPending=null,c
 const chestKey=(x,y,z)=>x+','+y+','+z;
 function normalizedChest(raw){
   return Array.from({length:CHEST_SIZE},(_,i)=>{
-    const st=Array.isArray(raw)?raw[i]:null,id=Number(st?.id),qty=Number(st?.qty);
+    const st=Array.isArray(raw)?raw[i]:null,id=migrateOldMeat(st?.id),qty=Number(st?.qty);
     return st&&Number.isInteger(id)&&Object.hasOwn(inventory,id)&&Number.isInteger(qty)&&qty>0?{id,qty:Math.min(qty,maxStackFor(id))}:null;
   });
 }
@@ -908,7 +938,7 @@ function applySaveData(data){
   if(Array.isArray(data.inventorySlots)&&data.inventorySlots.length){
     for(let i=0;i<Math.min(36,data.inventorySlots.length);i++){
       const v=data.inventorySlots[i];
-      if(v&&Number.isFinite(Number(v.id))&&Number(v.qty)>0)inventorySlots[i]={id:Number(v.id),qty:Math.max(1,Math.floor(Number(v.qty)))};
+      if(v&&Number.isFinite(Number(v.id))&&Number(v.qty)>0)inventorySlots[i]={id:migrateOldMeat(v.id),qty:Math.max(1,Math.floor(Number(v.qty)))};
     }
   }else{
     migrateLegacyInventoryToSlots(data);
@@ -3689,6 +3719,7 @@ function unburyWorldDrop(d){
   }
 }
 function spawnWorldDrop(id,qty,x,y,z,opts={}){
+  id=migrateOldMeat(id);
   qty=Math.max(1,Math.floor(qty||1));
   const sprite=makeDropSprite(id);
   const uid=typeof opts.uid==='string'&&opts.uid.length<80?opts.uid:crypto.randomUUID();
@@ -4101,7 +4132,7 @@ const NON_STACKABLE=new Set([
   I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS,
   I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS,
   I.CHIMERA_HELMET,I.CHIMERA_CHEST,I.CHIMERA_LEGS,I.CHIMERA_BOOTS,
-  I.BED,I.BOW,I.SADDLE,I.SHIELD
+  I.BED,I.BOW,I.SADDLE,I.SHIELD,I.CHIMERA_DAGGER,I.CHIMERA_BOW
 ]);
 function maxStackFor(id){return NON_STACKABLE.has(id)?1:64}
 const ARMOR_NAMES=['頭','胸','脚','足'];
@@ -4334,6 +4365,7 @@ function syncDerivedInventory(){
   for(let i=0;i<36;i++){
     const st=inventorySlots[i];
     if(st&&st.qty>0){
+      st.id=migrateOldMeat(st.id);
       inventory[st.id]=(inventory[st.id]||0)+st.qty;
       if(!acquiredOrder.includes(st.id))acquiredOrder.push(st.id);
     }else inventorySlots[i]=null;
@@ -4347,11 +4379,13 @@ function migrateLegacyInventoryToSlots(data){
   clearInventorySlots();
   const counts={};
   if(data?.inventory&&typeof data.inventory==='object'){
-    for(const [k,v] of Object.entries(data.inventory))if(Number(v)>0)counts[Number(k)]=Math.floor(Number(v));
+    for(const [k,v] of Object.entries(data.inventory))if(Number(v)>0){
+      const id=migrateOldMeat(k);counts[id]=(counts[id]||0)+Math.floor(Number(v));
+    }
   }
   if(Array.isArray(data?.hotbarSlots)){
     for(let i=0;i<Math.min(9,data.hotbarSlots.length);i++){
-      const id=Number(data.hotbarSlots[i]);
+      const id=migrateOldMeat(data.hotbarSlots[i]);
       if(!Number.isFinite(id)||!(counts[id]>0))continue;
       const qty=Math.min(maxStackFor(id),counts[id]);
       inventorySlots[i]={id,qty};counts[id]-=qty;
@@ -4982,8 +5016,10 @@ function dropMobLoot(root){
   const x=root.position.x,y=root.position.y+.75,z=root.position.z;
   const type=root.userData.type;
   if(type==='chimera'){
-    // Temporary boss loot quantity: exactly 20 hides per kill.
-    spawnWorldDrop(I.CHIMERA_HIDE,20,x,root.position.y+1.5,z,{scatter:true,pickupDelay:.55});
+    // Temporary fixed loot: 20 hide, 6 fangs and 6 horns per kill.
+    spawnWorldDrop(I.CHIMERA_HIDE,20,x-.25,root.position.y+1.5,z,{scatter:true,pickupDelay:.55});
+    spawnWorldDrop(I.CHIMERA_FANG,6,x+.3,root.position.y+1.5,z-.3,{scatter:true,pickupDelay:.55});
+    spawnWorldDrop(I.CHIMERA_HORN,6,x,root.position.y+1.5,z+.35,{scatter:true,pickupDelay:.55});
     return;
   }
   if(type==='zombie')return; // Zombies have no item drop.
@@ -4998,7 +5034,6 @@ function dropMobLoot(root){
   }
   if(type==='bison'){
     spawnWorldDrop(I.BUFFALO_HORN,1,x-.18,y,z,{scatter:true,pickupDelay:.55});
-    spawnWorldDrop(I.BUFFALO_MEAT,2+Math.floor(Math.random()*3),x+.18,y,z,{scatter:true,pickupDelay:.55});
     return;
   }
   if(type==='anaconda'){
@@ -5104,7 +5139,7 @@ function updateSkeletonArrows(dt){
     shot.model.quaternion.setFromUnitVectors(arrowForward,velocity.clone().normalize());
   }
 }
-function spawnFlyingArrow(origin,direction,power=1,visualOnly=false){
+function spawnFlyingArrow(origin,direction,power=1,visualOnly=false,bowId=I.BOW){
   const vec=new THREE.Vector3(direction.x,direction.y,direction.z);
   if(![origin.x,origin.y,origin.z,vec.x,vec.y,vec.z,power].every(Number.isFinite)||vec.lengthSq()<.5)return false;
   vec.normalize();if(flyingArrows.length>=36)removeFlyingArrow(0);
@@ -5112,7 +5147,7 @@ function spawnFlyingArrow(origin,direction,power=1,visualOnly=false){
   model.position.set(origin.x,origin.y,origin.z);
   model.quaternion.setFromUnitVectors(arrowForward,velocity.clone().normalize());
   scene.add(model);
-  flyingArrows.push({model,velocity,age:0,power,visualOnly});
+  flyingArrows.push({model,velocity,age:0,power,visualOnly,bowId});
   return true;
 }
 function updateFlyingArrows(dt){
@@ -5129,14 +5164,18 @@ function updateFlyingArrows(dt){
       position.add(step);
       if(position.y<Y_MIN||position.y>WORLD_TOP+2){stopped=true;break}
       if(solid(get(Math.round(position.x),Math.round(position.y),Math.round(position.z)))){stopped=true;break}
-      if(!shot.visualOnly&&arrowHitNearbyMob(position,shot.power)){stopped=true;break}
+      if(!shot.visualOnly&&arrowHitNearbyMob(position,shot.power,shot.bowId)){stopped=true;break}
     }
     if(stopped){removeFlyingArrow(i);continue}
     shot.model.position.copy(position);
     shot.model.quaternion.setFromUnitVectors(arrowForward,shot.velocity.clone().normalize());
   }
 }
-function arrowHitNearbyMob(point,power){
+function bowHitDamage(power,bow){
+  const charged=Math.max(.15,Math.min(1,Number.isFinite(power)?power:0));
+  return bow===I.CHIMERA_BOW?Math.round(2+5*charged):Math.max(1,Math.round(1+3*charged));
+}
+function arrowHitNearbyMob(point,power,bowId=I.BOW){
   for(const m of mobs){
     if(m.userData.hp<=0)continue;
     const [bottom,top]=mobVerticalBounds(m);
@@ -5146,7 +5185,7 @@ function arrowHitNearbyMob(point,power){
       if(high!=null&&point.y>m.position.y+high+.1)continue;
       const dx=point.x-x,dz=point.z-z;
       if(dx*dx+dz*dz>(r+.10)*(r+.10))continue;
-      damageMob(m,Math.max(1,Math.round(1+3*power)),'arrow',power);
+      damageMob(m,bowHitDamage(power,bowId),'arrow',power);
       return true;
     }
   }
@@ -5154,7 +5193,7 @@ function arrowHitNearbyMob(point,power){
 }
 function updateBowDraw(now){
   if(!bowDrawing)return;
-  if(!started||dead||selected!==I.BOW){endBowDraw(false);return}
+  if(!started||dead||(selected!==I.BOW&&selected!==I.CHIMERA_BOW)){endBowDraw(false);return}
   const pct=Math.min(100,(now-bowDrawStart)/BOW_DRAW_MS*100);
   breakLabel.textContent='弓 '+Math.floor(pct)+'%（離すと発射）';
   breakFill.style.width=pct+'%';
@@ -5171,7 +5210,7 @@ function endBowDraw(fire=false){
   const duration=performance.now()-bowDrawStart;
   bowDrawing=false;bowDrawStart=0;
   clearMining();
-  if(!fire||selected!==I.BOW||dead||!started||craftOpen||inventoryOpen||chestOpen)return;
+  if(!fire||(selected!==I.BOW&&selected!==I.CHIMERA_BOW)||dead||!started||craftOpen||inventoryOpen||chestOpen)return;
   const now=performance.now();
   if(now-bowLastShot<230)return;
   if((inventory[I.ARROW]||0)<1){flash('矢がありません');return}
@@ -5182,7 +5221,7 @@ function endBowDraw(fire=false){
   if(removeItem(I.ARROW,1)!==0){flash('矢がありません');return}
   bowLastShot=now;
   triggerAvatarAction('fire');
-  spawnFlyingArrow(origin,gameplayAimDirection,power);
+  spawnFlyingArrow(origin,gameplayAimDirection,power,false,selected);
   if(multiRole&&multiplayerNetwork.connected){
     multiplayerNetwork.send({t:'arrowShot',x:origin.x,y:origin.y,z:origin.z,
       dx:gameplayAimDirection.x,dy:gameplayAimDirection.y,dz:gameplayAimDirection.z,
@@ -5201,7 +5240,7 @@ function attackMob(){
   while(root.parent&&!mobs.includes(root))root=root.parent;
   if(!mobs.includes(root))return false;
   const now=performance.now();
-  if(now-lastPlayerMeleeAt<PLAYER_MELEE_COOLDOWN_MS)return true;
+  if(now-lastPlayerMeleeAt<(selected===I.CHIMERA_DAGGER?425:PLAYER_MELEE_COOLDOWN_MS))return true;
   lastPlayerMeleeAt=now;
 
   const damage=meleeMobDamage(selected);
@@ -5209,7 +5248,7 @@ function attackMob(){
   return true;
 }
 function meleeMobDamage(weapon){
-  return weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
+  return weapon===I.CHIMERA_DAGGER?5:weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
     weapon===I.GOLD_SWORD?2:weapon===I.STONE_SWORD?2:1;
 }
 function damageMob(root,damage,via='melee',power=1){
@@ -5297,8 +5336,8 @@ function primaryActionStart(){
   if(chatViewActive||!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
   if(ridingHorse){dismountHorse();return}
   firstPersonHand.swing();
-  if(selected!==I.BOW)triggerAvatarAction('attack');
-  if(selected===I.BOW){startBowDraw();return}
+  if(selected!==I.BOW&&selected!==I.CHIMERA_BOW)triggerAvatarAction('attack');
+  if(selected===I.BOW||selected===I.CHIMERA_BOW){startBowDraw();return}
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
 }
@@ -6333,7 +6372,7 @@ function multiProcessMobHit(message,from){
   from.lastMobHitAt=now;
   const power=Number(message.power);
   const damage=via==='arrow'
-    ?Math.max(1,Math.round(1+3*Math.max(.15,Math.min(1,Number.isFinite(power)?power:0))))
+    ?bowHitDamage(power,pose.held)
     :meleeMobDamage(pose.held);
   damageMob(m,damage);
   if(multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
