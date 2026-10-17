@@ -4,7 +4,7 @@
  * Future bosses get a catalog entry AND a 3D build/animate adapter below.
  * Do not expose placeholder models as implemented enemies.
  */
-import {NEW_MOBS,createNewMobModels} from './new-mob-models.js?v=20261017mobRelease02';
+import {NEW_MOBS,createNewMobModels} from './new-mob-models.js?v=20261017villageModel03';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createVillagerModels} from './villager-model.js?v=20261017villager01';
 
