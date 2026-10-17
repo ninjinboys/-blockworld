@@ -1066,7 +1066,7 @@ function resetWorldRuntime(){
     removeZombie(m);
   }
   chimeraSummonPending=null;
-  mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;nightZombieWaveStarted=false;
+  mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;spiderSpawnCooldown=10;nightZombieWaveStarted=false;
   multiLastMobSync=0;multiMobSeq=0;multiAppliedMobSeq=-1;
   clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
   $('chestScreen').classList.remove('open');
@@ -2637,7 +2637,8 @@ function animateAnaconda(m,dt,now,moving){
 // Face points along local -Z. Both arms are kept in front, even while moving.
 const ZOMBIE_LIMIT=7,ZOMBIE_AGGRO_RANGE=28,ZOMBIE_ATTACK_RANGE=1.35;
 const SKELETON_LIMIT=3,SKELETON_AGGRO_RANGE=24,SKELETON_SHOOT_RANGE=17;
-let zombieSpawnCooldown=1,skeletonSpawnCooldown=7,nightZombieWaveStarted=false;
+let zombieSpawnCooldown=1,skeletonSpawnCooldown=7,spiderSpawnCooldown=10,nightZombieWaveStarted=false;
+const SPIDER_LIMIT=3;
 function buildZombie(){
   const g=new THREE.Group();
   const skin=0x6fbf5f,skinLight=0x8bd275,skinDark=0x447c3c;
@@ -2956,6 +2957,27 @@ function spawnZombie(){
   }
   return false;
 }
+function countSpiders(){return mobs.filter(m=>m.userData.type==='spider').length}
+function spawnNightSpider(){
+  if(countSpiders()>=SPIDER_LIMIT)return false;
+  const phase=Math.random()*Math.PI*2;
+  for(let i=0;i<52;i++){
+    const angle=phase+i*2.399963229728653,dist=10+Math.random()*15;
+    const x=Math.round(player.pos.x+Math.cos(angle)*dist);
+    const z=Math.round(player.pos.z+Math.sin(angle)*dist);
+    if(!isZombieGround(x,z))continue;
+    const y=surfaceAt(x,z);
+    if(Math.abs(y+.51-player.pos.y)>5||torchProtectsSpawn(x,y+1,z))continue;
+    if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<3))continue;
+    const g=createNewMob('spider',x,y+.51,z);
+    if(!mobSpaceFree(g,x,y+.51,z,g.userData.angle)){
+      disposeUnusedNewMob(g);continue;
+    }
+    g.userData.spawnedAt=performance.now();
+    scene.add(g);mobs.push(g);return true;
+  }
+  return false;
+}
 function countSkeletons(){
   return mobs.reduce((sum,m)=>sum+(m.userData.type==='skeleton'?1:0),0);
 }
@@ -3043,17 +3065,18 @@ function updateZombieSpawning(dt){
   if(!isNightTime()){
     zombieSpawnCooldown=1;
     skeletonSpawnCooldown=7;
+    spiderSpawnCooldown=10;
     nightZombieWaveStarted=false;
     // Both undead enemies and their flying arrows disappear at dawn.
     for(let i=mobs.length-1;i>=0;i--)
-      if(mobs[i].userData.type==='zombie'||mobs[i].userData.type==='skeleton')
+      if(mobs[i].userData.type==='zombie'||mobs[i].userData.type==='skeleton'||mobs[i].userData.type==='spider')
         removeZombie(mobs[i]);
     if(skeletonArrows.length)clearSkeletonArrows();
     return;
   }
   for(let i=mobs.length-1;i>=0;i--){
     const m=mobs[i];
-    if((m.userData.type==='zombie'||m.userData.type==='skeleton')&&
+    if((m.userData.type==='zombie'||m.userData.type==='skeleton'||m.userData.type==='spider')&&
       Math.hypot(m.position.x-player.pos.x,m.position.z-player.pos.z)>75)
       removeZombie(m);
   }
@@ -3061,10 +3084,15 @@ function updateZombieSpawning(dt){
     nightZombieWaveStarted=true;
     zombieSpawnCooldown=4;
     // An opening wave makes the enemies easy to spot at the start of night.
-    spawnZombie();spawnZombie();spawnSkeleton();
-    skeletonSpawnCooldown=9;
+    spawnZombie();spawnZombie();spawnSkeleton();spawnNightSpider();
+    skeletonSpawnCooldown=9;spiderSpawnCooldown=11;
     if(dayTime>=DAY_END)flash('夜になった！ 敵に注意！');
     return;
+  }
+  spiderSpawnCooldown-=dt;
+  if(spiderSpawnCooldown<=0){
+    spiderSpawnCooldown=countSpiders()<SPIDER_LIMIT?9:14;
+    spawnNightSpider();
   }
   skeletonSpawnCooldown-=dt;
   if(skeletonSpawnCooldown<=0){
@@ -3080,6 +3108,29 @@ function updateZombieSpawning(dt){
 }
 function zombieStep(m,angle,step){
   return mobWalkStep(m,angle,step,true);
+}
+function updateSpider(m,dt,now){
+  const ud=m.userData,dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
+  const dist=Math.hypot(dx,dz),dy=Math.abs(player.pos.y-m.position.y);
+  ud.attackCooldown=Math.max(0,(ud.attackCooldown||0)-dt);
+  if(dist<21&&dy<3.0){
+    ud.angle=Math.atan2(dx,dz);
+    if(dist>1.12){
+      const step=ud.speed*dt;
+      if(!mobWalkStep(m,ud.angle,step,true))
+        if(!mobWalkStep(m,ud.angle+Math.PI/2,step*.7,true))
+          mobWalkStep(m,ud.angle-Math.PI/2,step*.7,true);
+    }
+    m.rotation.y=ud.angle+Math.PI;
+    if(dist<1.55&&dy<1.75&&ud.attackCooldown<=0){
+      ud.attackCooldown=1.45;
+      damagePlayer(NEW_MOB_STATS.spider.damage,'巨大クモの噛みつき',m.position);
+    }
+  }else{
+    ud.angle+=Math.sin(now*.0008+ud.phase)*dt*.15;
+    m.rotation.y=ud.angle+Math.PI;
+  }
+  newMobModels.animate(m,now*.001,true);
 }
 function updateZombie(m,dt,now){
   const dx=player.pos.x-m.position.x,dz=player.pos.z-m.position.z;
