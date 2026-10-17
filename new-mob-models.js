@@ -1,6 +1,6 @@
 /* NEXACRAFT | New creature models v2: shared by the game and 3D gallery.
  * All species face local -Z and use no downloaded textures.
- * Nine animals are live; stone golem stays preview-only until villages exist.
+ * All nine new animals are live; stone golems guard generated villages.
  */
 export const NEW_MOBS=[
   {id:'deer',name:'シカ',kind:'草食・森',height:'約2.8ブロック'},
@@ -12,7 +12,7 @@ export const NEW_MOBS=[
   {id:'crocodile',name:'ワニ',kind:'水辺・沼地',height:'全長約4.9ブロック'},
   {id:'shark',name:'サメ',kind:'海洋',height:'全長約4.3ブロック'},
   {id:'elephant',name:'ゾウ',kind:'草原',height:'約3.8ブロック'},
-  {id:'golem',name:'ストーンゴーレム',kind:'山岳・準ボス',height:'約3.5ブロック'}
+  {id:'golem',name:'ストーンゴーレム',kind:'村・守護者',height:'約3.5ブロック'}
 ];
 export function createNewMobModels(THREE){
   const materials=new Map();
