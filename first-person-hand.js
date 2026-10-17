@@ -179,17 +179,32 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       part(tool,.117,.12,.116,binding,0,-.11,0);
     };
     if(swordIds.has(id)){
+      // Stone / iron / gold / diamond swords are ALL single-edged katana.
+      // A real curved, BROAD blade replaces the old rapier-shaped spike.
+      const grip=itemMat(0x302b36),wrap=itemMat(0xd4c4a6);
       handle();
-      // Pointy, elongated blade. Color changes with stone/iron/gold/diamond.
-      part(tool,.39,.090,.145,edge,0,.201,0); // crossguard
-      part(tool,.30,.071,.16,main,0,.233,0);
-      part(tool,.178,.45,.130,main,0,.475,0);
-      part(tool,.047,.433,.142,shine,-.045,.47,-.001);
-      part(tool,.148,.205,.116,main,0,.768,0);
-      part(tool,.077,.129,.099,shine,0,.907,0);
-      part(tool,.085,.08,.108,edge,0,.980,0);
-      tool.rotation.set(-.18,.23,-.62);
-      tool.scale.set(.91,.88,.91);
+      part(tool,.145,.37,.145,grip,0,.07,0);
+      for(let j=0;j<5;j++){
+        const y=-.065+j*.079;
+        part(tool,.161,.032,.16,j%2?wrap:binding,0,y,0);
+      }
+      // Compact, flat Japanese guard (tsuba) and blade collar.
+      part(tool,.50,.075,.36,edge,0,.322,0);
+      part(tool,.39,.093,.43,main,0,.331,0);
+      part(tool,.24,.115,.18,shine,0,.382,0);
+      for(let j=0;j<5;j++){
+        const x=[.005,.024,.052,.098,.151][j];
+        const y=.47+j*.175;
+        const w=j===4?.22:.285;
+        // Overlapping stepped sections build a swept katana silhouette.
+        part(tool,w,.205,.175,main,x,y,0,-.045-j*.027);
+        part(tool,.060,.203,.183,shine,x-w*.32,y,-.001,-.045-j*.027);
+        part(tool,.051,.196,.181,edge,x+w*.33,y,.004,-.045-j*.027);
+      }
+      part(tool,.181,.152,.13,main,.198,1.282,0,-.22);
+      part(tool,.072,.16,.135,shine,.135,1.28,-.012,-.22);
+      tool.rotation.set(-.18,.26,-.60);
+      tool.scale.set(.88,.83,.88);
     }else if(pickIds.has(id)){
       handle(true);
       // Turn the pickaxe to face left/right: YAW +90deg. Keep Z tilt unchanged.
@@ -223,17 +238,24 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     return tool;
   }
   function craftChimeraDagger(){
+    // Fang-made short katana / wakizashi. Preserves the dagger's quick hit
+    // gameplay and item name while matching the whole katana weapon family.
     const dagger=new THREE.Group();
-    const grip=itemMat(0x372530),guard=itemMat(0xc39e78);
-    const blade=itemMat(0xd8c8a8),edge=itemMat(0xf2e6c6);
-    part(dagger,.12,.34,.12,grip,0,.06,0);
-    part(dagger,.05,.26,.02,itemMat(0x84556c),-.04,.07,-.075);
-    part(dagger,.37,.095,.17,guard,0,.30,0);
-    part(dagger,.20,.43,.15,blade,0,.56,0);
-    part(dagger,.062,.41,.08,edge,-.072,.56,-.06);
-    part(dagger,.12,.18,.12,edge,0,.865,0,-.12);
+    const grip=itemMat(0x392939),guard=itemMat(0xc39e78);
+    const blade=itemMat(0xb39c88),edge=itemMat(0xffeacf);
+    part(dagger,.15,.35,.15,grip,0,.07,0);
+    for(let i=0;i<4;i++)
+      part(dagger,.16,.035,.16,itemMat(i%2?0x785269:0xd5b68c),0,-.045+i*.087,0);
+    part(dagger,.44,.072,.35,guard,0,.32,0);
+    part(dagger,.31,.092,.34,itemMat(0x332b3d),0,.33,0);
+    for(let i=0;i<4;i++){
+      const x=[0,.025,.064,.116][i],y=.47+i*.165,w=i===3?.21:.28;
+      part(dagger,w,.204,.15,blade,x,y,0,-.05-i*.032);
+      part(dagger,.064,.204,.16,edge,x-w*.31,y,-.012,-.05-i*.032);
+    }
+    part(dagger,.16,.14,.12,edge,.163,1.113,0,-.22);
     dagger.rotation.set(-.18,.27,-.60);
-    dagger.scale.set(.96,.96,.96);
+    dagger.scale.set(.94,.87,.94);
     return dagger;
   }
   function craftChimeraBow(){
