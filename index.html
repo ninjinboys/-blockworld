@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#172f33">
 <title>NEXACRAFT</title>
 <link rel="preload" href="assets/nexacraft-title.webp?v=20261011titleHD1672" as="image" type="image/webp">
-<link rel="stylesheet" href="style.css?v=20261017topNotifications30">
+<link rel="stylesheet" href="style.css?v=20261017roomChat01">
 </head>
 <body>
 <!-- The glowing monument in the title art is Nexa Gate,
@@ -143,6 +143,20 @@
   <div class="pad"><button class="sprint" type="button" aria-label="前に走る">▲</button><button class="up" type="button" aria-label="前に歩く">▲</button><button class="left">◀</button><button class="down">▼</button><button class="right">▶</button></div>
   <button class="jump">ジャンプ</button><button id="tapGuard" type="button" hidden aria-label="盾を構えて攻撃を防ぐ。押している間ガードします">🛡 ガード</button>
   <div id="tapbar"><button id="tapMine" aria-label="攻撃。長押しで採掘。弓を持っている時は長押しで狙いを溜め、離して矢を放つ">攻撃</button><button id="tapPlace" aria-label="ブロック設置・ドア開閉・食事">設置・使用</button><button id="tapInventory">持ち物</button><button id="tapCraft">CRAFT</button></div>
+</div>
+<!-- Multiplayer room chat is opt-in and hidden in solo worlds. -->
+<div id="gameChat" hidden>
+  <button id="chatToggle" type="button" aria-controls="chatPanel" aria-expanded="false" aria-label="チャットを開く">💬 チャット <span id="chatUnread" hidden></span></button>
+  <section id="chatPanel" aria-label="マルチプレイチャット" hidden>
+    <div class="chat-heading"><strong>💬 ワールドチャット</strong><button id="chatClose" type="button" aria-label="チャットを閉じる">×</button></div>
+    <div id="chatMessages" role="log" aria-live="polite" aria-label="チャット履歴"><p class="chat-empty">メッセージはまだありません。</p></div>
+    <form id="chatForm" autocomplete="off">
+      <label class="sr-only" for="chatInput">メッセージ</label>
+      <input id="chatInput" type="text" placeholder="メッセージを入力…" maxlength="160" enterkeyhint="send" autocomplete="off">
+      <button id="chatSend" type="submit">送信</button>
+    </form>
+    <p id="chatHint">同じワールドのプレイヤーに届きます</p>
+  </section>
 </div>
 <div id="deathScreen" aria-hidden="true">
   <div class="death-panel">
@@ -293,7 +307,7 @@
   },true);
 })();
 </script>
-<script type="module" src="app.js?v=20261017skeletonArcher01"></script>
+<script type="module" src="app.js?v=20261017roomChat01"></script>
 <script type="module" src="device-account-transfer-ui.js?v=20261014deviceTransfer02"></script>
 </body>
 </html>
