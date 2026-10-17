@@ -4,6 +4,7 @@
  */
 export function makeAvatarHeldItems(THREE,drawItemIcon){
   const swords=new Set([111,115,119,123]);
+  const CHIMERA_DAGGER=164,CHIMERA_BOW=166;
   const picks=new Set([104,105,114,118,122]);
   const axes=new Set([112,116,120,124,138]);
   const shovels=new Set([113,117,121,125]);
@@ -49,6 +50,31 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       box(g,.25,.30,.045,light,0,.74,-.083);
       box(g,.17,.11,.12,dark,0,.52,0);
     }
+    return g;
+  }
+  function chimeraDagger(){
+    const g=group();
+    box(g,.12,.39,.15,0x34232e,0,.12,0);
+    box(g,.05,.28,.018,0x77536d,-.05,.12,-.086);
+    box(g,.35,.10,.18,0xc4a77d,0,.30,0);
+    box(g,.19,.43,.16,0xd8c7a5,0,.55,0);
+    box(g,.08,.37,.17,0xffeed0,-.058,.56,-.02);
+    const tip=box(g,.14,.19,.12,0xf4ddba,0,.86,0);
+    tip.rotation.z=-.15;
+    return g;
+  }
+  function chimeraBow(){
+    const g=group();
+    for(let i=0;i<=8;i++){
+      const t=i/8,y=(t-.5)*1.2;
+      const seg=box(g,.105,.17,.14,i%2?0x6f616e:0xb9a89a,
+        -.29*Math.sin(Math.PI*t),y,0);
+      seg.rotation.z=(t-.5)*.85;
+    }
+    box(g,.028,1.2,.023,0xe9cb82,.075,0,-.07);
+    box(g,.17,.20,.22,0x3d283b,-.30,0,0);
+    box(g,.095,.16,.115,0xf1dfb7,.045,.62,0);
+    box(g,.095,.16,.115,0xf1dfb7,.045,-.62,0);
     return g;
   }
   function bow(){
@@ -118,6 +144,8 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
   function build(id){
     if(id===156)return shield();
     if(id===147||id===31)return torch();
+    if(id===CHIMERA_DAGGER)return chimeraDagger();
+    if(id===CHIMERA_BOW)return chimeraBow();
     if(id===149)return bow();
     if(swords.has(id)||picks.has(id)||axes.has(id)||shovels.has(id))return tool(id);
     if(Object.hasOwn(blockColors,id)){
@@ -144,7 +172,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       });
     }
   }
-  function validId(id){return Number.isInteger(id)&&id>0&&id<=156?id:null}
+  function validId(id){return Number.isInteger(id)&&id>0&&id<=166?id:null}
   function sync(model,mainId,offhandId){
     if(!model?.userData?.limbs)return;
     let state=model.userData.heldItemsView;
@@ -175,9 +203,11 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
           item.rotation.y=-.20;
         }else if(main===147||main===31){
           item.scale.setScalar(1.25);
+        }else if(main===CHIMERA_DAGGER){
+          item.scale.setScalar(1.34);
         }else if(swords.has(main)||picks.has(main)||axes.has(main)||shovels.has(main)){
           item.scale.setScalar(1.35);
-        }else if(main===149){
+        }else if(main===149||main===CHIMERA_BOW){
           item.scale.setScalar(1.35);
         }else if(Object.hasOwn(blockColors,main)){
           item.scale.setScalar(1.65);
@@ -217,7 +247,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     const state=model.userData.heldItemsView;
     if(!state)return;
     const ease=t=>{const x=Math.max(0,Math.min(1,t));return x*x*(3-2*x)};
-    if(drawing&&state.mainId===149){
+    if(drawing&&(state.mainId===149||state.mainId===CHIMERA_BOW)){
       // Two-handed bow stance: both arms reach forward, one draws the string.
       rightArm.rotation.x=1.25;
       rightArm.rotation.y=-.16;
