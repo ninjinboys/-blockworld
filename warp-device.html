@@ -32,13 +32,13 @@ try{
 const scene=new T.Scene();scene.background=new T.Color(0x11252b);
 const camera=new T.PerspectiveCamera(43,1,.1,120);
 const renderer=new T.WebGLRenderer({antialias:false,alpha:false,powerPreference:'high-performance'});
-renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.6;
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));root.prepend(renderer.domElement);
-const hemi=new T.HemisphereLight(0xe6ffff,0x31403d,2.0);scene.add(hemi);
-const sun=new T.DirectionalLight(0xffe1aa,2.6);sun.position.set(-7,14,11);scene.add(sun);
+const hemi=new T.HemisphereLight(0xc3d7d9,0x14191b,1.25);scene.add(hemi);
+const sun=new T.DirectionalLight(0xc7d7dd,1.6);sun.position.set(-7,14,11);scene.add(sun);
 const rim=new T.DirectionalLight(0x21dfd2,1.6);rim.position.set(8,8,-9);scene.add(rim);
 const g=new T.Group();scene.add(g);
-const C={stone:0x777971,pale:0x999b91,cream:0xaaa99c,gray:0x606762,shadow:0x536764,moss:0x536d3c,leaf:0x6c934b,crack:0x5c5750,teal:0x19d6c7,glow:0x65fff2};
+const C={stone:0x171a1c,pale:0x24282b,cream:0x303336,gray:0x111518,shadow:0x090d10,moss:0x536d3c,leaf:0x6c934b,crack:0x070a0c,teal:0x19d6c7,glow:0x65fff2};
 const blocks=[],lights=[];
 let seed=2421;function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
 function b(x,y,z,w,h,d,color,rot=0){blocks.push({x,y,z,w,h,d,color,rot})}
