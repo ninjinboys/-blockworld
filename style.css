@@ -735,13 +735,14 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 .menu-kicker{font-size:12px;letter-spacing:.07em;color:#c9c9c9;margin-bottom:26px;overflow-wrap:anywhere}
 .menu-kicker strong{color:#eaffaa}
 .menu-actions{display:grid;gap:12px}
-.menu-actions button{
+.menu-actions :is(button,.new-mob-gallery-link){
+  display:flex;align-items:center;justify-content:center;text-decoration:none;
   width:100%;min-height:60px;border:3px solid #315c30;border-radius:8px;background:#57934a;
   color:white;font:900 clamp(16px,4vw,20px) ui-monospace,monospace;
   box-shadow:inset 3px 3px 0 #94c487,inset -3px -3px 0 #346d35,0 4px 0 rgba(0,0,0,.35);
   cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
 }
-.menu-actions button:active:not(:disabled){transform:translateY(2px);box-shadow:inset 3px 3px 0 #346d35,inset -3px -3px 0 #94c487}
+.menu-actions :is(button,.new-mob-gallery-link):active:not(:disabled){transform:translateY(2px);box-shadow:inset 3px 3px 0 #346d35,inset -3px -3px 0 #94c487}
 .menu-actions button:disabled{
   border-color:#555;background:#737373;color:#ddd;
   box-shadow:inset 3px 3px 0 #929292,inset -3px -3px 0 #505050;
@@ -946,11 +947,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
   box-shadow:0 20px 65px rgba(0,0,0,.58),0 0 30px rgba(15,214,198,.12);
 }
 .menu-panel h1{color:#e8f7f0;text-shadow:0 0 18px rgba(40,230,210,.38)}
-.menu-actions button{
+.menu-actions :is(button,.new-mob-gallery-link){
   background:#357a71;border-color:#174e4a;
   box-shadow:inset 3px 3px 0 #7cbbac,inset -3px -3px 0 #16534e,0 4px 0 rgba(0,0,0,.35);
 }
-.menu-actions button:hover{background:#41918a}
+.menu-actions :is(button,.new-mob-gallery-link):hover{background:#41918a}
 
 
 /* NEXACRAFT world-entry and save-slot visual unification.
@@ -1431,15 +1432,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
  #chatPanel{height:min(215px,calc(100dvh - 16px));max-height:calc(100dvh - 16px)}
 }
 
-/* Preview-only creature gallery link beneath the existing two play modes. */
-.menu-panel .new-mob-gallery-link{
- display:block;box-sizing:border-box;width:100%;margin:14px 0 4px;
- padding:12px 10px;min-height:43px;border:2px solid #719a82;
- border-radius:8px;background:#284b3d;color:#e0f4d6;
- text-decoration:none;text-align:center;font:800 14px ui-monospace,monospace;
- box-shadow:inset 1px 1px 0 #739c85,0 3px 0 #0006;
- touch-action:manipulation
-}
-.menu-panel .new-mob-gallery-link:hover,.menu-panel .new-mob-gallery-link:focus-visible{
- background:#3d6850;color:#fff
+/* The creature archive is the third full-size main action.
+   Its appearance is inherited from the exact same menu-actions rule. */
+.menu-actions .new-mob-gallery-link:focus-visible{
+ outline:3px solid #b6f9e1;outline-offset:3px;
 }
