@@ -4,7 +4,7 @@ import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017standardKata
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261017villageModel03';
-import {createVillageSystem} from './village-system.js?v=20261017village01';
+import {createVillageSystem} from './village-system.js?v=20261018villageDoor02';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -1070,7 +1070,7 @@ function resetWorldRuntime(){
   chimeraSummonPending=null;
   mobs.length=0;passiveSpawnCooldown=20;zombieSpawnCooldown=1;spiderSpawnCooldown=10;nightZombieWaveStarted=false;
   cachedVillageWorld=null;cachedVillageSeed=null;cachedVillageGenerator=null;
-  villagerSpawnCooldown=3;villageLastVisitedKey=null;villageCitizenLastSpawn.clear();villageGuardianLastSpawn.clear();
+  villagerSpawnCooldown=3;villageCitizenLastSpawn.clear();villageGuardianLastSpawn.clear();
   multiLastMobSync=0;multiMobSeq=0;multiAppliedMobSeq=-1;
   clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
   $('chestScreen').classList.remove('open');
@@ -3115,7 +3115,7 @@ function updateZombieSpawning(dt){
     // An opening wave makes the enemies easy to spot at the start of night.
     spawnZombie();spawnZombie();spawnSkeleton();spawnNightSpider();
     skeletonSpawnCooldown=9;spiderSpawnCooldown=11;
-    if(dayTime>=DAY_END)flash('夜になった！ 敵に注意！');
+    // Night enemies still spawn normally; no repetitive nightfall banner.
     return;
   }
   spiderSpawnCooldown-=dt;
@@ -3633,7 +3633,7 @@ function multiSpawnAnchors(){
 }
 // Four profession variants per village; villagers are regenerated on demand
 // near the player, not stored as disposable passive wildlife. Host owns them.
-let villagerSpawnCooldown=3,villageLastVisitedKey=null;
+let villagerSpawnCooldown=3;
 const villageCitizenLastSpawn=new Map(),villageGuardianLastSpawn=new Map(),MAX_VILLAGERS=20;
 const VILLAGER_WANDER_RADIUS=14;
 function spawnVillager(site,idx){
@@ -6302,14 +6302,12 @@ function loop(now){
     if(multiRole!=='guest')updateSkeletonArrows(dt);
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;
-    const atVillage=villageWorld().nearby(bx,bz,4).find(v=>Math.hypot(v.x-bx,v.z-bz)<v.radius);
-    biomeEl.textContent=atVillage?'🏠 村':(biomeNames[biomeAt(bx,bz)]||'Unknown');
-    if(atVillage&&atVillage.key!==villageLastVisitedKey){
-      villageLastVisitedKey=atVillage.key;flash('村を発見！ 村人が暮らしています');
-    }else if(!atVillage)villageLastVisitedKey=null;
+    // Show the natural biome without the village icon or arrival popup.
+    // Village buildings, villagers and golems are unaffected.
+    biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');
-    clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm+
-      (isNightTime()?'  🧟 '+countZombies()+' 🏹 '+countSkeletons()+' 🕷 '+countSpiders():'');
+    // Time stays visible, but no zombie/skeleton/spider icons or counts.
+    clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm;
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
   chatSyncVisible();
