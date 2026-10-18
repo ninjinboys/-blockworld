@@ -6337,6 +6337,7 @@ crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(
 let last=performance.now(),dayTime=.24;
 const DAY_START=.25,DAY_END=.75,DAY_REAL_SECONDS=15*60,NIGHT_REAL_SECONDS=5*60;
 let sleeping=false,sleepOverlay=null,sleepCounter=null,sleepBanner=null,multiSleepTimer=null;
+let multiSleepSnapshot={asleep:0,total:0};
 function isNightTime(){
   return dayTime<DAY_START||dayTime>=DAY_END;
 }
@@ -6391,6 +6392,7 @@ function multiSleepBannerUpdate(asleep,total){
   sleepBanner.textContent=`${total}人中${asleep}人が睡眠中`;
 }
 function multiSleepShowCount(asleep,total){
+  multiSleepSnapshot={asleep,total};
   if(sleepCounter)sleepCounter.textContent=`${total}人中${asleep}人が睡眠中`;
   multiSleepBannerUpdate(asleep,total);
 }
@@ -6398,6 +6400,7 @@ function multiSleepReset(){
   if(multiSleepTimer){clearTimeout(multiSleepTimer);multiSleepTimer=null}
   sleepHide();
   sleepBanner?.remove();sleepBanner=null;
+  multiSleepSnapshot={asleep:0,total:0};
 }
 function multiSleepCounts(){
   const guests=[...multiGuestRecords.values()];
@@ -6412,7 +6415,7 @@ function multiSleepHostFinish(naturalMorning=false){
   }
   for(const guest of multiGuestRecords.values())guest.sleeping=false;
   if(multiplayerNetwork.connected)
-    multiplayerNetwork.send({t:'sleepDone',dayTime});
+    multiplayerNetwork.send({t:'sleepDone',dayTime,naturalMorning});
   multiSleepReset();
   markSaveDirty();saveCurrentGame(false);
   if(started)flash(naturalMorning?'朝になりました':'全員が眠ったので朝になりました！');
@@ -7633,7 +7636,7 @@ function multiRoomData(message,peerId){
       dayTime=message.dayTime;
       const wasSleeping=sleeping;
       multiSleepReset();
-      if(wasSleeping)flash('全員が眠ったので朝になりました！');
+      if(wasSleeping)flash(message.naturalMorning?'朝になりました！':'全員が眠ったので朝になりました！');
     }
     if(message.t==='sleepRejected'&&sleeping){
       multiSleepReset();flash('ベッドで眠れませんでした。もう一度お試しください');
@@ -7862,6 +7865,7 @@ updateViewLabel();
 $('startBtn').addEventListener('click',()=>{
   if(!worldReady||!currentAccount)return;
   started=true;cover.style.display='none';last=performance.now();renderHealth();
+  if(multiRole)multiSleepBannerUpdate(multiSleepSnapshot.asleep,multiSleepSnapshot.total);
   chatSyncVisible();
   if(dead){showDeathScreen();return}
   if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
