@@ -108,8 +108,10 @@ export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUN
      }
      for(const sx of [-3,3])for(const sz of [-3,3])
        for(let y=h+1;y<=h+3;y++)put(hx+sx,y,hz+sz,B.LOG);
-     // Doors lead onto the paths and open with the existing door behavior.
-     put(hx,h+1,frontZ,B.DOOR_Z);put(hx,h+2,frontZ,B.DOOR_Z_TOP);
+     // Facades lie in the X axis (fixed Z), so the CLOSED panels must lie
+     // along X too. DOOR_Z made each village door stick sideways into the
+     // doorway instead of closing it; use the same DOOR_X type as a player door.
+     put(hx,h+1,frontZ,B.DOOR_X);put(hx,h+2,frontZ,B.DOOR_X_TOP);
      const backZ=hz-face*1;
      put(hx-2,h+1,backZ,B.CRAFTING_TABLE);
      put(hx+2,h+1,backZ,B.FURNACE);
