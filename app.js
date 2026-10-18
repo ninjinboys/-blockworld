@@ -77,7 +77,7 @@ const names={
   165:'キメラの角',166:'キメラの弓',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
-const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River'];
+const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River','Jungle'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH,[I.CHEST]:B.CHEST};
 const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST};
@@ -561,6 +561,65 @@ const chunkCoord=v=>Math.floor(v/CHUNK);
 const localCoord=v=>((v%CHUNK)+CHUNK)%CHUNK;
 const chunkKey=(cx,cz)=>cx+','+cz;
 const cIndex=(lx,y,lz)=>((y-Y_MIN)*CHUNK+lz)*CHUNK+lx;
+// Persistent per-chunk generation history. 0 = legacy/protected terrain;
+// 1 = jungle-era terrain. Future biome/structure releases must increment
+// this revision and only add that release's content where stamp >= revision.
+// Recording is done after finishing a first-time chunk, not when rebuilding.
+const FEATURE_REVISION=1,exploredChunkRevisions=new Map();
+function chunkHasFeature(cx,cz,revision=FEATURE_REVISION){
+  const stamp=exploredChunkRevisions.get(chunkKey(cx,cz));
+  return (stamp===undefined?FEATURE_REVISION:stamp)>=revision;
+}
+function featureAllowed(x,z,revision=FEATURE_REVISION){
+  return chunkHasFeature(chunkCoord(x),chunkCoord(z),revision);
+}
+function registerExploredChunk(cx,cz){
+  const k=chunkKey(cx,cz);
+  if(exploredChunkRevisions.has(k))return;
+  exploredChunkRevisions.set(k,FEATURE_REVISION);
+  if(worldReady)markSaveDirty();
+}
+function restoreExploration(data){
+  exploredChunkRevisions.clear();
+  if(Array.isArray(data.exploredChunks)){
+    for(const row of data.exploredChunks.slice(0,180000)){
+      if(!Array.isArray(row)||row.length!==2||typeof row[0]!=='string'||
+         !/^-?\d+,-?\d+$/.test(row[0])||!Number.isInteger(row[1]))continue;
+      const [cx,cz]=row[0].split(',').map(Number);
+      if(!Number.isSafeInteger(cx)||!Number.isSafeInteger(cz)||Math.abs(cx)>100000||Math.abs(cz)>100000)continue;
+      exploredChunkRevisions.set(row[0],Math.max(0,Math.min(FEATURE_REVISION,row[1])));
+    }
+    return;
+  }
+  // Old saves never recorded which chunks were rendered. Recover the
+  // safest available evidence: spawn, last player position, bed and edits.
+  // Exclude wide buffers around each to avoid villages/jungle on houses.
+  function protect(cx,cz,r){
+    for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++)
+      exploredChunkRevisions.set(chunkKey(cx+dx,cz+dz),0);
+  }
+  for(const point of [data.initialSpawn,data.bedSpawn,data.player]){
+    if(point&&Number.isFinite(point.x)&&Number.isFinite(point.z))
+      protect(chunkCoord(Math.floor(point.x)),chunkCoord(Math.floor(point.z)),8);
+  }
+  if(Array.isArray(data.edits)){
+    for(const row of data.edits){
+      if(!Array.isArray(row)||typeof row[0]!=='string'||!/^-?\d+,-?\d+$/.test(row[0]))continue;
+      const [cx,cz]=row[0].split(',').map(Number);
+      if(Number.isSafeInteger(cx)&&Number.isSafeInteger(cz)&&Math.abs(cx)<100000&&Math.abs(cz)<100000)
+        protect(cx,cz,5);
+    }
+  }
+}
+function villageSiteAllowed(x,z,radius){
+  // A house of four buildings, paths, or the village plaza may not overlap
+  // any protected / previously generated older chunk.
+  const minX=chunkCoord(x-radius-2),maxX=chunkCoord(x+radius+2);
+  const minZ=chunkCoord(z-radius-2),maxZ=chunkCoord(z+radius+2);
+  for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++)
+    if(!chunkHasFeature(cx,cz))return false;
+  return true;
+}
 const DOOR_ALL=new Set([B.DOOR_X,B.DOOR_X_TOP,B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z,B.DOOR_Z_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_OPEN_TOP]);
 const DOOR_OPEN=new Set([B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_OPEN_TOP]);
 const DOOR_TOP=new Set([B.DOOR_X_TOP,B.DOOR_X_OPEN_TOP,B.DOOR_Z_TOP,B.DOOR_Z_OPEN_TOP]);
@@ -861,6 +920,7 @@ function makeSaveData(){
     worldDrops:serializeWorldDrops(),
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits(),chests:serializeChests(),
+    exploredChunks:[...exploredChunkRevisions],
     saddledHorses:serializeSaddledHorses(),
     summonedChimeras:serializeSummonedChimeras(),
     ridingHorseIndex:ridingHorse?saddledHorsesForSave().indexOf(ridingHorse):-1
@@ -930,6 +990,7 @@ function applySaveData(data){
   if(!data||typeof data!=='object')return false;
   if(Number.isFinite(data.seed))seed=data.seed>>>0;
   generatorVersion=Math.max(1,Number(data.generatorVersion)||1);
+  restoreExploration(data);
   level=Math.max(1,Number(data.level)||1);xp=Math.max(0,Number(data.xp)||0);
   weather=data.weather==='rain'?'rain':'clear';
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
@@ -1074,7 +1135,7 @@ function resetWorldRuntime(){
   multiLastMobSync=0;multiMobSeq=0;multiAppliedMobSeq=-1;
   clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
   $('chestScreen').classList.remove('open');
-  chunks.clear();torchLocations.clear();clearTorchLights();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
+  chunks.clear();exploredChunkRevisions.clear();torchLocations.clear();clearTorchLights();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
   health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
   deathScreen.classList.remove('open');deathScreen.setAttribute('aria-hidden','true');
 }
@@ -1093,7 +1154,7 @@ async function initializeAccountWorld(save,slot){
     stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;offhandItem=null;shieldGuarding=false;refreshShieldControl();syncDerivedInventory();
-    editChunks.clear();torchLocations.clear();chestContents.clear();clearWorldDrops();
+    editChunks.clear();exploredChunkRevisions.clear();torchLocations.clear();chestContents.clear();clearWorldDrops();
   }
   await new Promise(r=>setTimeout(r,30));
   ensureInitialSpawn();
@@ -1714,7 +1775,7 @@ function villageWorld(){
   if(!cachedVillageWorld||cachedVillageSeed!==seed||cachedVillageGenerator!==generatorVersion){
     cachedVillageSeed=seed;cachedVillageGenerator=generatorVersion;
     cachedVillageWorld=createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,
-      WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord});
+      WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord,canPlaceVillage:villageSiteAllowed});
   }
   return cachedVillageWorld;
 }
@@ -1726,7 +1787,7 @@ function generateChunk(cx,cz){
 function ensureChunk(cx,cz){
   const k=chunkKey(cx,cz);
   let c=chunks.get(k);
-  if(!c){c=generateChunk(cx,cz);chunks.set(k,c)}
+  if(!c){c=generateChunk(cx,cz);chunks.set(k,c);registerExploredChunk(cx,cz)}
   return c;
 }
 function getLoaded(x,y,z){
@@ -1833,7 +1894,7 @@ function processChunkStreaming(){
     if(next.done){
       const k=chunkKey(job.cx,job.cz);
       if(wantedChunkKeys.has(k)&&!chunks.has(k)){
-        chunks.set(k,next.value);queueMeshNear(job.cx,job.cz);
+        chunks.set(k,next.value);registerExploredChunk(job.cx,job.cz);queueMeshNear(job.cx,job.cz);
       }
       pendingChunkJob=null;break;
     }
