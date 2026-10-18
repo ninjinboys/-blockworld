@@ -2093,7 +2093,7 @@ const NEW_MOB_STATS={
   bear:{name:'ヒグマ',hp:50,xp:75,speed:.38,height:2.59,kind:'predator',damage:5},
   boar:{name:'イノシシ',hp:24,xp:31,speed:.57,height:1.88,kind:'predator',damage:3},
   spider:{name:'巨大クモ',hp:16,xp:29,speed:2.1,height:1.42,kind:'night',damage:2},
-  golem:{name:'ストーンゴーレム',hp:120,xp:0,speed:.85,height:3.6,kind:'guardian',damage:7},
+  golem:{name:'ストーンゴーレム',hp:120,xp:0,speed:.85,height:3.6,kind:'neutral',damage:7},
   eagle:{name:'ワシ',hp:14,xp:36,speed:2.7,height:2.35,kind:'flying'},
   crocodile:{name:'ワニ',hp:36,xp:58,speed:.30,height:1.38,kind:'predator',damage:4},
   shark:{name:'サメ',hp:32,xp:58,speed:1.7,height:1.89,kind:'swimming',damage:4},
@@ -3390,7 +3390,7 @@ function animateWildMob(m,dt,now,moving){
     legs[i].rotation.x+=(swing*sign-legs[i].rotation.x)*Math.min(1,dt*12);
   }
 }
-// Build one of the nine released wildlife models. Golem remains preview-only.
+// Build the released wildlife models, including the neutral village golem.
 function createNewMob(type,x,y,z){
   const stats=NEW_MOB_STATS[type];
   if(!stats)throw new Error('Unregistered mob '+type);
@@ -3667,6 +3667,46 @@ function spawnVillageGuardian(site){
 }
 function updateVillageGuardian(m,dt,now){
   const d=m.userData;
+  d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
+  // Neutral toward players: never attack on sight. Retaliate only against
+  // the player who damaged this golem (host or a specific multiplayer guest).
+  // After twelve seconds, or when the attacker leaves, return to patrol.
+  if(d.hostile&&d.hostileTargetId){
+    let target=null,peerId=null;
+    if(d.hostileTargetId==='host'){
+      if(!dead)target=player.pos;
+    }else if(multiRole==='host'){
+      for(const [id,record] of multiGuestRecords){
+        if(record.id===d.hostileTargetId&&record.player&&
+           now-(record.lastPoseAt||0)<5000){
+          target=record.player;peerId=id;break;
+        }
+      }
+    }
+    const range=target?Math.hypot(target.x-m.position.x,target.z-m.position.z):Infinity;
+    const homeRange=target?Math.hypot(target.x-d.homeX,target.z-d.homeZ):Infinity;
+    if(now<(d.hostileUntil||0)&&range<24&&homeRange<31&&
+       Math.abs(target.y-m.position.y)<4.5){
+      d.angle=Math.atan2(target.x-m.position.x,target.z-m.position.z);
+      let moving=false;
+      if(range>2.25){
+        moving=mobWalkStep(m,d.angle,2.1*dt);
+        if(!moving)moving=mobWalkStep(m,d.angle+Math.PI*.5,1.25*dt);
+      }
+      if(range<=2.75&&Math.abs(target.y-m.position.y)<3.1&&
+         d.attackCooldown<=0){
+        d.attackCooldown=1.85;
+        if(peerId){
+          multiplayerNetwork.send({t:'golemStrike',
+            x:m.position.x,y:m.position.y,z:m.position.z,id:ensureMobId(m)},peerId);
+        }else damagePlayer(NEW_MOB_STATS.golem.damage,'ゴーレムの攻撃',m.position);
+      }
+      m.rotation.y=d.angle+Math.PI;
+      newMobModels.animate(m,now*.001,moving);
+      return;
+    }
+    d.hostile=false;d.hostileTargetId=null;d.hostileUntil=0;
+  }
   const villains=mobs.filter(other=>other!==m&&other.userData.hp>0&&
     ['zombie','skeleton','spider','wolf','bear','lion'].includes(other.userData.type)&&
     Math.hypot(other.position.x-d.homeX,other.position.z-d.homeZ)<24);
@@ -3675,7 +3715,6 @@ function updateVillageGuardian(m,dt,now){
     const dd=Math.hypot(v.position.x-m.position.x,v.position.z-m.position.z);
     if(dd<range){range=dd;enemy=v}
   }
-  d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
   let moving=false;
   if(enemy&&range<17){
     const dx=enemy.position.x-m.position.x,dz=enemy.position.z-m.position.z;
@@ -5722,7 +5761,7 @@ function meleeMobDamage(weapon){
   return weapon===I.CHIMERA_DAGGER?5:weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
     weapon===I.GOLD_SWORD?2:weapon===I.STONE_SWORD?2:1;
 }
-function damageMob(root,damage,via='melee',power=1){
+function damageMob(root,damage,via='melee',power=1,attackerId='host'){
   if(!root||!mobs.includes(root)||root.userData.hp<=0)return;
   if(multiRole==='guest'){
     const id=root.userData.netId;
@@ -5733,7 +5772,12 @@ function damageMob(root,damage,via='melee',power=1){
   }
   root.userData.hp-=damage;
   setMobHitFlash(root);
-  if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'||root.userData.type==='chimera'||
+  if(root.userData.type==='golem'&&root.userData.hp>0){
+    root.userData.hostile=true;
+    root.userData.hostileTargetId=attackerId;
+    root.userData.hostileUntil=performance.now()+12000;
+    root.userData.attackCooldown=Math.max(root.userData.attackCooldown||0,.45);
+  }else if(root.userData.type==='bison'||root.userData.type==='lion'||root.userData.type==='anaconda'||root.userData.type==='chimera'||
       ['wolf','bear','boar','crocodile','elephant','spider','shark','eagle'].includes(root.userData.type)){
     root.userData.hostile=true;
     root.userData.attackCooldown=Math.max(root.userData.attackCooldown||0,.45);
@@ -6873,7 +6917,7 @@ function multiProcessMobHit(message,from){
   const damage=via==='arrow'
     ?bowHitDamage(power,pose.held)
     :meleeMobDamage(pose.held);
-  damageMob(m,damage);
+  damageMob(m,damage,via,power,from.id);
   if(multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
 }
 // Host processes guest chest transfers in a single serial handler.
@@ -7233,6 +7277,10 @@ function multiRoomData(message,peerId){
        mobs.some(m=>m.userData.type==='chimera'&&m.userData.netId===message.id)&&
        Math.hypot(player.pos.x-message.x,player.pos.z-message.z)<7)
       damagePlayer(CHIMERA_HIT_DAMAGE,'キメラの攻撃',message);
+    if(message.t==='golemStrike'&&Number.isFinite(message.x)&&Number.isFinite(message.z)&&
+       mobs.some(m=>m.userData.type==='golem'&&m.userData.netId===message.id)&&
+       Math.hypot(player.pos.x-message.x,player.pos.z-message.z)<4.5)
+      damagePlayer(NEW_MOB_STATS.golem.damage,'ゴーレムの攻撃',message);
     if(message.t==='pose'){
       // Gracefully handle an old host version which sent poses without IDs.
       const id=typeof message.id==='string'?message.id:multiCheckpoint?.hostId;
