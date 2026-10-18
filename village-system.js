@@ -68,7 +68,7 @@ export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUN
      for(const [i,[ox,oz]] of [[-11,-11],[11,-11],[-11,11],[11,11]].entries()){
        const f=houseFurniture(site,ox,oz,i);
        if(f.hasChest&&f.chest.x===x&&f.chest.y===y&&f.chest.z===z)
-         return {siteKey:site.key,house:i};
+         return {siteKey:site.key,house:i,houseX:site.x+ox,houseZ:site.z+oz};
      }
    }
    return null;
