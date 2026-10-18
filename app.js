@@ -4,7 +4,7 @@ import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017standardKata
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
-import {createVillageSystem} from './village-system.js?v=20261018villageBedsLoot01';
+import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -479,7 +479,7 @@ const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURN
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
 // 27 slots per chest, indexed by world position and saved alongside edits.
-const CHEST_SIZE=27,chestContents=new Map();
+const CHEST_SIZE=27,chestContents=new Map(),villageLootGranted=new Set();
 let chestOpen=false,chestLocation=null,chestOneAtATime=false,chestPending=null,chestRequestId=0;
 const chestKey=(x,y,z)=>x+','+y+','+z;
 function normalizedChest(raw){
@@ -523,20 +523,35 @@ function generateVillageChestLoot(x,y,z){
   return slots;
 }
 function chestSlots(x,y,z){
-  const k=chestKey(x,y,z);
-  if(!chestContents.has(k)){
-    let slots=Array(CHEST_SIZE).fill(null);
-    if(multiRole!=='guest'&&get(x,y,z)===B.CHEST){
-      const cx=chunkCoord(x),cz=chunkCoord(z),index=cIndex(localCoord(x),y,localCoord(z));
-      // Don't distribute loot to a user-placed replacement at this position.
-      if(!editChunks.get(chunkKey(cx,cz))?.has(index)&&villageWorld().lootChestAt(x,y,z)){
-        slots=generateVillageChestLoot(x,y,z);
+  const k=chestKey(x,y,z),hadSavedChest=chestContents.has(k);
+  let slots=chestContents.get(k);
+  if(!slots){slots=Array(CHEST_SIZE).fill(null);chestContents.set(k,slots)}
+  // Do not re-roll chests that were already claimed or player-placed.
+  // The original village houses (exploration revision 1) had two EMPTY
+  // chests before village loot was added. Retrofit these ONCE, preserving
+  // items players may already have deposited.
+  if(multiRole!=='guest'&&!villageLootGranted.has(k)&&get(x,y,z)===B.CHEST){
+    const cx=chunkCoord(x),cz=chunkCoord(z),index=cIndex(localCoord(x),y,localCoord(z));
+    if(!editChunks.get(chunkKey(cx,cz))?.has(index)){
+      const info=villageWorld().lootChestAt(x,y,z);
+      if(info){
+        const oldVillage=!villageFurnitureAllowed(info.houseX,info.houseZ);
+        if(!hadSavedChest||oldVillage){
+          const loot=generateVillageChestLoot(x,y,z);
+          for(const item of loot){
+            if(!item)continue;
+            const vacant=slots.findIndex(existing=>!existing);
+            if(vacant!==-1)slots[vacant]=item;
+          }
+        }
+        // A previously opened or emptied chest from a NEW village already
+        // had its reward. Claim it without refilling even with older saves.
+        villageLootGranted.add(k);
         if(worldReady)markSaveDirty();
       }
     }
-    chestContents.set(k,slots);
   }
-  return chestContents.get(k);
+  return slots;
 }
 function serializeChests(){
   // Opened treasure chests may be in unloaded chunks: get() only sees
@@ -972,7 +987,7 @@ function makeSaveData(){
     equippedArmor:[...equippedArmor],offhandItem:offhandItem?{...offhandItem}:null,
     worldDrops:serializeWorldDrops(),
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
-    edits:serializeEdits(),chests:serializeChests(),
+    edits:serializeEdits(),chests:serializeChests(),villageLootGranted:[...villageLootGranted],
     exploredChunks:[...exploredChunkRevisions],
     saddledHorses:serializeSaddledHorses(),
     summonedChimeras:serializeSummonedChimeras(),
@@ -1083,6 +1098,11 @@ function applySaveData(data){
   const correctedDoors=repairFloatingDoorsOnLoad();
   if(correctedDoors)console.info('BLOCKWORLD: corrected '+correctedDoors+' floating door(s) in saved world.');
   restoreChests(data.chests);
+  villageLootGranted.clear();
+  if(Array.isArray(data.villageLootGranted)){
+    for(const key of data.villageLootGranted.slice(0,12000))
+      if(typeof key==='string'&&/^-?\d+,-?\d+,-?\d+$/.test(key))villageLootGranted.add(key);
+  }
   restoreSaddledHorses(data);
   restoreSummonedChimeras(data);
   restoreWorldDrops(data.worldDrops);
@@ -1186,7 +1206,7 @@ function resetWorldRuntime(){
   cachedVillageWorld=null;cachedVillageSeed=null;cachedVillageGenerator=null;
   villagerSpawnCooldown=3;villageCitizenLastSpawn.clear();villageGuardianLastSpawn.clear();
   multiLastMobSync=0;multiMobSeq=0;multiAppliedMobSeq=-1;
-  clearWorldDrops();chestContents.clear();chestOpen=false;chestLocation=null;chestPending=null;
+  clearWorldDrops();chestContents.clear();villageLootGranted.clear();chestOpen=false;chestLocation=null;chestPending=null;
   $('chestScreen').classList.remove('open');
   chunks.clear();exploredChunkRevisions.clear();torchLocations.clear();clearTorchLights();streamCX=NaN;streamCZ=NaN;player.vel.set(0,0,0);player.onGround=false;
   health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
