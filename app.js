@@ -7401,6 +7401,9 @@ function multiPrepareMigration(checkpoint,plannedLeader=null){
   if(multiRole!=='guest'||multiMigration||!worldReady)return;
   const code=multiplayerNetwork.code;
   if(!/^[A-Z0-9]{6}$/.test(code))return;
+  // Recreate votes with the new host; never carry a stale sleeping state
+  // through network migration or a vanished host.
+  multiSleepReset();
   const knownPeople=plannedLeader&&Array.isArray(checkpoint?.people)
     ?checkpoint.people:(multiRoster.length?multiRoster:(checkpoint.people||[]));
   const participants=knownPeople
@@ -7479,6 +7482,7 @@ async function multiPromoteHost(job){
       await multiplayerNetwork.host(job.code);
       if(multiMigration!==job){multiplayerNetwork.leaveRoom({handoff:true});return}
       multiMigration=null;multiLastCheckpoint=0;
+      multiSleepHostSync();
       saveCurrentGame(false);
       flash('ホストを引き継ぎました！このまま遊べます');
       return;
@@ -7572,10 +7576,25 @@ function multiRoomData(message,peerId){
       },peerId);
       multiplayerNetwork.send({t:'roster',people});
       multiplayerNetwork.send({t:'joinNotice',name:record.name});
-      multiPeople();return;
+      multiPeople();multiSleepHostSync();return;
     }
     const from=multiGuestRecords.get(peerId);if(!from)return;
     if(message.t==='chat'){chatHostReceive(message,peerId,from);return}
+    if(message.t==='sleepRequest'){
+      if(message.sleeping===false){
+        from.sleeping=false;
+      }else if(message.sleeping===true&&isNightTime()&&
+          Number.isInteger(message.bed?.x)&&Number.isInteger(message.bed?.y)&&
+          Number.isInteger(message.bed?.z)&&from.player&&
+          [from.player.x,from.player.y,from.player.z].every(Number.isFinite)&&
+          Math.hypot(from.player.x-message.bed.x,from.player.y-message.bed.y,
+            from.player.z-message.bed.z)<7.5){
+        from.sleeping=true;
+      }else{
+        multiplayerNetwork.send({t:'sleepRejected'},peerId);return;
+      }
+      multiSleepHostSync();return;
+    }
     if(message.t==='chimeraSummon'){hostHandleChimeraSummon(message,from,peerId);return}
     if(message.t==='mobHit'){multiProcessMobHit(message,from);return}
     if(message.t==='pose'&&message.player&&Number.isFinite(message.player.x)){
@@ -7603,6 +7622,22 @@ function multiRoomData(message,peerId){
     }else if(message.t==='block'){multiApplyBlock(message);multiplayerNetwork.send(message)}
     else if(message.t==='dropAdd'||message.t==='dropRemove'){multiApplyDrop(message);multiplayerNetwork.send(message)}
   }else{
+    if(message.t==='sleepState'){
+      if(Number.isInteger(message.total)&&Number.isInteger(message.asleep)&&
+          message.total>=1&&message.total<=4&&message.asleep>=0&&
+          message.asleep<=message.total)
+        multiSleepShowCount(message.asleep,message.total);
+    }
+    if(message.t==='sleepDone'&&Number.isFinite(message.dayTime)&&
+        message.dayTime>=0&&message.dayTime<1){
+      dayTime=message.dayTime;
+      const wasSleeping=sleeping;
+      multiSleepReset();
+      if(wasSleeping)flash('全員が眠ったので朝になりました！');
+    }
+    if(message.t==='sleepRejected'&&sleeping){
+      multiSleepReset();flash('ベッドで眠れませんでした。もう一度お試しください');
+    }
     if(message.t==='chat')chatGuestReceive(message);
     if(message.t==='chimeraSummonResult')guestHandleChimeraSummonResult(message);
     if(message.t==='chimeraStrike'&&Number.isFinite(message.x)&&Number.isFinite(message.z)&&
@@ -7647,6 +7682,7 @@ function multiEvent(e){
       multiGuestRecords.delete(e.peerId);
       multiRemoveAvatar(guest.id);
       multiplayerNetwork.send({t:'peerLeft',id:guest.id});
+      multiSleepHostSync();
       multiplayerNetwork.send({t:'roster',people:multiRosterSnapshot()});
       multiPeople();
       if(worldReady)saveCurrentGame(false);
@@ -7697,6 +7733,7 @@ function multiTick(now){
 function multiLeave(silent=false){
   if(multiClosing)return;
   multiClosing=true;
+  multiSleepReset();
   clearTimeout(multiPendingTimer);multiPendingTimer=null;
   clearTimeout(multiProfileSaveTimer);multiProfileSaveTimer=null;
   if(worldReady)saveCurrentGame(false);
