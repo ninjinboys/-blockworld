@@ -51,13 +51,16 @@ export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUN
    }
    return out;
  }
- // Villages always have at least one loot chest; other homes get one
- // by a deterministic roll. Older visited houses retain their interiors.
+ // Villages always have at least two loot chests; other homes get one
+ // by a deterministic seeded roll. Retrofit beds and treasure into existing
+ // village homes as explicitly requested, regardless of visit history.
  function houseFurniture(site,offsetX,offsetZ,index){
    const hx=site.x+offsetX,hz=site.z+offsetZ;
-   const fresh=canPlaceFurniture(hx,hz);
    const face=offsetZ<0?1:-1;
-   return {fresh,hasChest:fresh&&(index===0||hash(site.cellX*19+index,site.cellZ*23+index,9153)>.43),
+   // House 0 and house 2 already had chests before this update. Keep both
+   // rather than deleting one due to a new random roll.
+   return {fresh:true,hasChest:index===0||index===2||
+       hash(site.cellX*19+index,site.cellZ*23+index,9153)>.43,
      chest:{x:hx+2,y:site.y+1,z:hz+face}};
  }
  function lootChestAt(x,y,z){
@@ -135,17 +138,13 @@ export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUN
      put(hx-2,h+1,backZ,B.CRAFTING_TABLE);
      put(hx+2,h+1,backZ,B.FURNACE);
      const furniture=houseFurniture(v,offsetX,offsetZ,variant);
-     if(furniture.fresh){
-       // Two-block bed with headboard at the back, walking clearance at
-       // the front and no overlap with workbench, furnace or doorway.
-       put(hx-1,h+1,hz-face,B.BED);
-       put(hx-1,h+1,hz-face*2,B.BED_HEAD);
-       if(furniture.hasChest)
-         put(furniture.chest.x,furniture.chest.y,furniture.chest.z,B.CHEST);
-     }else if(variant===0||variant===2){
-       // Preserve the exact old interior in previously generated villages.
-       put(hx+2,h+1,hz+face,B.CHEST);
-     }
+     // Two-block bed with headboard at the back, walking clearance at
+     // the front and no overlap with workbench, furnace or doorway.
+     // Saved player edits are still applied last by the chunk generator.
+     put(hx-1,h+1,hz-face,B.BED);
+     put(hx-1,h+1,hz-face*2,B.BED_HEAD);
+     if(furniture.hasChest)
+       put(furniture.chest.x,furniture.chest.y,furniture.chest.z,B.CHEST);
      // Short porch connects each front door to the village's main path.
      for(let q=4;q<=10;q++){
        const px=hx,pz=hz+face*q;
