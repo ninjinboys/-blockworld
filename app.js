@@ -4,7 +4,7 @@ import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017standardKata
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
-import {createVillageSystem} from './village-system.js?v=20261018villageDoor02';
+import {createVillageSystem} from './village-system.js?v=20261018historyJungle01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -3535,13 +3535,13 @@ function disposeUnusedNewMob(g){
   });
 }
 function newMobBiomeOK(type,bio,h,x,z){
-  if(type==='deer')return [0,1,3].includes(bio);
-  if(type==='wolf')return [1,3,4,5].includes(bio);
-  if(type==='bear')return [1,3,4].includes(bio);
-  if(type==='boar')return [0,1,5].includes(bio);
-  if(type==='crocodile')return [5,7].includes(bio)&&h<=SEA+6;
-  if(type==='elephant')return bio===0&&h<SEA+17;
-  if(type==='eagle')return [0,1,3,4].includes(bio)&&h<WORLD_TOP-8;
+  if(type==='deer')return [0,1,3,8].includes(bio);
+  if(type==='wolf')return [1,3,4,5,8].includes(bio);
+  if(type==='bear')return [1,3,4,8].includes(bio);
+  if(type==='boar')return [0,1,5,8].includes(bio);
+  if(type==='crocodile')return [5,7,8].includes(bio)&&h<=SEA+6;
+  if(type==='elephant')return [0,8].includes(bio)&&h<SEA+17;
+  if(type==='eagle')return [0,1,3,4,8].includes(bio)&&h<WORLD_TOP-8;
   if(type==='shark')return (bio===6||bio===7)&&h<SEA-2&&get(x,SEA-1,z)===B.WATER;
   return false;
 }
