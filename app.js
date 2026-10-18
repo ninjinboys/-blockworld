@@ -1188,6 +1188,7 @@ async function spawnChimeraVisualTest(){
   }
 }
 function resetWorldRuntime(){
+  multiSleepReset();
   removeChimeraVisualTest();
   ridingHorse=null;
   resetSprint();
@@ -5628,7 +5629,7 @@ function place(){
     bedSpawn={x:foot.x,y:foot.y,z:foot.z};
     markSaveDirty();
     if(isNightTime()){
-      sleepInBed();
+      sleepInBed(foot);
     }else{
       saveCurrentGame(false);
       flash('リスポーン地点を設定しました。夜になると眠れます');
@@ -6335,45 +6336,136 @@ crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(
 
 let last=performance.now(),dayTime=.24;
 const DAY_START=.25,DAY_END=.75,DAY_REAL_SECONDS=15*60,NIGHT_REAL_SECONDS=5*60;
-let sleeping=false;
+let sleeping=false,sleepOverlay=null,sleepCounter=null,sleepBanner=null,multiSleepTimer=null;
 function isNightTime(){
   return dayTime<DAY_START||dayTime>=DAY_END;
 }
-function sleepInBed(){
-  if(sleeping||dead||!started)return;
-  sleeping=true;
-  primaryActionStop();
-  Object.keys(keys).forEach(k=>keys[k]=false);
-  resetSprint();
-
+function sleepDisplay(waiting=false){
+  if(sleepOverlay)return;
   const veil=document.createElement('div');
   veil.setAttribute('role','status');
-  veil.textContent='眠っています…';
   Object.assign(veil.style,{
     position:'fixed',inset:'0',zIndex:'55',
-    background:'rgba(0,0,0,.97)',color:'#ffffff',
-    font:'bold 22px monospace',display:'flex',
-    alignItems:'center',justifyContent:'center',
-    opacity:'0',transition:'opacity .4s ease',
+    background:'rgba(0,0,0,.96)',color:'#ffffff',
+    font:'bold 22px system-ui,sans-serif',display:'flex',
+    alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'14px',
+    padding:'24px',opacity:'0',transition:'opacity .3s ease',
     pointerEvents:'auto',textAlign:'center'
   });
-  document.body.appendChild(veil);
-  requestAnimationFrame(()=>{veil.style.opacity='1'});
-
+  const title=document.createElement('div');
+  title.textContent=waiting?'ほかのプレイヤーを待っています…':'眠っています…';
+  veil.append(title);
+  sleepCounter=document.createElement('div');
+  Object.assign(sleepCounter.style,{font:'bold 20px system-ui,sans-serif',color:'#c2f0e4'});
+  veil.append(sleepCounter);
+  if(waiting){
+    const wake=document.createElement('button');
+    wake.type='button';wake.textContent='起きる';
+    Object.assign(wake.style,{font:'bold 17px system-ui,sans-serif',
+      background:'#32645a',color:'#fff',border:'2px solid #8ad0bb',
+      borderRadius:'8px',padding:'12px 28px',minHeight:'48px',cursor:'pointer'});
+    wake.addEventListener('click',multiSleepCancel);
+    veil.append(wake);
+  }
+  document.body.append(veil);sleepOverlay=veil;
+  requestAnimationFrame(()=>{if(sleepOverlay===veil)veil.style.opacity='1'});
+}
+function sleepHide(){
+  sleeping=false;
+  sleepOverlay?.remove();sleepOverlay=null;sleepCounter=null;
+}
+function multiSleepBannerUpdate(asleep,total){
+  const show=!!multiRole&&started&&asleep>0&&total>0&&!sleeping;
+  if(!show){sleepBanner?.remove();sleepBanner=null;return}
+  if(!sleepBanner){
+    sleepBanner=document.createElement('div');
+    sleepBanner.setAttribute('role','status');
+    Object.assign(sleepBanner.style,{
+      position:'fixed',zIndex:'24',top:'68px',left:'50%',transform:'translateX(-50%)',
+      padding:'10px 16px',border:'1px solid #78c6b3',borderRadius:'8px',
+      background:'rgba(9,33,35,.9)',color:'#eafff5',font:'bold 15px system-ui,sans-serif',
+      pointerEvents:'none',whiteSpace:'nowrap',textAlign:'center'
+    });
+    document.body.append(sleepBanner);
+  }
+  sleepBanner.textContent=`${total}人中${asleep}人が睡眠中`;
+}
+function multiSleepShowCount(asleep,total){
+  if(sleepCounter)sleepCounter.textContent=`${total}人中${asleep}人が睡眠中`;
+  multiSleepBannerUpdate(asleep,total);
+}
+function multiSleepReset(){
+  if(multiSleepTimer){clearTimeout(multiSleepTimer);multiSleepTimer=null}
+  sleepHide();
+  sleepBanner?.remove();sleepBanner=null;
+}
+function multiSleepCounts(){
+  const guests=[...multiGuestRecords.values()];
+  return {total:1+guests.length,asleep:Number(sleeping)+guests.filter(g=>g.sleeping===true).length};
+}
+function multiSleepHostFinish(naturalMorning=false){
+  if(multiRole!=='host'||!worldReady)return;
+  if(!naturalMorning){
+    const {total,asleep}=multiSleepCounts();
+    if(!isNightTime()||asleep!==total)return;
+    dayTime=DAY_START+.02;markSaveDirty();
+  }
+  for(const guest of multiGuestRecords.values())guest.sleeping=false;
+  if(multiplayerNetwork.connected)
+    multiplayerNetwork.send({t:'sleepDone',dayTime});
+  multiSleepReset();
+  markSaveDirty();saveCurrentGame(false);
+  if(started)flash(naturalMorning?'朝になりました':'全員が眠ったので朝になりました！');
+}
+function multiSleepHostSync(){
+  if(multiRole!=='host'||!worldReady)return;
+  const {total,asleep}=multiSleepCounts();
+  multiSleepShowCount(asleep,total);
+  if(multiplayerNetwork.connected)
+    multiplayerNetwork.send({t:'sleepState',asleep,total});
+  if(multiSleepTimer){clearTimeout(multiSleepTimer);multiSleepTimer=null}
+  if(sleeping&&isNightTime()&&asleep===total){
+    // Delay briefly so everyone sees the complete count. Recount at finish
+    // to avoid skipping the night if somebody joined or woke in between.
+    multiSleepTimer=setTimeout(()=>{
+      multiSleepTimer=null;multiSleepHostFinish(false);
+    },550);
+  }
+}
+function multiSleepCancel(){
+  if(!sleeping)return;
+  if(multiRole==='guest'&&multiplayerNetwork.connected)
+    multiplayerNetwork.send({t:'sleepRequest',sleeping:false});
+  multiSleepReset();
+  if(multiRole==='host')multiSleepHostSync();
+}
+function sleepInBed(foot=null){
+  if(sleeping||dead||!started)return;
+  if(multiRole==='guest'&&!multiplayerNetwork.connected){
+    flash('通信が切れています。再接続してから眠ってください');return;
+  }
+  sleeping=true;primaryActionStop();
+  Object.keys(keys).forEach(k=>keys[k]=false);
+  resetSprint();
+  if(multiRole){
+    sleepDisplay(true);
+    if(multiRole==='host')multiSleepHostSync();
+    else{
+      // Send an up-to-date position before sleep request so the host can
+      // validate the bed interaction without relying on a stale pose.
+      multiplayerNetwork.send({t:'pose',id:multiOwnId(),player:multiCurrentPose()});
+      multiplayerNetwork.send({t:'sleepRequest',sleeping:true,bed:foot});
+      multiSleepShowCount(1,Math.max(1,multiRoster.length));
+    }
+    return;
+  }
+  // Single player still skips immediately.
+  sleepDisplay(false);
   setTimeout(()=>{
-    // The night is skipped; resume shortly after sunrise.
-    dayTime=DAY_START+.02;
-    markSaveDirty();
-    saveCurrentGame(false);
-    sleeping=false;
-    veil.textContent='朝になりました';
-    setTimeout(()=>{
-      veil.style.opacity='0';
-      setTimeout(()=>{
-        veil.remove();
-        flash('朝になりました！ リスポーン地点も設定しました');
-      },420);
-    },400);
+    if(!sleeping||multiRole)return;
+    dayTime=DAY_START+.02;markSaveDirty();saveCurrentGame(false);
+    multiSleepReset();
+    flash('朝になりました！ リスポーン地点も設定しました');
   },650);
 }
 function advanceDayTime(dt){
@@ -6389,6 +6481,10 @@ function loop(now){
     const activelySprinting=!craftOpen&&!inventoryOpen&&sprinting&&stamina>0&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!playerInWater();
     updateStaminaRecovery(dt,activelySprinting);
   }
+  // The host clock keeps running while waiting in bed for other sleepers.
+  // A single-player sleeper retains the normal short sunrise transition.
+  if(started&&!dead&&multiRole==='host'&&sleeping&&!chestOpen)
+    advanceDayTime(dt);
   if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen){
     updateBowDraw(now);
     updateMining(dt);
@@ -6573,6 +6669,9 @@ function loop(now){
     clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm;
     const eye=blockAtPoint(player.pos.x,player.pos.y+EYE,player.pos.z);scene.fog.near=eye===B.WATER?1:28;scene.fog.far=eye===B.WATER?14:66;
   }
+  if(multiRole==='host'&&!isNightTime()&&
+      (sleeping||[...multiGuestRecords.values()].some(g=>g.sleeping)))
+    multiSleepHostFinish(true);
   chatSyncVisible();
   if(started&&multiRole)multiTick(now);
   if(!started||dead||sleeping)playerAvatar.visible=false;
