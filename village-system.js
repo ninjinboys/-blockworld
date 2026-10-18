@@ -2,7 +2,7 @@
  * using only existing block IDs. Site placement and buildings do not write
  * player edits: saved edits are applied after the village pass.
  */
-export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord,canPlaceVillage=()=>true}){
+export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord,canPlaceVillage=()=>true,canPlaceFurniture=()=>true}){
  const CELL=128,RADIUS=19,CACHE_LIMIT=190,sites=new Map();
  function hash(a,b,salt=0){
    let x=Math.imul((a|0)^seed,0x9e3779b1)^Math.imul((b|0)+salt,0x85ebca77);
@@ -50,6 +50,25 @@ export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUN
      if(v&&Math.hypot(v.x-x,v.z-z)<=range)out.push(v);
    }
    return out;
+ }
+ // Villages always have at least one loot chest; other homes get one
+ // by a deterministic roll. Older visited houses retain their interiors.
+ function houseFurniture(site,offsetX,offsetZ,index){
+   const hx=site.x+offsetX,hz=site.z+offsetZ;
+   const fresh=canPlaceFurniture(hx,hz);
+   const face=offsetZ<0?1:-1;
+   return {fresh,hasChest:fresh&&(index===0||hash(site.cellX*19+index,site.cellZ*23+index,9153)>.43),
+     chest:{x:hx+2,y:site.y+1,z:hz+face}};
+ }
+ function lootChestAt(x,y,z){
+   for(const site of nearby(x,z,5)){
+     for(const [i,[ox,oz]] of [[-11,-11],[11,-11],[-11,11],[11,11]].entries()){
+       const f=houseFurniture(site,ox,oz,i);
+       if(f.hasChest&&f.chest.x===x&&f.chest.y===y&&f.chest.z===z)
+         return {siteKey:site.key,house:i};
+     }
+   }
+   return null;
  }
  function decorate(data,cx,cz){
    const x0=cx*CHUNK,z0=cz*CHUNK;
@@ -115,7 +134,18 @@ export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUN
      const backZ=hz-face*1;
      put(hx-2,h+1,backZ,B.CRAFTING_TABLE);
      put(hx+2,h+1,backZ,B.FURNACE);
-     if(variant===0||variant===2)put(hx+2,h+1,hz+face,B.CHEST);
+     const furniture=houseFurniture(v,offsetX,offsetZ,variant);
+     if(furniture.fresh){
+       // Two-block bed with headboard at the back, walking clearance at
+       // the front and no overlap with workbench, furnace or doorway.
+       put(hx-1,h+1,hz-face,B.BED);
+       put(hx-1,h+1,hz-face*2,B.BED_HEAD);
+       if(furniture.hasChest)
+         put(furniture.chest.x,furniture.chest.y,furniture.chest.z,B.CHEST);
+     }else if(variant===0||variant===2){
+       // Preserve the exact old interior in previously generated villages.
+       put(hx+2,h+1,hz+face,B.CHEST);
+     }
      // Short porch connects each front door to the village's main path.
      for(let q=4;q<=10;q++){
        const px=hx,pz=hz+face*q;
@@ -149,5 +179,5 @@ export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUN
      well(v);
    }
  }
- return {site,nearby,decorate};
+ return {site,nearby,decorate,lootChestAt};
 }
