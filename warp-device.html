@@ -1,186 +1,186 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0d1b20">
-<title>NEXACRAFT | ワープ装置 3Dモデル</title>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0e2025"><title>NEXACRAFT | ワープ装置 3Dモデル</title>
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;background:#0d1b20;color:#e8faf5;font:14px -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}
-main{max-width:1060px;margin:auto;padding:16px 13px 30px}
-h1{font-size:clamp(21px,4vw,30px);margin:0 0 7px;letter-spacing:.05em}
-h1 b{color:#7eebd8}
-p{font-size:13px;color:#b2d3ca;line-height:1.5;margin:5px 0 12px}
-#stage{position:relative;border:2px solid #438b80;background:#13242a;border-radius:12px;overflow:hidden;height:min(65vw,580px);min-height:360px;touch-action:none}
-#scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-#fallback{position:absolute;width:100%;height:100%;inset:0}
-#stage.ready #fallback{display:none}
-#label{position:absolute;left:11px;top:11px;color:#d9fff7;background:rgba(12,35,40,.85);padding:7px 10px;border:1px solid #548e82;border-radius:6px;font-size:12px;pointer-events:none}
+*{box-sizing:border-box}html{background:#0a171c}body{margin:0;color:#eaf8f3;font:14px system-ui,-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background:#0a171c}
+main{max-width:1180px;padding:16px 12px 25px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:12px}
+h1{margin:0;font-size:clamp(21px,3.8vw,32px);letter-spacing:.065em}
+h1 span{color:#82efdd}
+a.back{font-size:13px;color:#d4fef5;background:#23564f;border:1px solid #599d8b;border-radius:7px;text-decoration:none;padding:11px 13px}
+small{color:#b8d3ce;display:block;margin-top:6px;font-size:12px;line-height:1.5}
+#frame{position:relative;height:clamp(370px,63vw,690px);border:2px solid #4c8c7e;background:#0f2228;border-radius:12px;overflow:hidden;touch-action:none}
+#frame canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#frame canvas:active{cursor:grabbing}
+#hud{position:absolute;left:12px;top:12px;padding:10px 13px;color:#d8fff5;background:rgba(6,18,21,.88);border:1px solid #4a8f81;border-radius:7px;font-weight:750;pointer-events:none}
+#stageStatus{position:absolute;bottom:11px;left:12px;font-size:12px;color:#b4cec6;background:rgba(7,20,22,.9);padding:7px 10px;border-radius:6px;pointer-events:none}
+#error{display:none;position:absolute;top:42%;left:10%;width:80%;text-align:center;padding:18px;background:#1a2a30;border-radius:8px;color:#e8fff5;line-height:1.6}
+#frame.error #error{display:block}
 .controls{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
-button,a.action{border:2px solid #5caa9b;background:#256459;color:white;border-radius:8px;min-height:45px;padding:8px 15px;font-weight:750;font-size:14px;touch-action:manipulation;cursor:pointer;text-decoration:none}
-button:active{background:#3c8578}
-button:focus-visible,a:focus-visible{outline:2px solid #d6ffed;outline-offset:3px}
-.info{font-size:13px;color:#b3d0c5}
-@media(max-width:430px){#stage{height:390px;min-height:330px}button,a.action{padding:8px 11px}}
-</style>
-</head>
-<body><main>
-<h1>NEXACRAFT <b>WARP DEVICE</b></h1>
-<p>実際に回転できる3Dモデル。指でドラッグして回転、2本指で拡大・縮小。WebGL・外部通信は使いません。</p>
-<div id="stage">
-<svg id="fallback" viewBox="0 0 720 480" role="img" aria-label="ワープ装置の立体モデル">
-<rect width="720" height="480" fill="#172b32"/>
-<path d="M200 390L360 440 530 390 370 345Z" fill="#586762"/>
-<path d="M200 390L360 440V466L200 413Z" fill="#78857d"/>
-<path d="M360 440L530 390V412L360 466Z" fill="#52645f"/>
-<g fill="none" stroke="#a5aca0" stroke-width="35">
-<path d="M264 353Q223 245 299 166"/><path d="M457 351Q502 252 432 171"/>
-</g>
-<g fill="none" stroke="#3bdfd1" stroke-width="7"><path d="M264 349Q232 244 299 171"/><path d="M457 349Q492 250 432 175"/></g>
-<path d="M346 316L346 89 384 72 398 316Z" fill="#9a9c86"/>
-<path d="M353 312L353 143" stroke="#50d1be" stroke-width="8"/>
-<path d="M361 232L414 294 361 349 308 294Z" fill="#41d8d4" stroke="#c4ffff" stroke-width="6"/>
-<path d="M361 232L361 349L414 294Z" fill="#138d9e"/>
-<g fill="#9ea798" stroke="#536763" stroke-width="3"><path d="M186 188L215 160 247 182 229 210Z"/><path d="M464 137L497 114 525 146 497 173Z"/><path d="M403 91L425 72 448 91 434 113Z"/></g>
-<path d="M255 377L314 404 352 392 297 365Z" fill="#7d9a8c"/>
-<path d="M297 365L315 333 346 348 352 392Z" fill="#9baba1"/>
-<path d="M315 347L336 355 324 365 303 358Z" fill="#3debd7"/>
-</svg>
-<canvas id="scene" aria-label="回転可能なワープ装置の3Dモデル"></canvas>
-<div id="label">3Dモデル / 軽量描画</div>
-</div>
-<div class="controls">
-<button id="front" type="button">正面</button>
-<button id="angle" type="button">斜め</button>
-<button id="turnL" type="button">左に回転</button>
-<button id="turnR" type="button">右に回転</button>
-<button id="zoomIn" type="button">拡大＋</button>
-<button id="zoomOut" type="button">縮小−</button>
-<a class="action" href="./">ゲームへ戻る</a>
-</div>
-<p class="info">古代石造りのゲート・浮遊する石片・発光クリスタル・素材投入口をモデル化しました。ボスワープ装置の形状確認用です。</p>
-</main>
-<script>
-(()=>{
-"use strict";
-const el=document.getElementById("stage"),canvas=document.getElementById("scene"),ctx=canvas.getContext("2d",{alpha:false});
-if(!ctx)return;
-const pieces=[],polys=[];
-const stone="#939a90",stone2="#a4aba0",dark="#566b69",moss="#4f7947",cyan="#20d9cd";
-const vert=(x,y,z)=>[x,y,z];
-function block(x,y,z,sx,sy,sz,color,twist=0){
- const co=Math.cos(twist),si=Math.sin(twist);
- const p=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]].map(([ix,iy,iz])=>{
- const dx=(ix-.5)*sx,dz=(iz-.5)*sz;
- return [x+dx*co-dz*si,y+(iy-.5)*sy,z+dx*si+dz*co];
- });
- const faces=[[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[3,2,6,7],[4,5,1,0]];
- const shade=[.73,.59,.75,.60,1,.48];
- for(let i=0;i<6;i++)polys.push({points:faces[i].map(j=>p[j]),color,shade:shade[i]});
+button{background:#316e64;color:#f2fffb;border:2px solid #559f90;border-radius:8px;min-height:45px;touch-action:manipulation;padding:9px 15px;font-size:13px;font-weight:850;cursor:pointer}
+button:hover{background:#3e877b}button:focus-visible{outline:3px solid #e5fff8;outline-offset:3px}
+footer{font-size:12px;line-height:1.55;color:#9dc7b9}
+@media(max-width:480px){#frame{height:420px}.controls{gap:7px}button{padding:9px 11px}}
+</style></head><body><main>
+<header><div><h1>NEXACRAFT <span>WARP DEVICE</span></h1><small>ボス転送装置 3Dモデル　／　古代遺跡・円弧状ゲート・浮遊石・結晶・アイテム投入口</small></div><a class="back" href="./">← ゲームへ戻る</a></header>
+<div id="frame"><div id="hud">WARP DEVICE ／ 3D MODEL</div><div id="stageStatus">指で回転・ピンチで拡大できます</div><div id="error">3D表示を読み込めませんでした。ゲームと同じブラウザ（SafariまたはChrome）で再度開いてください。</div></div>
+<div class="controls"><button id="angle">斜め</button><button id="front">正面</button><button id="side">側面</button><button id="top">上面</button><button id="left">◀ 回転</button><button id="right">回転 ▶</button><button id="near">拡大＋</button><button id="far">縮小−</button></div>
+<footer>ワールドへの設置やボス転送処理とは別に、外観を確認するための3Dモデルです。ゲーム本編への追加前の造形確認に使用します。</footer>
+</main><script type="module">
+(async()=>{
+let T;const root=document.querySelector('#frame'),status=document.querySelector('#stageStatus');
+try{T=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/+esm')}catch(e){root.classList.add('error');return}
+try{
+const scene=new T.Scene();scene.background=new T.Color(0x11252b);
+const camera=new T.PerspectiveCamera(37,1,.1,120);
+const renderer=new T.WebGLRenderer({antialias:false,alpha:false,powerPreference:'high-performance'});
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.6;
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));root.prepend(renderer.domElement);
+const hemi=new T.HemisphereLight(0xe6ffff,0x31403d,2.0);scene.add(hemi);
+const sun=new T.DirectionalLight(0xffe1aa,2.6);sun.position.set(-7,14,11);scene.add(sun);
+const rim=new T.DirectionalLight(0x21dfd2,1.6);rim.position.set(8,8,-9);scene.add(rim);
+const g=new T.Group();scene.add(g);
+const C={stone:0xa39e87,pale:0xc4b99b,cream:0xd8c7a6,gray:0x848982,shadow:0x536764,moss:0x536d3c,leaf:0x6c934b,crack:0x5c5750,teal:0x19d6c7,glow:0x65fff2};
+const blocks=[],lights=[];
+let seed=2421;function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
+function b(x,y,z,w,h,d,color,rot=0){blocks.push({x,y,z,w,h,d,color,rot})}
+function lit(x,y,z,w,h,d,color=C.teal,rot=0){lights.push({x,y,z,w,h,d,color,rot})}
+function diamond(x,y,z,sx,sy,sz,bright=false){
+ const material=new T.MeshStandardMaterial({color:bright?0xa4fffa:0x34dcda,metalness:.15,roughness:.16,transparent:true,opacity:bright?.90:.87,emissive:0x10c7c1,emissiveIntensity:bright?1.3:.8,depthWrite:true,flatShading:true});
+ const o=new T.Mesh(new T.OctahedronGeometry(1,0),material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);g.add(o);
+ const wire=new T.LineSegments(new T.EdgesGeometry(o.geometry),new T.LineBasicMaterial({color:0xbffffa,transparent:true,opacity:.78}));
+ wire.position.copy(o.position);wire.scale.copy(o.scale).multiplyScalar(1.003);g.add(wire);
 }
-function facet(points,color,brightness=1){polys.push({points,color,shade:brightness})}
-function octa(x,y,z,wx,hy,wz){
- const v=[vert(x,y+hy,z),vert(x+wx,y,z),vert(x,y,z+wz),vert(x-wx,y,z),vert(x,y,z-wz),vert(x,y-hy,z)];
- for(let i=1;i<=4;i++){
-  const b=i===4?1:i+1;
-  facet([v[0],v[i],v[b]],i%2?"#64f9ed":"#21d9ce",i%2?.94:1);
-  facet([v[5],v[b],v[i]],i%2?"#0e8799":"#21b9c8",.85);
- }
+const randomPalette=[C.stone,C.pale,C.gray,C.cream];
+b(0,.18,0,11,.35,8.3,C.gray);b(0,.42,-.23,10.6,.18,7.7,C.shadow);
+// Closely fitted individually carved flagstones with a visible grout grid.
+for(let i=-10;i<=10;i++)for(let j=-7;j<=7;j++){
+ const x=i*.49,z=j*.49-.33;if(Math.abs(x)>5.12||Math.abs(z)>3.75)continue;
+ const col=randomPalette[Math.floor(rnd()*randomPalette.length)];
+ b(x,.55,z,.466,.17,.47,col);
+ if(rnd()<.20)b(x+.08,.65,z+.05,.23,.018,.16,C.moss);
 }
-for(let x=-3;x<=3;x++)for(let z=-2;z<=2;z++)
- block(x,.15,z,1,.3,1,(x+z)%3?"#82918b":"#6f817a");
-for(let layer=0;layer<3;layer++)
- block(0,.22+layer*.25,2.25+layer*.4,3.3,.23,.35,layer%2?"#87988d":"#a9ada0");
 for(const side of [-1,1]){
- for(let j=0;j<12;j++){
-  const t=(j+0.35)/14*Math.PI*.60;
-  const x=side*(2.75*Math.cos(t)),y=1.12+3.02*Math.sin(t);
-  block(x,y,-.38,.65,.59,.68,j%4===0?"#9aa69a":stone);
-  block(x-side*.07,y,-.83,.24,.23,.22,cyan);
-  if(j%3===0)block(x+side*.23,y+.23,-.48,.23,.16,.35,moss);
+ for(let j=-7;j<=7;j++)b(side*5.14,.81,j*.50-.20,.48,.50,.46,j%3===0?C.pale:C.stone);
+}
+for(let i=-10;i<=10;i++)b(i*.5,.83,-3.77,.47,.60,.50,i%4===0?C.stone:C.gray);
+// Four steps with substantial individual stones.
+for(let k=0;k<4;k++)for(let i=-4;i<=4;i++){
+ const z=4.30-k*.43,h=.22+k*.18;
+ b(i*.45,.05+h/2,z,.44,h,.50,(i+k)%3===0?C.cream:C.stone);
+ b(i*.45,h+.085,z,.43,.12,.46,i%3?C.gray:C.pale);
+}
+for(let i=-3;i<=3;i++)for(let j=-2;j<=2;j++)
+ b(i*.48,.72,j*.48-.52,.46,.32,.46,(i+j)%3?C.stone:C.pale);
+// Stone arch: segments create a broken, curving half-ring on each side.
+for(const side of [-1,1]){
+ b(side*3.88,1.04,1.52,1.05,1.25,1.02,C.gray);
+ b(side*3.88,1.72,1.52,1.21,.19,1.15,C.cream);
+ b(side*3.88,1.02,2.045,.57,.53,.055,C.shadow);
+ diamond(side*3.88,1.06,2.12,.25,.40,.15);
+ for(let j=0;j<15;j++){
+  const angle=.04+j*.075;
+  const x=side*4.04*Math.cos(angle),y=1.58+4.05*Math.sin(angle),rot=-side*angle;
+  b(x,y,-1,.87,.86,.92,randomPalette[j%4],rot);
+  if(j%2===0)b(x+side*.1,y+.1,-.515,.53,.045,.039,C.crack,rot);
+  const a=side*3.57*Math.cos(angle),by=1.58+3.57*Math.sin(angle);
+  lit(a,by,-.50,.17,.66,.16,C.teal,rot);
+  if(j%3===0)b(x+side*.15,y+.30,-.54,.36,.15,.24,C.moss,rot);
  }
- for(const x of [side*2.9]){
-  block(x,.75,-1.05,.72,1.05,.77,stone2);
-  block(x,.82,-.61,.3,.27,.06,cyan);
-  block(x,.97,-1.00,.18,.09,.22,moss);
+ for(let j=0;j<6;j++)b(side*(3.7+rnd()-.5),.92+rnd()*.55,-2.30+(rnd()-.5)*1.2,.48,.53,.58,j%2?C.gray:C.stone);
+ for(let k=0;k<5;k++)b(side*(2+k*.22),.79+k*.06,3.5-k*.37,.55,.42,.57,C.stone);
+ diamond(side*2.65,1.38,2.40,.16,.29,.18);
+}
+// Narrow monumental tower behind the magical center.
+for(let j=0;j<15;j++){
+ const y=1.1+j*.48,w=j<7?1.35:j<10?1.28:j<12?1.17:j<14?.95:.7;
+ for(let i=0;i<3;i++)b((i-1)*w/3,y,-2.02,w/3-.023,.46,1.1,randomPalette[(j+i)%4]);
+ if(j%2===0)lit(.52,y,-1.42,.10,.36,.09,C.teal);
+ if(j%3===1)b(-w/2-.12,y,-1.85,.27,.52,.68,C.shadow);
+ if(j===4||j===8||j===12)lit(0,y+.24,-1.41,.61,.071,.10);
+}
+for(const side of [-1,1])for(let j=0;j<8;j++){
+ const y=1.16+j*.52;
+ b(side*(1.10+.06*(j%2)),y,-2.46,.44,.49,.42,j%4?C.gray:C.pale);
+ if(j%3===0)lit(side*1.11,y+.15,-2.14,.20,.12,.13);
+}
+const floating=[[-4.95,6.4,-1.35,.73],[4.95,6.1,-1.2,.78],[-3.18,7.2,-1.95,.65],[3.36,7.48,-2.06,.66],[-1.96,7.97,-2.22,.54],[1.92,7.99,-2.04,.57],[-4.73,4.5,1.12,.37],[4.78,4.53,1.02,.42],[1.20,6.13,0,.34],[-1.24,5.28,.21,.41]];
+for(const [i,v] of floating.entries()){
+ const [x,y,z,d]=v;
+ b(x,y,z,d,d*.86,d,i%2?C.stone:C.cream,.15*(i%3-1));
+ lit(x+.05,y,z+d*.52,d*.46,.07,.04,C.teal);
+ if(i%2===0)b(x-.1,y+d*.40,z,.26,.09,.25,C.moss);
+}
+lit(0,3.56,-.97,.21,3.92,.23);
+lit(0,3.7,-1.14,.45,2.7,.14,0x0d8488);
+diamond(0,4,.20,.90,1.42,.70);
+diamond(0,4.03,.78,.39,.88,.31,true);
+for(let i=0;i<9;i++){const a=i*2.40;diamond(Math.cos(a)*1.25,4+Math.sin(a*.7)*1.05,.40+Math.sin(a)*.38,.12+(i%2)*.07,.16+(i%3)*.05,.16)}
+b(0,.95,.52,1.48,.45,1.48,C.gray);b(0,1.20,.52,1.11,.11,1.08,C.cream);
+lit(0,1.27,.52,.80,.065,.74);
+b(0,1.31,.52,.49,.05,.45,C.shadow);
+// Distinct item insertion pedestal at front-left of the warp device.
+b(-1.65,.90,1.68,1.10,.77,1.15,C.stone);
+b(-1.65,1.33,1.68,1.29,.17,1.34,C.cream);
+lit(-1.65,1.43,1.68,.79,.06,.87);
+b(-1.65,1.468,1.68,.52,.05,.55,C.shadow);
+diamond(-1.65,1.08,2.28,.22,.37,.12);
+for(const side of [-1,1]){
+ for(let j=0;j<15;j++){
+  const a=.14+(j%8)*.12;
+  const x=side*(4.04*Math.cos(a)+(rnd()-.5)*.5),y=1.58+4.05*Math.sin(a)+(rnd()-.5)*.2,z=-.58+rnd()*.33;
+  if(j%3===0)b(x,y,z,.29,.21,.3,C.leaf);
+  if(j%5===0)for(let n=0;n<3;n++)b(x+.07,y-n*.17,z+.16,.1,.2,.14,C.moss);
  }
 }
-for(let y=1;y<7;y++){
- const width=y<4?.92:.79-(y-4)*.10;
- block(0,y*.73+.37,-1.10,width,.67,.93,y%2?stone2:stone);
- if(y>1&&y<5)block(-.5,y*.73+.3,-.88,.12,.55,.24,cyan);
- if(y%3===0)block(.32,y*.73+.60,-.75,.38,.10,.31,moss);
+for(let j=0;j<68;j++){
+ const x=(rnd()-.5)*9.8,z=(rnd()-.5)*6.6;if(Math.abs(x)<1.7&&z>.8)continue;
+ const r=.10+rnd()*.18;
+ b(x,.70+(r*.2),z,r*.55,r*.4,r*.63,rnd()<.6?C.moss:C.leaf);
 }
-for(let i=0;i<7;i++){
- const a=i*2.399;
- const r=2.0+(i%3)*.65, x=Math.cos(a)*r,z=-.62+Math.sin(a)*.65,y=3.4+(i%4)*.61;
- block(x,y,z,.46+(i%2)*.18,.48,.53,i%2?stone2:stone, i*.21);
- block(x+.1,y-.04,z+.28,.23,.08,.12,cyan,i*.21);
+// Use instancing rather than hundreds of draw calls, keeping iPad performance.
+const boxGeo=new T.BoxGeometry(1,1,1),D=new T.Object3D();
+function addBatch(list,material,perInstanceColors=true){
+ const mesh=new T.InstancedMesh(boxGeo,material,list.length);mesh.instanceMatrix.setUsage(T.StaticDrawUsage);
+ list.forEach((p,i)=>{D.position.set(p.x,p.y,p.z);D.rotation.set(0,0,p.rot||0);D.scale.set(p.w,p.h,p.d);D.updateMatrix();mesh.setMatrixAt(i,D.matrix);if(perInstanceColors)mesh.setColorAt(i,new T.Color(p.color))});
+ mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+ mesh.frustumCulled=false;g.add(mesh);
 }
-block(-1.35,.63,1.25,.91,.83,.84,stone2);
-block(-1.35,1.08,1.25,.70,.08,.68,dark);
-block(-1.35,1.13,1.25,.45,.06,.44,cyan);
-block(-1.35,1.18,1.25,.20,.045,.20,"#092f3a");
-octa(0,3.15,.10,.66,1.03,.45);
-octa(-.96,2.79,.15,.17,.25,.13);
-octa(.97,2.94,.11,.19,.23,.17);
-octa(.37,3.92,.04,.13,.19,.13);
-let yaw=.58,pitch=.34,zoom=1,drag=new Map(),lastPinch=null;
-function tint(color,k){
- const s=color.slice(1);
- const r=parseInt(s.slice(0,2),16),g=parseInt(s.slice(2,4),16),b=parseInt(s.slice(4,6),16);
- return "rgb("+[r,g,b].map(n=>Math.max(0,Math.min(255,Math.round(n*k)))).join(",")+")";
-}
-function draw(){
- const box=el.getBoundingClientRect();
- const w=Math.max(220,Math.min(1000,Math.floor(box.width))),h=Math.max(220,Math.min(650,Math.floor(box.height)));
- if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
- ctx.fillStyle="#182b32";ctx.fillRect(0,0,w,h);
- const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
- const scale=Math.min(w/10.8,h/9.3)*zoom, visible=[];
- for(const f of polys){
-  const out=[],depth=[];
-  for(const [x,y,z] of f.points){
-   const xx=x*cy-z*sy,zz=x*sy+z*cy,yy=y-2.66;
-   const yp=yy*cp-zz*sp,d=yy*sp+zz*cp;
-   const persp=12/(12-d);
-   out.push([w*.5+xx*scale*persp,h*.56-yp*scale*persp]);depth.push(d);
-  }
-  visible.push({points:out,z:depth.reduce((a,b)=>a+b,0)/depth.length,color:tint(f.color,f.shade)});
+addBatch(blocks,new T.MeshStandardMaterial({color:0xffffff,roughness:.85,metalness:0,flatShading:true,vertexColors:false}));
+addBatch(lights,new T.MeshBasicMaterial({color:0xffffff,toneMapped:false}));
+const ground=new T.Mesh(new T.CircleGeometry(19,48),new T.MeshLambertMaterial({color:0x10282b,transparent:true,opacity:.75}));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;scene.add(ground);
+let yaw=.62,pitch=.30,dist=20,changing=false,frames=0;
+const center=new T.Vector3(0,3.54,0),relative=new T.Vector3(),touches=new Map();
+function render(){
+ const w=root.clientWidth,h=root.clientHeight;if(!w||!h)return;
+ const width=Math.max(1,w),height=Math.max(1,h);
+ if(renderer.domElement.width!==Math.round(width*renderer.getPixelRatio())||renderer.domElement.height!==Math.round(height*renderer.getPixelRatio())){
+  renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();
  }
- visible.sort((a,b)=>a.z-b.z);
- for(const f of visible){
-  ctx.beginPath();ctx.moveTo(f.points[0][0],f.points[0][1]);
-  for(let j=1;j<f.points.length;j++)ctx.lineTo(f.points[j][0],f.points[j][1]);
-  ctx.closePath();ctx.fillStyle=f.color;ctx.fill();
- }
- el.classList.add("ready");
+ camera.position.set(center.x+dist*Math.sin(yaw)*Math.cos(pitch),center.y+dist*Math.sin(pitch),center.z+dist*Math.cos(yaw)*Math.cos(pitch));
+ camera.lookAt(center);renderer.render(scene,camera);frames++;
 }
-let pending=false;
-function render(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;draw();});}
-draw();
-const move=(id,fn)=>document.getElementById(id).addEventListener("click",()=>{fn();draw()});
-move("front",()=>{yaw=0;pitch=.15;zoom=1});
-move("angle",()=>{yaw=.58;pitch=.34;zoom=1});
-move("turnL",()=>yaw-=.37);
-move("turnR",()=>yaw+=.37);
-move("zoomIn",()=>zoom=Math.min(2.7,zoom*1.2));
-move("zoomOut",()=>zoom=Math.max(.5,zoom/1.2));
-function distance(){const list=[...drag.values()];return list.length<2?null:Math.hypot(list[0].x-list[1].x,list[0].y-list[1].y)}
-canvas.addEventListener("pointerdown",e=>{drag.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);lastPinch=distance()});
-canvas.addEventListener("pointermove",e=>{
- const old=drag.get(e.pointerId);if(!old)return;
- drag.set(e.pointerId,{x:e.clientX,y:e.clientY});const nd=distance();
- if(nd!==null&&lastPinch!==null){zoom=Math.max(.5,Math.min(2.7,zoom*nd/Math.max(1,lastPinch)));lastPinch=nd;}
- else if(nd===null){yaw+=(e.clientX-old.x)*.010;pitch=Math.max(-.22,Math.min(1.25,pitch+(e.clientY-old.y)*.007));}
- render();
+let pending=false;function req(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render()})}
+new ResizeObserver(req).observe(root);req();
+function on(id,fn){document.getElementById(id).addEventListener('click',()=>{fn();req()})}
+on('angle',()=>{yaw=.62;pitch=.30;dist=20});
+on('front',()=>{yaw=0;pitch=.12;dist=21});
+on('side',()=>{yaw=Math.PI/2;pitch=.13;dist=22});
+on('top',()=>{yaw=.05;pitch=1.36;dist=22});
+on('left',()=>yaw-=.35);on('right',()=>yaw+=.35);
+on('near',()=>dist=Math.max(9,dist/1.2));on('far',()=>dist=Math.min(36,dist*1.2));
+function pinch(){const p=[...touches.values()];return p.length<2?null:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}
+let lastPinch=null;
+renderer.domElement.addEventListener('pointerdown',e=>{touches.set(e.pointerId,{x:e.clientX,y:e.clientY});renderer.domElement.setPointerCapture(e.pointerId);lastPinch=pinch()});
+renderer.domElement.addEventListener('pointermove',e=>{
+ const prev=touches.get(e.pointerId);if(!prev)return;
+ touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ const next=pinch();
+ if(next!==null&&lastPinch!==null&&next>0){dist=Math.min(36,Math.max(9,dist*lastPinch/next));lastPinch=next;}
+ else if(next===null){yaw-=(e.clientX-prev.x)*.009;pitch=Math.max(-.10,Math.min(1.5,pitch+(e.clientY-prev.y)*.007));}
+ req();
 });
-for(const type of ["pointerup","pointercancel"])canvas.addEventListener(type,e=>{drag.delete(e.pointerId);lastPinch=distance()});
-canvas.addEventListener("wheel",e=>{e.preventDefault();zoom=Math.max(.5,Math.min(2.7,zoom*(e.deltaY>0?.9:1.1)));render()},{passive:false});
-if("ResizeObserver" in window)new ResizeObserver(render).observe(el);
-else window.addEventListener("resize",render);
+for(const type of ['pointerup','pointercancel'])renderer.domElement.addEventListener(type,e=>{touches.delete(e.pointerId);lastPinch=pinch()});
+renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(9,Math.min(36,dist*(e.deltaY>0?1.13:.88)));req()},{passive:false});
+status.textContent='3Dモデル表示中 ／ ドラッグで回転・ピンチで拡大';
+}catch(e){console.error(e);root.classList.add('error')}
 })();
-</script>
-</body>
-</html>
+</script></body></html>
