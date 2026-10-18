@@ -3,7 +3,7 @@ import {makeFirstPersonHand} from './first-person-hand.js?v=20261017longKatana09
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017standardKatana10';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
-import {createNewMobModels} from './new-mob-models.js?v=20261017villageModel03';
+import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018villageDoor02';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
