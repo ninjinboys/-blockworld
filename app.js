@@ -1150,7 +1150,7 @@ async function initializeAccountWorld(save,slot){
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
   else{
-    seed=freshSeed();generatorVersion=5;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    seed=freshSeed();generatorVersion=6;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
     stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;offhandItem=null;shieldGuarding=false;refreshShieldControl();syncDerivedInventory();
@@ -1193,7 +1193,7 @@ function renderWorldSelection(){
       const x=Math.floor(save.player?.x||0),z=Math.floor(save.player?.z||0);
       meta.textContent='LV '+(save.level||1)+'  ·  GEN'+(save.generatorVersion||1)+'  ·  '+formatSavedAt(save.savedAt)+'\nX '+x+' / Z '+z;
       meta.style.whiteSpace='pre-line';
-    }else meta.textContent='空きスロット · 新規はGEN5';
+    }else meta.textContent='空きスロット · 新規はGEN6';
     info.appendChild(meta);
 
     const actions=document.createElement('div');actions.className='world-slot-actions';
@@ -1521,6 +1521,15 @@ function climateV4(x,z){
 }
 function chooseBiomeV4(c,mountain){
   if(c.continental<-.29)return 6;
+  // GEN6 reserves deserts and swamps for other maps: tiny rare pockets only.
+  // Existing GEN4/GEN5 worlds retain their original base geography.
+  if(generatorVersion>=6){
+    if(mountain>.60)return c.temp<-.06?4:3;
+    if(c.moist>.57&&c.continental<.16&&c.macro>.45)return 5;
+    if(c.temp>.38&&c.moist<-.22&&c.macro>.45)return 2;
+    if(c.temp<-.28)return 3;
+    return c.moist>.08?1:0;
+  }
   if(mountain>.60)return c.temp<-.06?4:3;
   if(c.moist>.52&&c.continental<.16)return 5;
   if(c.temp>.25&&c.moist<-.10)return 2;
@@ -1567,6 +1576,16 @@ function columnInfoV4(x,z){
   if(river||lake)h=Math.min(h,SEA-1);
   const riverBank=!river&&!lake&&riverField<riverWidth*1.95&&h<=SEA+5;
   if(lake)bio=p.moist>.18?5:7;
+  // Vast warm, humid patches form a distinct JUNGLE region, without
+  // introducing extra desert/swamp geography into the Overworld.
+  // The underlying ground height stays exactly the original V4 height.
+  // A chunk visited before the jungle release keeps its old V4 biome.
+  if(generatorVersion>=4&&featureAllowed(x,z)&&!river&&!lake&&
+     (bio===0||bio===1)&&h>SEA+2&&p.rugged<.53&&
+     p.temp>-.18&&p.moist>-.12){
+    const regionalRain=fbm(p.X*.0038+104,p.Z*.0038-67,8811,4);
+    if(regionalRain>.14)bio=8;
+  }
   return {h,bio,river:river||lake,riverBank,rugged:p.rugged,temp:p.temp,moist:p.moist,lake};
 }
 
@@ -1667,12 +1686,19 @@ function isTreeRoot(x,z,info){
     if(info.bio===5)return cluster>.18&&naturalScatterRoot(x,z,3,751,.32);
     return false;
   }
+  // Jungle has its own taller trees. Do not generate standard forest trees.
+  if(info.bio===8)return false;
   // V4 keeps forests readable: clumps exist, but there are large gaps and plains are genuinely open.
   if(info.bio===1)return cluster>-.08&&naturalScatterRoot(x,z,3,721,.36);
   if(info.bio===3)return cluster>-.15&&naturalScatterRoot(x,z,3,731,.32);
   if(info.bio===0)return cluster>.60&&naturalScatterRoot(x,z,5,741,.48);
   if(info.bio===5)return cluster>.24&&naturalScatterRoot(x,z,4,751,.40);
   return false;
+}
+function isJungleTreeRoot(x,z,info){
+  if(info.bio!==8||info.h<=SEA+2||info.river||info.riverBank||info.rugged>.56)return false;
+  // Dense but separated emergent trees; broad continuous jungle regions.
+  return naturalScatterRoot(x,z,3,8817,.26);
 }
 function isBoulderRoot(x,z,info){
   if(info.h<=SEA+1||info.river||info.bio===2||info.bio===6||info.bio===7)return false;
@@ -1762,6 +1788,43 @@ function* generateChunkSteps(cx,cz){
     }
     }
     yield; // Pause after each surface feature slice.
+  }
+
+  // Tall jungle canopy with clustered leaves, branches and hanging vines.
+  // Roots scan a 4-block margin so crowns continue across chunk edges.
+  // Never spill new vegetation back into a protected legacy chunk.
+  if(chunkHasFeature(cx,cz)){
+    for(let x=x0-4;x<x0+CHUNK+4;x++)for(let z=z0-4;z<z0+CHUNK+4;z++){
+      const info=getInfo(x,z),h=info.h;
+      if(!isJungleTreeRoot(x,z,info))continue;
+      const tall=8+Math.floor(hash2(x,z,seed+8821)*5);
+      for(let y=1;y<=tall;y++)writeGenerated(data,cx,cz,x,h+y,z,B.LOG);
+      for(const side of [-1,1]){
+        const branchY=h+tall-2;
+        if(hash2(x+side,z,seed+8825)>.24){
+          writeGenerated(data,cx,cz,x+side,branchY,z,B.LOG);
+          writeGenerated(data,cx,cz,x+side*2,branchY,z,B.LEAF);
+        }
+      }
+      for(let dy=-3;dy<=2;dy++){
+        const radius=dy>=1?2:dy===-3?2:3;
+        for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+          const dist=dx*dx+dz*dz,rr=radius*radius;
+          if(dist>rr+2||hash3(x+dx,h+tall+dy,z+dz,seed+8827)<.20)continue;
+          const tx=x+dx,ty=h+tall+dy,tz=z+dz;
+          if(chunkCoord(tx)!==cx||chunkCoord(tz)!==cz||!inside(tx,ty,tz))continue;
+          const i=cIndex(localCoord(tx),ty,localCoord(tz));
+          if(data[i]===B.AIR)data[i]=B.LEAF;
+          // Natural hanging foliage (vines without new block IDs).
+          if(dy===-2&&dist>=4&&hash3(tx,ty,tz,seed+8833)>.79){
+            for(let down=1;down<=2;down++){
+              const j=cIndex(localCoord(tx),ty-down,localCoord(tz));
+              if(inside(tx,ty-down,tz)&&data[j]===B.AIR)data[j]=B.LEAF;
+            }
+          }
+        }
+      }
+    }
   }
 
   // Settlements respect player construction: world edits are applied LAST.
