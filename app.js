@@ -593,7 +593,13 @@ const chestSpill=(x,y,z)=>chestSlots(x,y,z).filter(Boolean).map(st=>({...st}));
 const chestIsOpenAt=(x,y,z)=>chestOpen&&chestLocation?.key===chestKey(x,y,z);
 function chestApplyState(x,y,z,raw){
   if(get(x,y,z)!==B.CHEST)return false;
-  chestContents.set(chestKey(x,y,z),normalizedChest(raw));markSaveDirty();
+  chestContents.set(chestKey(x,y,z),normalizedChest(raw));
+  // Host sent authoritative chest contents: a later host migration must
+  // not regenerate the same treasure when an old village was retrofitted.
+  const chunk=chunkKey(chunkCoord(x),chunkCoord(z));
+  if(!editChunks.get(chunk)?.has(cIndex(localCoord(x),y,localCoord(z)))&&
+     villageWorld().lootChestAt(x,y,z))villageLootGranted.add(chestKey(x,y,z));
+  markSaveDirty();
   if(chestIsOpenAt(x,y,z))renderChestUI();
   return true;
 }
@@ -7343,6 +7349,12 @@ async function multiPromoteHost(job){
     }
   }
   rebuildTorchIndex();
+  // Restore any loot claims recorded by the departing host; otherwise a
+  // promoted guest could respawn treasure that another player took.
+  if(Array.isArray(world.villageLootGranted))
+    for(const key of world.villageLootGranted)
+      if(typeof key==='string'&&/^-?\d+,-?\d+,-?\d+$/.test(key))
+        villageLootGranted.add(key);
   // Restore chest state found in the host checkpoint if a guest missed it.
   if(Array.isArray(world.chests))for(const row of world.chests){
     if(!Array.isArray(row)||typeof row[0]!=='string'||chestContents.has(row[0]))continue;
