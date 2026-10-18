@@ -4520,6 +4520,15 @@ function respawnPlayer(){
 }
 
 function xpNeeded(lv){return 12+lv*8}
+// Large, dangerous wildlife should feel rewarding even at high player levels.
+// Exactly three level thresholds are awarded at the player's CURRENT level;
+// the XP already earned toward the next level is preserved. Neutral village
+// golems, ordinary livestock, and the separately balanced Chimera boss are excluded.
+const LARGE_MOB_XP_TYPES=new Set(['lion','bison','anaconda','bear','elephant','crocodile','shark']);
+function defeatedMobXP(mob){
+  if(!LARGE_MOB_XP_TYPES.has(mob.userData.type))return mob.userData.xp??12;
+  return xpNeeded(level)+xpNeeded(level+1)+xpNeeded(level+2);
+}
 function nextBlueprint(){return [...recipes,...workbenchRecipes].sort((a,b)=>a.unlockLevel-b.unlockLevel).find(r=>r.unlockLevel>level)||null}
 function updateProgress(){
   const need=xpNeeded(level),pct=Math.max(0,Math.min(100,xp/need*100));
@@ -5788,7 +5797,7 @@ function damageMob(root,damage,via='melee',power=1,attackerId='host'){
       spawnWorldDrop(I.SADDLE,1,root.position.x,root.position.y+1,root.position.z,{scatter:true,pickupDelay:.55});
       if(ridingHorse===root)ridingHorse=null;
     }
-    const earned=root.userData.xp||12,name=root.userData.name||'動物';
+    const earned=defeatedMobXP(root),name=root.userData.name||'動物';
     dropMobLoot(root);
     if(root.userData.type==='zombie'||root.userData.type==='skeleton'||root.userData.type==='chimera'||root.userData.type==='villager'||NEW_MOB_TYPES.has(root.userData.type))removeZombie(root);
     else {scene.remove(root);const i=mobs.indexOf(root);if(i>=0)mobs.splice(i,1)}
