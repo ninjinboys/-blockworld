@@ -4,7 +4,7 @@ import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261017standardKata
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
-import {createVillageSystem} from './village-system.js?v=20261018historyJungle01';
+import {createVillageSystem} from './village-system.js?v=20261018villageBedsLoot01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -488,16 +488,60 @@ function normalizedChest(raw){
     return st&&Number.isInteger(id)&&Object.hasOwn(inventory,id)&&Number.isInteger(qty)&&qty>0?{id,qty:Math.min(qty,maxStackFor(id))}:null;
   });
 }
+// Seeded treasure ranges from wooden tools to very rare diamond equipment.
+function generateVillageChestLoot(x,y,z){
+  const roll=n=>hash3(x+n*41,y+n*17,z-n*29,(seed+62529)>>>0);
+  const luck=roll(1);
+  const tier=luck>.98?'diamond':luck>.85?'gold':luck>.58?'iron':luck>.27?'stone':'wood';
+  const gear={
+    wood:[I.WOOD_PICK,I.WOOD_AXE],
+    stone:[I.STONE_PICK,I.STONE_SWORD,I.STONE_AXE,I.STONE_SHOVEL],
+    iron:[I.IRON_PICK,I.IRON_SWORD,I.IRON_AXE,I.IRON_HELMET,I.IRON_CHEST],
+    gold:[I.GOLD_PICK,I.GOLD_SWORD,I.GOLD_AXE,I.GOLD_HELMET,I.GOLD_CHEST],
+    diamond:[I.DIAMOND_PICK,I.DIAMOND_SWORD,I.DIAMOND_HELMET,I.DIAMOND_CHEST,
+      I.DIAMOND_LEGS,I.DIAMOND_BOOTS]
+  }[tier];
+  const materials={
+    wood:[B.PLANK,I.STICK,B.LOG,B.COBBLE],
+    stone:[B.COBBLE,B.COAL,I.STICK,B.PLANK],
+    iron:[I.RAW_IRON,B.COAL,I.IRON_INGOT,B.COBBLE],
+    gold:[I.RAW_GOLD,I.GOLD_INGOT,B.COAL,I.IRON_INGOT],
+    diamond:[I.DIAMOND,I.IRON_INGOT,I.RAW_GOLD,B.COAL]
+  }[tier];
+  const slots=Array(CHEST_SIZE).fill(null);
+  slots[0]={id:gear[Math.floor(roll(2)*gear.length)],qty:1};
+  const qty=(id,n)=>Math.min(maxStackFor(id),1+Math.floor(roll(n)*((tier==='diamond')?3:8)));
+  for(let n=1;n<=3;n++){
+    const id=materials[Math.floor(roll(n+4)*materials.length)];
+    slots[n]={id,qty:qty(id,n+10)};
+  }
+  if(roll(19)>.42){
+    const id=roll(20)>.50?I.LEATHER:I.WOOL;
+    slots[4]={id,qty:1+Math.floor(roll(21)*5)};
+  }
+  if(roll(22)>.70)slots[5]={id:I.ARROW,qty:2+Math.floor(roll(23)*8)};
+  return slots;
+}
 function chestSlots(x,y,z){
   const k=chestKey(x,y,z);
-  if(!chestContents.has(k))chestContents.set(k,Array(CHEST_SIZE).fill(null));
+  if(!chestContents.has(k)){
+    let slots=Array(CHEST_SIZE).fill(null);
+    if(multiRole!=='guest'&&get(x,y,z)===B.CHEST){
+      const cx=chunkCoord(x),cz=chunkCoord(z),index=cIndex(localCoord(x),y,localCoord(z));
+      // Don't distribute loot to a user-placed replacement at this position.
+      if(!editChunks.get(chunkKey(cx,cz))?.has(index)&&villageWorld().lootChestAt(x,y,z)){
+        slots=generateVillageChestLoot(x,y,z);
+        if(worldReady)markSaveDirty();
+      }
+    }
+    chestContents.set(k,slots);
+  }
   return chestContents.get(k);
 }
 function serializeChests(){
-  return [...chestContents].filter(([k])=>{
-    const xyz=k.split(',').map(Number);
-    return xyz.length===3&&xyz.every(Number.isInteger)&&get(...xyz)===B.CHEST;
-  }).map(([k,slots])=>[k,slots.map(st=>st?{...st}:null)]);
+  // Opened treasure chests may be in unloaded chunks: get() only sees
+  // original base terrain there. Removals are handled by set().
+  return [...chestContents].map(([k,slots])=>[k,slots.map(st=>st?{...st}:null)]);
 }
 function restoreChests(raw){
   chestContents.clear();
@@ -505,7 +549,8 @@ function restoreChests(raw){
   for(const pair of raw.slice(0,2048)){
     if(!Array.isArray(pair)||pair.length!==2||typeof pair[0]!=='string')continue;
     const xyz=pair[0].split(',').map(Number);
-    if(xyz.length===3&&xyz.every(Number.isInteger)&&get(...xyz)===B.CHEST)
+    if(xyz.length===3&&xyz.every(Number.isInteger)&&xyz[1]>=Y_MIN&&xyz[1]<=WORLD_TOP&&
+       Math.abs(xyz[0])<1000000&&Math.abs(xyz[2])<1000000)
       chestContents.set(chestKey(...xyz),normalizedChest(pair[1]));
   }
 }
@@ -529,7 +574,7 @@ function chestTake(slots,index,count){
   const n=Math.min(st.qty,Math.max(0,Math.floor(count)));if(!n)return null;
   const result={id:st.id,qty:n};st.qty-=n;if(!st.qty)slots[index]=null;return result;
 }
-const chestSpill=(x,y,z)=>(chestContents.get(chestKey(x,y,z))||[]).filter(Boolean).map(st=>({...st}));
+const chestSpill=(x,y,z)=>chestSlots(x,y,z).filter(Boolean).map(st=>({...st}));
 const chestIsOpenAt=(x,y,z)=>chestOpen&&chestLocation?.key===chestKey(x,y,z);
 function chestApplyState(x,y,z,raw){
   if(get(x,y,z)!==B.CHEST)return false;
@@ -565,7 +610,7 @@ const cIndex=(lx,y,lz)=>((y-Y_MIN)*CHUNK+lz)*CHUNK+lx;
 // 1 = jungle-era terrain. Future biome/structure releases must increment
 // this revision and only add that release's content where stamp >= revision.
 // Recording is done after finishing a first-time chunk, not when rebuilding.
-const FEATURE_REVISION=1,exploredChunkRevisions=new Map();
+const FEATURE_REVISION=2,exploredChunkRevisions=new Map();
 function chunkHasFeature(cx,cz,revision=FEATURE_REVISION){
   const stamp=exploredChunkRevisions.get(chunkKey(cx,cz));
   return (stamp===undefined?FEATURE_REVISION:stamp)>=revision;
@@ -617,7 +662,15 @@ function villageSiteAllowed(x,z,radius){
   const minX=chunkCoord(x-radius-2),maxX=chunkCoord(x+radius+2);
   const minZ=chunkCoord(z-radius-2),maxZ=chunkCoord(z+radius+2);
   for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++)
-    if(!chunkHasFeature(cx,cz))return false;
+    if(!chunkHasFeature(cx,cz,1))return false;
+  return true;
+}
+function villageFurnitureAllowed(hx,hz){
+  // Both blocks of each bed and all of the house must be newly generated.
+  // Never re-furnish buildings already visited before this release.
+  for(let cx=chunkCoord(hx-4);cx<=chunkCoord(hx+4);cx++)
+    for(let cz=chunkCoord(hz-4);cz<=chunkCoord(hz+4);cz++)
+      if(!chunkHasFeature(cx,cz,2))return false;
   return true;
 }
 const DOOR_ALL=new Set([B.DOOR_X,B.DOOR_X_TOP,B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z,B.DOOR_Z_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_OPEN_TOP]);
@@ -1580,7 +1633,7 @@ function columnInfoV4(x,z){
   // introducing extra desert/swamp geography into the Overworld.
   // The underlying ground height stays exactly the original V4 height.
   // A chunk visited before the jungle release keeps its old V4 biome.
-  if(generatorVersion>=4&&featureAllowed(x,z)&&!river&&!lake&&
+  if(generatorVersion>=4&&featureAllowed(x,z,1)&&!river&&!lake&&
      (bio===0||bio===1)&&h>SEA+2&&p.rugged<.53&&
      p.temp>-.18&&p.moist>-.12){
     const regionalRain=fbm(p.X*.0038+104,p.Z*.0038-67,8811,4);
@@ -1793,7 +1846,7 @@ function* generateChunkSteps(cx,cz){
   // Tall jungle canopy with clustered leaves, branches and hanging vines.
   // Roots scan a 4-block margin so crowns continue across chunk edges.
   // Never spill new vegetation back into a protected legacy chunk.
-  if(chunkHasFeature(cx,cz)){
+  if(chunkHasFeature(cx,cz,1)){
     for(let x=x0-4;x<x0+CHUNK+4;x++)for(let z=z0-4;z<z0+CHUNK+4;z++){
       const info=getInfo(x,z),h=info.h;
       if(!isJungleTreeRoot(x,z,info))continue;
@@ -1838,7 +1891,8 @@ function villageWorld(){
   if(!cachedVillageWorld||cachedVillageSeed!==seed||cachedVillageGenerator!==generatorVersion){
     cachedVillageSeed=seed;cachedVillageGenerator=generatorVersion;
     cachedVillageWorld=createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,
-      WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord,canPlaceVillage:villageSiteAllowed});
+      WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord,canPlaceVillage:villageSiteAllowed,
+      canPlaceFurniture:villageFurnitureAllowed});
   }
   return cachedVillageWorld;
 }
@@ -1879,7 +1933,9 @@ function set(x,y,z,v){
     if(chestIsOpenAt(x,y,z))setChestOpen(false);
   }
   c.data[i]=v;
-  if(v===B.CHEST&&!chestContents.has(chestKey(x,y,z)))chestSlots(x,y,z);
+  // Player chests must be empty even when replacing a village treasure.
+  if(v===B.CHEST&&!chestContents.has(chestKey(x,y,z)))
+    chestContents.set(chestKey(x,y,z),Array(CHEST_SIZE).fill(null));
   const k=chunkKey(cx,cz);
   let edits=editChunks.get(k);
   if(!edits){edits=new Map();editChunks.set(k,edits)}
@@ -5230,6 +5286,10 @@ function setChestOpen(open,point=null){
     if(inventoryOpen)setInventoryOpen(false);
     chestLocation={...point,key:chestKey(point.x,point.y,point.z)};
     chestSlots(point.x,point.y,point.z);
+    // Guests request the authoritative contents on first opening; a chest
+    // may have been looted by a friend since the last checkpoint.
+    if(multiRole==='guest'&&multiplayerNetwork.connected)
+      multiplayerNetwork.send({t:'chestLook',x:point.x,y:point.y,z:point.z});
   }else chestLocation=null;
   chestOpen=!!open;$('chestScreen').classList.toggle('open',chestOpen);
   $('chestScreen').setAttribute('aria-hidden',String(!chestOpen));
@@ -7395,6 +7455,14 @@ function multiRoomData(message,peerId){
       multiMembers[from.id]={...message.profile,name:from.name};markSaveDirty();
     }else if(message.t==='chestTransfer'){
       handleGuestChestTransfer(message,peerId,from);
+    }else if(message.t==='chestLook'){
+      const p=from.player;
+      if([message.x,message.y,message.z].every(Number.isInteger)&&
+         inside(message.x,message.y,message.z)&&p&&
+         Math.hypot(p.x-message.x,p.y-message.y,p.z-message.z)<8&&
+         get(message.x,message.y,message.z)===B.CHEST)
+        multiplayerNetwork.send({t:'chestState',x:message.x,y:message.y,z:message.z,
+          slots:chestSlots(message.x,message.y,message.z)},peerId);
     }else if(message.t==='arrowShot'&&validArrowPacket(message)){
       const p=from.player;
       if(p&&Math.hypot(message.x-p.x,message.y-p.y,message.z-p.z)<5){
