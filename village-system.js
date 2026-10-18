@@ -2,7 +2,7 @@
  * using only existing block IDs. Site placement and buildings do not write
  * player edits: saved edits are applied after the village pass.
  */
-export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord}){
+export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUNK,Y_MIN,cIndex,chunkCoord,canPlaceVillage=()=>true}){
  const CELL=128,RADIUS=19,CACHE_LIMIT=190,sites=new Map();
  function hash(a,b,salt=0){
    let x=Math.imul((a|0)^seed,0x9e3779b1)^Math.imul((b|0)+salt,0x85ebca77);
@@ -31,7 +31,7 @@ export function createVillageSystem({seed,surfaceAt,biomeAt,B,SEA,WORLD_TOP,CHUN
      const base=Math.round(heights.reduce((a,b)=>a+b,0)/heights.length);
      // Reserve the central radius for villages, but keep the player's initial
      // world spawn free of a newly created village.
-     if(Math.hypot(x,z)<38)continue;
+     if(Math.hypot(x,z)<38||!canPlaceVillage(x,z,RADIUS))continue;
      found={key,cellX:cx,cellZ:cz,x,z,y:base,radius:RADIUS,
        name:'村',village:true};
      break;
