@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1b20">
+<title>NEXACRAFT | ワープ装置 3Dモデル</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#0d1b20;color:#e8faf5;font:14px -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif}
+main{max-width:1060px;margin:auto;padding:16px 13px 30px}
+h1{font-size:clamp(21px,4vw,30px);margin:0 0 7px;letter-spacing:.05em}
+h1 b{color:#7eebd8}
+p{font-size:13px;color:#b2d3ca;line-height:1.5;margin:5px 0 12px}
+#stage{position:relative;border:2px solid #438b80;background:#13242a;border-radius:12px;overflow:hidden;height:min(65vw,580px);min-height:360px;touch-action:none}
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#fallback{position:absolute;width:100%;height:100%;inset:0}
+#stage.ready #fallback{display:none}
+#label{position:absolute;left:11px;top:11px;color:#d9fff7;background:rgba(12,35,40,.85);padding:7px 10px;border:1px solid #548e82;border-radius:6px;font-size:12px;pointer-events:none}
+.controls{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
+button,a.action{border:2px solid #5caa9b;background:#256459;color:white;border-radius:8px;min-height:45px;padding:8px 15px;font-weight:750;font-size:14px;touch-action:manipulation;cursor:pointer;text-decoration:none}
+button:active{background:#3c8578}
+button:focus-visible,a:focus-visible{outline:2px solid #d6ffed;outline-offset:3px}
+.info{font-size:13px;color:#b3d0c5}
+@media(max-width:430px){#stage{height:390px;min-height:330px}button,a.action{padding:8px 11px}}
+</style>
+</head>
+<body><main>
+<h1>NEXACRAFT <b>WARP DEVICE</b></h1>
+<p>実際に回転できる3Dモデル。指でドラッグして回転、2本指で拡大・縮小。WebGL・外部通信は使いません。</p>
+<div id="stage">
+<svg id="fallback" viewBox="0 0 720 480" role="img" aria-label="ワープ装置の立体モデル">
+<rect width="720" height="480" fill="#172b32"/>
+<path d="M200 390L360 440 530 390 370 345Z" fill="#586762"/>
+<path d="M200 390L360 440V466L200 413Z" fill="#78857d"/>
+<path d="M360 440L530 390V412L360 466Z" fill="#52645f"/>
+<g fill="none" stroke="#a5aca0" stroke-width="35">
+<path d="M264 353Q223 245 299 166"/><path d="M457 351Q502 252 432 171"/>
+</g>
+<g fill="none" stroke="#3bdfd1" stroke-width="7"><path d="M264 349Q232 244 299 171"/><path d="M457 349Q492 250 432 175"/></g>
+<path d="M346 316L346 89 384 72 398 316Z" fill="#9a9c86"/>
+<path d="M353 312L353 143" stroke="#50d1be" stroke-width="8"/>
+<path d="M361 232L414 294 361 349 308 294Z" fill="#41d8d4" stroke="#c4ffff" stroke-width="6"/>
+<path d="M361 232L361 349L414 294Z" fill="#138d9e"/>
+<g fill="#9ea798" stroke="#536763" stroke-width="3"><path d="M186 188L215 160 247 182 229 210Z"/><path d="M464 137L497 114 525 146 497 173Z"/><path d="M403 91L425 72 448 91 434 113Z"/></g>
+<path d="M255 377L314 404 352 392 297 365Z" fill="#7d9a8c"/>
+<path d="M297 365L315 333 346 348 352 392Z" fill="#9baba1"/>
+<path d="M315 347L336 355 324 365 303 358Z" fill="#3debd7"/>
+</svg>
+<canvas id="scene" aria-label="回転可能なワープ装置の3Dモデル"></canvas>
+<div id="label">3Dモデル / 軽量描画</div>
+</div>
+<div class="controls">
+<button id="front" type="button">正面</button>
+<button id="angle" type="button">斜め</button>
+<button id="turnL" type="button">左に回転</button>
+<button id="turnR" type="button">右に回転</button>
+<button id="zoomIn" type="button">拡大＋</button>
+<button id="zoomOut" type="button">縮小−</button>
+<a class="action" href="./">ゲームへ戻る</a>
+</div>
+<p class="info">古代石造りのゲート・浮遊する石片・発光クリスタル・素材投入口をモデル化しました。ボスワープ装置の形状確認用です。</p>
+</main>
+<script>
+(()=>{
+"use strict";
+const el=document.getElementById("stage"),canvas=document.getElementById("scene"),ctx=canvas.getContext("2d",{alpha:false});
+if(!ctx)return;
+const pieces=[],polys=[];
+const stone="#939a90",stone2="#a4aba0",dark="#566b69",moss="#4f7947",cyan="#20d9cd";
+const vert=(x,y,z)=>[x,y,z];
+function block(x,y,z,sx,sy,sz,color,twist=0){
+ const co=Math.cos(twist),si=Math.sin(twist);
+ const p=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]].map(([ix,iy,iz])=>{
+ const dx=(ix-.5)*sx,dz=(iz-.5)*sz;
+ return [x+dx*co-dz*si,y+(iy-.5)*sy,z+dx*si+dz*co];
+ });
+ const faces=[[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[3,2,6,7],[4,5,1,0]];
+ const shade=[.73,.59,.75,.60,1,.48];
+ for(let i=0;i<6;i++)polys.push({points:faces[i].map(j=>p[j]),color,shade:shade[i]});
+}
+function facet(points,color,brightness=1){polys.push({points,color,shade:brightness})}
+function octa(x,y,z,wx,hy,wz){
+ const v=[vert(x,y+hy,z),vert(x+wx,y,z),vert(x,y,z+wz),vert(x-wx,y,z),vert(x,y,z-wz),vert(x,y-hy,z)];
+ for(let i=1;i<=4;i++){
+  const b=i===4?1:i+1;
+  facet([v[0],v[i],v[b]],i%2?"#64f9ed":"#21d9ce",i%2?.94:1);
+  facet([v[5],v[b],v[i]],i%2?"#0e8799":"#21b9c8",.85);
+ }
+}
+for(let x=-3;x<=3;x++)for(let z=-2;z<=2;z++)
+ block(x,.15,z,1,.3,1,(x+z)%3?"#82918b":"#6f817a");
+for(let layer=0;layer<3;layer++)
+ block(0,.22+layer*.25,2.25+layer*.4,3.3,.23,.35,layer%2?"#87988d":"#a9ada0");
+for(const side of [-1,1]){
+ for(let j=0;j<12;j++){
+  const t=(j+0.35)/14*Math.PI*.60;
+  const x=side*(2.75*Math.cos(t)),y=1.12+3.02*Math.sin(t);
+  block(x,y,-.38,.65,.59,.68,j%4===0?"#9aa69a":stone);
+  block(x-side*.07,y,-.83,.24,.23,.22,cyan);
+  if(j%3===0)block(x+side*.23,y+.23,-.48,.23,.16,.35,moss);
+ }
+ for(const x of [side*2.9]){
+  block(x,.75,-1.05,.72,1.05,.77,stone2);
+  block(x,.82,-.61,.3,.27,.06,cyan);
+  block(x,.97,-1.00,.18,.09,.22,moss);
+ }
+}
+for(let y=1;y<7;y++){
+ const width=y<4?.92:.79-(y-4)*.10;
+ block(0,y*.73+.37,-1.10,width,.67,.93,y%2?stone2:stone);
+ if(y>1&&y<5)block(-.5,y*.73+.3,-.88,.12,.55,.24,cyan);
+ if(y%3===0)block(.32,y*.73+.60,-.75,.38,.10,.31,moss);
+}
+for(let i=0;i<7;i++){
+ const a=i*2.399;
+ const r=2.0+(i%3)*.65, x=Math.cos(a)*r,z=-.62+Math.sin(a)*.65,y=3.4+(i%4)*.61;
+ block(x,y,z,.46+(i%2)*.18,.48,.53,i%2?stone2:stone, i*.21);
+ block(x+.1,y-.04,z+.28,.23,.08,.12,cyan,i*.21);
+}
+block(-1.35,.63,1.25,.91,.83,.84,stone2);
+block(-1.35,1.08,1.25,.70,.08,.68,dark);
+block(-1.35,1.13,1.25,.45,.06,.44,cyan);
+block(-1.35,1.18,1.25,.20,.045,.20,"#092f3a");
+octa(0,3.15,.10,.66,1.03,.45);
+octa(-.96,2.79,.15,.17,.25,.13);
+octa(.97,2.94,.11,.19,.23,.17);
+octa(.37,3.92,.04,.13,.19,.13);
+let yaw=.58,pitch=.34,zoom=1,drag=new Map(),lastPinch=null;
+function tint(color,k){
+ const s=color.slice(1);
+ const r=parseInt(s.slice(0,2),16),g=parseInt(s.slice(2,4),16),b=parseInt(s.slice(4,6),16);
+ return "rgb("+[r,g,b].map(n=>Math.max(0,Math.min(255,Math.round(n*k)))).join(",")+")";
+}
+function draw(){
+ const box=el.getBoundingClientRect();
+ const w=Math.max(220,Math.min(1000,Math.floor(box.width))),h=Math.max(220,Math.min(650,Math.floor(box.height)));
+ if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+ ctx.fillStyle="#182b32";ctx.fillRect(0,0,w,h);
+ const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+ const scale=Math.min(w/10.8,h/9.3)*zoom, visible=[];
+ for(const f of polys){
+  const out=[],depth=[];
+  for(const [x,y,z] of f.points){
+   const xx=x*cy-z*sy,zz=x*sy+z*cy,yy=y-2.66;
+   const yp=yy*cp-zz*sp,d=yy*sp+zz*cp;
+   const persp=12/(12-d);
+   out.push([w*.5+xx*scale*persp,h*.56-yp*scale*persp]);depth.push(d);
+  }
+  visible.push({points:out,z:depth.reduce((a,b)=>a+b,0)/depth.length,color:tint(f.color,f.shade)});
+ }
+ visible.sort((a,b)=>a.z-b.z);
+ for(const f of visible){
+  ctx.beginPath();ctx.moveTo(f.points[0][0],f.points[0][1]);
+  for(let j=1;j<f.points.length;j++)ctx.lineTo(f.points[j][0],f.points[j][1]);
+  ctx.closePath();ctx.fillStyle=f.color;ctx.fill();
+ }
+ el.classList.add("ready");
+}
+let pending=false;
+function render(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;draw();});}
+draw();
+const move=(id,fn)=>document.getElementById(id).addEventListener("click",()=>{fn();draw()});
+move("front",()=>{yaw=0;pitch=.15;zoom=1});
+move("angle",()=>{yaw=.58;pitch=.34;zoom=1});
+move("turnL",()=>yaw-=.37);
+move("turnR",()=>yaw+=.37);
+move("zoomIn",()=>zoom=Math.min(2.7,zoom*1.2));
+move("zoomOut",()=>zoom=Math.max(.5,zoom/1.2));
+function distance(){const list=[...drag.values()];return list.length<2?null:Math.hypot(list[0].x-list[1].x,list[0].y-list[1].y)}
+canvas.addEventListener("pointerdown",e=>{drag.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);lastPinch=distance()});
+canvas.addEventListener("pointermove",e=>{
+ const old=drag.get(e.pointerId);if(!old)return;
+ drag.set(e.pointerId,{x:e.clientX,y:e.clientY});const nd=distance();
+ if(nd!==null&&lastPinch!==null){zoom=Math.max(.5,Math.min(2.7,zoom*nd/Math.max(1,lastPinch)));lastPinch=nd;}
+ else if(nd===null){yaw+=(e.clientX-old.x)*.010;pitch=Math.max(-.22,Math.min(1.25,pitch+(e.clientY-old.y)*.007));}
+ render();
+});
+for(const type of ["pointerup","pointercancel"])canvas.addEventListener(type,e=>{drag.delete(e.pointerId);lastPinch=distance()});
+canvas.addEventListener("wheel",e=>{e.preventDefault();zoom=Math.max(.5,Math.min(2.7,zoom*(e.deltaY>0?.9:1.1)));render()},{passive:false});
+if("ResizeObserver" in window)new ResizeObserver(render).observe(el);
+else window.addEventListener("resize",render);
+})();
+</script>
+</body>
+</html>
