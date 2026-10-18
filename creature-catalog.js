@@ -5,6 +5,7 @@
  * Do not expose placeholder models as implemented enemies.
  */
 import {NEW_MOBS,createNewMobModels} from './new-mob-models.js?v=20261017villageModel03';
+import {LEGACY_MOBS,createLegacyMobModels} from './legacy-mob-models.js?v=20261018allOriginal01';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 
@@ -19,15 +20,22 @@ export const BOSS_MOBS=[
    height:'全高約5ブロック',description:'ライオン・バッファロー・巨大蛇の特徴を持つ召喚ボス。体力300。',boss:true,status:'実装済'}
 ];
 
-// A single listing used by the gallery; future wildlife are added to
-// NEW_MOBS, future bosses to BOSS_MOBS with a matching builder/animator.
-export const CREATURE_CATALOG=[
-  ...NEW_MOBS.map(entry=>({...entry,boss:false,status:'実装済'})),
+// Display the history of implemented mobs, rather than grouping by type.
+// Stone golems entered the game with villages, after village residents.
+// Chimera is a separately featured boss, excluded from chronological numbering.
+const historicalMobs=[
+  ...LEGACY_MOBS,
+  ...NEW_MOBS.filter(entry=>entry.id!=='golem'),
   ...VILLAGE_NPCS,
+  ...NEW_MOBS.filter(entry=>entry.id==='golem')
+];
+export const CREATURE_CATALOG=[
+  ...historicalMobs.map((entry,index)=>({...entry,boss:false,status:'実装済',order:index+1})),
   ...BOSS_MOBS
 ];
 export function createCreatureCatalogue(T){
   const animals=createNewMobModels(T);
+  const originals=createLegacyMobModels(T);
   const villagers=createVillagerModels(T);
   const residents={
     villager:0,villager_farmer:1,villager_crafter:2,villager_scholar:3
@@ -47,12 +55,14 @@ export function createCreatureCatalogue(T){
         const g=villagers.build(residents[id]);
         g.userData.galleryNpcType=id;return g;
       }
+      if(LEGACY_MOBS.some(entry=>entry.id===id))return originals.build(id);
       return animals.build(id);
     },
     animate(model,seconds,walking=true){
       const boss=bosses[model.userData.newMobType||model.userData.galleryBossType];
       if(boss)return boss.animate(model,seconds);
       if(model.userData.galleryNpcType)return villagers.animate(model,seconds,walking);
+      if(model.userData.galleryLegacyType)return originals.animate(model,seconds,walking);
       return animals.animate(model,seconds,walking);
     }
   };
