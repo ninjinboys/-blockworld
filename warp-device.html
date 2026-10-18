@@ -30,15 +30,15 @@ let T;const root=document.querySelector('#frame'),status=document.querySelector(
 try{T=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/+esm')}catch(e){root.classList.add('error');return}
 try{
 const scene=new T.Scene();scene.background=new T.Color(0x11252b);
-const camera=new T.PerspectiveCamera(43,1,.1,120);
+const camera=new T.PerspectiveCamera(37,1,.1,120);
 const renderer=new T.WebGLRenderer({antialias:false,alpha:false,powerPreference:'high-performance'});
-renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.55;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));root.prepend(renderer.domElement);
 const hemi=new T.HemisphereLight(0xc3d7d9,0x14191b,1.25);scene.add(hemi);
 const sun=new T.DirectionalLight(0xc7d7dd,1.6);sun.position.set(-7,14,11);scene.add(sun);
 const rim=new T.DirectionalLight(0x21dfd2,1.6);rim.position.set(8,8,-9);scene.add(rim);
 const g=new T.Group();scene.add(g);
-const C={stone:0x171a1c,pale:0x24282b,cream:0x303336,gray:0x111518,shadow:0x090d10,moss:0x536d3c,leaf:0x6c934b,crack:0x070a0c,teal:0x19d6c7,glow:0x65fff2};
+const C={stone:0x333b3d,pale:0x4b5150,cream:0x61635d,gray:0x292f32,shadow:0x161c20,moss:0x536d3c,leaf:0x6c934b,crack:0x070a0c,teal:0x19d6c7,glow:0x65fff2};
 const blocks=[],lights=[];
 let seed=2421;function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
 function b(x,y,z,w,h,d,color,rot=0){blocks.push({x,y,z,w,h,d,color,rot})}
@@ -56,7 +56,7 @@ for(let i=-10;i<=10;i++)for(let j=-7;j<=7;j++){
  const x=i*.49,z=j*.49-.33;if(Math.abs(x)>5.12||Math.abs(z)>3.75)continue;
  const col=randomPalette[Math.floor(rnd()*randomPalette.length)];
  b(x,.55,z,.466,.17,.47,col);
- if(rnd()<.20)b(x+.08,.65,z+.05,.23,.018,.16,C.moss);
+ if(rnd()<.10)b(x+.08,.65,z+.05,.23,.018,.16,C.moss);
 }
 for(const side of [-1,1]){
  for(let j=-7;j<=7;j++)b(side*5.14,.81,j*.50-.20,.48,.50,.46,j%3===0?C.pale:C.stone);
@@ -77,13 +77,13 @@ for(const side of [-1,1]){
  b(side*3.88,1.02,2.045,.57,.53,.055,C.shadow);
  diamond(side*3.88,1.06,2.12,.25,.40,.15);
  for(let j=0;j<18;j++){
-  const angle=.04+j*.075;
+  const angle=.035+j*.062;
   const x=side*4.04*Math.cos(angle),y=1.58+4.05*Math.sin(angle),rot=-side*angle;
   b(x,y,-1,.87,.86,.92,randomPalette[j%4],rot);
   if(j%2===0)b(x+side*.1,y+.1,-.515,.53,.045,.039,C.crack,rot);
   const a=side*3.57*Math.cos(angle),by=1.58+3.57*Math.sin(angle);
-  lit(a,by,-.50,.17,.66,.16,C.teal,rot);
-  if(j%3===0)b(x+side*.15,y+.30,-.54,.36,.15,.24,C.moss,rot);
+  if(j%3===0)lit(a,by,-.50,.085,.44,.08,C.teal,rot);
+  if(j%5===0)b(x+side*.15,y+.30,-.54,.36,.15,.24,C.moss,rot);
  }
  for(let j=0;j<6;j++)b(side*(3.7+rnd()-.5),.92+rnd()*.55,-2.30+(rnd()-.5)*1.2,.48,.53,.58,j%2?C.gray:C.stone);
  for(let k=0;k<5;k++)b(side*(2+k*.22),.79+k*.06,3.5-k*.37,.55,.42,.57,C.stone);
@@ -137,7 +137,7 @@ for(const side of [-1,1]){
   if(j%5===0)for(let n=0;n<3;n++)b(x+.07,y-n*.17,z+.16,.1,.2,.14,C.moss);
  }
 }
-for(let j=0;j<68;j++){
+for(let j=0;j<20;j++){
  const x=(rnd()-.5)*9.8,z=(rnd()-.5)*6.6;if(Math.abs(x)<1.7&&z>.8)continue;
  const r=.10+rnd()*.18;
  b(x,.70+(r*.2),z,r*.55,r*.4,r*.63,rnd()<.6?C.moss:C.leaf);
@@ -153,7 +153,7 @@ function addBatch(list,material,perInstanceColors=true){
 addBatch(blocks,new T.MeshStandardMaterial({color:0xffffff,roughness:.85,metalness:0,flatShading:true,vertexColors:false}));
 addBatch(lights,new T.MeshBasicMaterial({color:0xffffff,toneMapped:false}));
 const ground=new T.Mesh(new T.CircleGeometry(19,48),new T.MeshLambertMaterial({color:0x10282b,transparent:true,opacity:.75}));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;scene.add(ground);
-let yaw=.25,pitch=.20,dist=22,changing=false,frames=0;
+let yaw=.12,pitch=.12,dist=18,changing=false,frames=0;
 const center=new T.Vector3(0,3.54,0),relative=new T.Vector3(),touches=new Map();
 function render(){
  const w=root.clientWidth,h=root.clientHeight;if(!w||!h)return;
