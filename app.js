@@ -6497,7 +6497,7 @@ function updateFlyingArrows(dt){
 }
 function bowHitDamage(power,bow){
   const charged=Math.max(.15,Math.min(1,Number.isFinite(power)?power:0));
-  return bow===I.CHIMERA_BOW?Math.round(2+5*charged):Math.max(1,Math.round(1+3*charged));
+  return bow===I.CHIMERA_BOW?Math.round(2+5*charged):bow===I.CROSSBOW?Math.round(3+5*charged):Math.max(1,Math.round(1+3*charged));
 }
 function arrowHitNearbyMob(point,power,bowId=I.BOW){
   for(const m of mobs){
@@ -6517,7 +6517,7 @@ function arrowHitNearbyMob(point,power,bowId=I.BOW){
 }
 function updateBowDraw(now){
   if(!bowDrawing)return;
-  if(!started||dead||(selected!==I.BOW&&selected!==I.CHIMERA_BOW)){endBowDraw(false);return}
+  if(!started||dead||(selected!==I.BOW&&selected!==I.CHIMERA_BOW&&selected!==I.CROSSBOW)){endBowDraw(false);return}
   const pct=Math.min(100,(now-bowDrawStart)/BOW_DRAW_MS*100);
   breakLabel.textContent='弓 '+Math.floor(pct)+'%（離すと発射）';
   breakFill.style.width=pct+'%';
@@ -6534,7 +6534,7 @@ function endBowDraw(fire=false){
   const duration=performance.now()-bowDrawStart;
   bowDrawing=false;bowDrawStart=0;
   clearMining();
-  if(!fire||(selected!==I.BOW&&selected!==I.CHIMERA_BOW)||dead||!started||craftOpen||inventoryOpen||chestOpen)return;
+  if(!fire||(selected!==I.BOW&&selected!==I.CHIMERA_BOW&&selected!==I.CROSSBOW)||dead||!started||craftOpen||inventoryOpen||chestOpen)return;
   const now=performance.now();
   if(now-bowLastShot<230)return;
   if((inventory[I.ARROW]||0)<1){flash('矢がありません');return}
@@ -6558,13 +6558,13 @@ const PLAYER_MELEE_COOLDOWN_MS=625;
 let lastPlayerMeleeAt=-Infinity;
 function attackMob(){
   aimPlayerRay();
-  const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=4.5);
+  const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=(selected===I.SPEAR?5.5:4.5));
   if(!hits.length)return false;
   let root=hits[0].object;
   while(root.parent&&!mobs.includes(root))root=root.parent;
   if(!mobs.includes(root))return false;
   const now=performance.now();
-  if(now-lastPlayerMeleeAt<(selected===I.CHIMERA_DAGGER?425:PLAYER_MELEE_COOLDOWN_MS))return true;
+  if(now-lastPlayerMeleeAt<([I.CHIMERA_DAGGER,I.IRON_DAGGER].includes(selected)?425:[I.HAMMER,I.BATTLE_AXE].includes(selected)?850:PLAYER_MELEE_COOLDOWN_MS))return true;
   lastPlayerMeleeAt=now;
 
   const damage=meleeMobDamage(selected);
@@ -6572,7 +6572,7 @@ function attackMob(){
   return true;
 }
 function meleeMobDamage(weapon){
-  return weapon===I.CHIMERA_DAGGER?5:weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
+  return weapon===I.CHIMERA_DAGGER?5:weapon===I.SPEAR?3:weapon===I.IRON_DAGGER?2:weapon===I.BATTLE_AXE?5:weapon===I.HAMMER?6:weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
     weapon===I.GOLD_SWORD?2:weapon===I.STONE_SWORD?2:1;
 }
 function damageMob(root,damage,via='melee',power=1,attackerId='host'){
@@ -6821,11 +6821,11 @@ function updateEating(dt){
   // Health HUD reflects the restored hearts.
 }
 function primaryActionStart(){
-  if(chatViewActive||!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen)return;
+  if(chatViewActive||!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen||testPanelOpen)return;
   if(ridingHorse){dismountHorse();return}
   firstPersonHand.swing();
   if(selected!==I.BOW&&selected!==I.CHIMERA_BOW)triggerAvatarAction('attack');
-  if(selected===I.BOW||selected===I.CHIMERA_BOW){startBowDraw();return}
+  if(selected===I.BOW||selected===I.CHIMERA_BOW||selected===I.CROSSBOW){startBowDraw();return}
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
 }
