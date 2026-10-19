@@ -6264,7 +6264,7 @@ function place(){
     if(!isNightTime()){flash('寝袋で眠れるのは夜だけです');return}
     if(sleeping)return;
     // A placed sleeping bag is single-use. Remove it once sleep has started.
-    sleepInBed({x:aimed.x,y:aimed.y,z:aimed.z});
+    sleepInBed({x:aimed.x,y:aimed.y,z:aimed.z},true);
     if(sleeping){set(aimed.x,aimed.y,aimed.z,B.AIR);rebuildEdited({x:aimed.x,z:aimed.z});markSaveDirty()}
     return;
   }
@@ -7449,7 +7449,7 @@ let multiSleepSnapshot={asleep:0,total:0};
 function isNightTime(){
   return dayTime<DAY_START||dayTime>=DAY_END;
 }
-function sleepDisplay(waiting=false){
+function sleepDisplay(waiting=false,isBag=false){
   if(sleepOverlay)return;
   const veil=document.createElement('div');
   veil.setAttribute('role','status');
@@ -7462,7 +7462,9 @@ function sleepDisplay(waiting=false){
     pointerEvents:'auto',textAlign:'center'
   });
   const title=document.createElement('div');
-  title.textContent=waiting?'ほかのプレイヤーを待っています…':'眠っています…';
+  title.textContent=isBag?
+    (waiting?'寝袋で眠っています… ほかのプレイヤーを待っています':'寝袋で眠っています…'):
+    (waiting?'ほかのプレイヤーを待っています…':'眠っています…');
   veil.append(title);
   sleepCounter=document.createElement('div');
   Object.assign(sleepCounter.style,{font:'bold 20px system-ui,sans-serif',color:'#c2f0e4'});
@@ -7550,7 +7552,7 @@ function multiSleepCancel(){
   multiSleepReset();
   if(multiRole==='host')multiSleepHostSync();
 }
-function sleepInBed(foot=null){
+function sleepInBed(foot=null,isBag=false){
   if(sleeping||dead||!started)return;
   if(multiRole==='guest'&&!multiplayerNetwork.connected){
     flash('通信が切れています。再接続してから眠ってください');return;
@@ -7559,7 +7561,7 @@ function sleepInBed(foot=null){
   Object.keys(keys).forEach(k=>keys[k]=false);
   resetSprint();
   if(multiRole){
-    sleepDisplay(true);
+    sleepDisplay(true,isBag);
     if(multiRole==='host')multiSleepHostSync();
     else{
       // Send an up-to-date position before sleep request so the host can
@@ -7571,13 +7573,13 @@ function sleepInBed(foot=null){
     return;
   }
   // Single player still skips immediately.
-  sleepDisplay(false);
+  sleepDisplay(false,isBag);
   setTimeout(()=>{
     if(!sleeping||multiRole)return;
     dayTime=DAY_START+.02;markSaveDirty();saveCurrentGame(false);
     multiSleepReset();
     flash('朝になりました！ リスポーン地点も設定しました');
-  },650);
+  },isBag?1400:650);
 }
 function advanceDayTime(dt){
   const isDay=dayTime>=DAY_START&&dayTime<DAY_END;
