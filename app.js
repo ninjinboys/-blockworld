@@ -7,6 +7,7 @@ import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
+import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261019spriteArt01';
 import {drawDetailedItemIcon} from './item-art-icons.js?v=20261019pixelArt01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -360,45 +361,9 @@ function drawItemIcon(g,id){
     id===I.COOKED_PORK||id===I.COOKED_BEEF||id===I.LION_FANG||
     id===I.BUFFALO_HORN||id===I.ANACONDA_HIDE||id===I.CHIMERA_HIDE||
     id===I.CHIMERA_FANG||id===I.CHIMERA_HORN)return mobDropIcon(g,id);
-  if(NEW_BUILD_BLOCKS.includes(id)){
-    const colors={
-      [B.STONE_BRICKS]:['#a1a3a6','#777b7e','#616568'],
-      [B.MOSSY_STONE_BRICKS]:['#7d947a','#586e59','#465a48'],
-      [B.CRACKED_STONE_BRICKS]:['#999a9d','#77777b','#51555b'],
-      [B.POLISHED_STONE]:['#c1c2c5','#92979c','#797f84'],
-      [B.MARBLE]:['#faf8f2','#e5e5e1','#c9cbd0'],
-      [B.OBSIDIAN]:['#383049','#241f38','#161524'],
-      [B.RED_BRICKS]:['#c87955','#a64f36','#853d2d'],
-      [B.WOOD_STAIRS]:['#d9a46c','#a9743e','#79512f'],
-      [B.STONE_STAIRS]:['#b6b7ba','#888d91','#6a6e73'],
-      [B.WOOD_SLAB]:['#d3a16c','#a3713e','#80532d'],
-      [B.IRON_BARS]:['#b7c4ce','#75848c','#4d5c65'],
-      [B.WOOD_FENCE]:['#d4a16a','#996d3d','#684629'],
-      [B.FENCE_GATE]:['#d4a16a','#996d3d','#684629'],
-      [B.LADDER]:['#d5a66e','#a4733e','#754d29'],
-      [B.TRAPDOOR]:['#d1a06b','#a16e3e','#79512e'],
-      [B.LANTERN]:['#fff1a0','#d7a74a','#a36c29'],
-      [B.BOOKSHELF]:['#b48750','#755134','#493322'],
-      [B.BARREL]:['#a77a4b','#76502c','#4b321f'],
-      [B.TNT]:['#f96d63','#c53331','#952223'],
-      [B.CAMPFIRE]:['#f6aa42','#a35d28','#633a20']
-    };
-    return blockIcon(g,...colors[id],'plain');
-  }
-  if(NEW_ITEM_IDS.includes(id)){
-    const glyph={
-      [I.SPEAR]:'槍',[I.IRON_DAGGER]:'短',[I.BATTLE_AXE]:'斧',[I.HAMMER]:'鎚',
-      [I.CROSSBOW]:'弩',[I.THROWING_KNIFE]:'投',[I.MOLOTOV]:'炎',
-      [I.HEAL_POTION]:'♥',[I.STAMINA_POTION]:'⚡',[I.POISON_ARROW]:'毒',
-      [I.BUCKET]:'桶',[I.FISHING_ROD]:'釣',[I.COMPASS]:'N',
-      [I.MAP]:'地',[I.BINOCULARS]:'双',[I.ROPE]:'縄',[I.NAME_TAG]:'名',
-      [I.BACKPACK]:'鞄',[I.GLIDER]:'翼',[I.SLEEPING_BAG]:'寝',
-      [I.FLINT_STEEL]:'火'
-    };
-    ir(g,1,1,14,14,id===I.MOLOTOV?'#9a4d24':id===I.HEAL_POTION?'#9a2944':id===I.STAMINA_POTION?'#326eaf':'#485760');
-    ir(g,2,2,12,2,'#a9bec3');g.fillStyle='#fff9e9';g.font='bold 10px sans-serif';
-    g.textAlign='center';g.textBaseline='middle';g.fillText(glyph[id]||'◆',8,9,13);return;
-  }
+  // Actual silhouettes/textures for every new block and item (no letter glyphs).
+  if(NEW_BUILD_BLOCKS.includes(id)){drawNewBlockArt(g,id);return}
+  if(NEW_ITEM_IDS.includes(id)){drawNewItemArt(g,id);return}
   if(id===B.GRASS)return blockIcon(g,'#78b85c','#785032','#5f4028','grass');
   if(id===B.DIRT)return blockIcon(g,'#98643c','#7c4e31','#684029','plain');
   if(id===B.STONE)return blockIcon(g,'#a3a7aa','#888d91','#6f7478','stone');
