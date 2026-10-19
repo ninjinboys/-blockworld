@@ -54,7 +54,7 @@ Object.assign(B,{
   FENCE_GATE_E:63,FENCE_GATE_S:64,FENCE_GATE_W:65,
   FENCE_GATE_OPEN_N:66,FENCE_GATE_OPEN_E:67,FENCE_GATE_OPEN_S:68,FENCE_GATE_OPEN_W:69,
   LADDER_E:70,LADDER_S:71,LADDER_W:72,
-  TRAPDOOR_OPEN_N:73,TRAPDOOR_OPEN_E:74,TRAPDOOR_OPEN_S:75,TRAPDOOR_OPEN_W:76,WOOD_SLAB_TOP:77
+  TRAPDOOR_OPEN_N:73,TRAPDOOR_OPEN_E:74,TRAPDOOR_OPEN_S:75,TRAPDOOR_OPEN_W:76,WOOD_SLAB_TOP:77,SLEEPING_BAG_WORLD:78
 });
 const SHAPED_VARIANT_BASE=new Map([
   [B.WOOD_STAIRS_E,B.WOOD_STAIRS],[B.WOOD_STAIRS_S,B.WOOD_STAIRS],[B.WOOD_STAIRS_W,B.WOOD_STAIRS],
@@ -143,6 +143,7 @@ names[I.NAME_TAG]='名札';
 names[I.BACKPACK]='リュック';
 names[I.GLIDER]='グライダー';
 names[I.SLEEPING_BAG]='寝袋';
+names[B.SLEEPING_BAG_WORLD]='設置した寝袋';
 names[I.FLINT_STEEL]='火打石と打ちがね';
 names[I.WATER_BUCKET]='水入りバケツ';
 for(const [variant,base] of SHAPED_VARIANT_BASE)names[variant]=names[base];
@@ -153,7 +154,7 @@ const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.G
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH,[I.CHEST]:B.CHEST};
 const WARP_WORKBENCH_BLOCKS=new Set([B.WARP_WORKBENCH_X,B.WARP_WORKBENCH_X_END,B.WARP_WORKBENCH_Z,B.WARP_WORKBENCH_Z_END]);
 const isWarpWorkbench=id=>WARP_WORKBENCH_BLOCKS.has(id);
-const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST,[B.WARP_WORKBENCH_X]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_X_END]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z_END]:I.WARP_WORKBENCH};
+const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST,[B.WARP_WORKBENCH_X]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_X_END]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z_END]:I.WARP_WORKBENCH,[B.SLEEPING_BAG_WORLD]:I.SLEEPING_BAG};
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
   [I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0,
@@ -862,7 +863,7 @@ const DOOR_OPEN=new Set([B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_
 const DOOR_TOP=new Set([B.DOOR_X_TOP,B.DOOR_X_OPEN_TOP,B.DOOR_Z_TOP,B.DOOR_Z_OPEN_TOP]);
 const isDoor=id=>DOOR_ALL.has(id);
 const NON_COLLIDING_BUILDINGS=new Set([
-  B.LADDER,B.LADDER_E,B.LADDER_S,B.LADDER_W,
+  B.SLEEPING_BAG_WORLD,B.LADDER,B.LADDER_E,B.LADDER_S,B.LADDER_W,
   B.LANTERN,B.CAMPFIRE,
   B.FENCE_GATE_OPEN_N,B.FENCE_GATE_OPEN_E,B.FENCE_GATE_OPEN_S,B.FENCE_GATE_OPEN_W
 ]);
@@ -4007,6 +4008,7 @@ const TEST_MOB_CATALOG=[
 const TEST_MOB_BY_KEY=new Map(TEST_MOB_CATALOG.map(row=>[row.key,row]));
 const TEST_ITEM_IDS=[...new Set([
   ...Object.values(B).filter(id=>id>B.AIR&&id<=B.BEDROCK),
+  ...NEW_BUILD_BLOCKS,
   ...Object.values(I)
 ])].filter(id=>Number.isInteger(id)&&names[id]).sort((a,b)=>a-b);
 
@@ -5748,6 +5750,11 @@ function selectHotbar(index){
   if(eatingHeld)resetEating();
   if(bowDrawing)endBowDraw(false);
   selectedHotbarIndex=Math.max(0,Math.min(8,index));syncDerivedInventory();renderHotbar();
+  const arrow=inventorySlots[selectedHotbarIndex]?.id;
+  if(arrow===I.ARROW||arrow===I.POISON_ARROW){
+    selectedArrowAmmo=arrow;
+    if(started)flash(arrow===I.POISON_ARROW?'毒矢を装填しました。弓・クロスボウで発射できます':'通常の矢を装填しました');
+  }
   if(inventoryOpen)renderInventoryUI();
 }
 function firstEmptySlot(start=0,end=36,exclude=-1){
@@ -6233,6 +6240,14 @@ function place(){
   if(aimed&&isWarpWorkbench(get(aimed.x,aimed.y,aimed.z))){
     setCraftOpen(true);return;
   }
+  if(aimed&&get(aimed.x,aimed.y,aimed.z)===B.SLEEPING_BAG_WORLD){
+    if(!isNightTime()){flash('寝袋で眠れるのは夜だけです');return}
+    if(sleeping)return;
+    // A placed sleeping bag is single-use. Remove it once sleep has started.
+    sleepInBed({x:aimed.x,y:aimed.y,z:aimed.z});
+    if(sleeping){set(aimed.x,aimed.y,aimed.z,B.AIR);rebuildEdited({x:aimed.x,z:aimed.z});markSaveDirty()}
+    return;
+  }
   if(aimed&&h.distance<=5&&detailedBlockModels.interact(get(aimed.x,aimed.y,aimed.z))){
     const before=get(aimed.x,aimed.y,aimed.z),next=detailedBlockModels.toggle(before);
     if(next!==before){
@@ -6325,6 +6340,12 @@ function place(){
     const bottom=alongZ?B.DOOR_X:B.DOOR_Z;
     set(x,baseY,z,bottom);set(x,upper,z,bottom+1);
     consumeSelected(1);rebuildEdited({x,z});return;
+  }
+  if(selected===I.SLEEPING_BAG){
+    if(!solid(get(x,y-1,z))){flash('寝袋は床の上に設置してください');return}
+    set(x,y,z,B.SLEEPING_BAG_WORLD);
+    if(consumeSelected(1)!==1){set(x,y,z,B.AIR);return}
+    rebuildEdited({x,z});renderHotbar();flash('寝袋を設置しました。夜に寝袋を狙って「使う」で眠れます');return;
   }
   if(selected===I.BED){
     const dir=bedDirectionFromYaw(),x2=x+dir.dx,z2=z+dir.dz;
@@ -6887,6 +6908,7 @@ function throwMolotov(){
    remain responsive. The arrow is the player, not a text-only coordinate. */
 let explorerMapOpen=false,explorerMapZoom=2,explorerMapRenderSerial=0;
 let binocularActive=false,binocularPreviousMode=0;
+let gliderActive=false; // Deployed by using the glider; persists only until landing or putting it away.
 function drawExplorerMap(){
   const g=$('explorerMapCanvas').getContext('2d',{alpha:false});if(!g)return;
   const ticket=++explorerMapRenderSerial,size=100,tile=4,scale=explorerMapZoom;
@@ -7012,13 +7034,7 @@ function useExpansionItem(){
     consumeSelected(1);stamina=MAX_STAMINA;staminaRunSeconds=0;renderStamina();
     flash('スタミナが回復した');return true;
   }
-  if(selected===I.SLEEPING_BAG){
-    if(!isNightTime()){flash('寝袋は夜だけ使用できます');return true}
-    if(multiRole){flash('寝袋の夜スキップは現在シングルプレイ専用です');return true}
-    consumeSelected(1);
-    dayTime=DAY_START+.02;markSaveDirty();saveCurrentGame(false);
-    flash('寝袋で眠った。寝袋は使い切りました');return true;
-  }
+  // The sleeping bag is first placed on the ground and then interacted with.
   if(selected===I.COMPASS){
     const target=bedSpawn||initialSpawn||{x:0,z:0};
     const angle=Math.atan2(target.x-player.pos.x,target.z-player.pos.z)*180/Math.PI;
@@ -7026,6 +7042,10 @@ function useExpansionItem(){
   }
   if(selected===I.MAP){openExplorerMap();return true}
   if(selected===I.BINOCULARS){toggleBinoculars();return true}
+  if(selected===I.GLIDER){
+    gliderActive=!gliderActive;
+    flash(gliderActive?'グライダー展開！ 崖から飛び降りると滑空します':'グライダーを収納しました');return true;
+  }
   if(selected===I.BUCKET){
     const p=targetWater();
     if(!p){flash('水面に照準を合わせてください');return true}
@@ -7111,10 +7131,15 @@ function updateEating(dt){
   // Health HUD reflects the restored hearts.
 }
 function primaryActionStart(){
-  if(chatViewActive||!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen||testPanelOpen)return;
+  if(chatViewActive||!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen||testPanelOpen||explorerMapOpen)return;
   if(ridingHorse){dismountHorse();return}
-  firstPersonHand.swing();
-  if(selected!==I.BOW&&selected!==I.CHIMERA_BOW)triggerAvatarAction('attack');
+  // Usable equipment responds to the main action button as well as USE.
+  if([I.MAP,I.BINOCULARS,I.POISON_ARROW,I.ARROW,I.GLIDER].includes(selected)){
+    useExpansionItem();return;
+  }
+  firstPersonHand.swing(1,selected===I.SPEAR?'thrust':'swing');
+  if(selected!==I.BOW&&selected!==I.CHIMERA_BOW&&selected!==I.CROSSBOW)
+    triggerAvatarAction(selected===I.SPEAR?'thrust':'attack');
   if(selected===I.BOW||selected===I.CHIMERA_BOW||selected===I.CROSSBOW){startBowDraw();return}
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
@@ -7561,7 +7586,12 @@ function loop(now){
     if(isForwardHeld())move.add(forward);if(keys.s||keys.arrowdown)move.sub(forward);if(keys.d||keys.arrowright)move.add(right);if(keys.a||keys.arrowleft)move.sub(right);
     const running=sprinting&&stamina>0&&isForwardHeld()&&!keys.s&&!keys.arrowdown&&!inWater;
     if(running)updateStaminaDuringSprint(dt);
-    if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:(running&&stamina>0?SPRINT_SPEED:WALK_SPEED));
+    if(move.lengthSq())move.normalize().multiplyScalar(inWater?2.6:(gliderActive&&!player.onGround?Math.max(WALK_SPEED,6.3):(running&&stamina>0?SPRINT_SPEED:WALK_SPEED)));
+    // While airborne, a deployed glider converts downward momentum into
+    // a controlled forward glide rather than a normal high-speed fall.
+    if(gliderActive&&!player.onGround&&!inWater){
+      move.addScaledVector(forward,3.0);
+    }
     if(ridingHorse)updateRidingHorse(move,dt,running);
     else {
     player.vel.x+=(move.x-player.vel.x)*Math.min(1,dt*(inWater?7:11));
@@ -7573,6 +7603,8 @@ function loop(now){
       player.vel.x*=Math.pow(.86,dt*60);
       player.vel.z*=Math.pow(.86,dt*60);
       player.vel.y*=Math.pow(.96,dt*60);
+    }else if(gliderActive&&!player.onGround){
+      player.vel.y=Math.max(-2.65,player.vel.y-3.4*dt);
     }else{
       player.vel.y-=18*dt;
     }
@@ -7597,6 +7629,7 @@ function loop(now){
     if(nowInWater){
       fallOriginY=null;
     }else if(player.onGround){
+      if(gliderActive){gliderActive=false;flash('グライダー着地')}
       if(fallOriginY!=null&&vy<0)applyFallDamage(fallOriginY-player.pos.y);
       fallOriginY=null;
     }else if(wasGrounded&&vy<=0){
@@ -8364,7 +8397,7 @@ function showRemoteArrow(p){
 }
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
-  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.WOOD_SLAB_TOP||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.SLEEPING_BAG_WORLD||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
   if(get(b.x,b.y,b.z)===b.v)return;
   multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
   finally{multiApplying=false}
