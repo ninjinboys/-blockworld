@@ -1379,6 +1379,8 @@ function resetWorldRuntime(){
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   equippedArmor.fill(null);equippedBackpack=false;backpackSlots.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
   clearFlyingArrows();
+  while(thrownKnives.length){const shot=thrownKnives.pop();scene.remove(shot.model)}
+  while(activeFlames.length){const f=activeFlames.pop();scene.remove(f.group)}
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   for(const c of chunks.values())removeChunkMeshes(c);
@@ -6164,6 +6166,7 @@ function place(){
   if(ridingHorse){flash('攻撃ボタンで馬から降りられます');return}
   const horse=aimedHorse();
   if(horse&&selected!==I.CHIMERA_SOUL&&useHorse(horse))return;
+  if(useExpansionItem())return;
   if(selected===I.CHIMERA_SOUL){
     const hit=target(),ground=hit&&hit.distance<=5?lookup.get(hit.object.uuid)?.[hit.instanceId]:null;
     if(!ground||!hit.face||hit.face.normal.y<.5){
@@ -6606,6 +6609,164 @@ function damageMob(root,damage,via='melee',power=1,attackerId='host'){
     gainXP(earned,name+'を倒した');
   }
   return true;
+}
+
+
+/* Expansion: recoverable throwing knives, animated fire, and utility items. */
+const thrownKnives=[],activeFlames=[];
+function launchThrowingKnife(){
+  if((inventory[I.THROWING_KNIFE]||0)<1)return;
+  aimPlayerRay();
+  const start=gameplayAimOrigin.clone().addScaledVector(gameplayAimDirection,.75);
+  const velocity=gameplayAimDirection.clone().multiplyScalar(17);
+  const model=new THREE.Group();
+  cube(model,.065,.065,.68,0xc7d5db,0,0,-.07);
+  cube(model,.17,.12,.18,0x79583c,0,0,.3);
+  model.position.copy(start);scene.add(model);
+  if(consumeSelected(1)!==1){scene.remove(model);return}
+  thrownKnives.push({model,velocity,age:0});
+  flash('投げナイフを投げた！ 着地点で回収できます');
+}
+function settleKnife(shot){
+  const p=shot.model.position;
+  spawnWorldDrop(I.THROWING_KNIFE,1,p.x,p.y,p.z,{pickupDelay:.6});
+  scene.remove(shot.model);shot.model.traverse(o=>{if(o.isMesh)o.geometry.dispose()});
+}
+function updateThrownKnives(dt){
+  for(let i=thrownKnives.length-1;i>=0;i--){
+    const shot=thrownKnives[i];shot.age+=dt;
+    shot.velocity.y-=12*dt;
+    const step=shot.velocity.clone().multiplyScalar(dt);
+    const count=Math.max(1,Math.ceil(step.length()/.12));step.divideScalar(count);
+    let hit=shot.age>6;
+    for(let k=0;k<count&&!hit;k++){
+      shot.model.position.add(step);
+      const p=shot.model.position;
+      if(p.y<Y_MIN||p.y>WORLD_TOP+1||solid(get(Math.round(p.x),Math.round(p.y),Math.round(p.z)))){
+        shot.model.position.sub(step.multiplyScalar(.45));hit=true;break;
+      }
+      for(const mob of mobs){
+        if(mob.userData.hp<=0||Math.hypot(p.x-mob.position.x,p.z-mob.position.z)>1)continue;
+        const [bottom,top]=mobVerticalBounds(mob);
+        if(p.y>=bottom&&p.y<=top){damageMob(mob,3,'arrow',.7);hit=true;break}
+      }
+    }
+    if(hit){settleKnife(shot);thrownKnives.splice(i,1)}
+    else shot.model.rotation.x+=dt*19;
+  }
+}
+function createFlame(x,y,z,life=5,source='fire'){
+  const group=new THREE.Group();
+  const shards=[];
+  for(let i=0;i<8;i++){
+    const color=i%3===0?0xffe76e:i%3===1?0xff8428:0xe83919;
+    const material=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85,depthWrite:false});
+    const mesh=new THREE.Mesh(new THREE.ConeGeometry(.13+Math.random()*.11,.4+Math.random()*.38,4),material);
+    mesh.position.set((Math.random()-.5)*.9,.23+Math.random()*.25,(Math.random()-.5)*.9);
+    group.add(mesh);shards.push(mesh);
+  }
+  group.position.set(x,y,z);scene.add(group);
+  activeFlames.push({group,shards,age:0,life,source,damageClock:0});
+  if(activeFlames.length>120){
+    const old=activeFlames.shift();scene.remove(old.group);
+    old.group.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose()}});
+  }
+}
+function updateExpansionEffects(dt){
+  updateThrownKnives(dt);
+  for(let i=activeFlames.length-1;i>=0;i--){
+    const f=activeFlames[i];f.age+=dt;f.damageClock+=dt;
+    for(let j=0;j<f.shards.length;j++){
+      const mesh=f.shards[j];
+      mesh.scale.y=.65+.38*Math.sin(f.age*12+j*2);
+      mesh.position.y=.18+.12*Math.sin(f.age*9+j*3);
+      mesh.material.opacity=Math.max(0,.9*(1-f.age/f.life));
+    }
+    if(f.source==='molotov'&&f.damageClock>.7){
+      f.damageClock=0;
+      if(Math.hypot(player.pos.x-f.group.position.x,player.pos.z-f.group.position.z)<1.1)
+        damagePlayer(1,'炎に触れた');
+      if(multiRole!=='guest')for(const mob of [...mobs]){
+        if(Math.hypot(mob.position.x-f.group.position.x,mob.position.z-f.group.position.z)<1.2)
+          damageMob(mob,1,'fire');
+      }
+    }
+    if(f.age>=f.life){
+      scene.remove(f.group);f.group.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose()}});
+      activeFlames.splice(i,1);
+    }
+  }
+}
+function igniteBlockAt(x,y,z){
+  if(get(x,y,z)===B.TNT){
+    const visited=new Set();
+    for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++)for(let dz=-2;dz<=2;dz++){
+      if(dx*dx+dy*dy+dz*dz>7)continue;
+      const bx=x+dx,by=y+dy,bz=z+dz,id=get(bx,by,bz);
+      if(id===B.AIR||id===B.BEDROCK||!inside(bx,by,bz))continue;
+      set(bx,by,bz,B.AIR);visited.add(bx+','+bz);
+    }
+    for(const key of visited){const [cx,cz]=key.split(',').map(Number);rebuildEdited({x:cx,z:cz})}
+    for(let i=0;i<10;i++)createFlame(x+(Math.random()-.5)*3,y+.2,z+(Math.random()-.5)*3,1.3,'visual');
+    if(Math.hypot(player.pos.x-x,player.pos.z-z)<4)damagePlayer(5,'TNTの爆発');
+    flash('TNTが爆発した！');return true;
+  }
+  createFlame(x,y+.6,z,4,'molotov');return true;
+}
+function throwMolotov(){
+  if((inventory[I.MOLOTOV]||0)<1)return;
+  aimPlayerRay();
+  const start=gameplayAimOrigin.clone().addScaledVector(gameplayAimDirection,.6);
+  const raycast=target();
+  const impact=raycast&&raycast.distance<12?raycast.point:
+    start.clone().addScaledVector(gameplayAimDirection,8);
+  const y=Math.max(Y_MIN+1,Math.min(WORLD_TOP,impact.y));
+  consumeSelected(1);
+  for(let i=0;i<5;i++)createFlame(impact.x+(Math.random()-.5)*1.8,y,impact.z+(Math.random()-.5)*1.8,6,'molotov');
+  flash('火炎瓶を投げた！');
+}
+function useExpansionItem(){
+  if(selected===I.THROWING_KNIFE){launchThrowingKnife();return true}
+  if(selected===I.MOLOTOV){throwMolotov();return true}
+  if(selected===I.FLINT_STEEL){
+    const hit=target(),p=hit&&hit.distance<=5?lookup.get(hit.object.uuid)?.[hit.instanceId]:null;
+    if(!p){flash('着火するブロックに照準を合わせてください');return true}
+    igniteBlockAt(p.x,p.y,p.z);return true;
+  }
+  if(selected===I.HEAL_POTION){
+    if(health>=MAX_HEALTH){flash('体力は満タンです');return true}
+    consumeSelected(1);health=Math.min(MAX_HEALTH,health+10);renderHealth();
+    flash('体力を5ハート回復した');return true;
+  }
+  if(selected===I.STAMINA_POTION){
+    consumeSelected(1);stamina=MAX_STAMINA;staminaRunSeconds=0;renderStamina();
+    flash('スタミナが回復した');return true;
+  }
+  if(selected===I.SLEEPING_BAG){
+    if(!isNightTime()){flash('寝袋は夜だけ使用できます');return true}
+    if(multiRole){flash('寝袋の夜スキップは現在シングルプレイ専用です');return true}
+    consumeSelected(1);
+    dayTime=DAY_START+.02;markSaveDirty();saveCurrentGame(false);
+    flash('寝袋で眠った。寝袋は使い切りました');return true;
+  }
+  if(selected===I.COMPASS){
+    const target=bedSpawn||initialSpawn||{x:0,z:0};
+    const angle=Math.atan2(target.x-player.pos.x,target.z-player.pos.z)*180/Math.PI;
+    flash('スポーン地点：'+Math.round(angle)+'°の方向');return true;
+  }
+  if(selected===I.MAP){
+    flash('現在地 X '+Math.floor(player.pos.x)+' / Z '+Math.floor(player.pos.z));return true;
+  }
+  if(selected===I.BINOCULARS){
+    flash('双眼鏡：遠景を確認');return true;
+  }
+  if(selected===I.BUCKET){
+    const hit=target(),p=hit&&hit.distance<=5?lookup.get(hit.object.uuid)?.[hit.instanceId]:null;
+    if(p&&get(p.x,p.y,p.z)===B.WATER){
+      set(p.x,p.y,p.z,B.AIR);rebuildEdited(p);flash('水を汲んだ');return true;
+    }
+  }
+  return false;
 }
 
 // Food is used with the place/use button, one portion per tap. The old hold timers stay inert for legacy input compatibility.
@@ -7263,6 +7424,7 @@ function loop(now){
     });
 
     updateFlyingArrows(dt);
+    updateExpansionEffects(dt);
     if(multiRole!=='guest')updateSkeletonArrows(dt);
     const bx=Math.floor(player.pos.x),bz=Math.floor(player.pos.z);
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;
