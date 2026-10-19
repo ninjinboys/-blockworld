@@ -50,13 +50,47 @@ export function makeNewHeldItemModel(T,id){
     box(.31,.055,.28,pal.dark,0,-.34,0);
   }
   switch(id){
-    case 168: // Spear: true long shaft with a four-sided tapered iron point.
-      stick(1.15);
-      box(.12,.11,.12,pal.dark,0,1.05,0);
-      {const tip=new T.Mesh(new T.ConeGeometry(.125,.31,4),mat(pal.bright));
-        tip.position.y=1.25;tip.rotation.y=Math.PI/4;tip.castShadow=true;g.add(tip);}
-      for(let j=0;j<3;j++)box(.08,.04,.09,pal.leather,0,-.05+j*.12,0);
+    case 168: { // Full-sized thrusting spear: segmented wood shaft, long leaf blade.
+      // Hand grips near the butt, so the complete weapon extends far in front.
+      rod(0,-.31,0,0,1.52,0,.070,pal.woodDark);
+      rod(-.018,-.25,-.031,-.018,1.42,-.031,.046,pal.woodHi);
+      for(let j=0;j<7;j++){
+        const h=-.18+j*.115;
+        box(.146,.035,.145,j%2?pal.woodDark:pal.leather,0,h,0);
+      }
+      for(let j=0;j<4;j++){
+        const h=.95+j*.16;
+        box(.153,.036,.153,j%2?pal.brass:pal.dark,0,h,0);
+      }
+      box(.18,.23,.18,pal.iron,0,1.50,0);
+      box(.28,.11,.17,pal.gold,0,1.56,0);
+      for(const x of [-.16,.16]){
+        const wing=box(.12,.06,.14,pal.dark,x,1.55,0);
+        wing.rotation.z=x>0?.29:-.29;
+      }
+      const blade=new T.Shape();
+      blade.moveTo(0,2.35);
+      blade.lineTo(-.082,2.18);
+      blade.lineTo(-.18,1.93);
+      blade.lineTo(-.20,1.78);
+      blade.lineTo(-.12,1.65);
+      blade.lineTo(0,1.62);
+      blade.lineTo(.12,1.65);
+      blade.lineTo(.20,1.78);
+      blade.lineTo(.18,1.93);
+      blade.lineTo(.082,2.18);
+      blade.closePath();
+      const steel=new T.Mesh(new T.ExtrudeGeometry(blade,{
+        depth:.085,steps:1,bevelEnabled:true,bevelThickness:.016,
+        bevelSize:.012,bevelSegments:1
+      }),mat(pal.iron));
+      steel.position.z=-.05;steel.castShadow=true;g.add(steel);
+      rod(0,1.69,-.08,0,2.26,-.08,.026,pal.bright);
+      for(const x of [-.13,.13])box(.035,.31,.025,pal.bright,x*.52,1.89,-.055,x<0?-.16:.16);
+      box(.12,.12,.12,pal.dark,0,-.32,0);
+      box(.15,.045,.15,pal.gold,0,-.37,0);
       break;
+    }
     case 169: // Iron dagger
       daggerGrip();steelBlade(.51,.18);break;
     case 170: // Battle axe: broad double blade with split highlights
