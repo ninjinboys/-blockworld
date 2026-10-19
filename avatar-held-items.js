@@ -2,7 +2,7 @@
  * Lightweight item view models attached to the existing animated wrist pivots.
  * This file affects rendering only, never inventories, saves or combat.
  */
-import {makeNewHeldItemModel} from './item-held-models.js?v=20261019newItemHeld01';
+import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
 
 export function makeAvatarHeldItems(THREE,drawItemIcon){
   const swords=new Set([111,115,119,123]);
