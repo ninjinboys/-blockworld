@@ -1273,7 +1273,7 @@ async function initializeAccountWorld(save,slot){
   for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
   rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
   accountNameEl.textContent=currentAccount.name+' · '+mapDisplayName()+' · W'+slot+' · GEN'+generatorVersion;
-  $('testWorldOpen').hidden=activeMap!=='testworld';
+  $('testWorldOpen').hidden=true; // Appear only after actually entering Testworld.
   renderHotbar();updateProgress();renderHealth();renderStamina();updateViewLabel();
   loading.textContent=save?mapDisplayName()+' WORLD '+slot+'を復元しました':mapDisplayName()+' WORLD '+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
@@ -4053,7 +4053,8 @@ $('testMobsTab').addEventListener('click',()=>testWorldSelectTab('mobs'));
 $('testWorldSearch').addEventListener('input',testWorldRenderCatalog);
 $('testWorldClearItems').addEventListener('click',()=>{
   if(activeMap!=='testworld'||!worldReady)return;
-  clearInventorySlots();syncDerivedInventory();renderHotbar();markSaveDirty();
+  clearInventorySlots();syncDerivedInventory();renderHotbar();
+  applyArmorAppearance(playerAvatar,equippedArmor);refreshShieldControl();markSaveDirty();
   testWorldStatus('持ち物を空にしました（装備中の防具・左手も解除）');
 });
 $('testWorldClearMobs').addEventListener('click',()=>{
@@ -8286,6 +8287,7 @@ updateViewLabel();
 $('startBtn').addEventListener('click',()=>{
   if(!worldReady||!currentAccount)return;
   started=true;cover.style.display='none';last=performance.now();renderHealth();
+  $('testWorldOpen').hidden=activeMap!=='testworld';
   if(multiRole)multiSleepBannerUpdate(multiSleepSnapshot.asleep,multiSleepSnapshot.total);
   chatSyncVisible();
   if(dead){showDeathScreen();return}
