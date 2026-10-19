@@ -43,7 +43,7 @@ scene.add(sunBox,moonBox);
 const CHUNK=16,RENDER_RADIUS=3,Y_MIN=-80,WORLD_TOP=47,HEIGHT=WORLD_TOP-Y_MIN+1,SEA=11;
 // Terrain height uses the old 48-block world cap so existing landscapes stay unchanged.
 const TERRAIN_HEIGHT=48;
-const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30,TORCH:31,CHEST:32,WARP_WORKBENCH_X:33,WARP_WORKBENCH_X_END:34,WARP_WORKBENCH_Z:35,WARP_WORKBENCH_Z_END:36};
+const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30,TORCH:31,CHEST:32,WARP_WORKBENCH_X:33,WARP_WORKBENCH_X_END:34,WARP_WORKBENCH_Z:35,WARP_WORKBENCH_Z_END:36,STONE_BRICKS:37,MOSSY_STONE_BRICKS:38,CRACKED_STONE_BRICKS:39,POLISHED_STONE:40,MARBLE:41,OBSIDIAN:42,RED_BRICKS:43,WOOD_STAIRS:44,STONE_STAIRS:45,WOOD_SLAB:46,IRON_BARS:47,WOOD_FENCE:48,FENCE_GATE:49,LADDER:50,TRAPDOOR:51,LANTERN:52,BOOKSHELF:53,BARREL:54,TNT:55,CAMPFIRE:56};
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
   RAW_IRON:106,RAW_GOLD:107,IRON_INGOT:108,GOLD_INGOT:109,DIAMOND:110,
@@ -59,7 +59,8 @@ const I={
   COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157,CHIMERA_HIDE:158,
   CHIMERA_HELMET:159,CHIMERA_CHEST:160,CHIMERA_LEGS:161,CHIMERA_BOOTS:162,
   CHIMERA_FANG:163,CHIMERA_DAGGER:164,CHIMERA_HORN:165,CHIMERA_BOW:166,
-  WARP_WORKBENCH:167
+  WARP_WORKBENCH:167,
+  SPEAR:168,IRON_DAGGER:169,BATTLE_AXE:170,HAMMER:171,CROSSBOW:172,THROWING_KNIFE:173,MOLOTOV:174,HEAL_POTION:175,STAMINA_POTION:176,POISON_ARROW:177,BUCKET:178,FISHING_ROD:179,COMPASS:180,MAP:181,BINOCULARS:182,ROPE:183,NAME_TAG:184,BACKPACK:185,GLIDER:186,SLEEPING_BAG:187,FLINT_STEEL:188
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',33:'転送作業台',34:'転送作業台',35:'転送作業台',36:'転送作業台',
@@ -79,8 +80,51 @@ const names={
   165:'キメラの角',166:'キメラの弓',167:'転送作業台',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
+names[B.STONE_BRICKS]='石レンガ';
+names[B.MOSSY_STONE_BRICKS]='苔むした石レンガ';
+names[B.CRACKED_STONE_BRICKS]='ひび割れた石レンガ';
+names[B.POLISHED_STONE]='磨かれた石';
+names[B.MARBLE]='白い大理石';
+names[B.OBSIDIAN]='黒曜石';
+names[B.RED_BRICKS]='レンガ';
+names[B.WOOD_STAIRS]='木の階段';
+names[B.STONE_STAIRS]='石の階段';
+names[B.WOOD_SLAB]='木のハーフブロック';
+names[B.IRON_BARS]='鉄格子';
+names[B.WOOD_FENCE]='木のフェンス';
+names[B.FENCE_GATE]='フェンスゲート';
+names[B.LADDER]='はしご';
+names[B.TRAPDOOR]='トラップドア';
+names[B.LANTERN]='ランタン';
+names[B.BOOKSHELF]='本棚';
+names[B.BARREL]='樽';
+names[B.TNT]='TNT';
+names[B.CAMPFIRE]='焚き火';
+names[I.SPEAR]='槍';
+names[I.IRON_DAGGER]='鉄のダガー';
+names[I.BATTLE_AXE]='戦斧';
+names[I.HAMMER]='ハンマー';
+names[I.CROSSBOW]='クロスボウ';
+names[I.THROWING_KNIFE]='投げナイフ';
+names[I.MOLOTOV]='火炎瓶';
+names[I.HEAL_POTION]='回復ポーション';
+names[I.STAMINA_POTION]='スタミナポーション';
+names[I.POISON_ARROW]='毒矢';
+names[I.BUCKET]='バケツ';
+names[I.FISHING_ROD]='釣り竿';
+names[I.COMPASS]='コンパス';
+names[I.MAP]='地図';
+names[I.BINOCULARS]='双眼鏡';
+names[I.ROPE]='ロープ';
+names[I.NAME_TAG]='名札';
+names[I.BACKPACK]='リュック';
+names[I.GLIDER]='グライダー';
+names[I.SLEEPING_BAG]='寝袋';
+names[I.FLINT_STEEL]='火打石と打ちがね';
+const NEW_BUILD_BLOCKS=[B.STONE_BRICKS,B.MOSSY_STONE_BRICKS,B.CRACKED_STONE_BRICKS,B.POLISHED_STONE,B.MARBLE,B.OBSIDIAN,B.RED_BRICKS,B.WOOD_STAIRS,B.STONE_STAIRS,B.WOOD_SLAB,B.IRON_BARS,B.WOOD_FENCE,B.FENCE_GATE,B.LADDER,B.TRAPDOOR,B.LANTERN,B.BOOKSHELF,B.BARREL,B.TNT,B.CAMPFIRE];
+const NEW_ITEM_IDS=[I.SPEAR,I.IRON_DAGGER,I.BATTLE_AXE,I.HAMMER,I.CROSSBOW,I.THROWING_KNIFE,I.MOLOTOV,I.HEAL_POTION,I.STAMINA_POTION,I.POISON_ARROW,I.BUCKET,I.FISHING_ROD,I.COMPASS,I.MAP,I.BINOCULARS,I.ROPE,I.NAME_TAG,I.BACKPACK,I.GLIDER,I.SLEEPING_BAG,I.FLINT_STEEL];
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River','Jungle'];
-const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
+const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS,...NEW_BUILD_BLOCKS];
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH,[I.CHEST]:B.CHEST};
 const WARP_WORKBENCH_BLOCKS=new Set([B.WARP_WORKBENCH_X,B.WARP_WORKBENCH_X_END,B.WARP_WORKBENCH_Z,B.WARP_WORKBENCH_Z_END]);
 const isWarpWorkbench=id=>WARP_WORKBENCH_BLOCKS.has(id);
@@ -100,7 +144,8 @@ const inventory={
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.CHIMERA_HIDE]:0,
   [I.CHIMERA_FANG]:0,[I.CHIMERA_DAGGER]:0,[I.CHIMERA_HORN]:0,[I.CHIMERA_BOW]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0,[I.WARP_WORKBENCH]:0
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0,[I.WARP_WORKBENCH]:0,
+  ...Object.fromEntries(NEW_BUILD_BLOCKS.map(id=>[id,0])),...Object.fromEntries(NEW_ITEM_IDS.map(id=>[id,0]))
 };
 // Legacy saves may contain buffalo meat (retired item 154). Convert it to beef.
 const migrateOldMeat=id=>Number(id)===154?I.RAW_BEEF:Number(id);
@@ -311,6 +356,45 @@ function drawItemIcon(g,id){
     id===I.COOKED_PORK||id===I.COOKED_BEEF||id===I.LION_FANG||
     id===I.BUFFALO_HORN||id===I.ANACONDA_HIDE||id===I.CHIMERA_HIDE||
     id===I.CHIMERA_FANG||id===I.CHIMERA_HORN)return mobDropIcon(g,id);
+  if(NEW_BUILD_BLOCKS.includes(id)){
+    const colors={
+      [B.STONE_BRICKS]:['#a1a3a6','#777b7e','#616568'],
+      [B.MOSSY_STONE_BRICKS]:['#7d947a','#586e59','#465a48'],
+      [B.CRACKED_STONE_BRICKS]:['#999a9d','#77777b','#51555b'],
+      [B.POLISHED_STONE]:['#c1c2c5','#92979c','#797f84'],
+      [B.MARBLE]:['#faf8f2','#e5e5e1','#c9cbd0'],
+      [B.OBSIDIAN]:['#383049','#241f38','#161524'],
+      [B.RED_BRICKS]:['#c87955','#a64f36','#853d2d'],
+      [B.WOOD_STAIRS]:['#d9a46c','#a9743e','#79512f'],
+      [B.STONE_STAIRS]:['#b6b7ba','#888d91','#6a6e73'],
+      [B.WOOD_SLAB]:['#d3a16c','#a3713e','#80532d'],
+      [B.IRON_BARS]:['#b7c4ce','#75848c','#4d5c65'],
+      [B.WOOD_FENCE]:['#d4a16a','#996d3d','#684629'],
+      [B.FENCE_GATE]:['#d4a16a','#996d3d','#684629'],
+      [B.LADDER]:['#d5a66e','#a4733e','#754d29'],
+      [B.TRAPDOOR]:['#d1a06b','#a16e3e','#79512e'],
+      [B.LANTERN]:['#fff1a0','#d7a74a','#a36c29'],
+      [B.BOOKSHELF]:['#b48750','#755134','#493322'],
+      [B.BARREL]:['#a77a4b','#76502c','#4b321f'],
+      [B.TNT]:['#f96d63','#c53331','#952223'],
+      [B.CAMPFIRE]:['#f6aa42','#a35d28','#633a20']
+    };
+    return blockIcon(g,...colors[id],'plain');
+  }
+  if(NEW_ITEM_IDS.includes(id)){
+    const glyph={
+      [I.SPEAR]:'槍',[I.IRON_DAGGER]:'短',[I.BATTLE_AXE]:'斧',[I.HAMMER]:'鎚',
+      [I.CROSSBOW]:'弩',[I.THROWING_KNIFE]:'投',[I.MOLOTOV]:'炎',
+      [I.HEAL_POTION]:'♥',[I.STAMINA_POTION]:'⚡',[I.POISON_ARROW]:'毒',
+      [I.BUCKET]:'桶',[I.FISHING_ROD]:'釣',[I.COMPASS]:'N',
+      [I.MAP]:'地',[I.BINOCULARS]:'双',[I.ROPE]:'縄',[I.NAME_TAG]:'名',
+      [I.BACKPACK]:'鞄',[I.GLIDER]:'翼',[I.SLEEPING_BAG]:'寝',
+      [I.FLINT_STEEL]:'火'
+    };
+    ir(g,1,1,14,14,id===I.MOLOTOV?'#9a4d24':id===I.HEAL_POTION?'#9a2944':id===I.STAMINA_POTION?'#326eaf':'#485760');
+    ir(g,2,2,12,2,'#a9bec3');g.fillStyle='#fff9e9';g.font='bold 10px sans-serif';
+    g.textAlign='center';g.textBaseline='middle';g.fillText(glyph[id]||'◆',8,9,13);return;
+  }
   if(id===B.GRASS)return blockIcon(g,'#78b85c','#785032','#5f4028','grass');
   if(id===B.DIRT)return blockIcon(g,'#98643c','#7c4e31','#684029','plain');
   if(id===B.STONE)return blockIcon(g,'#a3a7aa','#888d91','#6f7478','stone');
@@ -473,6 +557,51 @@ const workbenchRecipes=[
   {name:'ダイヤのレギンス',out:I.DIAMOND_LEGS,qty:1,needs:[[I.DIAMOND,7]],unlockLevel:100},
   {name:'ダイヤのブーツ',out:I.DIAMOND_BOOTS,qty:1,needs:[[I.DIAMOND,4]],unlockLevel:100}
 ];
+
+const expansionRecipes=[
+  {name:'石レンガ ×4',out:B.STONE_BRICKS,qty:4,needs:[[B.STONE,4]],unlockLevel:5},
+  {name:'苔むした石レンガ',out:B.MOSSY_STONE_BRICKS,qty:1,needs:[[B.STONE_BRICKS,1],[B.LEAF,1]],unlockLevel:5},
+  {name:'ひび割れた石レンガ',out:B.CRACKED_STONE_BRICKS,qty:1,needs:[[B.STONE_BRICKS,1]],unlockLevel:5},
+  {name:'磨かれた石',out:B.POLISHED_STONE,qty:1,needs:[[B.STONE,2]],unlockLevel:5},
+  {name:'白い大理石',out:B.MARBLE,qty:1,needs:[[B.STONE,3],[B.SAND,1]],unlockLevel:6},
+  {name:'黒曜石',out:B.OBSIDIAN,qty:1,needs:[[B.STONE,4],[B.COAL,2]],unlockLevel:7},
+  {name:'レンガ ×4',out:B.RED_BRICKS,qty:4,needs:[[B.DIRT,4],[B.COAL,1]],unlockLevel:6},
+  {name:'木の階段 ×4',out:B.WOOD_STAIRS,qty:4,needs:[[B.PLANK,6]],unlockLevel:5},
+  {name:'石の階段 ×4',out:B.STONE_STAIRS,qty:4,needs:[[B.STONE,6]],unlockLevel:5},
+  {name:'木のハーフブロック ×6',out:B.WOOD_SLAB,qty:6,needs:[[B.PLANK,3]],unlockLevel:5},
+  {name:'鉄格子 ×4',out:B.IRON_BARS,qty:4,needs:[[I.IRON_INGOT,6]],unlockLevel:8},
+  {name:'木のフェンス ×3',out:B.WOOD_FENCE,qty:3,needs:[[B.PLANK,4],[I.STICK,2]],unlockLevel:5},
+  {name:'フェンスゲート',out:B.FENCE_GATE,qty:1,needs:[[B.PLANK,2],[I.STICK,4]],unlockLevel:5},
+  {name:'はしご ×3',out:B.LADDER,qty:3,needs:[[I.STICK,7]],unlockLevel:5},
+  {name:'トラップドア ×2',out:B.TRAPDOOR,qty:2,needs:[[B.PLANK,6]],unlockLevel:5},
+  {name:'ランタン',out:B.LANTERN,qty:1,needs:[[I.IRON_INGOT,2],[I.TORCH,1]],unlockLevel:8},
+  {name:'本棚',out:B.BOOKSHELF,qty:1,needs:[[B.PLANK,6],[I.LEATHER,2]],unlockLevel:7},
+  {name:'樽',out:B.BARREL,qty:1,needs:[[B.PLANK,6],[B.WOOD_SLAB,2]],unlockLevel:5},
+  {name:'TNT',out:B.TNT,qty:1,needs:[[B.SAND,4],[B.COAL,5]],unlockLevel:8},
+  {name:'焚き火',out:B.CAMPFIRE,qty:1,needs:[[B.LOG,3],[I.STICK,3],[B.COAL,1]],unlockLevel:5},
+  {name:'槍',out:I.SPEAR,qty:1,needs:[[I.IRON_INGOT,2],[I.STICK,2]],unlockLevel:8},
+  {name:'鉄のダガー',out:I.IRON_DAGGER,qty:1,needs:[[I.IRON_INGOT,1],[I.STICK,1]],unlockLevel:8},
+  {name:'戦斧',out:I.BATTLE_AXE,qty:1,needs:[[I.IRON_INGOT,4],[I.STICK,2]],unlockLevel:8},
+  {name:'ハンマー',out:I.HAMMER,qty:1,needs:[[I.IRON_INGOT,5],[I.STICK,2]],unlockLevel:8},
+  {name:'クロスボウ',out:I.CROSSBOW,qty:1,needs:[[I.IRON_INGOT,2],[B.PLANK,3],[I.STICK,2]],unlockLevel:8},
+  {name:'投げナイフ ×4',out:I.THROWING_KNIFE,qty:4,needs:[[I.IRON_INGOT,2],[I.STICK,1]],unlockLevel:8},
+  {name:'火炎瓶 ×2',out:I.MOLOTOV,qty:2,needs:[[B.GLASS,2],[B.COAL,2],[I.LEATHER,1]],unlockLevel:8},
+  {name:'回復ポーション',out:I.HEAL_POTION,qty:1,needs:[[B.GLASS,1],[B.LEAF,3]],unlockLevel:7},
+  {name:'スタミナポーション',out:I.STAMINA_POTION,qty:1,needs:[[B.GLASS,1],[B.CACTUS,2]],unlockLevel:7},
+  {name:'毒矢 ×4',out:I.POISON_ARROW,qty:4,needs:[[I.ARROW,4],[B.CACTUS,1]],unlockLevel:7},
+  {name:'バケツ',out:I.BUCKET,qty:1,needs:[[I.IRON_INGOT,3]],unlockLevel:8},
+  {name:'釣り竿',out:I.FISHING_ROD,qty:1,needs:[[I.STICK,3],[I.WOOL,2]],unlockLevel:6},
+  {name:'コンパス',out:I.COMPASS,qty:1,needs:[[I.IRON_INGOT,4],[I.GOLD_INGOT,1]],unlockLevel:8},
+  {name:'地図',out:I.MAP,qty:1,needs:[[B.PLANK,2],[I.LEATHER,2]],unlockLevel:7},
+  {name:'双眼鏡',out:I.BINOCULARS,qty:1,needs:[[I.IRON_INGOT,3],[B.GLASS,2]],unlockLevel:8},
+  {name:'ロープ ×3',out:I.ROPE,qty:3,needs:[[I.WOOL,3]],unlockLevel:6},
+  {name:'名札',out:I.NAME_TAG,qty:1,needs:[[I.LEATHER,1],[I.IRON_INGOT,1]],unlockLevel:7},
+  {name:'リュック',out:I.BACKPACK,qty:1,needs:[[I.LEATHER,6],[I.WOOL,2]],unlockLevel:7},
+  {name:'グライダー',out:I.GLIDER,qty:1,needs:[[I.LEATHER,6],[B.PLANK,4],[I.WOOL,2]],unlockLevel:8},
+  {name:'寝袋',out:I.SLEEPING_BAG,qty:1,needs:[[I.WOOL,3],[I.LEATHER,1]],unlockLevel:6},
+  {name:'火打石と打ちがね',out:I.FLINT_STEEL,qty:1,needs:[[I.IRON_INGOT,1],[B.GRAVEL,1]],unlockLevel:7}
+];
+workbenchRecipes.push(...expansionRecipes);
 const warpWorkbenchRecipes=[]; // Warp-device ingredients will be specified separately.
 const furnaceRecipes=[
   {name:'鉄インゴット',out:I.IRON_INGOT,qty:1,needs:[[I.RAW_IRON,1],[B.COAL,1]],unlockLevel:7,xp:4},
@@ -491,8 +620,9 @@ const furnaceWoodRecipes=furnaceRecipes.map(r=>({
     return acc;
   },[])
 }));
+const hardnessNew={};for(const id of NEW_BUILD_BLOCKS)hardnessNew[id]=id===B.OBSIDIAN?8:2.2;
 const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
-const hardness={
+const hardness={...hardnessNew,
   [B.GRASS]:0.55,[B.DIRT]:0.45,[B.SAND]:0.4,[B.LEAF]:0.22,[B.SNOW]:0.18,[B.GRAVEL]:0.75,[B.CACTUS]:0.65,
   [B.LOG]:1.55,[B.PLANK]:1.25,[B.GLASS]:0.3,[B.CRAFTING_TABLE]:2.0,[B.BED]:1.0,[B.BED_HEAD]:1.0,
   [B.STONE]:3.0,[B.COBBLE]:3.4,[B.COAL]:3.5,[B.IRON]:4.2,[B.GOLD]:4.0,[B.DIAMOND]:5.0,[B.FURNACE]:3.8,
@@ -2173,7 +2303,19 @@ const leaf=new THREE.MeshLambertMaterial({map:T.leaf,transparent:true,opacity:.9
 const bedSide=L(T.bedSide),bedEnd=L(T.bedEnd),bedBottom=L(T.bedBottom),bedFootTop=L(T.bedFootTop),bedHeadTop=L(T.bedHeadTop);
 const bedFootMaterials=[bedSide,bedSide,bedFootTop,bedBottom,bedEnd,bedEnd];
 const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
-const M={[B.WARP_WORKBENCH_X]:stone,[B.WARP_WORKBENCH_X_END]:stone,[B.WARP_WORKBENCH_Z]:stone,[B.WARP_WORKBENCH_Z_END]:stone,[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
+const NEW_BLOCK_MATERIALS={
+  [B.STONE_BRICKS]:0x85898d,[B.MOSSY_STONE_BRICKS]:0x647a60,
+  [B.CRACKED_STONE_BRICKS]:0x73757a,[B.POLISHED_STONE]:0xaeb3b8,
+  [B.MARBLE]:0xf1eee8,[B.OBSIDIAN]:0x29243c,[B.RED_BRICKS]:0xb95740,
+  [B.WOOD_STAIRS]:0xb38150,[B.STONE_STAIRS]:0x91969a,[B.WOOD_SLAB]:0xb98756,
+  [B.IRON_BARS]:0x91a0ab,[B.WOOD_FENCE]:0x9d6d3c,[B.FENCE_GATE]:0xa57646,
+  [B.LADDER]:0xb38a54,[B.TRAPDOOR]:0xa67845,[B.LANTERN]:0xffd56e,
+  [B.BOOKSHELF]:0x926b42,[B.BARREL]:0x8b603b,[B.TNT]:0xc73531,
+  [B.CAMPFIRE]:0xe08939
+};
+const newBlockMaterials=Object.fromEntries(Object.entries(NEW_BLOCK_MATERIALS)
+  .map(([id,color])=>[id,new THREE.MeshLambertMaterial({color})]));
+const M={...newBlockMaterials,[B.WARP_WORKBENCH_X]:stone,[B.WARP_WORKBENCH_X_END]:stone,[B.WARP_WORKBENCH_Z]:stone,[B.WARP_WORKBENCH_Z_END]:stone,[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
 const doorBox=new THREE.BoxGeometry(.92,.998,.14);
 function doorTexture(top){
