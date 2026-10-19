@@ -152,6 +152,8 @@ const migrateOldMeat=id=>Number(id)===154?I.RAW_BEEF:Number(id);
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
 const equippedArmor=[null,null,null,null]; // helmet / chest / legs / boots
+let equippedBackpack=false;
+const backpackSlots=Array(9).fill(null);
 let offhandItem=null; // torch or shield: a single physical item moved from inventory
 let shieldGuarding=false;
 let selectedHotbarIndex=0,inventorySelectedSlot=null,inventoryOpen=false;
@@ -1155,7 +1157,7 @@ function makeSaveData(){
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
     inventorySlots:inventorySlots.map(v=>v?{id:v.id,qty:v.qty}:null),selectedHotbarIndex,
-    equippedArmor:[...equippedArmor],offhandItem:offhandItem?{...offhandItem}:null,
+    equippedArmor:[...equippedArmor],equippedBackpack,backpackSlots:backpackSlots.map(v=>v?{...v}:null),offhandItem:offhandItem?{...offhandItem}:null,
     worldDrops:serializeWorldDrops(),
     testMobs:activeMap==='testworld'?serializeTestMobs():undefined,
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
@@ -1266,7 +1268,14 @@ function applySaveData(data){
     ?{id:Number(previousOffhand.id),qty:1}:null;
   shieldGuarding=false;refreshShieldControl();
   syncDerivedInventory();
-  normalizeArmor(data.equippedArmor);applyArmorAppearance(playerAvatar,equippedArmor);
+  normalizeArmor(data.equippedArmor);equippedBackpack=data.equippedBackpack===true;
+  backpackSlots.fill(null);
+  if(equippedBackpack&&Array.isArray(data.backpackSlots))for(let i=0;i<9;i++){
+    const st=data.backpackSlots[i];
+    if(st&&Number.isInteger(st.id)&&Object.hasOwn(inventory,st.id)&&Number.isInteger(st.qty)&&st.qty>0)
+      backpackSlots[i]={id:st.id,qty:Math.min(64,st.qty)};
+  }
+  applyArmorAppearance(playerAvatar,equippedArmor);
   restoreEdits(data.edits,Number(data.version)||3);
   const correctedDoors=repairFloatingDoorsOnLoad();
   if(correctedDoors)console.info('BLOCKWORLD: corrected '+correctedDoors+' floating door(s) in saved world.');
@@ -1368,7 +1377,7 @@ function resetWorldRuntime(){
   damageScreenTint.style.opacity='0';
   setAvatarDamageFlash(playerAvatar,false);
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
-  equippedArmor.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
+  equippedArmor.fill(null);equippedBackpack=false;backpackSlots.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
   clearFlyingArrows();
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
@@ -5383,6 +5392,26 @@ function renderArmorUI(){
       :'防具を選んで装備欄をタップ';
     button.addEventListener('click',()=>onArmorSlotTap(i));box.appendChild(button);
   }
+  const bag=document.createElement('button');bag.type='button';
+  bag.className='armor-slot'+(equippedBackpack?' wearing':'');
+  const title=document.createElement('span');title.textContent='リュック';bag.appendChild(title);
+  if(equippedBackpack)bag.appendChild(itemCanvas(I.BACKPACK,'item-icon'));
+  else{const plus=document.createElement('strong');plus.textContent='＋';bag.appendChild(plus)}
+  bag.title=equippedBackpack?'タップしてリュックを外す（中身が空のときのみ）':'リュックを選んでタップすると装備';
+  bag.addEventListener('click',()=>{
+    if(equippedBackpack){
+      if(backpackSlots.some(Boolean)){flash('リュックの中身を空にしてください');return}
+      const empty=firstEmptySlot(0,36);
+      if(empty<0){flash('持ち物に空きがありません');return}
+      inventorySlots[empty]={id:I.BACKPACK,qty:1};equippedBackpack=false;
+    }else{
+      const st=inventorySelectedSlot==null?null:inventorySlots[inventorySelectedSlot];
+      if(st?.id!==I.BACKPACK){flash('リュックを選択してください');return}
+      removeFromSlot(inventorySelectedSlot,1);equippedBackpack=true;
+    }
+    inventorySelectedSlot=null;syncDerivedInventory();markSaveDirty();renderInventoryUI();renderHotbar();
+  });
+  box.appendChild(bag);
   const def=$('armorDefense');if(def)def.textContent='防御 '+Math.round(armorReduction()*100)+'%';
 }
 // Layered voxel armor, not a painted texture. All armor plates are actual
@@ -5573,6 +5602,7 @@ function applyArmorAppearance(model,armor){
 
 function clearInventorySlots(){
   inventorySlots.fill(null);equippedArmor.fill(null);hotbarSlots.fill(null);acquiredOrder.length=0;offhandItem=null;
+  equippedBackpack=false;backpackSlots.fill(null);
   for(const k of Object.keys(inventory))inventory[k]=0;
   selected=null;inventorySelectedSlot=null;
 }
@@ -5785,6 +5815,34 @@ function renderOffhandUI(){
   refreshShieldControl();
 }
 function renderInventoryUI(){
+  const bagArea=$('backpackInventory');
+  if(bagArea){
+    bagArea.hidden=!equippedBackpack;
+    const grid=$('backpackSlots');
+    grid.replaceChildren();
+    if(equippedBackpack)for(let i=0;i<9;i++){
+      const st=backpackSlots[i],button=document.createElement('button');
+      button.className='inv-slot';button.type='button';
+      if(st){button.appendChild(itemCanvas(st.id,'item-icon'));const qty=document.createElement('span');qty.textContent=st.qty;button.appendChild(qty)}
+      else button.textContent='＋';
+      button.title=st?'タップで持ち物に戻す':'選択したアイテムをリュックに入れる';
+      button.addEventListener('click',()=>{
+        if(st){
+          if(!canFitItem(st.id,st.qty)){flash('持ち物がいっぱいです');return}
+          addItem(st.id,st.qty);backpackSlots[i]=null;
+        }else{
+          const selectedStack=inventorySelectedSlot==null?null:inventorySlots[inventorySelectedSlot];
+          if(!selectedStack)return;
+          if(selectedStack.id===I.BACKPACK){flash('リュックの中にリュックは入れられません');return}
+          backpackSlots[i]={...selectedStack};
+          inventorySlots[inventorySelectedSlot]=null;inventorySelectedSlot=null;
+          syncDerivedInventory();
+        }
+        markSaveDirty();renderInventoryUI();renderHotbar();
+      });
+      grid.appendChild(button);
+    }
+  }
   renderOffhandUI();
   inventoryMainGrid.innerHTML='';inventoryHotbarGrid.innerHTML='';
   for(let i=9;i<36;i++)inventoryMainGrid.appendChild(renderInventorySlot(i));
@@ -7434,7 +7492,7 @@ function multiProfile(){
   return {name:currentAccount.name,savedAt:Date.now(),level,xp,health,stamina,staminaRunSeconds,
     staminaRegenSeconds,cameraMode,selectedHotbarIndex,
     inventorySlots:inventorySlots.map(s=>s?{id:s.id,qty:s.qty}:null),
-    equippedArmor:[...equippedArmor],offhandItem:offhandItem?{...offhandItem}:null,
+    equippedArmor:[...equippedArmor],equippedBackpack,backpackSlots:backpackSlots.map(v=>v?{...v}:null),offhandItem:offhandItem?{...offhandItem}:null,
     bedSpawn:bedSpawn?{...bedSpawn}:null,
     player:multiCurrentPose()};
 }
