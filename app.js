@@ -4510,6 +4510,17 @@ function ensureInitialSpawn(){
   return initialSpawn;
 }
 function isBedBlock(id){return id===B.BED||id===B.BED_HEAD}
+function warpWorkbenchOther(x,y,z,id=get(x,y,z)){
+  const offsets={
+    [B.WARP_WORKBENCH_X]:[1,0,B.WARP_WORKBENCH_X_END],
+    [B.WARP_WORKBENCH_X_END]:[-1,0,B.WARP_WORKBENCH_X],
+    [B.WARP_WORKBENCH_Z]:[0,1,B.WARP_WORKBENCH_Z_END],
+    [B.WARP_WORKBENCH_Z_END]:[0,-1,B.WARP_WORKBENCH_Z]
+  };
+  const rule=offsets[id];if(!rule)return null;
+  const tx=x+rule[0],tz=z+rule[1];
+  return get(tx,y,tz)===rule[2]?{x:tx,y,z:tz}:null;
+}
 function findBedOtherHalf(x,y,z,id=get(x,y,z)){
   const want=id===B.BED?B.BED_HEAD:id===B.BED_HEAD?B.BED:null;
   if(want==null)return null;
@@ -5497,6 +5508,7 @@ function finishMine(x,y,z,id){
   const doorOther=isDoor(id)?{x,y:y+(DOOR_TOP.has(id)?-1:1),z}:null;
   const bedFoot=isBedBlock(id)?canonicalBedFoot(x,y,z):null;
   const bedOther=isBedBlock(id)?findBedOtherHalf(x,y,z,id):null;
+  const warpOther=isWarpWorkbench(id)?warpWorkbenchOther(x,y,z,id):null;
   const brokeRespawnBed=!!(bedFoot&&bedSpawn&&bedSpawn.x===bedFoot.x&&bedSpawn.y===bedFoot.y&&bedSpawn.z===bedFoot.z);
 
   set(x,y,z,B.AIR);
@@ -5507,6 +5519,7 @@ function finishMine(x,y,z,id){
     spawnWorldDrop(I.TORCH,1,x,y+1,z,{pickupDelay:.45});
   }
   if(bedOther)set(bedOther.x,bedOther.y,bedOther.z,B.AIR);
+  if(warpOther)set(warpOther.x,warpOther.y,warpOther.z,B.AIR);
   if(doorOther&&isDoor(get(doorOther.x,doorOther.y,doorOther.z)))
     set(doorOther.x,doorOther.y,doorOther.z,B.AIR);
   if(brokeRespawnBed)bedSpawn=null;
@@ -5521,14 +5534,15 @@ function finishMine(x,y,z,id){
   if(isDoor(id))drop=I.DOOR;
   if(id===B.TORCH)drop=I.TORCH;
   if(id===B.CHEST)drop=I.CHEST;
+  if(isWarpWorkbench(id))drop=I.WARP_WORKBENCH;
 
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
-  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH||drop===I.CHEST)){
+  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH||drop===I.CHEST||drop===I.WARP_WORKBENCH)){
     const spawnAt=minedDropPosition(x,y,z);
     spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{pickupDelay:.45});
   }
-  rebuildEdited({x,z},...(bedOther?[bedOther]:[]),...(doorOther?[doorOther]:[]));gainXP(blockXP[id]||1,names[id]||'採掘');
+  rebuildEdited({x,z},...(bedOther?[bedOther]:[]),...(doorOther?[doorOther]:[]),...(warpOther?[warpOther]:[]));gainXP(blockXP[id]||1,names[id]||'採掘');
   if(brokeRespawnBed)flash('ベッドが壊れたため初期スポーンに戻りました');
 }
 
@@ -5638,6 +5652,9 @@ function place(){
   if(aimed&&get(aimed.x,aimed.y,aimed.z)===B.CHEST){
     setChestOpen(true,{x:aimed.x,y:aimed.y,z:aimed.z});return;
   }
+  if(aimed&&isWarpWorkbench(get(aimed.x,aimed.y,aimed.z))){
+    setCraftOpen(true);return;
+  }
   if(startEating())return;
   const door=aimedDoor();if(door&&doorUse(door.x,door.y,door.z))return;
   if(!h||!h.face)return;
@@ -5666,6 +5683,29 @@ function place(){
   const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);
   if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
 
+  if(selected===I.WARP_WORKBENCH){
+    // Two cells across the player's view. Both must be empty and supported.
+    const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);
+    const alongX=Math.abs(fz)>=Math.abs(fx);
+    const x2=x+(alongX?1:0),z2=z+(alongX?0:1);
+    if(!inside(x2,y,z2)||get(x2,y,z2)!==B.AIR){
+      flash('転送作業台は横2マスの空きが必要です');return;
+    }
+    if(!solid(get(x,y-1,z))||!solid(get(x2,y-1,z2))){
+      flash('転送作業台は横2マスとも床の上に置いてください');return;
+    }
+    if(mobs.some(m=>mobOverlapsBlock(m,x,y,z)||mobOverlapsBlock(m,x2,y,z2))){
+      flash('モブの中には設置できません');return;
+    }
+    set(x,y,z,alongX?B.WARP_WORKBENCH_X:B.WARP_WORKBENCH_Z);
+    set(x2,y,z2,alongX?B.WARP_WORKBENCH_X_END:B.WARP_WORKBENCH_Z_END);
+    if(blocked(player.pos.x,player.pos.y,player.pos.z)){
+      set(x,y,z,B.AIR);set(x2,y,z2,B.AIR);
+      rebuildEdited({x,z},{x:x2,z:z2});return;
+    }
+    consumeSelected(1);rebuildEdited({x,z},{x:x2,z:z2});renderHotbar();
+    return;
+  }
   if(selected===I.CHEST){
     if(mobs.some(m=>mobOverlapsBlock(m,x,y,z))){flash('モブの中には設置できません');return}
     set(x,y,z,B.CHEST);
@@ -6136,21 +6176,23 @@ function stationInReach(){
   const p=lookup.get(h.object.uuid)?.[h.instanceId];
   if(!p)return null;
   const id=get(p.x,p.y,p.z);
-  return (id===B.CRAFTING_TABLE||id===B.FURNACE)?id:null;
+  return (id===B.CRAFTING_TABLE||id===B.FURNACE||isWarpWorkbench(id))?id:null;
 }
 function chooseCraftMode(){
   const station=stationInReach();
   if(station===B.CRAFTING_TABLE)return 'workbench';
   if(station===B.FURNACE)return 'furnace';
+  if(isWarpWorkbench(station))return 'warp';
   return 'inventory';
 }
 function currentRecipeList(){
-  return craftMode==='workbench'?workbenchRecipes:craftMode==='furnace'?furnaceRecipes:recipes;
+  return craftMode==='workbench'?workbenchRecipes:craftMode==='furnace'?furnaceRecipes:craftMode==='warp'?warpWorkbenchRecipes:recipes;
 }
 function renderCrafting(){
   const title=document.querySelector('.craft-title'),sub=document.querySelector('.craft-sub');
   if(craftMode==='workbench'){title.textContent='WORKBENCH';sub.textContent='作業台専用：ツール・防具・設備'}
   else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭で原石を精錬・生肉を調理'}
+  else if(craftMode==='warp'){title.textContent='WARP WORKBENCH';sub.textContent='ボス転送装置を作るための専用作業台'}
   else {title.textContent='CRAFTING';sub.textContent='インベントリで作れる基本アイテム'}
   const ids=Object.keys(inventory).map(Number);
   const owned=ids.filter(id=>(inventory[id]||0)>0);
@@ -6168,6 +6210,12 @@ function renderCrafting(){
   }
   recipeList.innerHTML='';
   const list=currentRecipeList();
+  if(craftMode==='warp'&&!list.length){
+    const info=document.createElement('div');
+    info.className='recipe';info.style.padding='18px';
+    info.textContent='ボス用ワープ装置の製作台です。ワープ装置の材料レシピは今後追加します。';
+    recipeList.appendChild(info);
+  }
   list.forEach((r,i)=>{
     const locked=level<r.unlockLevel,can=!locked&&hasNeeds(r);
     const d=document.createElement('div');d.className='recipe'+(locked?' locked':'');
@@ -6205,7 +6253,7 @@ function setCraftOpen(v){
     if(inventoryOpen)setInventoryOpen(false);
     craftMode=chooseCraftMode();
     primaryActionStop();document.exitPointerLock?.();renderCrafting();
-    if(craftMode==='inventory')flash('作業台・かまどにレティクルを合わせると専用メニューが開きます');
+    if(craftMode==='inventory')flash('作業台・かまど・転送作業台に照準を合わせると専用メニューが開きます');
   } else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
 }
 
