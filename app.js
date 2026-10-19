@@ -624,6 +624,7 @@ function chestApplyState(x,y,z,raw){
 
 let streamCX=NaN,streamCZ=NaN;
 let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=5;
+let testPanelOpen=false,activeTestTab='items';
 let activeMap='overworld'; // The previous game is always The Overworld.
 const TESTWORLD_SURFACE_Y=12;
 const mapDisplayName=()=>activeMap==='testworld'?'Testworld':'The Overworld';
@@ -1015,6 +1016,7 @@ function makeSaveData(){
     inventorySlots:inventorySlots.map(v=>v?{id:v.id,qty:v.qty}:null),selectedHotbarIndex,
     equippedArmor:[...equippedArmor],offhandItem:offhandItem?{...offhandItem}:null,
     worldDrops:serializeWorldDrops(),
+    testMobs:activeMap==='testworld'?serializeTestMobs():undefined,
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits(),chests:serializeChests(),villageLootGranted:[...villageLootGranted],
     exploredChunks:[...exploredChunkRevisions],
@@ -1135,6 +1137,7 @@ function applySaveData(data){
   }
   restoreSaddledHorses(data);
   restoreSummonedChimeras(data);
+  if(activeMap==='testworld')restoreTestMobs(data.testMobs);
   restoreWorldDrops(data.worldDrops);
 
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
@@ -1212,6 +1215,8 @@ async function spawnChimeraVisualTest(){
   }
 }
 function resetWorldRuntime(){
+  testPanelOpen=false;$('testWorldPanel').classList.remove('open');
+  $('testWorldPanel').setAttribute('aria-hidden','true');$('testWorldOpen').hidden=true;
   multiSleepReset();
   removeChimeraVisualTest();
   ridingHorse=null;
@@ -1268,6 +1273,7 @@ async function initializeAccountWorld(save,slot){
   for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
   rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
   accountNameEl.textContent=currentAccount.name+' · '+mapDisplayName()+' · W'+slot+' · GEN'+generatorVersion;
+  $('testWorldOpen').hidden=activeMap!=='testworld';
   renderHotbar();updateProgress();renderHealth();renderStamina();updateViewLabel();
   loading.textContent=save?mapDisplayName()+' WORLD '+slot+'を復元しました':mapDisplayName()+' WORLD '+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
@@ -2593,7 +2599,8 @@ function showHorseSaddle(horse){
   rig.add(g);horse.userData.saddleVisual=g;
 }
 function saddledHorsesForSave(){
-  return mobs.filter(m=>m.userData.type==='horse'&&m.userData.saddled).slice(0,64);
+  return mobs.filter(m=>m.userData.type==='horse'&&m.userData.saddled&&
+    (activeMap!=='testworld'||!m.userData.testSpawned)).slice(0,64);
 }
 function serializeSaddledHorses(){
   return saddledHorsesForSave().map(m=>({
@@ -3487,7 +3494,8 @@ function chimeraBoss(){
   return mobs.find(m=>m.userData.type==='chimera'&&m.userData.hp>0)||null;
 }
 function serializeSummonedChimeras(){
-  return mobs.filter(m=>m.userData.type==='chimera'&&m.userData.hp>0).slice(0,1)
+  return mobs.filter(m=>m.userData.type==='chimera'&&m.userData.hp>0&&
+    (activeMap!=='testworld'||!m.userData.testSpawned)).slice(0,1)
     .map(m=>({x:m.position.x,y:m.position.y,z:m.position.z,
       angle:m.userData.angle,hp:m.userData.hp,netId:ensureMobId(m)}));
 }
@@ -3742,6 +3750,10 @@ function updateFlyingOrSwimmingMob(m,dt,now){
       d.attackCooldown=1.75;
       damagePlayer(2,'ワシの急降下攻撃',m.position);
     }
+  }else if(activeMap==='testworld'){
+    // Keep a shark visible for model testing even on a waterless stone plane.
+    m.position.y=top+1.28+drift*.05;
+    d.attackCooldown=Math.max(0,(d.attackCooldown||0)-dt);
   }else{
     // Sharks stay submerged. Reject any proposed tile lacking actual water.
     const swimY=Math.min(SEA-1.05,Math.max(top+1.15,m.position.y+drift*dt*.11));
@@ -3798,6 +3810,263 @@ function updateNewLandMob(m,dt,now){
   newMobModels.animate(m,now*.001,moved);
   return true;
 }
+
+
+/* Testworld creative spawner. The catalog uses the actual game item/mob IDs,
+   not duplicated test-only models. This mode NEVER appears in The Overworld. */
+const TEST_MOB_CATALOG=[
+  {key:'sheep',type:0,name:'ヒツジ',icon:'🐑'},
+  {key:'pig',type:1,name:'ブタ',icon:'🐷'},
+  {key:'cow',type:2,name:'ウシ',icon:'🐄'},
+  {key:'horse',type:'horse',name:'馬',icon:'🐴'},
+  {key:'bison',type:'bison',name:'バッファロー',icon:'🐃'},
+  {key:'lion',type:'lion',name:'ライオン',icon:'🦁'},
+  {key:'anaconda',type:'anaconda',name:'オオアナコンダ',icon:'🐍'},
+  {key:'deer',type:'deer',name:'シカ',icon:'🦌'},
+  {key:'wolf',type:'wolf',name:'オオカミ',icon:'🐺'},
+  {key:'bear',type:'bear',name:'ヒグマ',icon:'🐻'},
+  {key:'boar',type:'boar',name:'イノシシ',icon:'🐗'},
+  {key:'eagle',type:'eagle',name:'ワシ',icon:'🦅'},
+  {key:'crocodile',type:'crocodile',name:'ワニ',icon:'🐊'},
+  {key:'shark',type:'shark',name:'サメ',icon:'🦈'},
+  {key:'elephant',type:'elephant',name:'ゾウ',icon:'🐘'},
+  {key:'zombie',type:'zombie',name:'ゾンビ',icon:'🧟'},
+  {key:'skeleton',type:'skeleton',name:'スケルトン',icon:'💀'},
+  {key:'spider',type:'spider',name:'巨大クモ',icon:'🕷️'},
+  {key:'villager0',type:'villager',variant:0,name:'村人',icon:'🧑'},
+  {key:'villager1',type:'villager',variant:1,name:'農民',icon:'🧑‍🌾'},
+  {key:'villager2',type:'villager',variant:2,name:'職人',icon:'🧑‍🔧'},
+  {key:'villager3',type:'villager',variant:3,name:'学者',icon:'🧑‍🏫'},
+  {key:'golem',type:'golem',name:'ストーンゴーレム',icon:'🗿'},
+  {key:'chimera',type:'chimera',name:'キメラ',icon:'🐲'}
+];
+const TEST_MOB_BY_KEY=new Map(TEST_MOB_CATALOG.map(row=>[row.key,row]));
+const TEST_ITEM_IDS=[...new Set([
+  ...Object.values(B).filter(id=>id>B.AIR&&id<=B.BEDROCK),
+  ...Object.values(I)
+])].filter(id=>Number.isInteger(id)&&names[id]).sort((a,b)=>a-b);
+
+// Test-spawned models use the same builders, AI, hit boxes, drops and attacks.
+function testCreateMob(key,x,y,z,angle,hp=null,netId=null,saddled=false){
+  const def=TEST_MOB_BY_KEY.get(key);if(!def)return null;
+  const type=def.type;
+  if(type==='chimera'){
+    const m=makeChimeraMob(x,y,z,angle,
+      Number.isFinite(hp)&&hp>0?hp:CHIMERA_MAX_HEALTH,netId);
+    m.userData.testSpawned=true;m.userData.testCatalogKey=key;
+    return m;
+  }
+  let m=null,alreadyAnimated=false;
+  if(NEW_MOB_TYPES.has(type)){
+    m=createNewMob(type,x,y,z);alreadyAnimated=true;
+  }else if(type===0)m=buildSheep();
+  else if(type===1)m=buildPig();
+  else if(type===2)m=buildCow();
+  else if(type==='horse')m=buildHorse();
+  else if(type==='bison')m=buildBison();
+  else if(type==='lion')m=buildLion();
+  else if(type==='anaconda')m=buildAnaconda();
+  else if(type==='zombie')m=buildZombie();
+  else if(type==='skeleton')m=buildSkeleton();
+  else if(type==='villager')m=villagerModels.build(def.variant||0);
+  if(!m)return null;
+  const stats=NEW_MOB_STATS[type];
+  const baseHp=stats?.hp??(type==='bison'||type==='lion'||type==='anaconda'?100:
+    type==='villager'?20:type==='horse'?10:type==='zombie'?10:type==='skeleton'?8:5);
+  const speed=stats?.speed??(type==='zombie'?1.45:type==='skeleton'?1.1:
+    type==='villager'?.68:type==='horse'?.70:type==='bison'?.28:
+    type==='lion'?.38:type==='anaconda'?.31:.32);
+  m.position.set(x,y,z);m.rotation.y=angle+Math.PI;
+  m.userData={...m.userData,type,name:def.name,angle,
+    hp:Math.max(1,Math.min(300,Number.isFinite(hp)?hp:baseHp)),xp:stats?.xp??12,
+    speed,t:2,phase:Math.random()*Math.PI*2,fleeTime:0,hitFlash:0,
+    attackCooldown:1,hostile:type==='shark'||type==='spider',
+    spawnedAt:performance.now(),testSpawned:true,testCatalogKey:key,
+    netId:netId||crypto.randomUUID(),saddled:!!saddled,
+    variant:def.variant||0,
+    homeX:x,homeZ:z,homeY:Math.round(y-.04),villageKey:'test:'+x+':'+z};
+  if(!alreadyAnimated)setupMobStepAnimation(m);
+  if(type==='horse'&&saddled)showHorseSaddle(m);
+  scene.add(m);mobs.push(m);return m;
+}
+function serializeTestMobs(){
+  return mobs.filter(m=>m.userData.testSpawned&&m.userData.hp>0)
+    .slice(0,320).map(m=>({
+      key:m.userData.testCatalogKey,
+      x:+m.position.x.toFixed(2),y:+m.position.y.toFixed(2),
+      z:+m.position.z.toFixed(2),angle:+(m.userData.angle||0).toFixed(3),
+      hp:m.userData.hp,netId:ensureMobId(m),
+      saddled:!!m.userData.saddled
+    }));
+}
+function restoreTestMobs(rows){
+  if(activeMap!=='testworld'||multiRole==='guest'||!Array.isArray(rows))return;
+  for(const m of rows.slice(0,320)){
+    if(!m||!TEST_MOB_BY_KEY.has(m.key)||
+       ![m.x,m.y,m.z,m.angle,m.hp].every(Number.isFinite)||
+       Math.abs(m.x)>1000000||Math.abs(m.z)>1000000||
+       m.y<Y_MIN||m.y>WORLD_TOP||m.hp<=0||m.hp>300)continue;
+    testCreateMob(m.key,m.x,m.y,m.z,m.angle,m.hp,
+      typeof m.netId==='string'&&/^[0-9a-f-]{36}$/.test(m.netId)?m.netId:null,
+      m.saddled===true);
+  }
+}
+function testMobHeight(type,ground){
+  return ground+(type==='zombie'||type==='skeleton'||type==='spider'||type==='chimera'?.51:
+    type==='eagle'?5.0:type==='shark'?1.28:.04);
+}
+function testSpawnMobs(key,qty,center=player.pos){
+  if(activeMap!=='testworld'||multiRole==='guest'||!worldReady)return 0;
+  const def=TEST_MOB_BY_KEY.get(key);
+  if(!def||!center||![center.x,center.y,center.z].every(Number.isFinite))return 0;
+  qty=Math.max(1,Math.min(20,Math.floor(qty)));
+  let made=0;
+  for(let index=0;index<qty;index++){
+    if(multiRole==='host'&&mobs.length>=110)break; // existing P2P mob-state capacity
+    let point=null,angle=0;
+    for(let attempt=0;attempt<65;attempt++){
+      const sweep=index*2.399963+attempt*.95;
+      const radius=5.8+Math.floor((index+attempt)/6)*2.5;
+      const forwardAngle=Math.atan2(-Math.sin(player.yaw),-Math.cos(player.yaw));
+      const direction=forwardAngle+sweep-(Math.PI*.8);
+      const x=Math.round(center.x+Math.cos(direction)*radius);
+      const z=Math.round(center.z+Math.sin(direction)*radius);
+      const ground=surfaceAt(x,z);
+      const y=testMobHeight(def.type,ground);
+      angle=Math.atan2(center.x-x,center.z-z);
+      if(ground>WORLD_TOP-9||!solid(get(x,ground,z)))continue;
+      const probe={userData:{type:def.type,angle},position:{x,y,z}};
+      if(!mobSpaceFree(probe,x,y,z,angle))continue;
+      const clearance=def.type==='chimera'||def.type==='elephant'?5.2:
+        def.type==='anaconda'||def.type==='bison'||def.type==='lion'?3.8:2.4;
+      if(mobs.some(m=>Math.hypot(m.position.x-x,m.position.z-z)<clearance))continue;
+      if(Math.hypot(center.x-x,center.z-z)<4)continue;
+      point={x,y,z};break;
+    }
+    if(!point)break;
+    try{
+      const spawned=testCreateMob(key,point.x,point.y,point.z,angle);
+      if(spawned)made++;
+    }catch(error){console.warn('Testworld creature creation failed',error);break}
+  }
+  if(made)markSaveDirty();
+  return made;
+}
+function testClearMobs(){
+  if(activeMap!=='testworld'||multiRole==='guest'||!worldReady)return 0;
+  const rows=mobs.filter(m=>m.userData.testSpawned);
+  for(const m of rows){
+    if(ridingHorse===m)ridingHorse=null;
+    removeZombie(m);
+  }
+  if(rows.length)markSaveDirty();
+  return rows.length;
+}
+function testWorldStatus(text){$('testWorldStatus').textContent=text}
+function testReadCount(){
+  const input=$('testWorldQty'),n=Math.floor(Number(input.value));
+  if(!Number.isFinite(n)||n<1){input.value='1';return 1}
+  return Math.min(9999,n);
+}
+function testGrantItem(id,qty){
+  if(activeMap!=='testworld'||!worldReady||!started||!TEST_ITEM_IDS.includes(id))return;
+  const left=addItem(id,qty),held=qty-left;
+  // The 36 inventory slots aren't infinite: spill any overflow as ONE world
+  // item entity, so even a full bag cannot discard the requested materials.
+  if(left>0)spawnWorldDrop(id,left,Math.round(player.pos.x),player.pos.y+1.1,
+    Math.round(player.pos.z),{pickupDelay:1.2});
+  testWorldStatus((names[id]||'アイテム')+' ×'+qty+
+    (left?'（持ち物 '+held+'・足元 '+left+'）':' を持ち物に追加しました'));
+}
+function testWorldRenderCatalog(){
+  const catalog=$('testWorldCatalog');
+  const search=$('testWorldSearch').value.trim().toLocaleLowerCase('ja');
+  const isItems=activeTestTab==='items';
+  const rows=isItems?TEST_ITEM_IDS.map(id=>({key:id,name:names[id]})):TEST_MOB_CATALOG;
+  const shown=rows.filter(r=>String(r.name||'').toLocaleLowerCase('ja').includes(search));
+  const list=document.createDocumentFragment();
+  for(const row of shown){
+    const entry=document.createElement('div');entry.className='test-world-row';
+    const main=document.createElement('div');main.className='test-world-row-name';
+    if(isItems){main.appendChild(itemCanvas(row.key,'item-icon'))}
+    else{const icon=document.createElement('span');icon.className='test-mob-icon';icon.textContent=row.icon;main.appendChild(icon)}
+    const title=document.createElement('span');title.textContent=row.name;main.appendChild(title);
+    const action=document.createElement('button');action.type='button';
+    action.textContent=isItems?'追加':'出す';
+    action.setAttribute('aria-label',row.name+'を出す');
+    action.addEventListener('click',()=>{
+      if(activeMap!=='testworld'||!worldReady||!started)return;
+      const qty=testReadCount();
+      if(isItems){testGrantItem(row.key,qty);return}
+      const amount=Math.min(qty,20);
+      if(multiRole==='guest'){
+        if(!multiplayerNetwork.connected){testWorldStatus('マルチプレイに接続されていません');return}
+        multiplayerNetwork.send({t:'testSpawnMobs',key:row.key,qty:amount});
+        testWorldStatus(row.name+' ×'+amount+' の出現をホストに依頼中…');
+        return;
+      }
+      const made=testSpawnMobs(row.key,amount);
+      if(multiRole==='host'&&made&&multiplayerNetwork.connected)
+        multiplayerNetwork.send(multiMobSnapshot());
+      testWorldStatus(row.name+' ×'+made+'体 出しました'+
+        (made<amount?'（空き場所またはマルチ上限を確認してください）':'')+
+        (qty>20?' ／ 1回20体まで。繰り返し出せます':''));
+    });
+    entry.append(main,action);list.appendChild(entry);
+  }
+  if(!shown.length){const empty=document.createElement('p');empty.textContent='該当するものがありません';list.appendChild(empty)}
+  catalog.replaceChildren(list);
+}
+function testWorldSelectTab(tab){
+  activeTestTab=tab;
+  $('testItemsTab').setAttribute('aria-pressed',String(tab==='items'));
+  $('testMobsTab').setAttribute('aria-pressed',String(tab==='mobs'));
+  $('testWorldClearMobs').hidden=tab!=='mobs';
+  $('testWorldClearItems').hidden=tab!=='items';
+  $('testWorldQty').max=tab==='items'?'9999':'20';
+  $('testWorldQty').value=tab==='items'?'64':'1';
+  $('testWorldSearch').value='';
+  testWorldStatus(tab==='items'?'好きなアイテムを持ち物に追加できます。':'好きなモブを何度でも召喚できます。');
+  testWorldRenderCatalog();
+}
+function setTestPanelOpen(open){
+  if(open&&(activeMap!=='testworld'||!worldReady||!started||dead))return;
+  if(open){
+    if(inventoryOpen)setInventoryOpen(false);
+    if(craftOpen)setCraftOpen(false);
+    if(chestOpen)setChestOpen(false);
+    primaryActionStop();document.exitPointerLock?.();
+    Object.keys(keys).forEach(k=>keys[k]=false);resetSprint();
+  }
+  testPanelOpen=!!open;
+  $('testWorldPanel').classList.toggle('open',testPanelOpen);
+  $('testWorldPanel').setAttribute('aria-hidden',String(!testPanelOpen));
+  if(testPanelOpen)testWorldSelectTab(activeTestTab);
+  else if(started&&!matchMedia('(pointer:coarse)').matches)
+    renderer.domElement.requestPointerLock?.();
+}
+$('testWorldOpen').addEventListener('click',()=>setTestPanelOpen(true));
+$('testWorldClose').addEventListener('click',()=>setTestPanelOpen(false));
+$('testWorldPanel').addEventListener('pointerdown',e=>{if(e.target===$('testWorldPanel'))setTestPanelOpen(false)});
+$('testItemsTab').addEventListener('click',()=>testWorldSelectTab('items'));
+$('testMobsTab').addEventListener('click',()=>testWorldSelectTab('mobs'));
+$('testWorldSearch').addEventListener('input',testWorldRenderCatalog);
+$('testWorldClearItems').addEventListener('click',()=>{
+  if(activeMap!=='testworld'||!worldReady)return;
+  clearInventorySlots();syncDerivedInventory();renderHotbar();markSaveDirty();
+  testWorldStatus('持ち物を空にしました（装備中の防具・左手も解除）');
+});
+$('testWorldClearMobs').addEventListener('click',()=>{
+  if(activeMap!=='testworld'||!worldReady)return;
+  if(multiRole==='guest'){
+    if(!multiplayerNetwork.connected){testWorldStatus('マルチプレイに接続されていません');return}
+    multiplayerNetwork.send({t:'testClearMobs'});
+    testWorldStatus('ホストにモブ削除を依頼中…');return;
+  }
+  const removed=testClearMobs();
+  if(multiRole==='host'&&multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
+  testWorldStatus('出したモブを'+removed+'体削除しました');
+});
 
 let passiveSpawnCooldown=20;
 const MOB_SPAWN_WEIGHTS=[
@@ -5526,6 +5795,7 @@ $('chestClose').addEventListener('click',()=>setChestOpen(false));
 $('chestScreen').addEventListener('pointerdown',e=>{if(e.target===$('chestScreen'))setChestOpen(false)});
 $('chestSingle').addEventListener('click',()=>{chestOneAtATime=!chestOneAtATime;renderChestUI()});
 function setInventoryOpen(v){
+  if(v&&testPanelOpen)setTestPanelOpen(false);
   setShieldGuard(false);
   inventoryOpen=v;inventoryScreen.classList.toggle('open',v);inventoryScreen.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
@@ -5674,7 +5944,7 @@ function doorSupportedBaseY(x,aimY,z){
   return null;
 }
 function place(){
-  if(chatViewActive||chestOpen||craftOpen||inventoryOpen)return;
+  if(chatViewActive||chestOpen||craftOpen||inventoryOpen||testPanelOpen)return;
   if(started&&!dead&&!sleeping){
     firstPersonHand.swing(.6);
     triggerAvatarAction('use');
@@ -5800,7 +6070,7 @@ function place(){
     return;
   }
 
-  const blockId=buildable.includes(selected)?selected:placeableItemToBlock[selected];
+  const blockId=(buildable.includes(selected)||(activeMap==='testworld'&&selected>B.AIR&&selected<=B.BEDROCK))?selected:placeableItemToBlock[selected];
   if(blockId==null){flash((names[selected]||'このアイテム')+'は設置できません');return}
   if(mobs.some(m=>mobOverlapsBlock(m,x,y,z))){
     flash('モブの中にはブロックを置けません');return;
@@ -6291,6 +6561,7 @@ function craftRecipe(i){
   renderHotbar();renderCrafting();
 }
 function setCraftOpen(v){
+  if(v&&testPanelOpen)setTestPanelOpen(false);
   craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
   resetSprint();
@@ -6334,6 +6605,8 @@ addEventListener('blur',()=>{
 });
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
+  if(testPanelOpen){if(k==='escape'){e.preventDefault();setTestPanelOpen(false)}return}
+
   if(chatViewActive){
     if(k==='escape'){e.preventDefault();chatCloseView(true)}
     return;
@@ -6605,7 +6878,7 @@ function loop(now){
   // A single-player sleeper retains the normal short sunrise transition.
   if(started&&!dead&&multiRole==='host'&&sleeping&&!chestOpen)
     advanceDayTime(dt);
-  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen){
+  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen&&!testPanelOpen){
     updateBowDraw(now);
     updateMining(dt);
     updateEating(dt);
@@ -7717,6 +7990,28 @@ function multiRoomData(message,peerId){
       }
       multiSleepHostSync();return;
     }
+    if(message.t==='testSpawnMobs'){
+      if(activeMap!=='testworld'||!Number.isInteger(message.qty)||message.qty<1||
+         message.qty>20||!TEST_MOB_BY_KEY.has(message.key)||!from.player||
+         ![from.player.x,from.player.y,from.player.z].every(Number.isFinite))return;
+      const now=performance.now();
+      if(now-(from.testSpawnAt??-Infinity)<300)return;
+      from.testSpawnAt=now;
+      const count=testSpawnMobs(message.key,message.qty,from.player);
+      multiplayerNetwork.send({t:'testSpawnResult',count},peerId);
+      multiplayerNetwork.send(multiMobSnapshot());
+      return;
+    }
+    if(message.t==='testClearMobs'){
+      if(activeMap!=='testworld'||!from.player)return;
+      const now=performance.now();
+      if(now-(from.testClearAt??-Infinity)<750)return;
+      from.testClearAt=now;
+      const count=testClearMobs();
+      multiplayerNetwork.send({t:'testClearResult',count},peerId);
+      multiplayerNetwork.send(multiMobSnapshot());
+      return;
+    }
     if(message.t==='chimeraSummon'){hostHandleChimeraSummon(message,from,peerId);return}
     if(message.t==='mobHit'){multiProcessMobHit(message,from);return}
     if(message.t==='pose'&&message.player&&Number.isFinite(message.player.x)){
@@ -7744,6 +8039,10 @@ function multiRoomData(message,peerId){
     }else if(message.t==='block'){multiApplyBlock(message);multiplayerNetwork.send(message)}
     else if(message.t==='dropAdd'||message.t==='dropRemove'){multiApplyDrop(message);multiplayerNetwork.send(message)}
   }else{
+    if(message.t==='testSpawnResult'&&activeMap==='testworld')
+      testWorldStatus('モブを'+(Number(message.count)||0)+'体出しました');
+    if(message.t==='testClearResult'&&activeMap==='testworld')
+      testWorldStatus('モブを'+(Number(message.count)||0)+'体削除しました');
     if(message.t==='sleepState'){
       if(Number.isInteger(message.total)&&Number.isInteger(message.asleep)&&
           message.total>=1&&message.total<=4&&message.asleep>=0&&

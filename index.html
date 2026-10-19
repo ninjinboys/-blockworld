@@ -185,6 +185,30 @@
     <button id="respawnBtn" type="button">リスポーン</button>
   </div>
 </div>
+
+<button id="testWorldOpen" class="test-world-open" type="button" hidden aria-label="テストツールを開く">🧪 TEST</button>
+<section id="testWorldPanel" class="test-world-overlay" aria-hidden="true">
+ <div class="test-world-dialog" role="dialog" aria-modal="true" aria-labelledby="testWorldTitle">
+  <header class="test-world-head">
+   <div><small>TESTWORLD · CREATIVE</small><h2 id="testWorldTitle">テストツール</h2><p>好きなアイテム・モブを何度でも出せます。</p></div>
+   <button id="testWorldClose" type="button">✕ 閉じる</button>
+  </header>
+  <nav class="test-world-tabs" aria-label="カテゴリ">
+   <button id="testItemsTab" type="button" aria-pressed="true">🎒 アイテム</button>
+   <button id="testMobsTab" type="button" aria-pressed="false">🐲 モブ</button>
+  </nav>
+  <div class="test-world-filters">
+   <label>検索<input id="testWorldSearch" type="search" placeholder="名前を入力" autocomplete="off"></label>
+   <label>一度に出す数<input id="testWorldQty" type="number" min="1" max="9999" step="1" value="64" inputmode="numeric"></label>
+  </div>
+  <p id="testWorldStatus" class="test-world-status" role="status" aria-live="polite">アイテムを選んで「追加」を押してください。</p>
+  <div id="testWorldCatalog" class="test-world-catalog"></div>
+  <footer class="test-world-actions">
+   <button id="testWorldClearMobs" type="button" hidden>出したモブをすべて消す</button>
+   <button id="testWorldClearItems" type="button">持ち物を空にする</button>
+  </footer>
+ </div>
+</section>
 <div id="inventoryScreen" aria-hidden="true">
   <div class="inventory-panel">
     <div class="inventory-head">
@@ -327,7 +351,7 @@
   },true);
 })();
 </script>
-<script type="module" src="app.js?v=20261019mapSelectTest01"></script>
+<script type="module" src="app.js?v=20261019testCreative01"></script>
 <script type="module" src="device-account-transfer-ui.js?v=20261014deviceTransfer02"></script>
 </body>
 </html>
