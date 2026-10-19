@@ -478,8 +478,19 @@ const furnaceRecipes=[
   {name:'鉄インゴット',out:I.IRON_INGOT,qty:1,needs:[[I.RAW_IRON,1],[B.COAL,1]],unlockLevel:7,xp:4},
   {name:'金インゴット',out:I.GOLD_INGOT,qty:1,needs:[[I.RAW_GOLD,1],[B.COAL,1]],unlockLevel:7,xp:6},
   {name:'焼き豚肉',out:I.COOKED_PORK,qty:1,needs:[[I.RAW_PORK,1],[B.COAL,1]],unlockLevel:7,xp:2},
-  {name:'ステーキ',out:I.COOKED_BEEF,qty:1,needs:[[I.RAW_BEEF,1],[B.COAL,1]],unlockLevel:7,xp:3}
+  {name:'ステーキ',out:I.COOKED_BEEF,qty:1,needs:[[I.RAW_BEEF,1],[B.COAL,1]],unlockLevel:7,xp:3},
+  {name:'ガラス',out:B.GLASS,qty:1,needs:[[B.SAND,1],[B.COAL,1]],unlockLevel:7,xp:2}
 ];
+// 木材3個を石炭1個の代替燃料として使う。材料とレベルは通常のかまどと同じ。
+const furnaceWoodRecipes=furnaceRecipes.map(r=>({
+  ...r,name:r.name+'（木材燃料）',
+  needs:r.needs.map(([id,n])=>[id,id===B.COAL?n*3:n]).reduce((acc,[id,n])=>{
+    const fuel=id===B.COAL?B.PLANK:id;
+    const existing=acc.find(x=>x[0]===fuel);
+    if(existing)existing[1]+=n;else acc.push([fuel,n]);
+    return acc;
+  },[])
+}));
 const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
 const hardness={
   [B.GRASS]:0.55,[B.DIRT]:0.45,[B.SAND]:0.4,[B.LEAF]:0.22,[B.SNOW]:0.18,[B.GRAVEL]:0.75,[B.CACTUS]:0.65,
@@ -6502,12 +6513,12 @@ function chooseCraftMode(){
   return 'inventory';
 }
 function currentRecipeList(){
-  return craftMode==='workbench'?workbenchRecipes:craftMode==='furnace'?furnaceRecipes:craftMode==='warp'?warpWorkbenchRecipes:recipes;
+  return craftMode==='workbench'?workbenchRecipes:craftMode==='furnace'?[...furnaceRecipes,...furnaceWoodRecipes]:craftMode==='warp'?warpWorkbenchRecipes:recipes;
 }
 function renderCrafting(){
   const title=document.querySelector('.craft-title'),sub=document.querySelector('.craft-sub');
   if(craftMode==='workbench'){title.textContent='WORKBENCH';sub.textContent='作業台専用：ツール・防具・設備'}
-  else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭で原石を精錬・生肉を調理'}
+  else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭1個 または 木材3個を燃料に精錬・調理（砂→ガラスも可）'}
   else if(craftMode==='warp'){title.textContent='WARP WORKBENCH';sub.textContent='ボス転送装置を作るための専用作業台'}
   else {title.textContent='CRAFTING';sub.textContent='インベントリで作れる基本アイテム'}
   const ids=Object.keys(inventory).map(Number);
