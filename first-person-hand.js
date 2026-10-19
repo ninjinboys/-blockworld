@@ -127,7 +127,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     15:0xc18d53,16:0x7f8182,17:0xbddfe1,18:0x25252b,
     19:0x8c552e,20:0x767b81,21:0xae5250,32:0x8c572e
   };
-  let currentId=null,object=null,swingTime=0,walkPhase=0,lastMineSwing=0;
+  let currentId=null,object=null,swingTime=0,swingStyle='swing',walkPhase=0,lastMineSwing=0;
   const itemMat=(c)=>basic(c);
   function clearHeld(){
     if(!object)return;
@@ -368,8 +368,9 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   if(!camera.parent)scene.add(camera);
   root.visible=false;
   return {
-    swing(power=1){
+    swing(power=1,style='swing'){
       swingTime=.39;
+      swingStyle=style;
     },
     update(dt,now){
       const hit=Boolean(isHurt());
@@ -410,13 +411,15 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       root.position.set(
         FIRST_PERSON_ARM_X+bob*.45,
         FIRST_PERSON_ARM_Y+movement*Math.abs(Math.sin(walkPhase))*.027,
-        FIRST_PERSON_ARM_Z
+        FIRST_PERSON_ARM_Z-(swingStyle==='thrust'?swing*.72:0)
       );
-      root.rotation.set(-swing*.18,0,FIRST_PERSON_ARM_TILT-swing*.46+bob*.25);
-      pivot.rotation.x=.19-swing*.70;
+      root.rotation.set(-swing*(swingStyle==='thrust'?.30:.18),0,
+        FIRST_PERSON_ARM_TILT-swing*(swingStyle==='thrust'?.09:.46)+bob*.25);
+      pivot.rotation.x=.19-swing*(swingStyle==='thrust'?.16:.70);
       pivot.rotation.y=-.09;
       pivot.rotation.z=swing*.19;
-      held.rotation.set(swing*.08,0,-swing*.15);
+      held.rotation.set(swingStyle==='thrust'?-swing*.80:swing*.08,0,
+        swingStyle==='thrust'?swing*.05:-swing*.15);
     }
   };
 }
