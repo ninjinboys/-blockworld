@@ -195,7 +195,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       });
     }
   }
-  function validId(id){return Number.isInteger(id)&&id>0&&id<=166?id:null}
+  function validId(id){return Number.isInteger(id)&&id>0&&id<=188?id:null}
   function sync(model,mainId,offhandId){
     if(!model?.userData?.limbs)return;
     let state=model.userData.heldItemsView;
