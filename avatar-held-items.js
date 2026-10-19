@@ -231,7 +231,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
           item.scale.setScalar(1.25);
         }else if(main>=168&&main<=188){
           const longItem=[168,170,171,172,179,186].includes(main);
-          item.scale.setScalar(longItem?.78:.66);
+          item.scale.setScalar(main===168?1.05:longItem?.78:.66);
           item.rotation.set(-.10,.16,-.12);
           item.position.set(.015,-.045,-.02);
         }else if(main===CHIMERA_DAGGER){
@@ -277,6 +277,8 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     const {leftArm,rightArm}=model.userData.limbs;
     const state=model.userData.heldItemsView;
     if(!state)return;
+    // Restore the grip after a completed jab (never leave the spear tilted).
+    state.right.rotation.x=-.24;
     const ease=t=>{const x=Math.max(0,Math.min(1,t));return x*x*(3-2*x)};
     if(drawing&&(state.mainId===149||state.mainId===CHIMERA_BOW)){
       // Two-handed bow stance: both arms reach forward, one draws the string.
@@ -299,7 +301,18 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       const seconds=(now-at)/1000;
       if(Number.isFinite(seconds)&&seconds>=0){
         const baseX=rightArm.rotation.x,baseZ=rightArm.rotation.z;
-        if(kind==='attack'&&seconds<.46){
+        if(kind==='thrust'&&state.mainId===168&&seconds<.43){
+          // Draw back, extend the elbow, drive the spear straight ahead,
+          // and retract. Distinct from the sword's vertical chopping arc.
+          const jab=seconds<.09?ease(seconds/.09)*.35:
+            seconds<.22?.35+.65*ease((seconds-.09)/.13):
+            1-ease((seconds-.22)/.21);
+          rightArm.rotation.x=baseX+1.20*jab;
+          rightArm.rotation.z=baseZ-.12*jab;
+          rightArm.rotation.y=-.21*jab;
+          state.right.rotation.x=-.24-1.00*jab;
+          leftArm.rotation.x+=.22*jab;
+        }else if(kind==='attack'&&seconds<.46){
           let x;
           if(seconds<.12)x=baseX+(1.55-baseX)*ease(seconds/.12);
           else if(seconds<.26)x=1.55+(-.53-1.55)*ease((seconds-.12)/.14);
