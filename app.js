@@ -7,6 +7,7 @@ import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
+import {drawDetailedItemIcon} from './item-art-icons.js?v=20261019pixelArt01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
 
@@ -354,6 +355,7 @@ function mobDropIcon(g,id){
 }
 function drawItemIcon(g,id){
   g.clearRect(0,0,16,16);
+  if(drawDetailedItemIcon(g,id))return;
   if(id===I.WOOL||id===I.RAW_PORK||id===I.RAW_BEEF||id===I.LEATHER||
     id===I.COOKED_PORK||id===I.COOKED_BEEF||id===I.LION_FANG||
     id===I.BUFFALO_HORN||id===I.ANACONDA_HIDE||id===I.CHIMERA_HIDE||
