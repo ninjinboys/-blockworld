@@ -72,7 +72,7 @@ const archGlow=new T.MeshBasicMaterial({color:0x21aa9e,toneMapped:false});
 const fracturePositions=[];
 function fracture(points){for(let i=1;i<points.length;i++){fracturePositions.push(...points[i-1],...points[i])}}
 function archWedge(side,rInside,rOutside,a0,a1,z0,z1,material){
- const point=(r,a)=>new T.Vector2(side*r*Math.cos(a),1.8+r*Math.sin(a));
+ const point=(r,a)=>new T.Vector2(side*r*Math.cos(a),2.12+2*r*Math.sin(a));
  const shape=new T.Shape();
  const q=[point(rInside,a0),point(rOutside,a0),point(rOutside,a1),point(rInside,a1)];
  shape.moveTo(q[0].x,q[0].y);
@@ -137,24 +137,24 @@ for(const side of [-1,1]){
   archWedge(side,3.99,4.07,a0+.004,a1-.004,-.83,-.64,archGlow);
   if(j%3===1){
    const a=(a0+a1)*.5,r=5.20;
-   const xx=side*r*Math.cos(a),yy=1.8+r*Math.sin(a);
-   const mx=side*(r+.07)*Math.cos(a+.022),my=1.8+(r+.07)*Math.sin(a+.022);
+   const xx=side*r*Math.cos(a),yy=2.12+2*r*Math.sin(a);
+   const mx=side*(r+.07)*Math.cos(a+.022),my=2.12+2*(r+.07)*Math.sin(a+.022);
    fracture([[xx,yy,.30],[mx,my,.31],
-     [side*(r-.12)*Math.cos(a+.045),1.8+(r-.12)*Math.sin(a+.045),.32]]);
+     [side*(r-.12)*Math.cos(a+.045),2.12+2*(r-.12)*Math.sin(a+.045),.32]]);
   }
   if(j%4===1){
    const a=(a0+a1)*.5;
-   const x=side*5.22*Math.cos(a),y=1.8+5.22*Math.sin(a);
+   const x=side*5.22*Math.cos(a),y=2.12+2*5.22*Math.sin(a);
    b(x,y+.10,.13,.39,.15,.42,C.moss,-side*a);
   }
  }
  // The two ends have large, broken, offset capstones and missing fragments.
- const tip=angMax,tipX=side*4.60*Math.cos(tip),tipY=1.8+4.60*Math.sin(tip);
+ const tip=angMax,tipX=side*4.60*Math.cos(tip),tipY=2.12+2*4.60*Math.sin(tip);
  b(tipX+side*.07,tipY+.45,-.51,1.36,.53,1.38,C.stone,-side*tip);
  b(tipX+side*.22,tipY+.73,-.68,.81,.32,.99,C.light,-side*(tip+.1));
  for(let k=0;k<12;k++){
   const a=.12+k*.070,r=5.06+(rnd()-.5)*.17;
-  const x=side*r*Math.cos(a),y=1.8+r*Math.sin(a),z=.37;
+  const x=side*r*Math.cos(a),y=2.12+2*r*Math.sin(a),z=.37;
   if(k%3===0){
    b(x,y,z,.23,.30,.25,C.moss,-side*a);
    b(x,y-.27,z+.04,.14,.32,.16,C.leaf,-side*a);
@@ -286,7 +286,7 @@ for(const side of [-1,1]){
  for(let j=0;j<23;j++){
   const a=.17+(j%13)*.067;
   const r=5.18+(rnd()-.5)*.14;
-  const x=side*r*Math.cos(a),y=1.8+r*Math.sin(a);
+  const x=side*r*Math.cos(a),y=2.12+2*r*Math.sin(a);
   if(j%3===0){
    b(x,y+.16,.29,.34,.15,.35,C.moss,-side*a);
    if(j%2===0)for(let k=0;k<3;k++)
@@ -318,8 +318,8 @@ function addBatch(list,material,perInstanceColors=true){
 addBatch(blocks,new T.MeshStandardMaterial({color:0xffffff,roughness:.85,metalness:0,flatShading:true,vertexColors:false}));
 addBatch(lights,new T.MeshBasicMaterial({color:0xffffff,toneMapped:false}));
 const ground=new T.Mesh(new T.CircleGeometry(19,48),new T.MeshLambertMaterial({color:0x10282b,transparent:true,opacity:.75}));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;scene.add(ground);
-let yaw=.23,pitch=.14,dist=22,changing=false,frames=0;
-const center=new T.Vector3(0,5.0,0),relative=new T.Vector3(),touches=new Map();
+let yaw=.23,pitch=.13,dist=27,changing=false,frames=0;
+const center=new T.Vector3(0,6.0,0),relative=new T.Vector3(),touches=new Map();
 function render(){
  const w=root.clientWidth,h=root.clientHeight;if(!w||!h)return;
  const width=Math.max(1,w),height=Math.max(1,h);
@@ -332,10 +332,10 @@ function render(){
 let pending=false;function req(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render()})}
 new ResizeObserver(req).observe(root);req();
 function on(id,fn){document.getElementById(id).addEventListener('click',()=>{fn();req()})}
-on('angle',()=>{yaw=.38;pitch=.20;dist=22});
-on('front',()=>{yaw=0;pitch=.06;dist=23});
-on('side',()=>{yaw=Math.PI/2;pitch=.13;dist=23});
-on('top',()=>{yaw=.05;pitch=1.36;dist=24});
+on('angle',()=>{yaw=.38;pitch=.17;dist=27});
+on('front',()=>{yaw=0;pitch=.06;dist=27});
+on('side',()=>{yaw=Math.PI/2;pitch=.13;dist=27});
+on('top',()=>{yaw=.05;pitch=1.36;dist=28});
 on('left',()=>yaw-=.35);on('right',()=>yaw+=.35);
 on('near',()=>dist=Math.max(9,dist/1.2));on('far',()=>dist=Math.min(36,dist*1.2));
 function pinch(){const p=[...touches.values()];return p.length<2?null:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}
