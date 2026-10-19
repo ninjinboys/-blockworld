@@ -1625,3 +1625,36 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 .backpack-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:3px}
 .backpack-grid .inv-slot{min-width:0;min-height:42px;padding:2px}
 .backpack-grid .item-icon{width:26px;height:26px}
+
+/* Crafting UI: compact catalog, clear readable cards, independently scrolling recipes. */
+#crafting .craft-panel{
+ box-sizing:border-box;width:min(980px,94vw);height:min(710px,86dvh);max-height:86dvh;
+ display:flex;flex-direction:column;overflow:hidden;padding:14px;
+ background:#c8c8c8;
+}
+#crafting .craft-head{flex:0 0 auto;align-items:center;margin-bottom:9px}
+#crafting .craft-title{font-size:20px}
+#crafting #craftClose{flex:0 0 43px;width:43px;height:43px}
+#crafting .craft-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex:0 0 auto}
+#crafting .craft-search-label{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:5px 10px;border:2px solid #555;background:#ececec}
+#crafting #craftSearch{flex:1;min-width:0;width:100%;height:30px;border:0;background:transparent;color:#222;font:600 14px system-ui,sans-serif;outline-offset:2px}
+#crafting .craft-count{font:800 12px system-ui,sans-serif;color:#414141;white-space:nowrap}
+#crafting #craftInventory{flex:0 0 auto;max-height:62px;overflow:auto;padding:5px;margin-bottom:9px}
+#crafting #recipeList{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;align-content:start;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:3px 5px 6px 2px}
+#crafting .recipe{box-sizing:border-box;min-width:0;min-height:78px;padding:9px 10px;gap:10px}
+#crafting .recipe-main{display:flex;align-items:center;gap:10px;min-width:0}
+#crafting .recipe-copy{min-width:0;flex:1}
+#crafting .recipe-icon{width:36px;height:36px;flex:0 0 36px}
+#crafting .recipe-name{font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+#crafting .recipe-needs{font-size:11px;line-height:1.4;margin-top:4px}
+#crafting .recipe button{height:42px;min-width:69px}
+#crafting .craft-help{flex:0 0 auto;padding-top:7px;margin-top:0}
+@media(max-width:650px){
+ #crafting .craft-panel{width:96vw;height:88dvh;max-height:88dvh;padding:10px}
+ #crafting #recipeList{grid-template-columns:1fr}
+ #crafting .recipe{min-height:68px;padding:7px 9px}
+ #crafting .craft-sub{font-size:10px}
+}
+@media(min-width:651px) and (pointer:coarse){
+ #crafting #recipeList{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
