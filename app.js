@@ -7,6 +7,7 @@ import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
+import {createBuildingBlockModels} from './building-block-models.js?v=20261019shapes01';
 import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261019spriteArt01';
 import {drawDetailedItemIcon} from './item-art-icons.js?v=20261019pixelArt01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
@@ -46,6 +47,25 @@ const CHUNK=16,RENDER_RADIUS=3,Y_MIN=-80,WORLD_TOP=47,HEIGHT=WORLD_TOP-Y_MIN+1,S
 // Terrain height uses the old 48-block world cap so existing landscapes stay unchanged.
 const TERRAIN_HEIGHT=48;
 const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30,TORCH:31,CHEST:32,WARP_WORKBENCH_X:33,WARP_WORKBENCH_X_END:34,WARP_WORKBENCH_Z:35,WARP_WORKBENCH_Z_END:36,STONE_BRICKS:37,MOSSY_STONE_BRICKS:38,CRACKED_STONE_BRICKS:39,POLISHED_STONE:40,MARBLE:41,OBSIDIAN:42,RED_BRICKS:43,WOOD_STAIRS:44,STONE_STAIRS:45,WOOD_SLAB:46,IRON_BARS:47,WOOD_FENCE:48,FENCE_GATE:49,LADDER:50,TRAPDOOR:51,LANTERN:52,BOOKSHELF:53,BARREL:54,TNT:55,CAMPFIRE:56};
+// Orientation and open-state variants are regular voxel ids, and persist with edits.
+Object.assign(B,{
+  WOOD_STAIRS_E:57,WOOD_STAIRS_S:58,WOOD_STAIRS_W:59,
+  STONE_STAIRS_E:60,STONE_STAIRS_S:61,STONE_STAIRS_W:62,
+  FENCE_GATE_E:63,FENCE_GATE_S:64,FENCE_GATE_W:65,
+  FENCE_GATE_OPEN_N:66,FENCE_GATE_OPEN_E:67,FENCE_GATE_OPEN_S:68,FENCE_GATE_OPEN_W:69,
+  LADDER_E:70,LADDER_S:71,LADDER_W:72,
+  TRAPDOOR_OPEN_N:73,TRAPDOOR_OPEN_E:74,TRAPDOOR_OPEN_S:75,TRAPDOOR_OPEN_W:76
+});
+const SHAPED_VARIANT_BASE=new Map([
+  [B.WOOD_STAIRS_E,B.WOOD_STAIRS],[B.WOOD_STAIRS_S,B.WOOD_STAIRS],[B.WOOD_STAIRS_W,B.WOOD_STAIRS],
+  [B.STONE_STAIRS_E,B.STONE_STAIRS],[B.STONE_STAIRS_S,B.STONE_STAIRS],[B.STONE_STAIRS_W,B.STONE_STAIRS],
+  [B.FENCE_GATE_E,B.FENCE_GATE],[B.FENCE_GATE_S,B.FENCE_GATE],[B.FENCE_GATE_W,B.FENCE_GATE],
+  [B.FENCE_GATE_OPEN_N,B.FENCE_GATE],[B.FENCE_GATE_OPEN_E,B.FENCE_GATE],
+  [B.FENCE_GATE_OPEN_S,B.FENCE_GATE],[B.FENCE_GATE_OPEN_W,B.FENCE_GATE],
+  [B.LADDER_E,B.LADDER],[B.LADDER_S,B.LADDER],[B.LADDER_W,B.LADDER],
+  [B.TRAPDOOR_OPEN_N,B.TRAPDOOR],[B.TRAPDOOR_OPEN_E,B.TRAPDOOR],
+  [B.TRAPDOOR_OPEN_S,B.TRAPDOOR],[B.TRAPDOOR_OPEN_W,B.TRAPDOOR]
+]);
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
   RAW_IRON:106,RAW_GOLD:107,IRON_INGOT:108,GOLD_INGOT:109,DIAMOND:110,
@@ -123,6 +143,7 @@ names[I.BACKPACK]='リュック';
 names[I.GLIDER]='グライダー';
 names[I.SLEEPING_BAG]='寝袋';
 names[I.FLINT_STEEL]='火打石と打ちがね';
+for(const [variant,base] of SHAPED_VARIANT_BASE)names[variant]=names[base];
 const NEW_BUILD_BLOCKS=[B.STONE_BRICKS,B.MOSSY_STONE_BRICKS,B.CRACKED_STONE_BRICKS,B.POLISHED_STONE,B.MARBLE,B.OBSIDIAN,B.RED_BRICKS,B.WOOD_STAIRS,B.STONE_STAIRS,B.WOOD_SLAB,B.IRON_BARS,B.WOOD_FENCE,B.FENCE_GATE,B.LADDER,B.TRAPDOOR,B.LANTERN,B.BOOKSHELF,B.BARREL,B.TNT,B.CAMPFIRE];
 const NEW_ITEM_IDS=[I.SPEAR,I.IRON_DAGGER,I.BATTLE_AXE,I.HAMMER,I.CROSSBOW,I.THROWING_KNIFE,I.MOLOTOV,I.HEAL_POTION,I.STAMINA_POTION,I.POISON_ARROW,I.BUCKET,I.FISHING_ROD,I.COMPASS,I.MAP,I.BINOCULARS,I.ROPE,I.NAME_TAG,I.BACKPACK,I.GLIDER,I.SLEEPING_BAG,I.FLINT_STEEL];
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River','Jungle'];
@@ -590,6 +611,7 @@ const furnaceWoodRecipes=furnaceRecipes.map(r=>({
   },[])
 }));
 const hardnessNew={};for(const id of NEW_BUILD_BLOCKS)hardnessNew[id]=id===B.OBSIDIAN?8:2.2;
+for(const [variant,base] of SHAPED_VARIANT_BASE)hardnessNew[variant]=hardnessNew[base];
 const blockXP={[B.GRASS]:1,[B.DIRT]:1,[B.SAND]:1,[B.LEAF]:1,[B.LOG]:4,[B.STONE]:3,[B.GRAVEL]:2,[B.COAL]:6,[B.IRON]:10,[B.GOLD]:14,[B.DIAMOND]:25,[B.CACTUS]:2};
 const hardness={...hardnessNew,
   [B.GRASS]:0.55,[B.DIRT]:0.45,[B.SAND]:0.4,[B.LEAF]:0.22,[B.SNOW]:0.18,[B.GRAVEL]:0.75,[B.CACTUS]:0.65,
@@ -602,7 +624,12 @@ const hardness={...hardnessNew,
   [B.WARP_WORKBENCH_Z]:3.2,[B.WARP_WORKBENCH_Z_END]:3.2,
   [B.BEDROCK]:Infinity
 };
-const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE,...WARP_WORKBENCH_BLOCKS]);
+const rockBlocks=new Set([
+  B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE,...WARP_WORKBENCH_BLOCKS,
+  B.STONE_BRICKS,B.MOSSY_STONE_BRICKS,B.CRACKED_STONE_BRICKS,B.POLISHED_STONE,
+  B.MARBLE,B.OBSIDIAN,B.RED_BRICKS,B.STONE_STAIRS,
+  B.STONE_STAIRS_E,B.STONE_STAIRS_S,B.STONE_STAIRS_W
+]);
 
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
@@ -832,7 +859,13 @@ const DOOR_ALL=new Set([B.DOOR_X,B.DOOR_X_TOP,B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.
 const DOOR_OPEN=new Set([B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_OPEN_TOP]);
 const DOOR_TOP=new Set([B.DOOR_X_TOP,B.DOOR_X_OPEN_TOP,B.DOOR_Z_TOP,B.DOOR_Z_OPEN_TOP]);
 const isDoor=id=>DOOR_ALL.has(id);
-const solid=id=>id!==B.AIR&&id!==B.WATER&&id!==B.TORCH&&!DOOR_OPEN.has(id);
+const NON_COLLIDING_BUILDINGS=new Set([
+  B.LADDER,B.LADDER_E,B.LADDER_S,B.LADDER_W,
+  B.LANTERN,B.CAMPFIRE,
+  B.FENCE_GATE_OPEN_N,B.FENCE_GATE_OPEN_E,B.FENCE_GATE_OPEN_S,B.FENCE_GATE_OPEN_W
+]);
+const solid=id=>id!==B.AIR&&id!==B.WATER&&id!==B.TORCH&&
+  !DOOR_OPEN.has(id)&&!NON_COLLIDING_BUILDINGS.has(id);
 
 
 function accountKey(name){return name.normalize('NFKC').trim().toLocaleLowerCase('ja-JP')}
@@ -2281,18 +2314,9 @@ const leaf=new THREE.MeshLambertMaterial({map:T.leaf,transparent:true,opacity:.9
 const bedSide=L(T.bedSide),bedEnd=L(T.bedEnd),bedBottom=L(T.bedBottom),bedFootTop=L(T.bedFootTop),bedHeadTop=L(T.bedHeadTop);
 const bedFootMaterials=[bedSide,bedSide,bedFootTop,bedBottom,bedEnd,bedEnd];
 const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
-const NEW_BLOCK_MATERIALS={
-  [B.STONE_BRICKS]:0x85898d,[B.MOSSY_STONE_BRICKS]:0x647a60,
-  [B.CRACKED_STONE_BRICKS]:0x73757a,[B.POLISHED_STONE]:0xaeb3b8,
-  [B.MARBLE]:0xf1eee8,[B.OBSIDIAN]:0x29243c,[B.RED_BRICKS]:0xb95740,
-  [B.WOOD_STAIRS]:0xb38150,[B.STONE_STAIRS]:0x91969a,[B.WOOD_SLAB]:0xb98756,
-  [B.IRON_BARS]:0x91a0ab,[B.WOOD_FENCE]:0x9d6d3c,[B.FENCE_GATE]:0xa57646,
-  [B.LADDER]:0xb38a54,[B.TRAPDOOR]:0xa67845,[B.LANTERN]:0xffd56e,
-  [B.BOOKSHELF]:0x926b42,[B.BARREL]:0x8b603b,[B.TNT]:0xc73531,
-  [B.CAMPFIRE]:0xe08939
-};
-const newBlockMaterials=Object.fromEntries(Object.entries(NEW_BLOCK_MATERIALS)
-  .map(([id,color])=>[id,new THREE.MeshLambertMaterial({color})]));
+// Replace flat plain colors with dedicated pixel materials and true 3D shapes.
+const detailedBlockModels=createBuildingBlockModels(THREE,B);
+const newBlockMaterials=detailedBlockModels.materials;
 const M={...newBlockMaterials,[B.WARP_WORKBENCH_X]:stone,[B.WARP_WORKBENCH_X_END]:stone,[B.WARP_WORKBENCH_Z]:stone,[B.WARP_WORKBENCH_Z_END]:stone,[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
 const doorBox=new THREE.BoxGeometry(.92,.998,.14);
@@ -2434,7 +2458,7 @@ function rebuildChunkMesh(c){
     // Previous terrain face-culling hid the bottom half when enclosed, so
     // it looked like the door was floating. Opening the door accidentally
     // made both halves render because the open IDs were treated as air.
-    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST||isWarpWorkbench(id);
+    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST||isWarpWorkbench(id)||detailedBlockModels.custom.has(id);
     if(!visible)for(const [dx,dy,dz] of neighborVectors){
       const nx=lx+dx,ny=y+dy,nz=lz+dz;
       const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
@@ -2442,7 +2466,7 @@ function rebuildChunkMesh(c){
       // Doors leave visible space beside their thin panel: render the
       // neighbouring wall, floor and ceiling faces too.
       if(id===B.WATER?b!==B.WATER:
-         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST||isWarpWorkbench(b)){visible=true;break}
+         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST||isWarpWorkbench(b)||detailedBlockModels.custom.has(b)){visible=true;break}
     }
     if(visible)groups[id].push({x,y,z});
   }
@@ -2455,6 +2479,10 @@ function rebuildChunkMesh(c){
       continue;
     }
     if(id===B.WARP_WORKBENCH_X_END||id===B.WARP_WORKBENCH_Z_END)continue;
+    if(detailedBlockModels.custom.has(id)){
+      detailedBlockModels.build(id,p,scene,meshes,lookup,built,getLoaded);
+      continue;
+    }
     const geo=id===B.CHEST?chestBox:isDoor(id)?doorBox:(id===B.BED||id===B.BED_HEAD)?bedBox:box;
     const m=new THREE.InstancedMesh(geo,M[id],p.length);
     m.userData.id=id;
@@ -4908,7 +4936,12 @@ function blocked(px,py,pz){
   const minY=Math.ceil(py-0.5+e),maxY=Math.floor((py+PH)+0.5-e);
   const minZ=Math.ceil((pz-PR)-0.5+e),maxZ=Math.floor((pz+PR)+0.5-e);
   for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)for(let z=minZ;z<=maxZ;z++){
-    if(solid(get(x,y,z)))return true;
+    const id=get(x,y,z);if(!solid(id))continue;
+    const shapes=detailedBlockModels.collisionBoxes(id);
+    if(!shapes)return true;
+    for(const [lx,rx,by,ty,lz,rz] of shapes)
+      if(px+PR>x+lx+e&&px-PR<x+rx-e&&py+PH>y+by+e&&py<y+ty-e&&
+         pz+PR>z+lz+e&&pz-PR<z+rz-e)return true;
   }
   return false;
 }
@@ -4921,6 +4954,20 @@ function movePlayerAxis(axis,amount){
     const ny=player.pos.y+(axis==='y'?step:0);
     const nz=player.pos.z+(axis==='z'?step:0);
     if(blocked(nx,ny,nz)){
+      if(axis!=='y'&&player.onGround&&!ridingHorse){
+        // Auto-step 0.5m only if a partial-height tread is genuinely there.
+        const y=player.pos.y+.51;
+        const fx=Math.round(nx),fy=Math.round(player.pos.y),fz=Math.round(nz);
+        const near=[get(fx,fy,fz),get(fx,fy+1,fz),
+          get(Math.round(player.pos.x),fy,Math.round(player.pos.z))];
+        const stair=near.some(v=>v===B.WOOD_SLAB||
+          detailedBlockModels.canonical(v)===B.WOOD_STAIRS||
+          detailedBlockModels.canonical(v)===B.STONE_STAIRS);
+        if(stair&&!blocked(nx,y,nz)&&!blocked(player.pos.x,y,player.pos.z)){
+          player.pos.set(nx,y,nz);player.vel.y=0;player.onGround=true;
+          fallOriginY=null;continue;
+        }
+      }
       if(axis==='x')player.vel.x=0;
       if(axis==='z')player.vel.z=0;
       if(axis==='y'){
@@ -5244,7 +5291,13 @@ function pickTier(){
   return 0;
 }
 function toolSpeed(id){
-  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE,B.BED,B.BED_HEAD,B.CHEST,...DOOR_ALL]);
+  const woodLike=new Set([B.LOG,B.PLANK,B.CRAFTING_TABLE,B.BED,B.BED_HEAD,B.CHEST,...DOOR_ALL,
+  B.WOOD_STAIRS,B.WOOD_STAIRS_E,B.WOOD_STAIRS_S,B.WOOD_STAIRS_W,
+  B.WOOD_SLAB,B.WOOD_FENCE,B.FENCE_GATE,B.FENCE_GATE_E,B.FENCE_GATE_S,B.FENCE_GATE_W,
+  B.FENCE_GATE_OPEN_N,B.FENCE_GATE_OPEN_E,B.FENCE_GATE_OPEN_S,B.FENCE_GATE_OPEN_W,
+  B.LADDER,B.LADDER_E,B.LADDER_S,B.LADDER_W,
+  B.TRAPDOOR,B.TRAPDOOR_OPEN_N,B.TRAPDOOR_OPEN_E,B.TRAPDOOR_OPEN_S,B.TRAPDOOR_OPEN_W,
+  B.BOOKSHELF,B.BARREL]);
   const softLike=new Set([B.GRASS,B.DIRT,B.SAND,B.GRAVEL,B.SNOW]);
   const axeSpeed=selected===I.DIAMOND_AXE?6.5:selected===I.IRON_AXE?5:selected===I.GOLD_AXE?5.8:selected===I.STONE_AXE?3.2:selected===I.WOOD_AXE?2.1:1;
   const shovelSpeed=selected===I.DIAMOND_SHOVEL?6.5:selected===I.IRON_SHOVEL?5:selected===I.GOLD_SHOVEL?5.8:selected===I.STONE_SHOVEL?3.2:1;
@@ -6020,7 +6073,7 @@ function finishMine(x,y,z,id){
     set(doorOther.x,doorOther.y,doorOther.z,B.AIR);
   if(brokeRespawnBed)bedSpawn=null;
 
-  let drop=specialBlockDrops[id]??id;
+  let drop=specialBlockDrops[id]??detailedBlockModels.canonical(id);
   if(id===B.STONE)drop=B.COBBLE;
   if(id===B.GRASS)drop=B.DIRT;
   if(id===B.IRON)drop=I.RAW_IRON;
@@ -6152,6 +6205,18 @@ function place(){
   if(aimed&&isWarpWorkbench(get(aimed.x,aimed.y,aimed.z))){
     setCraftOpen(true);return;
   }
+  if(aimed&&h.distance<=5&&detailedBlockModels.interact(get(aimed.x,aimed.y,aimed.z))){
+    const before=get(aimed.x,aimed.y,aimed.z),next=detailedBlockModels.toggle(before);
+    if(next!==before){
+      set(aimed.x,aimed.y,aimed.z,next);
+      if(solid(next)&&blocked(player.pos.x,player.pos.y,player.pos.z)){
+        set(aimed.x,aimed.y,aimed.z,before);
+        flash('閉じる場所にプレイヤーがいます');return;
+      }
+      rebuildEdited({x:aimed.x,z:aimed.z});
+    }
+    return;
+  }
   if(startEating())return;
   const door=aimedDoor();if(door&&doorUse(door.x,door.y,door.z))return;
   if(!h||!h.face)return;
@@ -6252,8 +6317,17 @@ function place(){
     return;
   }
 
-  const blockId=(buildable.includes(selected)||(activeMap==='testworld'&&selected>B.AIR&&selected<=B.BEDROCK))?selected:placeableItemToBlock[selected];
+  let blockId=(buildable.includes(selected)||(activeMap==='testworld'&&selected>B.AIR&&selected<=B.BEDROCK))?selected:placeableItemToBlock[selected];
   if(blockId==null){flash((names[selected]||'このアイテム')+'は設置できません');return}
+  const forwardX=-Math.sin(player.yaw),forwardZ=-Math.cos(player.yaw);
+  let direction=Math.abs(forwardX)>Math.abs(forwardZ)
+    ?(forwardX>=0?1:3):(forwardZ>=0?2:0);
+  if(blockId===B.LADDER){
+    if(Math.abs(n.y)>.5){flash('はしごは壁の側面に設置してください');return}
+    const wallX=-Math.round(n.x),wallZ=-Math.round(n.z);
+    direction=Math.abs(wallX)>Math.abs(wallZ)?(wallX>0?1:3):(wallZ>0?2:0);
+  }
+  blockId=detailedBlockModels.placedVariant(blockId,direction);
   if(mobs.some(m=>mobOverlapsBlock(m,x,y,z))){
     flash('モブの中にはブロックを置けません');return;
   }
@@ -8029,7 +8103,7 @@ function showRemoteArrow(p){
 }
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
-  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.CHEST||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.TRAPDOOR_OPEN_W||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
   if(get(b.x,b.y,b.z)===b.v)return;
   multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
   finally{multiApplying=false}
