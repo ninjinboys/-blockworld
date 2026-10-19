@@ -2,6 +2,8 @@
  * Camera-attached so it never changes world interaction/raycasting.
  * No external textures. Hotbar art uses the game's existing drawItemIcon().
  */
+import {makeNewHeldItemModel} from './item-held-models.js?v=20261019newItemHeld01';
+
 export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isGuarding=()=>false,isVisible,getMovement,isMining,isHurt=()=>false}){
   const basic=(color)=>new THREE.MeshBasicMaterial({
     color,depthTest:true,depthWrite:true,toneMapped:false
@@ -316,7 +318,11 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     clearHeld();
     if(id==null)return;
     const placeBlock=Object.hasOwn(blockColors,id)&&id!==5;
-    if(id===CHIMERA_DAGGER){
+    if(id>=168&&id<=188){
+      object=makeNewHeldItemModel(THREE,id);
+      object.rotation.set(-.18,.28,-.58);
+      object.scale.setScalar(.89);
+    }else if(id===CHIMERA_DAGGER){
       object=craftChimeraDagger();
     }else if(id===CHIMERA_BOW){
       object=craftChimeraBow();

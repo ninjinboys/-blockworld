@@ -2,6 +2,8 @@
  * Lightweight item view models attached to the existing animated wrist pivots.
  * This file affects rendering only, never inventories, saves or combat.
  */
+import {makeNewHeldItemModel} from './item-held-models.js?v=20261019newItemHeld01';
+
 export function makeAvatarHeldItems(THREE,drawItemIcon){
   const swords=new Set([111,115,119,123]);
   const CHIMERA_DAGGER=164,CHIMERA_BOW=166;
@@ -165,6 +167,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     return g;
   }
   function build(id){
+    if(id>=168&&id<=188)return makeNewHeldItemModel(THREE,id);
     if(id===156)return shield();
     if(id===147||id===31)return torch();
     if(id===CHIMERA_DAGGER)return chimeraDagger();
