@@ -6,6 +6,7 @@ import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chim
 import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
+import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
 
@@ -42,7 +43,7 @@ scene.add(sunBox,moonBox);
 const CHUNK=16,RENDER_RADIUS=3,Y_MIN=-80,WORLD_TOP=47,HEIGHT=WORLD_TOP-Y_MIN+1,SEA=11;
 // Terrain height uses the old 48-block world cap so existing landscapes stay unchanged.
 const TERRAIN_HEIGHT=48;
-const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30,TORCH:31,CHEST:32};
+const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,WATER:5,LOG:6,LEAF:7,COAL:8,IRON:9,GOLD:10,DIAMOND:11,SNOW:12,GRAVEL:13,CACTUS:14,PLANK:15,COBBLE:16,GLASS:17,BEDROCK:18,CRAFTING_TABLE:19,FURNACE:20,BED:21,BED_HEAD:22,DOOR_X:23,DOOR_X_TOP:24,DOOR_X_OPEN:25,DOOR_X_OPEN_TOP:26,DOOR_Z:27,DOOR_Z_TOP:28,DOOR_Z_OPEN:29,DOOR_Z_OPEN_TOP:30,TORCH:31,CHEST:32,WARP_WORKBENCH_X:33,WARP_WORKBENCH_X_END:34,WARP_WORKBENCH_Z:35,WARP_WORKBENCH_Z_END:36};
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
   RAW_IRON:106,RAW_GOLD:107,IRON_INGOT:108,GOLD_INGOT:109,DIAMOND:110,
@@ -57,10 +58,11 @@ const I={
   WOOL:139,RAW_PORK:140,RAW_BEEF:141,LEATHER:142,BED:143,
   COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157,CHIMERA_HIDE:158,
   CHIMERA_HELMET:159,CHIMERA_CHEST:160,CHIMERA_LEGS:161,CHIMERA_BOOTS:162,
-  CHIMERA_FANG:163,CHIMERA_DAGGER:164,CHIMERA_HORN:165,CHIMERA_BOW:166
+  CHIMERA_FANG:163,CHIMERA_DAGGER:164,CHIMERA_HORN:165,CHIMERA_BOW:166,
+  WARP_WORKBENCH:167
 };
 const names={
-  1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',
+  1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',33:'転送作業台',34:'転送作業台',35:'転送作業台',36:'転送作業台',
   101:'棒',102:'作業台',103:'かまど',104:'木のツルハシ',105:'石のツルハシ',
   106:'鉄の原石',107:'金の原石',108:'鉄インゴット',109:'金インゴット',110:'ダイヤモンド',
   111:'石の剣',112:'石の斧',113:'石のシャベル',
@@ -74,13 +76,15 @@ const names={
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
   144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',155:'オオアナコンダの革',156:'盾',157:'キメラの魂',158:'キメラの革',
   159:'キメラのヘルメット',160:'キメラのチェストプレート',161:'キメラのレギンス',162:'キメラのブーツ',163:'キメラの牙',164:'キメラのダガー',
-  165:'キメラの角',166:'キメラの弓',
+  165:'キメラの角',166:'キメラの弓',167:'転送作業台',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River','Jungle'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS];
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH,[I.CHEST]:B.CHEST};
-const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST};
+const WARP_WORKBENCH_BLOCKS=new Set([B.WARP_WORKBENCH_X,B.WARP_WORKBENCH_X_END,B.WARP_WORKBENCH_Z,B.WARP_WORKBENCH_Z_END]);
+const isWarpWorkbench=id=>WARP_WORKBENCH_BLOCKS.has(id);
+const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST,[B.WARP_WORKBENCH_X]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_X_END]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z_END]:I.WARP_WORKBENCH};
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
   [I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0,
@@ -96,7 +100,7 @@ const inventory={
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.CHIMERA_HIDE]:0,
   [I.CHIMERA_FANG]:0,[I.CHIMERA_DAGGER]:0,[I.CHIMERA_HORN]:0,[I.CHIMERA_BOW]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0,[I.WARP_WORKBENCH]:0
 };
 // Legacy saves may contain buffalo meat (retired item 154). Convert it to beef.
 const migrateOldMeat=id=>Number(id)===154?I.RAW_BEEF:Number(id);
@@ -121,7 +125,7 @@ const itemGlyphs={
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.ANACONDA_HIDE]:'蛇革',[I.CHIMERA_SOUL]:'魂',[I.CHIMERA_HIDE]:'キ革',[I.CHIMERA_FANG]:'キ牙',[I.CHIMERA_DAGGER]:'短剣',
   [I.CHIMERA_HORN]:'キ角',[I.CHIMERA_BOW]:'キ弓',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.WARP_WORKBENCH]:'転送台',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
 };
 
 const ICON_MAT={
@@ -326,6 +330,16 @@ function drawItemIcon(g,id){
   if(id===B.GLASS)return blockIcon(g,'#d9f7fb','#9ddce6','#72b9c8','glass');
   if(id===B.BEDROCK)return blockIcon(g,'#6e7174','#505356','#37393b','bedrock');
   if(id===B.CRAFTING_TABLE||id===I.CRAFTING_TABLE)return blockIcon(g,'#d7a05e','#9d6234','#774523','table');
+  if(id===I.WARP_WORKBENCH||isWarpWorkbench(id)){
+    ir(g,1,10,14,4,'#0b1418');ir(g,2,8,12,3,'#333f43');
+    poly(g,[[2,11],[3,4],[6,7],[6,11]],'#344247');
+    poly(g,[[14,11],[13,4],[10,7],[10,11]],'#344247');
+    ir(g,4,7,1,5,'#30cdbb');ir(g,11,7,1,5,'#30cdbb');
+    poly(g,[[7,2],[9,2],[10,9],[6,9]],'#151f23');
+    ir(g,8,4,1,5,'#2fe9c8');
+    poly(g,[[8,6],[9,8],[12,9],[9,10],[8,12],[7,10],[4,9],[7,8]],'#9affef');
+    return;
+  }
   if(id===B.FURNACE||id===I.FURNACE)return blockIcon(g,'#a0a5a8','#777c7f','#5b6063','furnace');
   if(id===I.BED||id===B.BED||id===B.BED_HEAD){
     // side-view pixel bed: wood frame + red blanket + white pillow + four feet
@@ -423,6 +437,7 @@ const workbenchRecipes=[
   {name:'木のドア',out:I.DOOR,qty:1,needs:[[B.PLANK,6]],unlockLevel:6},
   {name:'チェスト',out:I.CHEST,qty:1,needs:[[B.PLANK,8]],unlockLevel:6},
   {name:'盾',out:I.SHIELD,qty:1,needs:[[B.PLANK,6],[I.IRON_INGOT,1]],unlockLevel:8},
+  {name:'転送作業台',out:I.WARP_WORKBENCH,qty:1,needs:[[I.IRON_INGOT,8]],unlockLevel:8},
   {name:'弓',out:I.BOW,qty:1,needs:[[I.STICK,3],[I.WOOL,3]],unlockLevel:7},
   {name:'鞍',out:I.SADDLE,qty:1,needs:[[I.LEATHER,5]],unlockLevel:7},
   {name:'石のツルハシ',out:I.STONE_PICK,qty:1,needs:[[B.COBBLE,3],[I.STICK,2]],unlockLevel:6},
@@ -458,6 +473,7 @@ const workbenchRecipes=[
   {name:'ダイヤのレギンス',out:I.DIAMOND_LEGS,qty:1,needs:[[I.DIAMOND,7]],unlockLevel:100},
   {name:'ダイヤのブーツ',out:I.DIAMOND_BOOTS,qty:1,needs:[[I.DIAMOND,4]],unlockLevel:100}
 ];
+const warpWorkbenchRecipes=[]; // Warp-device ingredients will be specified separately.
 const furnaceRecipes=[
   {name:'鉄インゴット',out:I.IRON_INGOT,qty:1,needs:[[I.RAW_IRON,1],[B.COAL,1]],unlockLevel:7,xp:4},
   {name:'金インゴット',out:I.GOLD_INGOT,qty:1,needs:[[I.RAW_GOLD,1],[B.COAL,1]],unlockLevel:7,xp:6},
@@ -472,9 +488,11 @@ const hardness={
   [B.DOOR_X]:1.4,[B.DOOR_X_TOP]:1.4,[B.DOOR_X_OPEN]:1.4,[B.DOOR_X_OPEN_TOP]:1.4,
   [B.DOOR_Z]:1.4,[B.DOOR_Z_TOP]:1.4,[B.DOOR_Z_OPEN]:1.4,[B.DOOR_Z_OPEN_TOP]:1.4,
   [B.TORCH]:.15,[B.CHEST]:2.5,
+  [B.WARP_WORKBENCH_X]:3.2,[B.WARP_WORKBENCH_X_END]:3.2,
+  [B.WARP_WORKBENCH_Z]:3.2,[B.WARP_WORKBENCH_Z_END]:3.2,
   [B.BEDROCK]:Infinity
 };
-const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE]);
+const rockBlocks=new Set([B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE,...WARP_WORKBENCH_BLOCKS]);
 
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
 const chunks=new Map(),editChunks=new Map();
@@ -2094,7 +2112,7 @@ const leaf=new THREE.MeshLambertMaterial({map:T.leaf,transparent:true,opacity:.9
 const bedSide=L(T.bedSide),bedEnd=L(T.bedEnd),bedBottom=L(T.bedBottom),bedFootTop=L(T.bedFootTop),bedHeadTop=L(T.bedHeadTop);
 const bedFootMaterials=[bedSide,bedSide,bedFootTop,bedBottom,bedEnd,bedEnd];
 const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
-const M={[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
+const M={[B.WARP_WORKBENCH_X]:stone,[B.WARP_WORKBENCH_X_END]:stone,[B.WARP_WORKBENCH_Z]:stone,[B.WARP_WORKBENCH_Z_END]:stone,[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
 const doorBox=new THREE.BoxGeometry(.92,.998,.14);
 function doorTexture(top){
@@ -2212,6 +2230,7 @@ function updateTorchLights(now){
     if(match)light.position.set(match.t.x,match.t.y+.32,match.t.z);
   }
 }
+const warpWorkbenchVisual=createWarpWorkbenchModel(THREE);
 let meshes=[],lookup=new Map();
 const neighborVectors=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 function removeChunkMeshes(c){
@@ -2234,7 +2253,7 @@ function rebuildChunkMesh(c){
     // Previous terrain face-culling hid the bottom half when enclosed, so
     // it looked like the door was floating. Opening the door accidentally
     // made both halves render because the open IDs were treated as air.
-    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST;
+    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST||isWarpWorkbench(id);
     if(!visible)for(const [dx,dy,dz] of neighborVectors){
       const nx=lx+dx,ny=y+dy,nz=lz+dz;
       const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
@@ -2242,7 +2261,7 @@ function rebuildChunkMesh(c){
       // Doors leave visible space beside their thin panel: render the
       // neighbouring wall, floor and ceiling faces too.
       if(id===B.WATER?b!==B.WATER:
-         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST){visible=true;break}
+         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST||isWarpWorkbench(b)){visible=true;break}
     }
     if(visible)groups[id].push({x,y,z});
   }
@@ -2250,6 +2269,11 @@ function rebuildChunkMesh(c){
   for(const key in groups){
     const id=+key,p=groups[id];if(!p.length)continue;
     if(id===B.TORCH){buildTorchMeshes(p,c,built);continue}
+    if(id===B.WARP_WORKBENCH_X||id===B.WARP_WORKBENCH_Z){
+      warpWorkbenchVisual.build(p,id===B.WARP_WORKBENCH_Z,scene,meshes,lookup,built,id);
+      continue;
+    }
+    if(id===B.WARP_WORKBENCH_X_END||id===B.WARP_WORKBENCH_Z_END)continue;
     const geo=id===B.CHEST?chestBox:isDoor(id)?doorBox:(id===B.BED||id===B.BED_HEAD)?bedBox:box;
     const m=new THREE.InstancedMesh(geo,M[id],p.length);
     m.userData.id=id;
