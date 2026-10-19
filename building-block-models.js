@@ -134,7 +134,8 @@ export function createBuildingBlockModels(THREE,B){
     [B.BOOKSHELF]:[textured['books-side'],textured['books-side'],textured.wood,textured.wood,textured.books,textured.books],
     [B.BARREL]:[textured.barrel,textured.barrel,textured['barrel-top'],textured['barrel-top'],textured.barrel,textured.barrel],
     [B.TNT]:[textured.tnt,textured.tnt,textured['tnt-top'],textured.tnt,textured.tnt,textured.tnt],
-    [B.CAMPFIRE]:flat.charcoal
+    [B.CAMPFIRE]:flat.charcoal,
+    [B.SLEEPING_BAG_WORLD]:textured.fence
   };
   const variants=new Map();
   // base ids: 44/45/49/50/51 are the default north-facing blocks.
@@ -150,7 +151,7 @@ export function createBuildingBlockModels(THREE,B){
   const custom=new Set([
     B.WOOD_STAIRS,B.STONE_STAIRS,B.WOOD_SLAB,B.WOOD_SLAB_TOP,B.IRON_BARS,
     B.WOOD_FENCE,B.FENCE_GATE,B.LADDER,B.TRAPDOOR,
-    B.LANTERN,B.BARREL,B.CAMPFIRE,...variants.keys()
+    B.LANTERN,B.BARREL,B.CAMPFIRE,B.SLEEPING_BAG_WORLD,...variants.keys()
   ]);
   const gateIds=[B.FENCE_GATE,B.FENCE_GATE_E,B.FENCE_GATE_S,B.FENCE_GATE_W];
   const openGateIds=[B.FENCE_GATE_OPEN_N,B.FENCE_GATE_OPEN_E,B.FENCE_GATE_OPEN_S,B.FENCE_GATE_OPEN_W];
@@ -181,7 +182,7 @@ export function createBuildingBlockModels(THREE,B){
       if(opened(id))return [];
       return d%2===0?[[-.50,.50,-.5,.5,-.10,.10]]:[[-.10,.10,-.5,.5,-.50,.50]];
     }
-    if(type===B.LADDER||type===B.LANTERN||type===B.CAMPFIRE)return [];
+    if(type===B.LADDER||type===B.LANTERN||type===B.CAMPFIRE||type===B.SLEEPING_BAG_WORLD)return [];
     if(type===B.TRAPDOOR){
       if(!opened(id))return [[-.5,.5,-.5,-.37,-.5,.5]];
       const [x,z]=rotateDir(0,-.43,d);
@@ -272,6 +273,13 @@ export function createBuildingBlockModels(THREE,B){
       add('iron',0,.29,0,.43,.095,.43,'cylinder');
       add('wood',0,-.39,0,.38,.07,.38,'cylinder');
       add('trim',0,.43,0,.08,.034,.12);
+    }else if(type===B.SLEEPING_BAG_WORLD){
+      // A laid-out, low bedroll, not a full voxel. It can be walked across.
+      add('wood-dark',0,-.475,0,.83,.05,.96);
+      add('fence',0,-.395,.09,.73,.11,.73);
+      add('wood-top',0,-.352,-.33,.71,.18,.24);
+      add('trim',0,-.43,.42,.83,.04,.08);
+      for(const x of [-.34,.34])add('wood-dark',x,-.405,.06,.045,.12,.78);
     }else if(type===B.CAMPFIRE){
       add('charcoal',0,-.43,0,.88,.08,.88);
       for(const x of [-.20,.20]){
