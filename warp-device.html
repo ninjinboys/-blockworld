@@ -39,273 +39,257 @@ const sun=new T.DirectionalLight(0xc7d7dd,1.6);sun.position.set(-7,14,11);scene.
 const rim=new T.DirectionalLight(0x21dfd2,1.6);rim.position.set(8,8,-9);scene.add(rim);
 const g=new T.Group();scene.add(g);
 
+
 const C={
-  basalt:0x252c30, stone:0x333b3e, slate:0x3e4649, light:0x4b5354,
-  edge:0x171d21, deep:0x11171a, moss:0x365841, leaf:0x52774b,
-  cyan:0x28c7be, bright:0x72fff0
+ basalt:0x1c2326,deep:0x11191c,shadow:0x0c1417,stone:0x313b3d,
+ mid:0x414c4c,edge:0x596362,light:0x636962,moss:0x38583b,leaf:0x507144,
+ teal:0x26c9b7,glow:0x79ffdf
 };
-const blocks=[],lights=[],floating=[];
-const colorStones=[C.basalt,C.stone,C.slate,C.stone,C.light,C.basalt];
-let seed=26731497;
+const blocks=[],lights=[];
+let seed=1741;
 function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
-function choose(a){return a[Math.floor(rnd()*a.length)]}
+const stones=[C.basalt,C.stone,C.mid,C.stone,C.edge,C.mid,C.basalt];
+function pick(){return stones[Math.floor(rnd()*stones.length)]}
 function b(x,y,z,w,h,d,color=C.stone,rot=0){blocks.push({x,y,z,w,h,d,color,rot})}
-function lit(x,y,z,w,h,d,color=C.cyan,rot=0){lights.push({x,y,z,w,h,d,color,rot})}
-function diamond(x,y,z,sx,sy,sz,bright=false){
- const material=new T.MeshStandardMaterial({
-  color:bright?0xbafff6:0x4aece0,emissive:0x18bcae,
-  emissiveIntensity:bright?2.0:1.05,roughness:.22,metalness:.05,
-  transparent:true,opacity:bright?.96:.84,flatShading:true
- });
- const gem=new T.Mesh(new T.OctahedronGeometry(1,0),material);
- gem.position.set(x,y,z);gem.scale.set(sx,sy,sz);g.add(gem);
- const edges=new T.LineSegments(new T.EdgesGeometry(gem.geometry),
-   new T.LineBasicMaterial({color:0xaafff0,transparent:true,opacity:.55}));
- edges.position.copy(gem.position);edges.scale.copy(gem.scale).multiplyScalar(1.006);g.add(edges);
- return gem;
+function lit(x,y,z,w,h,d,color=C.teal,rot=0){lights.push({x,y,z,w,h,d,color,rot})}
+function planeShape(points,z0,z1,color,bevel=.025){
+ const p=new T.Shape();p.moveTo(points[0][0],points[0][1]);
+ for(let i=1;i<points.length;i++)p.lineTo(...points[i]);p.closePath();
+ const mesh=new T.Mesh(new T.ExtrudeGeometry(p,{
+  depth:z1-z0,bevelEnabled:bevel>0,bevelThickness:bevel,
+  bevelSize:bevel,bevelSegments:1,steps:1,curveSegments:1
+ }),new T.MeshStandardMaterial({color,flatShading:true,roughness:.95,metalness:0}));
+ mesh.position.z=z0;g.add(mesh);return mesh;
 }
-// Broken stone slabs use angular bevels and joint gaps: no rounded toy-like arcs.
-const stoneMaterials=colorStones.map(hex=>new T.MeshStandardMaterial({
- color:hex,roughness:.96,metalness:0,flatShading:true
-}));
-const archGlow=new T.MeshBasicMaterial({color:0x21aa9e,toneMapped:false});
-const fracturePositions=[];
-function fracture(points){for(let i=1;i<points.length;i++){fracturePositions.push(...points[i-1],...points[i])}}
-function archWedge(side,rInside,rOutside,a0,a1,z0,z1,material){
- const point=(r,a)=>new T.Vector2(side*r*Math.cos(a),2.12+2*r*Math.sin(a));
- const shape=new T.Shape();
- const q=[point(rInside,a0),point(rOutside,a0),point(rOutside,a1),point(rInside,a1)];
- shape.moveTo(q[0].x,q[0].y);
- for(let j=1;j<4;j++)shape.lineTo(q[j].x,q[j].y);
- shape.closePath();
+function gem(x,y,z,sx,sy,sz,bright=false){
+ const o=new T.Mesh(new T.OctahedronGeometry(1,0),new T.MeshStandardMaterial({
+  color:bright?0xb4ffea:0x45dac9,
+  emissive:bright?0x4affa5:0x19c2b8,emissiveIntensity:bright?1.65:.95,
+  metalness:.10,roughness:.13,flatShading:true,transparent:true,opacity:.90
+ }));
+ o.position.set(x,y,z);o.scale.set(sx,sy,sz);g.add(o);
+ if(bright){
+  const edges=new T.LineSegments(new T.EdgesGeometry(o.geometry),
+   new T.LineBasicMaterial({color:0xcffff4,transparent:true,opacity:.66}));
+  edges.position.copy(o.position);edges.scale.copy(o.scale).multiplyScalar(1.012);g.add(edges);
+ }
+ return o;
+}
+// Ancient ruined platform, a broad black stone pedestal, not a toy foundation.
+b(0,.24,-.33,11.8,.48,8.05,C.deep);
+b(0,.53,-.33,11.4,.22,7.8,C.basalt);
+for(let ix=-11;ix<=11;ix++)for(let iz=-7;iz<=7;iz++){
+ const x=ix*.49,z=iz*.49-.44;
+ if(Math.abs(x)>5.46||Math.abs(z+.33)>3.74)continue;
+ const col=pick();
+ b(x,.73+(rnd()-.5)*.02,z,.466,.19,.465,col);
+ if(rnd()<.057)b(x+.10,.835,z,.22,.035,.16,C.moss);
+}
+for(const side of [-1,1]){
+ for(let i=-7;i<=7;i++){
+  b(side*5.67,.89,i*.49-.32,.49,.73,.52,pick());
+  if(i%3===0)b(side*5.68,1.33,i*.49-.32,.48,.12,.54,C.edge);
+ }
+ for(let p=0;p<2;p++){
+  const x=side*4.64,z=p===0?1.98:-2.63;
+  b(x,1.26,z,1.06,1.17,1.11,C.stone);
+  b(x,1.92,z,1.19,.19,1.23,C.edge);
+  b(x,1.26,z+.60,.76,.67,.10,C.deep);
+  gem(x,1.26,z+.69,.23,.37,.10,true);
+  b(x-.15,1.98,z+.14,.35,.07,.24,C.moss);
+ }
+}
+for(let step=0;step<4;step++){
+ const z=4.24-step*.49;
+ for(let i=-5;i<=5;i++){
+  const x=i*.47,height=.16+(step+1)*.17;
+  b(x,height/2,z,.45,height,.52,step%3===0?C.mid:C.stone);
+  b(x,height+.06,z,.445,.12,.50,i%4===0?C.edge:C.mid);
+ }
+}
+// Obelisk base risers and heavy corner supports.
+for(let i=-2;i<=2;i++)for(let j=-2;j<=1;j++)
+ b(i*.7,1.08,j*.65-1.26,.68,.64,.62,pick());
+for(const side of [-1,1]){
+ for(let j=0;j<5;j++){
+  b(side*(4.51-j*.11),1.56+j*.37,-1.47,.99,.74,1.46,pick());
+ }
+}
+// Two BROKEN half-rings: huge sweeping stone limbs beside the obelisk.
+// They rise well above the core but stop before meeting, matching the photo.
+const archStoneMats=[C.basalt,C.stone,C.mid,C.stone,C.edge].map(c=>
+ new T.MeshStandardMaterial({color:c,roughness:.95,flatShading:true}));
+const glowMat=new T.MeshBasicMaterial({color:0x36c8b6,toneMapped:false});
+const seamVertices=[];
+const archBase=2.15,archRise=12.4,archSpan=5.18,arcMax=1.14;
+function circlePt(side,r,a){return [side*r*Math.cos(a),archBase+archRise*(r/archSpan)*Math.sin(a)]}
+function wedge(side,inner,outer,a0,a1,material,z0=-1.46,z1=.05){
+ const points=[
+  circlePt(side,inner,a0),circlePt(side,outer,a0),
+  circlePt(side,outer,a1),circlePt(side,inner,a1)
+ ];
+ const shape=new T.Shape();shape.moveTo(...points[0]);for(let i=1;i<4;i++)shape.lineTo(...points[i]);shape.closePath();
+ const glow=material===glowMat;
  const geo=new T.ExtrudeGeometry(shape,{
-  depth:z1-z0,bevelEnabled:material!==archGlow,steps:1,
-  bevelSegments:1,bevelThickness:material===archGlow?0:.025,
-  bevelSize:material===archGlow?0:.035,curveSegments:1
+  depth:z1-z0,bevelEnabled:!glow,bevelThickness:glow?0:.045,
+  bevelSize:glow?0:.035,bevelSegments:1,steps:1
  });
- const piece=new T.Mesh(geo,material);
- piece.position.z=z0;
- g.add(piece);
- return piece;
-}
-// Wide, irregular stone plinth.  The front silhouette is stepped and
-// interrupted by the central stair, as in the reference's ruined monument.
-b(0,.20,-.40,11.15,.40,7.25,C.deep);
-b(0,.49,-.60,10.75,.26,6.84,C.basalt);
-for(let x=-10;x<=10;x++)for(let z=-6;z<=6;z++){
- if(Math.abs(x)>9 && Math.abs(z)>5)continue;
- const px=x*.51,pz=z*.48-.62;
- b(px,.71+(rnd()-.5)*.025,pz,.486,.18,.457,choose(colorStones));
- if(rnd()<.065)b(px,.805,pz,.16,.042,.26,C.moss);
+ const mesh=new T.Mesh(geo,material);mesh.position.z=z0;g.add(mesh);
 }
 for(const side of [-1,1]){
- for(let z=-6;z<=6;z++){
-  b(side*5.36,.74,z*.52-.54,.60,.79,.50,choose(colorStones));
-  if(z%3===0)b(side*5.36,1.17,z*.52-.54,.64,.13,.53,C.light);
- }
- // Uneven corner pylons, stone face carvings and recessed energy diamonds.
- for(const z of [-2.75,2.0]){
-  b(side*4.46,1.16,z,.98,1.04,1.02,C.basalt);
-  b(side*4.46,1.74,z,1.08,.14,1.06,C.light);
-  b(side*4.46,1.05,z+.535,.76,.63,.10,C.edge);
-  diamond(side*4.46,1.10,z+.61,.19,.30,.09);
-  b(side*4.02,1.70,z+.10,.20,.06,.38,C.moss);
- }
-}
-for(let row=0;row<4;row++){
- const z=4.02-row*.49;
- for(let i=-4;i<=4;i++){
-  const x=i*.51,height=.18+(row+1)*.17;
-  b(x,height/2,z,.49,height,.54,choose(colorStones));
-  b(x,height+.072,z,.48,.14,.50,C.light);
- }
-}
-// Stout pylons lead to the two broken arches.
-for(const side of [-1,1]){
- for(let j=0;j<4;j++){
-  const x=side*(4.46-j*.14);
-  b(x,1.18+j*.30,-1.06,.91,.68,1.38,choose(colorStones));
- }
- // The giant arch on each side is a continuous stone curve, NOT a row of
- // individual square bricks. Thick wedge blocks have carved dark seams.
- const segments=14,angMax=1.155;
- for(let j=0;j<segments;j++){
-  const a0=j*angMax/segments+.004,a1=(j+1)*angMax/segments-.009;
-  const stone=stoneMaterials[(j+Math.floor(rnd()*4))%stoneMaterials.length];
-  archWedge(side,4.06,5.13,a0,a1,-1.22,.25,stone);
-  // Thin, continuous cyan inlay on the INNER curve, not a thick light ladder.
-  archWedge(side,3.99,4.07,a0+.004,a1-.004,-.83,-.64,archGlow);
+ const n=15;
+ for(let j=0;j<n;j++){
+  const a0=j*arcMax/n+.003,a1=(j+1)*arcMax/n-.005;
+  wedge(side,4.14,5.21,a0,a1,archStoneMats[(j+Math.floor(rnd()*3))%archStoneMats.length]);
+  // Thin turquoise inner inlay, not wide blocks of neon.
+  wedge(side,4.07,4.14,a0+.002,a1-.002,glowMat,-.82,-.65);
   if(j%3===1){
-   const a=(a0+a1)*.5,r=5.20;
-   const xx=side*r*Math.cos(a),yy=2.12+2*r*Math.sin(a);
-   const mx=side*(r+.07)*Math.cos(a+.022),my=2.12+2*(r+.07)*Math.sin(a+.022);
-   fracture([[xx,yy,.30],[mx,my,.31],
-     [side*(r-.12)*Math.cos(a+.045),2.12+2*(r-.12)*Math.sin(a+.045),.32]]);
+   const a=(a0+a1)*.5,[x,y]=circlePt(side,5.23,a);
+   seamVertices.push(x,y,.105,x+side*.20,y+.25,.107,x+side*.20,y+.25,.107,x-side*.14,y+.42,.107);
   }
-  if(j%4===1){
-   const a=(a0+a1)*.5;
-   const x=side*5.22*Math.cos(a),y=2.12+2*5.22*Math.sin(a);
-   b(x,y+.10,.13,.39,.15,.42,C.moss,-side*a);
+  if(j%4===0){
+   const [x,y]=circlePt(side,5.25,(a0+a1)/2);
+   b(x,y+.13,.22,.37,.18,.33,C.moss,-side*(a0+a1)/2);
   }
  }
- // The two ends have large, broken, offset capstones and missing fragments.
- const tip=angMax,tipX=side*4.60*Math.cos(tip),tipY=2.12+2*4.60*Math.sin(tip);
- b(tipX+side*.07,tipY+.45,-.51,1.36,.53,1.38,C.stone,-side*tip);
- b(tipX+side*.22,tipY+.73,-.68,.81,.32,.99,C.light,-side*(tip+.1));
- for(let k=0;k<12;k++){
-  const a=.12+k*.070,r=5.06+(rnd()-.5)*.17;
-  const x=side*r*Math.cos(a),y=2.12+2*r*Math.sin(a),z=.37;
-  if(k%3===0){
-   b(x,y,z,.23,.30,.25,C.moss,-side*a);
-   b(x,y-.27,z+.04,.14,.32,.16,C.leaf,-side*a);
+ const tip=circlePt(side,4.72,arcMax);
+ b(tip[0]+side*.12,tip[1]+.29,-.70,1.45,.76,1.29,C.stone,-side*arcMax);
+ b(tip[0]+side*.27,tip[1]+.65,-.81,.95,.38,.95,C.mid,-side*(arcMax+.08));
+ // Crumbled stone and vines at both arch feet.
+ for(let j=0;j<9;j++){
+  const a=.12+(j%6)*.12,[x,y]=circlePt(side,5.22,a);
+  if(j%3===0){
+   b(x,y,.23,.24,.23,.33,C.moss,-side*a);
+   for(let h=0;h<3;h++)b(x+side*.09,y-.27*h,.38,.105,.25,.11,C.leaf);
   }
  }
 }
-// Vertical tower: fractured and layered monolith that dominates the skyline.
-b(0,1.1,-2.35,2.48,.9,2.00,C.deep);
-for(let level=0;level<18;level++){
- const y=1.6+level*.48;
- const width=level<9?2.13:level<13?1.90:level<16?1.47:1.02;
- const count=level%3===0?4:3;
- for(let col=0;col<count;col++){
-  const px=(col-(count-1)/2)*(width/count);
-  const stone=choose(colorStones);
-  const zz=-2.25+(rnd()-.5)*.09;
-  b(px,y,zz,width/count-.044,.455,1.66-(level>14?.25:0),stone);
-  if(rnd()<.20)b(px+.09,y+.236,-1.38,.17,.055,.05,C.edge);
-  if(rnd()<.085)b(px+.12,y+.24,-1.31,.23,.075,.14,C.moss);
+// One dominating ARK-like obelisk, tapered and angular: rises ABOVE both arches.
+planeShape([[-1.21,2.04],[1.21,2.04],[1.35,5.95],[1.00,7.10],
+ [1.01,13.0],[.79,14.65],[.73,17.45],[.41,19.95],
+ [0,21.2],[-.41,19.95],[-.73,17.45],[-.79,14.65],
+ [-1.01,13.0],[-1.00,7.1],[-1.35,5.95]],-3.09,-1.36,C.basalt,.075);
+planeShape([[-.72,4.10],[.72,4.10],[.76,11.6],[.55,15.4],
+ [.25,18.1],[0,19.0],[-.25,18.1],[-.55,15.4],[-.76,11.6]],-1.42,-1.26,C.stone,.025);
+// Stone masonry relief. Keep the obelisk ONE monolithic form, not stacked Lego.
+for(let j=0;j<22;j++){
+ const y=2.80+j*.69,w=y<6.8?1.25:y<13?.95:y<17?.69:.39;
+ for(let k=0;k<3;k++){
+  const px=(k-1)*w*.63;
+  b(px,y,-1.21,.52+(w-.50)*.37,.13,.085,j%5===0?C.edge:C.mid);
+  if((j+k)%6===0)b(px,y+.24,-1.21,.062,.48,.092,C.deep);
  }
- // A pair of recessed continuous vertical luminous channels.
- if(level>2&&level<14){
-   for(const side of [-1,1])lit(side*.83,y,-1.33,.072,.38,.09,C.cyan);
+ if(j>3&&j<17&&j%2===0){
+  for(const side of [-1,1])lit(side*w*.73,y+.15,-1.12,.072,.47,.09,C.teal);
  }
- if(level===7||level===12){
-  b(0,y+.27,-2.26,width+.30,.16,1.90,C.basalt);
- }
-}
-for(let level=0;level<5;level++){
- const width=.76-level*.11;
- b(0,10.35+level*.32,-2.35,width,.34,.88,C.stone);
 }
 for(const side of [-1,1]){
- // Stone pinnacles and fractured defensive spires flank the monolith.
- for(let j=0;j<11;j++){
-  const x=side*(1.62+.16*(j%3));
-  const y=1.55+j*.52;
-  b(x,y,-2.57,.61,.49,.83,choose(colorStones));
-  if(j%3===1)lit(x-side*.08,y,-2.12,.13,.26,.08,C.cyan);
+ // Angular outriggers and secondary antenna-spires (ARK technology).
+ planeShape([[side*.85,2.2],[side*2.34,2.2],[side*2.14,4.8],
+  [side*1.63,6.1],[side*1.41,10.7],[side*1.15,11.8],
+  [side*.96,10.4]],-2.95,-1.50,C.stone,.03);
+ planeShape([[side*1.46,4.4],[side*1.76,5.2],[side*1.57,9.8],
+  [side*1.47,10.8],[side*1.39,9.5]],-1.47,-1.38,C.deep,0);
+ for(let k=0;k<11;k++){
+  const y=4.1+k*.58;
+  lit(side*(1.55-.03*k),y,-1.34,.105,.32,.075,C.teal);
  }
+ // Thick ornament at central star: carved angular armored collar.
+ planeShape([[side*.55,5.1],[side*1.68,6.2],[side*1.84,7.8],
+ [side*1.33,9.7],[side*.81,10.1],[side*.90,8.3],
+ [side*.61,7.4]],-.99,-.43,C.mid,.045);
+ planeShape([[side*.83,6.05],[side*1.48,6.83],[side*1.61,7.85],
+ [side*1.12,8.78],[side*.91,8.1]],-.37,-.25,C.basalt,.025);
+ // Sharp fins at upper tower, separated from core.
+ planeShape([[side*.75,12.3],[side*1.20,13.1],[side*1.22,15.8],
+ [side*.89,17.0],[side*.71,16.4]],-2.75,-2.15,C.mid,.015);
  for(let j=0;j<4;j++){
-  b(side*(2.26+j*.23),1.24+j*.31,-2.1,.67,.63,.79,C.basalt);
+  const y=10.0+j*1.35;
+  b(side*(1.14+.13*j),y,-2.76,.37,.46,.35,pick());
  }
 }
-// Ancient platform socket for materials, closer to the player than the core.
-b(-1.65,1.02,1.25,1.46,.74,1.30,C.basalt);
-b(-1.65,1.44,1.25,1.62,.14,1.44,C.light);
-lit(-1.65,1.53,1.25,1.06,.049,.99);
-b(-1.65,1.565,1.25,.72,.048,.67,C.edge);
-b(-1.65,1.59,1.25,.40,.025,.37,C.deep);
-diamond(-1.65,1.16,1.94,.23,.29,.1);
-b(0,1.04,-.19,2.36,.52,1.56,C.basalt);
-for(let j=0;j<5;j++)b(0,1.31+j*.16,-.19,2.20-j*.18,.15,1.48-j*.15,choose(colorStones));
-lit(0,2.13,.10,1.04,.055,.90,C.cyan);
-// Dark fractured stones floating around the tower: a deliberate halo of ruin
-// fragments, varied in shape with glow emerging from fissures.
+// Floating shattered masonry set in purposeful orbit around the obelisk.
 const debris=[
- [-6.02,4.95,-1.40,.62],[-5.54,7.18,-1.32,.91],
- [-3.52,8.72,-1.10,1.10],[-2.24,9.48,-1.64,.81],
- [2.33,9.52,-1.36,.84],[3.62,8.65,-1.42,.91],
- [5.49,7.22,-1.16,.87],[6.07,5.20,-1.37,.61],
- [-2.07,5.94,.61,.34],[2.06,6.17,.62,.38],
- [-1.50,4.06,.76,.25],[1.55,4.36,.60,.29]
+ [-6.15,7.10,-.87,.78],[-5.42,11.14,-1.34,1.18],
+ [-3.76,15.11,-1.65,1.05],[-2.06,17.40,-2.12,1.18],
+ [2.11,17.70,-1.98,1.06],[3.83,15.12,-1.64,1.18],
+ [5.40,11.44,-1.30,1.05],[6.27,7.35,-1.00,.72],
+ [-2.20,9.32,.67,.42],[2.26,10.12,.74,.41],
+ [-1.51,7.01,1.11,.31],[1.42,7.15,1.05,.30]
 ];
-for(const [i,v] of debris.entries()){
- const [x,y,z,size]=v;
- const phi=(rnd()-.5)*.40;
- b(x,y,z,size,size*.85,size*.93,choose(colorStones),phi);
- b(x+.12,y-size*.17,z+size*.48,size*.48,.07,.08,C.edge,phi);
- lit(x-.04,y-.17,z+size*.50,size*.42,.063,.045,C.cyan,phi);
- if(i%3===0)b(x-.12,y+size*.47,z,.27,.07,.22,C.moss,phi);
- if(size>.7)b(x+size*.35,y+.06,z-.05,.19,.35,.32,C.stone,phi);
+for(const [i,[x,y,z,size]] of debris.entries()){
+ const phi=(rnd()-.5)*.54,stone=pick();
+ b(x,y,z,size,size*(.77+.15*rnd()),size*.95,stone,phi);
+ b(x+.08,y-size*.18,z+size*.48,size*.45,.079,.068,C.deep,phi);
+ lit(x-.08,y-.16,z+size*.50,size*.40,.045,.042,C.teal,phi);
+ if(i%3===0)b(x-.13,y+size*.41,z,.28,.07,.30,C.moss,phi);
+ if(size>.95)b(x+size*.33,y+.10,z-.24,size*.37,.41,.50,C.stone,phi);
 }
-// A four-pointed core like the title-art energy STAR. Long slender tapered
-// arms (not a chunky crystal pendant) bloom out of a miniature white nucleus.
-const starShape=new T.Shape();
-starShape.moveTo(0,1.54);
-starShape.lineTo(.29,.27);
-starShape.lineTo(1.46,0);
-starShape.lineTo(.29,-.27);
-starShape.lineTo(0,-1.54);
-starShape.lineTo(-.29,-.27);
-starShape.lineTo(-1.46,0);
-starShape.lineTo(-.29,.27);
-starShape.closePath();
-const starGeo=new T.ExtrudeGeometry(starShape,{
- depth:.20,bevelEnabled:true,bevelSize:.085,bevelThickness:.08,
- bevelSegments:1,steps:1
-});
-const starMat=new T.MeshBasicMaterial({color:0x91fff0,toneMapped:false});
-const star=new T.Mesh(starGeo,starMat);
-star.position.set(0,4.89,.78);g.add(star);
-const innerStar=new T.Mesh(starGeo,new T.MeshBasicMaterial({color:0xffffff,toneMapped:false}));
-innerStar.position.set(0,4.89,1.08);
-innerStar.scale.set(.32,.34,1);g.add(innerStar);
-const diamondBlade=new T.Mesh(new T.OctahedronGeometry(1),new T.MeshStandardMaterial({
- color:0x36dace,emissive:0x1cc9ba,emissiveIntensity:1.35,
- transparent:true,opacity:.75,flatShading:true,roughness:.1
-}));
-diamondBlade.position.set(0,4.92,.48);diamondBlade.scale.set(.50,.93,.39);g.add(diamondBlade);
-lit(0,4.85,-1.22,.24,3.15,.19,C.cyan);
+// Central energy STAR: exactly four long sharp rays, encircled by relic armor.
+const shape=new T.Shape();
+shape.moveTo(0,1.91);shape.lineTo(.22,.26);shape.lineTo(1.98,0);
+shape.lineTo(.22,-.26);shape.lineTo(0,-1.92);shape.lineTo(-.22,-.26);
+shape.lineTo(-1.98,0);shape.lineTo(-.22,.26);shape.closePath();
+const starGeo=new T.ExtrudeGeometry(shape,{depth:.18,
+ bevelEnabled:true,bevelThickness:.095,bevelSize:.10,bevelSegments:1});
+const star=new T.Mesh(starGeo,new T.MeshBasicMaterial({color:0x69f6d8,toneMapped:false}));
+star.position.set(0,8.42,.20);g.add(star);
+const core=new T.Mesh(new T.OctahedronGeometry(1,0),
+ new T.MeshStandardMaterial({color:0xc3fff2,emissive:0x6effc8,
+ emissiveIntensity:2.0,roughness:.05,transparent:true,opacity:.96}));
+core.position.set(0,8.42,.52);core.scale.set(.42,.64,.35);g.add(core);
+const diamondStar=new T.Mesh(starGeo,new T.MeshBasicMaterial({color:0xffffff,toneMapped:false}));
+diamondStar.position.set(0,8.42,.58);diamondStar.scale.set(.25,.25,.37);g.add(diamondStar);
 for(const side of [-1,1]){
- lit(side*.36,4.84,-1.12,.085,2.00,.09,C.cyan);
- for(let j=0;j<6;j++){
-  const x=side*(1.22+j*.14),y=4.90+(j-2.5)*.26;
-  if(j%2===0)diamond(x,y,.74,.11,.17,.13,true);
- }
+ lit(side*.41,8.42,-.47,.10,3.6,.16,C.teal);
+ lit(side*.91,8.4,-.42,.05,2.1,.10,C.teal);
+ for(let j=0;j<4;j++)gem(side*(1.46+j*.22),8.42+(j-1.5)*.6,.24,.12,.19,.10,true);
 }
-for(let j=0;j<12;j++){
- const a=j*2.399,z=.87+.15*Math.sin(j),r=.98+((j%3)*.33);
- diamond(Math.cos(a)*r,4.89+Math.sin(a)*r*.81,z,
-   .08+(j%2)*.05,.13+(j%3)*.07,.10,true);
+lit(0,8.5,-1.11,.23,5.0,.17,C.teal);
+lit(0,5.03,-.98,.43,2.75,.16,0x0a7778);
+for(let j=0;j<11;j++){
+ const a=j*2.4,r=1.5+(j%3)*.29;
+ gem(Math.cos(a)*r,8.42+Math.sin(a)*r*.89,.62+(j%2)*.20,
+  .09+(j%2)*.07,.13+(j%3)*.06,.13,true);
 }
-// Subtle glow is a camera-facing sprite, not an all-scene neon flood.
-const glowCanvas=document.createElement('canvas');glowCanvas.width=glowCanvas.height=64;
-const gx=glowCanvas.getContext('2d');
-const gradient=gx.createRadialGradient(32,32,3,32,32,32);
-gradient.addColorStop(0,'rgba(88,255,229,.32)');
-gradient.addColorStop(.35,'rgba(32,219,195,.10)');
-gradient.addColorStop(1,'rgba(32,219,195,0)');
+// Central altar receives artifacts and activates the four guardian boss portals.
+b(0,1.35,.18,2.3,.52,1.74,C.basalt);
+for(let j=0;j<4;j++)b(0,1.66+j*.17,.18,2.2-j*.17,.16,1.65-j*.12,pick());
+lit(0,2.29,.34,.90,.060,.85);
+b(-1.78,1.14,1.69,1.50,.88,1.40,C.stone);
+b(-1.78,1.62,1.69,1.61,.13,1.54,C.edge);
+lit(-1.78,1.70,1.69,1.04,.05,.99);
+b(-1.78,1.74,1.69,.72,.06,.66,C.shadow);
+gem(-1.78,1.22,2.42,.20,.34,.14,true);
+// Subtle radial glow is baked into one translucent sprite: no costly bloom pass.
+const glowCanvas=document.createElement('canvas');
+glowCanvas.width=glowCanvas.height=64;const gx=glowCanvas.getContext('2d');
+const gradient=gx.createRadialGradient(32,32,2,32,32,32);
+gradient.addColorStop(0,'rgba(85,255,202,.39)');
+gradient.addColorStop(.36,'rgba(21,196,165,.13)');
+gradient.addColorStop(1,'rgba(21,196,165,0)');
 gx.fillStyle=gradient;gx.fillRect(0,0,64,64);
 const corona=new T.Sprite(new T.SpriteMaterial({
  map:new T.CanvasTexture(glowCanvas),
  transparent:true,blending:T.AdditiveBlending,depthWrite:false
 }));
-corona.position.set(0,4.89,.36);corona.scale.set(4.6,4.6,1);g.add(corona);
-// Vines, moss and rubble are structural accents, not randomly scattered grass.
+corona.position.set(0,8.42,.30);corona.scale.set(5.7,5.7,1);g.add(corona);
+// Sparse moss and ancient dark rubble grow only at actual masonry joints.
 for(const side of [-1,1]){
- for(let j=0;j<23;j++){
-  const a=.17+(j%13)*.067;
-  const r=5.18+(rnd()-.5)*.14;
-  const x=side*r*Math.cos(a),y=2.12+2*r*Math.sin(a);
-  if(j%3===0){
-   b(x,y+.16,.29,.34,.15,.35,C.moss,-side*a);
-   if(j%2===0)for(let k=0;k<3;k++)
-    b(x+side*.10,y-k*.20,.37,.11,.23,.10,C.leaf,-side*a);
-  }
+ for(let k=0;k<13;k++){
+  const a=.13+(k%9)*.085,[x,y]=circlePt(side,5.26,a);
+  if(k%3===1){b(x,y+.12,.29,.27,.15,.28,C.moss,-side*a);
+   if(k%2===1)for(let j=0;j<3;j++)b(x,y-.16-j*.20,.34,.10,.22,.13,C.leaf);}
  }
- for(let i=0;i<9;i++){
-  const x=side*(2.8+rnd()*1.5),z=-2.58+rnd()*1.60;
-  b(x,.92+rnd()*.19,z,.32+rnd()*.45,.27+rnd()*.25,
-   .29+rnd()*.38,choose(colorStones));
+ for(let k=0;k<11;k++){
+  const x=side*(3+rnd()*1.8),z=-2.80+rnd()*1.65;
+  b(x,.94+rnd()*.30,z,.29+rnd()*.46,.26+rnd()*.33,.32+rnd()*.34,pick());
  }
 }
-if(fracturePositions.length){
- const fractureGeo=new T.BufferGeometry();
- fractureGeo.setAttribute('position',new T.Float32BufferAttribute(fracturePositions,3));
- const fractures=new T.LineSegments(fractureGeo,new T.LineBasicMaterial({
-  color:0x0b1013,transparent:true,opacity:.76
- }));
- g.add(fractures);
+if(seamVertices.length){
+ const geom=new T.BufferGeometry();
+ geom.setAttribute('position',new T.Float32BufferAttribute(seamVertices,3));
+ g.add(new T.LineSegments(geom,new T.LineBasicMaterial({color:0x0a1114,transparent:true,opacity:.85})));
 }
 // Use instancing rather than hundreds of draw calls, keeping iPad performance.
 const boxGeo=new T.BoxGeometry(1,1,1),D=new T.Object3D();
@@ -318,8 +302,8 @@ function addBatch(list,material,perInstanceColors=true){
 addBatch(blocks,new T.MeshStandardMaterial({color:0xffffff,roughness:.85,metalness:0,flatShading:true,vertexColors:false}));
 addBatch(lights,new T.MeshBasicMaterial({color:0xffffff,toneMapped:false}));
 const ground=new T.Mesh(new T.CircleGeometry(19,48),new T.MeshLambertMaterial({color:0x10282b,transparent:true,opacity:.75}));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;scene.add(ground);
-let yaw=.23,pitch=.13,dist=27,changing=false,frames=0;
-const center=new T.Vector3(0,6.0,0),relative=new T.Vector3(),touches=new Map();
+let yaw=.12,pitch=.11,dist=39,changing=false,frames=0;
+const center=new T.Vector3(0,10.3,0),relative=new T.Vector3(),touches=new Map();
 function render(){
  const w=root.clientWidth,h=root.clientHeight;if(!w||!h)return;
  const width=Math.max(1,w),height=Math.max(1,h);
@@ -332,10 +316,10 @@ function render(){
 let pending=false;function req(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render()})}
 new ResizeObserver(req).observe(root);req();
 function on(id,fn){document.getElementById(id).addEventListener('click',()=>{fn();req()})}
-on('angle',()=>{yaw=.38;pitch=.17;dist=27});
-on('front',()=>{yaw=0;pitch=.06;dist=27});
-on('side',()=>{yaw=Math.PI/2;pitch=.13;dist=27});
-on('top',()=>{yaw=.05;pitch=1.36;dist=28});
+on('angle',()=>{yaw=.30;pitch=.14;dist=39});
+on('front',()=>{yaw=0;pitch=.05;dist=39});
+on('side',()=>{yaw=Math.PI/2;pitch=.12;dist=40});
+on('top',()=>{yaw=.05;pitch=1.36;dist=43});
 on('left',()=>yaw-=.35);on('right',()=>yaw+=.35);
 on('near',()=>dist=Math.max(9,dist/1.2));on('far',()=>dist=Math.min(36,dist*1.2));
 function pinch(){const p=[...touches.values()];return p.length<2?null:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}
