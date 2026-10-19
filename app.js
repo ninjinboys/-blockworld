@@ -1,13 +1,13 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-import {makeFirstPersonHand} from './first-person-hand.js?v=20261019itemModels02';
-import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261019itemHeldScale04';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261020spearThrust03';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261020spearThrust03';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
-import {createBuildingBlockModels} from './building-block-models.js?v=20261020halves02';
+import {createBuildingBlockModels} from './building-block-models.js?v=20261020sleepingBag03';
 import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261020waterBucket02';
 import {drawDetailedItemIcon} from './item-art-icons.js?v=20261019pixelArt01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
@@ -1383,7 +1383,7 @@ function resetWorldRuntime(){
   setAvatarDamageFlash(playerAvatar,false);
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   equippedArmor.fill(null);equippedBackpack=false;backpackSlots.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
-  clearFlyingArrows();selectedArrowAmmo=I.ARROW;
+  clearFlyingArrows();selectedArrowAmmo=I.ARROW;gliderActive=false;
   while(thrownKnives.length){const shot=thrownKnives.pop();scene.remove(shot.model)}
   while(activeFlames.length){const f=activeFlames.pop();scene.remove(f.group)}
   burningBlocks.clear();fireUpdateAccumulator=0;
@@ -4635,6 +4635,25 @@ function buildPlayerAvatar(){
   return g;
 }
 const playerAvatar=buildPlayerAvatar();
+// Fold-out low-poly wings are visible behind the character while gliding.
+const gliderWings=new THREE.Group();
+gliderWings.name='deployed hang glider';
+gliderWings.position.set(0,1.34,.30);
+for(const sign of [-1,1]){
+  const sail=new THREE.Shape();
+  sail.moveTo(0,.22);sail.lineTo(sign*.48,.52);
+  sail.lineTo(sign*1.65,.22);sail.lineTo(sign*1.80,.02);
+  sail.lineTo(sign*.87,-.14);sail.lineTo(0,.04);sail.closePath();
+  const mesh=new THREE.Mesh(new THREE.ShapeGeometry(sail),
+    new THREE.MeshLambertMaterial({color:sign<0?0x78aeb5:0x649faa,side:THREE.DoubleSide}));
+  mesh.position.z=.11;gliderWings.add(mesh);
+  const edge=new THREE.Mesh(new THREE.BoxGeometry(1.73,.052,.045),
+    new THREE.MeshLambertMaterial({color:0x364a56}));
+  edge.position.set(sign*.86,.24,.14);
+  edge.rotation.z=sign*-.02;gliderWings.add(edge);
+}
+gliderWings.visible=false;
+playerAvatar.add(gliderWings);
 const avatarHeldItems=makeAvatarHeldItems(THREE,drawItemIcon);
 // Body and armor flash red without recoloring any shared mob/player materials.
 // Exclude meshes inside the hand-held item pivots: the body takes the hit,
@@ -4743,6 +4762,7 @@ function updatePlayerAvatar(now){
   setAvatarDamageFlash(playerAvatar,now<playerHurtUntil);
   playerAvatar.position.copy(player.pos);
   playerAvatar.rotation.y=ridingHorse?ridingHorse.rotation.y:player.yaw;
+  gliderWings.visible=gliderActive&&!ridingHorse;
   const moving=Math.hypot(player.vel.x,player.vel.z);
   const stride=moving>.3?Math.sin(now*.009*(moving>5.2?1.45:1))*(Math.min(.58,moving*.12)):0;
   const limbs=playerAvatar.userData.limbs;
@@ -7044,6 +7064,7 @@ function useExpansionItem(){
   if(selected===I.BINOCULARS){toggleBinoculars();return true}
   if(selected===I.GLIDER){
     gliderActive=!gliderActive;
+    if(gliderActive)fallOriginY=null;
     flash(gliderActive?'グライダー展開！ 崖から飛び降りると滑空します':'グライダーを収納しました');return true;
   }
   if(selected===I.BUCKET){
@@ -7629,8 +7650,9 @@ function loop(now){
     if(nowInWater){
       fallOriginY=null;
     }else if(player.onGround){
-      if(gliderActive){gliderActive=false;flash('グライダー着地')}
-      if(fallOriginY!=null&&vy<0)applyFallDamage(fallOriginY-player.pos.y);
+      const gliderLanding=gliderActive&&!wasGrounded;
+      if(gliderLanding){gliderActive=false;flash('グライダー着地')}
+      if(!gliderLanding&&fallOriginY!=null&&vy<0)applyFallDamage(fallOriginY-player.pos.y);
       fallOriginY=null;
     }else if(wasGrounded&&vy<=0){
       // Walked off an edge: remember the ledge height.
