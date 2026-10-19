@@ -13,7 +13,7 @@ import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
 const $=id=>document.getElementById(id);
 const game=$('game'),coordsEl=$('coords'),biomeEl=$('biome'),clockEl=$('clock'),weatherEl=$('weather'),hotbarEl=$('hotbar'),msgEl=$('message'),cover=$('startCover'),loading=$('loading'),crafting=$('crafting'),recipeList=$('recipeList'),craftInventory=$('craftInventory'),levelText=$('levelText'),xpText=$('xpText'),xpFill=$('xpFill'),blueprintText=$('blueprintText'),breakMeter=$('breakMeter'),breakLabel=$('breakLabel'),breakFill=$('breakFill'),heartsEl=$('hearts'),deathScreen=$('deathScreen'),respawnBtn=$('respawnBtn');
 const authCover=$('authCover'),authForm=$('authForm'),authName=$('authName'),authPassword=$('authPassword'),authSubmit=$('authSubmit'),authError=$('authError'),authModeText=$('authModeText'),showLogin=$('showLogin'),showCreate=$('showCreate'),accountNameEl=$('accountName'),saveStatusEl=$('saveStatus'),saveNowBtn=$('saveNow'),logoutBtn=$('logoutBtn');
-const menuCover=$('menuCover'),menuAccountName=$('menuAccountName'),singlePlayBtn=$('singlePlayBtn'),menuLogout=$('menuLogout'),worldBack=$('worldBack');
+const mapCover=$('mapCover'),menuCover=$('menuCover'),menuAccountName=$('menuAccountName'),singlePlayBtn=$('singlePlayBtn'),menuLogout=$('menuLogout'),worldBack=$('worldBack');
 const worldCover=$('worldCover'),worldGrid=$('worldGrid'),worldAccountName=$('worldAccountName'),worldLogout=$('worldLogout'),worldListBtn=$('worldListBtn'),accountBox=$('accountBox');
 const inventoryScreen=$('inventoryScreen'),inventoryMainGrid=$('inventoryMainGrid'),inventoryHotbarGrid=$('inventoryHotbarGrid'),inventoryClose=$('inventoryClose'),inventoryDetail=$('inventoryDetail'),inventoryDetailIcon=$('inventoryDetailIcon'),inventoryDetailName=$('inventoryDetailName'),inventoryDetailQty=$('inventoryDetailQty'),inventoryMove=$('inventoryMove'),inventorySplit=$('inventorySplit'),inventoryDrop=$('inventoryDrop');
 
@@ -624,6 +624,9 @@ function chestApplyState(x,y,z,raw){
 
 let streamCX=NaN,streamCZ=NaN;
 let currentAccount=null,currentWorldSlot=null,worldReady=false,saveInterval=null,saveDirty=false,generatorVersion=5;
+let activeMap='overworld'; // The previous game is always The Overworld.
+const TESTWORLD_SURFACE_Y=12;
+const mapDisplayName=()=>activeMap==='testworld'?'Testworld':'The Overworld';
 // Restoring a remembered local session must not depend on Firebase network.
 // Cloud writes are permitted only after THIS exact user has a verified
 // Firebase session. A legacy/local-only auto-login remains playable offline.
@@ -636,9 +639,11 @@ let singleWorldMembers={};
 let multiLastCheckpoint=0,multiMigrationGeneration=0;
 let lastCloudWorldSaveAt=0;
 const MULTI_HOST='blockworld_multi_host_v1:',MULTI_MEMBER='blockworld_multi_member_v1:';
-const MULTI_HANDOFF='blockworld_multi_handoff_v1:';
+const TEST_MULTI_HOST='blockworld_testworld_multi_host_v1:',TEST_MULTI_MEMBER='blockworld_testworld_multi_member_v1:';
+const MULTI_HANDOFF='blockworld_multi_handoff_v1:',TEST_MULTI_HANDOFF='blockworld_testworld_multi_handoff_v1:';
 const FRIEND_ID='blockworld_friend_id_v1:',FRIENDS_KEY='blockworld_friends_v1:';
 const ACCOUNT_REGISTRY_KEY='blockworld_accounts_v1',SESSION_KEY='blockworld_session_v1',SAVE_PREFIX='blockworld_save_v3:',LEGACY_SAVE_PREFIX='blockworld_save_v2:',MAX_WORLDS=5;
+const TEST_SAVE_PREFIX='blockworld_testworld_save_v1:';
 
 const inside=(x,y,z)=>y>=Y_MIN&&y<=WORLD_TOP;
 const chunkCoord=v=>Math.floor(v/CHUNK);
@@ -756,7 +761,7 @@ async function setLocalCloudCache(key,name,password){
 async function cloudMergeWorlds(uploadLocal=false){
   const remote=await cloudReadAll();
   for(let slot=1;slot<=MAX_WORLDS;slot++){
-    const key=saveKeyForAccount(currentAccount.key,slot);
+    const key=saveKeyForAccount(currentAccount.key,slot,'overworld');
     let local=null;
     try{const raw=localStorage.getItem(key);if(raw)local=JSON.parse(raw)}catch{}
     const distant=remote.get(slot);
@@ -804,7 +809,7 @@ async function cloudAuthSubmit(name,password,key,reg,mode){
     setSaveStatus('クラウド同期失敗（端末保存は有効）');
   }
   setSaveStatus('ワールド未選択');
-  showMainMenu();
+  showMapSelection();
 }
 async function restoreCloudSession(){
   try{
@@ -839,7 +844,7 @@ async function restoreCloudSession(){
       catch(e){console.warn('Cloud session world sync failed',e)}
       setSaveStatus('ワールド未選択');
     }
-    if(!alreadyRestored)showMainMenu();
+    if(!alreadyRestored)showMapSelection();
   }catch(e){
     console.warn('Cloud session restoration failed; using local account',e);
     // Failure to load Firebase must never break legacy auto-login.
@@ -860,7 +865,7 @@ function restoreSession(){
     currentAccount={key:saved.key,name:acc.name||saved.key};
     cloudSessionReady=false;
     setSaveStatus(cloudEnabled?'端末保存で自動ログイン':'ワールド未選択');
-    showMainMenu();
+    showMapSelection();
     return true;
   }catch{
     clearSession();
@@ -879,12 +884,12 @@ function safeEqual(a,b){
   let d=0;for(let i=0;i<a.length;i++)d|=a.charCodeAt(i)^b.charCodeAt(i);return d===0;
 }
 function legacySaveKey(key){return LEGACY_SAVE_PREFIX+encodeURIComponent(key)}
-function saveKeyForAccount(key,slot){return SAVE_PREFIX+encodeURIComponent(key)+':'+slot}
+function saveKeyForAccount(key,slot,map=activeMap){return (map==='testworld'?TEST_SAVE_PREFIX:SAVE_PREFIX)+encodeURIComponent(key)+':'+slot}
 function migrateLegacySave(key){
   try{
     const legacy=localStorage.getItem(legacySaveKey(key));
-    const slot1=localStorage.getItem(saveKeyForAccount(key,1));
-    if(legacy&&!slot1)localStorage.setItem(saveKeyForAccount(key,1),legacy);
+    const slot1=localStorage.getItem(saveKeyForAccount(key,1,'overworld'));
+    if(legacy&&!slot1)localStorage.setItem(saveKeyForAccount(key,1,'overworld'),legacy);
   }catch(e){console.warn?.('legacy save migration failed',e)}
 }
 function setSaveStatus(text){saveStatusEl.textContent=text}
@@ -1002,7 +1007,7 @@ function repairFloatingDoorsOnLoad(){
 }
 function makeSaveData(){
   return {
-    version:4,worldSlot:currentWorldSlot,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
+    version:4,worldSlot:currentWorldSlot,mapType:activeMap,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
     level,xp,weather,dayTime,health,stamina,staminaRunSeconds,staminaRegenSeconds,cameraMode,
     initialSpawn:initialSpawn?{x:initialSpawn.x,y:initialSpawn.y,z:initialSpawn.z}:null,
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
@@ -1056,7 +1061,7 @@ function saveCurrentGame(showMessage=false){
       payload.originName=currentAccount.name;
     }
     localStorage.setItem(key,JSON.stringify(payload));
-    if(cloudEnabled&&cloudSessionReady&&!multiRole&&(wasDirty||showMessage||Date.now()-lastCloudWorldSaveAt>120000)){
+    if(activeMap==='overworld'&&cloudEnabled&&cloudSessionReady&&!multiRole&&(wasDirty||showMessage||Date.now()-lastCloudWorldSaveAt>120000)){
       lastCloudWorldSaveAt=Date.now();
       const slot=currentWorldSlot;
       void cloudQueueSave(slot,payload).catch(e=>{
@@ -1080,6 +1085,7 @@ function readSaveForAccount(key,slot){
 }
 function applySaveData(data){
   if(!data||typeof data!=='object')return false;
+  activeMap=data.mapType==='testworld'?'testworld':'overworld';
   if(Number.isFinite(data.seed))seed=data.seed>>>0;
   generatorVersion=Math.max(1,Number(data.generatorVersion)||1);
   restoreExploration(data);
@@ -1261,11 +1267,11 @@ async function initializeAccountWorld(save,slot){
   streamChunks(true);
   for(let i=0;i<12&&blocked(player.pos.x,player.pos.y,player.pos.z);i++)player.pos.y+=1;
   rain.visible=weather==='rain';weatherEl.textContent=weather==='rain'?'Rain':'Clear';
-  accountNameEl.textContent=currentAccount.name+' · W'+slot+' · GEN'+generatorVersion;
+  accountNameEl.textContent=currentAccount.name+' · '+mapDisplayName()+' · W'+slot+' · GEN'+generatorVersion;
   renderHotbar();updateProgress();renderHealth();renderStamina();updateViewLabel();
-  loading.textContent=save?'ワールド'+slot+'を復元しました':'ワールド'+slot+'を作成しました';
+  loading.textContent=save?mapDisplayName()+' WORLD '+slot+'を復元しました':mapDisplayName()+' WORLD '+slot+'を作成しました';
   worldReady=true;saveDirty=false;saveCurrentGame(false);
-  if(cloudEnabled&&cloudSessionReady&&!save){
+  if(activeMap==='overworld'&&cloudEnabled&&cloudSessionReady&&!save){
     // New worlds need an initial cloud snapshot even without edits yet.
     void cloudQueueSave(slot,makeSaveData()).catch(e=>
       console.warn('Initial cloud world save failed',e));
@@ -1279,7 +1285,11 @@ function formatSavedAt(ms){
 }
 function renderWorldSelection(){
   if(!currentAccount)return;
-  migrateLegacySave(currentAccount.key);
+  if(activeMap==='overworld')migrateLegacySave(currentAccount.key);
+  $('worldMapHeading').textContent=mapDisplayName();
+  $('worldMapDescription').textContent=activeMap==='testworld'
+    ?'Testworld専用のセーブ（最大5個）。石だけの平坦なテストマップです。'
+    :'従来のセーブ（最大5個）。既存ワールドはそのまま残ります。';
   worldAccountName.textContent=currentAccount.name;worldGrid.innerHTML='';
   for(let slot=1;slot<=MAX_WORLDS;slot++){
     const save=readSaveForAccount(currentAccount.key,slot),card=document.createElement('div');
@@ -1313,6 +1323,22 @@ function renderWorldSelection(){
     card.append(info,actions);worldGrid.appendChild(card);
   }
 }
+function showMapSelection(){
+  if(!currentAccount)return;
+  if(multiRole)multiLeave(true);
+  if(worldReady){
+    saveCurrentGame(false);
+    clearInterval(saveInterval);saveInterval=null;
+    resetWorldRuntime();worldReady=false;currentWorldSlot=null;
+  }
+  authCover.style.display='none';cover.style.display='none';
+  accountBox.style.display='none';worldCover.style.display='none';menuCover.style.display='none';
+  $('multiCover').style.display='none';
+  $('mapAccountName').textContent=currentAccount.name;
+  mapCover.style.display='flex';
+  document.exitPointerLock?.();
+  multiStartPresence();
+}
 function showMainMenu(){
   if(!currentAccount)return;
   if(multiRole)multiLeave(true);
@@ -1322,7 +1348,8 @@ function showMainMenu(){
     resetWorldRuntime();worldReady=false;currentWorldSlot=null;
   }
   authCover.style.display='none';cover.style.display='none';accountBox.style.display='none';
-  worldCover.style.display='none';menuAccountName.textContent=currentAccount.name;
+  worldCover.style.display='none';mapCover.style.display='none';menuAccountName.textContent=currentAccount.name;
+  $('menuMapName').textContent=mapDisplayName();
   menuCover.style.display='flex';
   document.exitPointerLock?.();
   multiStartPresence();
@@ -1333,7 +1360,7 @@ function showWorldSelection(){
   clearInterval(saveInterval);saveInterval=null;
   resetWorldRuntime();worldReady=false;currentWorldSlot=null;
   chatReset();
-  cover.style.display='none';accountBox.style.display='none';menuCover.style.display='none';worldCover.style.display='flex';
+  cover.style.display='none';accountBox.style.display='none';menuCover.style.display='none';mapCover.style.display='none';worldCover.style.display='flex';
   document.exitPointerLock?.();renderWorldSelection();
 }
 function setAuthMode(mode){
@@ -1369,7 +1396,7 @@ async function submitAuth(e){
       currentAccount={key,name:acc.name||name};rememberSession(key);setSaveStatus('ワールド未選択');
     }
     authPassword.value='';
-    showMainMenu();
+    showMapSelection();
   }catch(err){
     authError.textContent=cloudEnabled
       ?(err?.message||'クラウドログインに失敗しました')
@@ -1694,6 +1721,7 @@ function terrainProfile(x,z){
   return terrainProfileV1(x,z);
 }
 function columnInfo(x,z){
+  if(activeMap==='testworld')return {h:TESTWORLD_SURFACE_Y,bio:0,river:false,riverBank:false,rugged:0,temp:0,moist:0,lake:false};
   if(generatorVersion>=4)return columnInfoV4(x,z);
   if(generatorVersion>=3)return columnInfoV3(x,z);
   if(generatorVersion>=2)return columnInfoV2(x,z);
@@ -1703,6 +1731,11 @@ const surfaceAt=(x,z)=>columnInfo(x,z).h;
 const biomeAt=(x,z)=>columnInfo(x,z).bio;
 
 function blockFromInfo(x,y,z,info){
+  if(activeMap==='testworld'){
+    if(y<Y_MIN||y>WORLD_TOP)return B.AIR;
+    if(y===Y_MIN)return B.BEDROCK;
+    return y<=TESTWORLD_SURFACE_Y?B.STONE:B.AIR;
+  }
   const {h,bio,river,riverBank,rugged}=info;
   if(y<Y_MIN||y>WORLD_TOP)return B.AIR;
   if(y>h)return y<=SEA?B.WATER:B.AIR;
@@ -1813,6 +1846,17 @@ function writeGenerated(data,cx,cz,x,y,z,id){
 function* generateChunkSteps(cx,cz){
   const data=new Uint8Array(CHUNK*HEIGHT*CHUNK);
   const x0=cx*CHUNK,z0=cz*CHUNK;
+  if(activeMap==='testworld'){
+    // Stone in every horizontal direction; no trees, ores, caves, villages or structures.
+    // The usual edit overlay still supports building, mining and saving.
+    const layer=CHUNK*CHUNK;
+    data.fill(B.BEDROCK,0,layer);
+    data.fill(B.STONE,layer,(TESTWORLD_SURFACE_Y-Y_MIN+1)*layer);
+    const edits=editChunks.get(chunkKey(cx,cz));
+    if(edits)for(const [i,v] of edits)data[i]=v;
+    yield;
+    return {cx,cz,data};
+  }
   const infoCache=new Map();
   const getInfo=(x,z)=>{
     const k=x+','+z;
@@ -3321,7 +3365,7 @@ function updateSkeleton(m,dt,now){
   }
 }
 function updateZombieSpawning(dt){
-  if(multiRole==='guest')return;
+  if(multiRole==='guest'||activeMap==='testworld')return;
   if(!isNightTime()){
     zombieSpawnCooldown=1;
     skeletonSpawnCooldown=7;
@@ -4001,7 +4045,7 @@ function updateVillager(m,dt,now){
   villagerModels.animate(m,now*.001,moved);
 }
 function updateVillagerSpawning(dt){
-  if(multiRole==='guest'||!worldReady)return;
+  if(multiRole==='guest'||!worldReady||activeMap==='testworld')return;
   villagerSpawnCooldown-=dt;
   if(villagerSpawnCooldown>0)return;
   villagerSpawnCooldown=7.5;
@@ -4037,7 +4081,7 @@ function updateVillagerSpawning(dt){
   }
 }
 function updatePassiveSpawning(dt){
-  if(multiRole==='guest')return;
+  if(multiRole==='guest'||activeMap==='testworld')return;
   passiveSpawnCooldown-=dt;
   if(passiveSpawnCooldown>0)return;
   passiveSpawnCooldown=25;
@@ -4489,6 +4533,7 @@ function movePlayerAxis(axis,amount){
   return true;
 }
 function calculateInitialSpawn(){
+  if(activeMap==='testworld')return {x:.5,y:TESTWORLD_SURFACE_Y+1.05,z:.5};
   let best={x:0,z:0,score:1e9},fallback={x:0,z:0,score:1e9};
   const radius=generatorVersion>=4?44:10,step=generatorVersion>=4?2:1;
   for(let x=-radius;x<=radius;x+=step)for(let z=-radius;z<=radius;z+=step){
@@ -6738,7 +6783,7 @@ function loop(now){
     coordsEl.textContent=`X ${bx} Y ${Math.floor(player.pos.y)} Z ${bz}`;
     // Show the natural biome without the village icon or arrival popup.
     // Village buildings, villagers and golems are unaffected.
-    biomeEl.textContent=biomeNames[biomeAt(bx,bz)]||'Unknown';
+    biomeEl.textContent=activeMap==='testworld'?'Testworld':(biomeNames[biomeAt(bx,bz)]||'Unknown');
     const mins=Math.floor(dayTime*1440),hh=String(Math.floor(mins/60)%24).padStart(2,'0'),mm=String(mins%60).padStart(2,'0');
     // Time stays visible, but no zombie/skeleton/spider icons or counts.
     clockEl.textContent=(isNightTime()?'☾':'☀')+' '+hh+':'+mm;
@@ -6895,12 +6940,12 @@ window.visualViewport?.addEventListener('resize',chatResizeForKeyboard);
 chatResizeForKeyboard();
 const multiViews=['multiHome','multiSlots','multiJoin','multiFriends','multiLobby'];
 let multiViewId='multiHome',multiPresenceBusy=false,friendRefreshBusy=false;
-function multiWorldKey(slot){return MULTI_HOST+currentAccount.key+':'+slot}
+function multiWorldKey(slot){return (activeMap==='testworld'?TEST_MULTI_HOST:MULTI_HOST)+currentAccount.key+':'+slot}
 function multiHandoffSaveKey(originId,slot){
-  return MULTI_HANDOFF+currentAccount.key+':'+(multiWorldKind==='single'?'single:':'')+originId+':'+slot;
+  return (activeMap==='testworld'?TEST_MULTI_HANDOFF:MULTI_HANDOFF)+currentAccount.key+':'+(multiWorldKind==='single'?'single:':'')+originId+':'+slot;
 }
 function multiGuestSaveKey(){
-  return MULTI_MEMBER+(multiWorldKind==='single'?'single:':'')+currentAccount.key+':'+multiHostId+':'+multiHostSlot;
+  return (activeMap==='testworld'?TEST_MULTI_MEMBER:MULTI_MEMBER)+(multiWorldKind==='single'?'single:':'')+currentAccount.key+':'+multiHostId+':'+multiHostSlot;
 }
 function multiOwnId(){
   const key=FRIEND_ID+currentAccount.key;let id=localStorage.getItem(key);
@@ -6921,12 +6966,12 @@ function multiStatus(s){$('multiStatus').textContent=s}
 function multiView(v){
   multiViewId=v;
   multiViews.forEach(id=>$(id).hidden=id!==v);
-  $('multiTitle').textContent=({multiHome:'マルチプレイ',multiSlots:'ワールドを作る',multiJoin:'コードで参加',multiFriends:'フレンド一覧',multiLobby:'マルチプレイの部屋'})[v];
+  $('multiTitle').textContent=({multiHome:mapDisplayName()+' · マルチプレイ',multiSlots:mapDisplayName()+' · ワールドを作る',multiJoin:'コードで参加',multiFriends:'フレンド一覧',multiLobby:'マルチプレイの部屋'})[v];
   if(v==='multiSlots')multiRenderSlots();
   if(v==='multiFriends')multiRenderFriends();
 }
 function multiShow(v='multiHome'){
-  menuCover.style.display='none';worldCover.style.display='none';
+  menuCover.style.display='none';worldCover.style.display='none';mapCover.style.display='none';
   $('multiCover').style.display='flex';multiView(v);
   cover.style.display=worldReady?'flex':'none';
   multiStatus('最大4人。作成者が退出しても、残った人にホストを引き継ぎます。');
@@ -7000,7 +7045,7 @@ function multiRenderSlots(){
   }
   // A player who takes over somebody else's room keeps an isolated local
   // backup. It can be reopened without replacing their own five worlds.
-  const prefix=MULTI_HANDOFF+currentAccount.key+':';
+  const prefix=(activeMap==='testworld'?TEST_MULTI_HANDOFF:MULTI_HANDOFF)+currentAccount.key+':';
   for(let i=0;i<localStorage.length;i++){
     const key=localStorage.key(i);
     if(!key?.startsWith(prefix))continue;
@@ -7387,6 +7432,7 @@ function multiApplyDrop(message){
 }
 async function multiWelcome(message){
   if(multiRole!=='guest'||!message.world)return;
+  activeMap=message.world.mapType==='testworld'?'testworld':'overworld';
   multiWorldKind=message.worldKind==='single'?'single':'multi';
   if(worldReady){
     multiCheckpoint={...message,t:'checkpoint',hostId:message.currentHostId||message.hostId,
@@ -7544,6 +7590,7 @@ async function multiPromoteHost(job){
   multiHostSlot=job.checkpoint.slot||currentWorldSlot;
   multiWorldKind=job.checkpoint.worldKind==='single'?'single':'multi';
   multiOriginName=job.checkpoint.originName||multiOriginName||'プレイヤー';
+  activeMap=job.checkpoint.world?.mapType==='testworld'?'testworld':'overworld';
   multiMembers=multiMigrationMembers(job.checkpoint);
   // A successor must not retain another player's old saved host profile as
   // its own inventory. Its own current inventory stays entirely untouched.
@@ -7895,6 +7942,9 @@ showCreate.addEventListener('click',()=>setAuthMode('create'));
 authForm.addEventListener('submit',submitAuth);
 setAuthMode('login');
 
+$('mapOverworld').addEventListener('click',()=>{activeMap='overworld';showMainMenu()});
+$('mapTestworld').addEventListener('click',()=>{activeMap='testworld';showMainMenu()});
+$('menuMapBack').addEventListener('click',showMapSelection);
 singlePlayBtn.addEventListener('click',showWorldSelection);
 worldBack.addEventListener('click',showMainMenu);
 menuLogout.addEventListener('click',async()=>{

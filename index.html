@@ -12,7 +12,7 @@
 <!-- The title art features the black-stone obelisk warp device used to reach boss battles. -->
 <div id="titleCover" class="title-cover" role="dialog" aria-modal="true" aria-label="NEXACRAFT タイトル画面">
   <div class="title-bottom-shade" aria-hidden="true"></div>
-  <button id="titleEnter" class="title-enter" type="button" aria-label="PRESS ANY BUTTON。シングルプレイ・マルチプレイを選ぶ">
+  <button id="titleEnter" class="title-enter" type="button" aria-label="PRESS ANY BUTTON。ログイン後にマップを選ぶ">
     <span class="title-enter-label">PRESS ANY BUTTON</span>
     <span class="title-enter-ornament" aria-hidden="true">── ◆ ──</span>
   </button>
@@ -36,10 +36,30 @@
     <div class="auth-note">初めて別の端末で使う場合は、前の端末から暗号化引き継ぎファイルを受け取ってください。端末間の自動同期はありません。</div>
   </div>
 </div>
+<div id="mapCover" role="dialog" aria-modal="true" aria-labelledby="mapSelectionTitle">
+  <section class="map-panel">
+    <div class="map-kicker">NEXACRAFT · SELECT MAP</div>
+    <h2 id="mapSelectionTitle">マップを選択</h2>
+    <p class="map-account">PLAYER <strong id="mapAccountName">---</strong></p>
+    <div class="map-options">
+      <button id="mapOverworld" class="map-option" type="button">
+        <span class="map-preview map-preview-overworld" aria-hidden="true"><span class="map-preview-terrain"></span></span>
+        <strong>The Overworld</strong>
+        <small>これまでのワールド · 通常の地形と冒険</small>
+      </button>
+      <button id="mapTestworld" class="map-option" type="button">
+        <span class="map-preview map-preview-testworld" aria-hidden="true"><span class="map-preview-terrain"></span></span>
+        <strong>Testworld</strong>
+        <small>石だけがどこまでも続くフラットワールド</small>
+      </button>
+    </div>
+  </section>
+</div>
 <div id="menuCover">
   <div class="menu-panel">
     <h1>NEXACRAFT</h1>
     <div class="menu-kicker">PLAYER <strong id="menuAccountName">---</strong></div>
+    <div class="menu-map-current"><span>MAP: <strong id="menuMapName">The Overworld</strong></span><button id="menuMapBack" type="button">マップ変更</button></div>
     <div class="menu-actions">
       <button id="singlePlayBtn" type="button">シングルプレイ</button>
       <button id="multiPlayBtn" type="button">マルチプレイ</button>
@@ -112,8 +132,8 @@
     <div class="world-head">
       <div>
         <div class="world-kicker">PLAYER <strong id="worldAccountName">---</strong></div>
-        <h2>ワールドを選択</h2>
-        <p>最大5個。既存のワールドをそのまま友達と共有できます。</p>
+        <h2 id="worldMapHeading">The Overworld</h2>
+        <p id="worldMapDescription">ワールドを選択（最大5個）</p>
       </div>
       <div class="world-header-actions"><button id="worldBack" type="button">戻る</button><button id="worldLogout" type="button">ログアウト</button></div>
     </div>
@@ -307,7 +327,7 @@
   },true);
 })();
 </script>
-<script type="module" src="app.js?v=20261019warpWorkbench01"></script>
+<script type="module" src="app.js?v=20261019mapSelectTest01"></script>
 <script type="module" src="device-account-transfer-ui.js?v=20261014deviceTransfer02"></script>
 </body>
 </html>
