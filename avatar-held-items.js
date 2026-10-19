@@ -229,6 +229,11 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
           item.rotation.y=-.20;
         }else if(main===147||main===31){
           item.scale.setScalar(1.25);
+        }else if(main>=168&&main<=188){
+          const longItem=[168,170,171,172,179,186].includes(main);
+          item.scale.setScalar(longItem?.78:.66);
+          item.rotation.set(-.10,.16,-.12);
+          item.position.set(.015,-.045,-.02);
         }else if(main===CHIMERA_DAGGER){
           item.scale.setScalar(1.34);
         }else if(swords.has(main)||picks.has(main)||axes.has(main)||shovels.has(main)){

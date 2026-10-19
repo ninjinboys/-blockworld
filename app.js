@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261019itemModels02';
-import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261019itemModels02';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261019itemHeldScale04';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
