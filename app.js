@@ -6898,6 +6898,9 @@ function renderCrafting(){
   }
   recipeList.innerHTML='';
   const list=currentRecipeList();
+  const search=($('craftSearch')?.value||'').trim().toLocaleLowerCase('ja');
+  const count=$('craftCount');
+  if(count)count.textContent=(search?list.filter(r=>(r.name+' '+(names[r.out]||'')).toLocaleLowerCase('ja').includes(search)).length:list.length)+' 種類';
   if(craftMode==='warp'&&!list.length){
     const info=document.createElement('div');
     info.className='recipe';info.style.padding='18px';
@@ -6905,6 +6908,7 @@ function renderCrafting(){
     recipeList.appendChild(info);
   }
   list.forEach((r,i)=>{
+    if(search&&!(r.name+' '+(names[r.out]||'')).toLocaleLowerCase('ja').includes(search))return;
     const locked=level<r.unlockLevel,can=!locked&&hasNeeds(r);
     const d=document.createElement('div');d.className='recipe'+(locked?' locked':'');
     const needText=r.needs.map(([id,n])=>`${names[id]} ×${n}`).join(' ＋ ');
@@ -6941,7 +6945,7 @@ function setCraftOpen(v){
   if(v){
     if(inventoryOpen)setInventoryOpen(false);
     craftMode=chooseCraftMode();
-    primaryActionStop();document.exitPointerLock?.();renderCrafting();
+    primaryActionStop();document.exitPointerLock?.();$('craftSearch').value='';renderCrafting();
     if(craftMode==='inventory')flash('作業台・かまど・転送作業台に照準を合わせると専用メニューが開きます');
   } else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
 }
@@ -7095,6 +7099,7 @@ $('inventoryEquip').addEventListener('click',()=>{if(inventorySelectedSlot!=null
 $('inventoryOffhandEquip').addEventListener('click',()=>{if(offhandItem)unequipOffhand();else if(inventorySelectedSlot!=null)equipOffhand(inventorySelectedSlot)});
 $('inventoryOffhand').addEventListener('click',()=>{if(offhandItem)unequipOffhand();else if(inventorySelectedSlot!=null)equipOffhand(inventorySelectedSlot);else flash('インベントリの松明か盾を選択してください')});
 $('craftClose').addEventListener('click',()=>setCraftOpen(false));
+$('craftSearch').addEventListener('input',renderCrafting);
 crafting.addEventListener('pointerdown',e=>{if(e.target===crafting)setCraftOpen(false)});
 
 let last=performance.now(),dayTime=.24;
