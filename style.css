@@ -900,7 +900,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 /* NEXACRAFT cinematic title cover: full 1672 x 941 key art; no tiny preview. */
 .title-cover{
   position:fixed;inset:0;z-index:100;display:block;
-  background:#152a32 url("assets/nexacraft-title.webp?v=20261011titleHD1672") center center / cover no-repeat;
+  background:#152a32 url("assets/nexacraft-title-obelisk.webp?v=20261019obeliskTitle01") center center / cover no-repeat;
   cursor:pointer;touch-action:manipulation;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   opacity:1;transition:opacity .32s ease;
@@ -1437,3 +1437,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 .menu-actions .new-mob-gallery-link:focus-visible{
  outline:3px solid #b6f9e1;outline-offset:3px;
 }
+
+/* 2026-10-19: The obelisk title artwork includes its own "PRESS ANY BUTTON".
+   Keep the accessible, functional DOM button underneath as a clickable hit target
+   without painting a duplicate label on top of the same artwork. */
+#titleCover .title-enter{opacity:0}
+#titleCover .title-bottom-shade{background:linear-gradient(0deg,rgba(4,10,16,.25),rgba(4,10,16,0))}
