@@ -1658,3 +1658,30 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 @media(min-width:651px) and (pointer:coarse){
  #crafting #recipeList{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Map displays the real world generator; binoculars optically zoom camera FOV. */
+.explorer-map-overlay{position:fixed;inset:0;z-index:54;display:none;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:#060b0dd4;color:#e8f4e9}
+.explorer-map-overlay.open{display:flex}
+.explorer-map-dialog{box-sizing:border-box;width:min(570px,96vw);max-height:94dvh;padding:clamp(11px,2.2vw,20px);display:flex;flex-direction:column;gap:10px;border:3px solid #665139;border-radius:12px;background:linear-gradient(135deg,#e8d6aa,#baa778);color:#30291d;box-shadow:0 22px 65px #0009,inset 0 0 0 3px #f6e6b7}
+.explorer-map-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.explorer-map-head span{font:800 10px ui-monospace,monospace;color:#86613f;letter-spacing:.15em}
+.explorer-map-head h2{margin:2px 0;font:900 25px ui-monospace,monospace}
+#explorerMapClose,.explorer-map-zoom button{min-height:40px;border:2px solid #735e45;border-radius:7px;background:#f5e2b9;color:#382919;cursor:pointer;font-weight:850}
+#explorerMapClose{padding:8px 12px}
+.explorer-map-frame{position:relative;display:grid;place-items:center;max-height:65dvh;min-height:130px;overflow:hidden;border:5px solid #6a573c;border-radius:5px;background:#a9b596}
+#explorerMapCanvas{display:block;width:min(100%,52dvh);height:auto;aspect-ratio:1/1;image-rendering:pixelated;touch-action:manipulation}
+.explorer-map-north{position:absolute;top:4px;left:50%;transform:translateX(-50%);padding:2px 7px;color:#f7f0d5;background:#2f4d3bc9;border-radius:4px;font:900 12px ui-monospace,monospace;pointer-events:none}
+.explorer-map-footer{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap;font:bold 12px ui-monospace,monospace}
+.explorer-map-zoom{display:flex;align-items:center;gap:8px}
+.explorer-map-zoom button{min-width:42px;min-height:41px;font-size:22px}
+#explorerMapScale{font-size:11px;min-width:88px;text-align:center}
+.binocular-overlay{position:fixed;inset:0;z-index:22;display:none;pointer-events:none;color:#f3f6ea}
+.binocular-overlay.active{display:block}
+.binocular-vignette{position:absolute;inset:0;background:radial-gradient(ellipse 41% 49% at 50% 49%,transparent 0%,transparent 81%,#0b1219 84%,#030507 100%)}
+.binocular-crosshair{position:absolute;left:50%;top:49%;width:44px;height:44px;transform:translate(-50%,-50%);border:1px solid #dbf5e59e;border-radius:50%}
+.binocular-crosshair::before,.binocular-crosshair::after{content:"";position:absolute;background:#ccf3dbb3}
+.binocular-crosshair::before{left:50%;top:3px;bottom:3px;width:1px}
+.binocular-crosshair::after{top:50%;left:3px;right:3px;height:1px}
+#binocularClose{position:absolute;right:max(20px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);min-height:46px;padding:9px 14px;pointer-events:auto;border:2px solid #9ac7b7;border-radius:8px;background:#12282be6;color:#effffb;font-weight:900;font-size:13px;cursor:pointer}
+@media(max-width:760px){.explorer-map-dialog{max-height:95dvh}.explorer-map-frame{max-height:56dvh}#explorerMapCanvas{width:min(100%,50dvh)}#binocularClose{top:auto;bottom:calc(245px + env(safe-area-inset-bottom));transform:none;right:15px;font-size:12px}}
+@media(max-height:530px){.explorer-map-dialog{padding:8px}.explorer-map-head h2{font-size:19px}.explorer-map-frame{max-height:62dvh}#explorerMapCanvas{width:min(100%,59dvh)}}

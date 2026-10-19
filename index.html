@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#172f33">
 <title>NEXACRAFT</title>
 <link rel="preload" href="assets/nexacraft-title-obelisk.webp?v=20261019obeliskTitle01" as="image" type="image/webp">
-<link rel="stylesheet" href="style.css?v=20261019obeliskTitle01">
+<link rel="stylesheet" href="style.css?v=20261020utilityFix01">
 </head>
 <body>
 <!-- The title art features the black-stone obelisk warp device used to reach boss battles. -->
@@ -209,6 +209,23 @@
   </footer>
  </div>
 </section>
+
+<section id="explorerMapOverlay" class="explorer-map-overlay" aria-hidden="true">
+ <div class="explorer-map-dialog" role="dialog" aria-modal="true" aria-labelledby="explorerMapTitle">
+  <header class="explorer-map-head"><div><span>EXPLORER'S MAP</span><h2 id="explorerMapTitle">探索地図</h2></div>
+   <button id="explorerMapClose" type="button">✕ 閉じる</button></header>
+  <div class="explorer-map-frame"><canvas id="explorerMapCanvas" width="400" height="400" aria-label="周囲の地形を表示する地図"></canvas><span class="explorer-map-north">N ▲</span></div>
+  <footer class="explorer-map-footer"><span id="explorerMapCoords">X 0 · Z 0</span>
+   <div class="explorer-map-zoom"><button id="explorerMapPlus" type="button" aria-label="地図を拡大">＋</button>
+    <span id="explorerMapScale">200 × 200</span>
+    <button id="explorerMapMinus" type="button" aria-label="地図を縮小">－</button></div></footer>
+ </div>
+</section>
+<div id="binocularOverlay" class="binocular-overlay" aria-hidden="true">
+ <div class="binocular-vignette" aria-hidden="true"></div>
+ <div class="binocular-crosshair" aria-hidden="true"></div>
+ <button id="binocularClose" type="button">双眼鏡を外す ✕</button>
+</div>
 <div id="inventoryScreen" aria-hidden="true">
   <div class="inventory-panel">
     <div class="inventory-head">
@@ -356,7 +373,7 @@
   },true);
 })();
 </script>
-<script type="module" src="app.js?v=20261019newBlocksShapes01"></script>
+<script type="module" src="app.js?v=20261020utilityFix01"></script>
 <script type="module" src="device-account-transfer-ui.js?v=20261014deviceTransfer02"></script>
 </body>
 </html>

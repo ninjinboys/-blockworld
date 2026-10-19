@@ -7,8 +7,8 @@ import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
-import {createBuildingBlockModels} from './building-block-models.js?v=20261019shapes01';
-import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261019spriteArt01';
+import {createBuildingBlockModels} from './building-block-models.js?v=20261020halves02';
+import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261020waterBucket02';
 import {drawDetailedItemIcon} from './item-art-icons.js?v=20261019pixelArt01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
   cloudReadAll,cloudQueueSave,cloudFlush} from './nexacraft-cloud.js?v=20261014cloudActivated01';
@@ -54,7 +54,7 @@ Object.assign(B,{
   FENCE_GATE_E:63,FENCE_GATE_S:64,FENCE_GATE_W:65,
   FENCE_GATE_OPEN_N:66,FENCE_GATE_OPEN_E:67,FENCE_GATE_OPEN_S:68,FENCE_GATE_OPEN_W:69,
   LADDER_E:70,LADDER_S:71,LADDER_W:72,
-  TRAPDOOR_OPEN_N:73,TRAPDOOR_OPEN_E:74,TRAPDOOR_OPEN_S:75,TRAPDOOR_OPEN_W:76
+  TRAPDOOR_OPEN_N:73,TRAPDOOR_OPEN_E:74,TRAPDOOR_OPEN_S:75,TRAPDOOR_OPEN_W:76,WOOD_SLAB_TOP:77
 });
 const SHAPED_VARIANT_BASE=new Map([
   [B.WOOD_STAIRS_E,B.WOOD_STAIRS],[B.WOOD_STAIRS_S,B.WOOD_STAIRS],[B.WOOD_STAIRS_W,B.WOOD_STAIRS],
@@ -64,7 +64,8 @@ const SHAPED_VARIANT_BASE=new Map([
   [B.FENCE_GATE_OPEN_S,B.FENCE_GATE],[B.FENCE_GATE_OPEN_W,B.FENCE_GATE],
   [B.LADDER_E,B.LADDER],[B.LADDER_S,B.LADDER],[B.LADDER_W,B.LADDER],
   [B.TRAPDOOR_OPEN_N,B.TRAPDOOR],[B.TRAPDOOR_OPEN_E,B.TRAPDOOR],
-  [B.TRAPDOOR_OPEN_S,B.TRAPDOOR],[B.TRAPDOOR_OPEN_W,B.TRAPDOOR]
+  [B.TRAPDOOR_OPEN_S,B.TRAPDOOR],[B.TRAPDOOR_OPEN_W,B.TRAPDOOR],
+  [B.WOOD_SLAB_TOP,B.WOOD_SLAB]
 ]);
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
@@ -82,7 +83,7 @@ const I={
   CHIMERA_HELMET:159,CHIMERA_CHEST:160,CHIMERA_LEGS:161,CHIMERA_BOOTS:162,
   CHIMERA_FANG:163,CHIMERA_DAGGER:164,CHIMERA_HORN:165,CHIMERA_BOW:166,
   WARP_WORKBENCH:167,
-  SPEAR:168,IRON_DAGGER:169,BATTLE_AXE:170,HAMMER:171,CROSSBOW:172,THROWING_KNIFE:173,MOLOTOV:174,HEAL_POTION:175,STAMINA_POTION:176,POISON_ARROW:177,BUCKET:178,FISHING_ROD:179,COMPASS:180,MAP:181,BINOCULARS:182,ROPE:183,NAME_TAG:184,BACKPACK:185,GLIDER:186,SLEEPING_BAG:187,FLINT_STEEL:188
+  SPEAR:168,IRON_DAGGER:169,BATTLE_AXE:170,HAMMER:171,CROSSBOW:172,THROWING_KNIFE:173,MOLOTOV:174,HEAL_POTION:175,STAMINA_POTION:176,POISON_ARROW:177,BUCKET:178,FISHING_ROD:179,COMPASS:180,MAP:181,BINOCULARS:182,ROPE:183,NAME_TAG:184,BACKPACK:185,GLIDER:186,SLEEPING_BAG:187,FLINT_STEEL:188,WATER_BUCKET:189
 };
 const names={
   1:'草',2:'土',3:'石',4:'砂',5:'水',6:'原木',7:'葉',8:'石炭',9:'鉄鉱石',10:'金鉱石',11:'ダイヤ鉱石',12:'雪',13:'砂利',14:'サボテン',15:'木材',16:'丸石',17:'ガラス',18:'岩盤',19:'作業台',20:'かまど',33:'転送作業台',34:'転送作業台',35:'転送作業台',36:'転送作業台',
@@ -143,9 +144,10 @@ names[I.BACKPACK]='リュック';
 names[I.GLIDER]='グライダー';
 names[I.SLEEPING_BAG]='寝袋';
 names[I.FLINT_STEEL]='火打石と打ちがね';
+names[I.WATER_BUCKET]='水入りバケツ';
 for(const [variant,base] of SHAPED_VARIANT_BASE)names[variant]=names[base];
 const NEW_BUILD_BLOCKS=[B.STONE_BRICKS,B.MOSSY_STONE_BRICKS,B.CRACKED_STONE_BRICKS,B.POLISHED_STONE,B.MARBLE,B.OBSIDIAN,B.RED_BRICKS,B.WOOD_STAIRS,B.STONE_STAIRS,B.WOOD_SLAB,B.IRON_BARS,B.WOOD_FENCE,B.FENCE_GATE,B.LADDER,B.TRAPDOOR,B.LANTERN,B.BOOKSHELF,B.BARREL,B.TNT,B.CAMPFIRE];
-const NEW_ITEM_IDS=[I.SPEAR,I.IRON_DAGGER,I.BATTLE_AXE,I.HAMMER,I.CROSSBOW,I.THROWING_KNIFE,I.MOLOTOV,I.HEAL_POTION,I.STAMINA_POTION,I.POISON_ARROW,I.BUCKET,I.FISHING_ROD,I.COMPASS,I.MAP,I.BINOCULARS,I.ROPE,I.NAME_TAG,I.BACKPACK,I.GLIDER,I.SLEEPING_BAG,I.FLINT_STEEL];
+const NEW_ITEM_IDS=[I.SPEAR,I.IRON_DAGGER,I.BATTLE_AXE,I.HAMMER,I.CROSSBOW,I.THROWING_KNIFE,I.MOLOTOV,I.HEAL_POTION,I.STAMINA_POTION,I.POISON_ARROW,I.BUCKET,I.FISHING_ROD,I.COMPASS,I.MAP,I.BINOCULARS,I.ROPE,I.NAME_TAG,I.BACKPACK,I.GLIDER,I.SLEEPING_BAG,I.FLINT_STEEL,I.WATER_BUCKET];
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River','Jungle'];
 const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.GLASS,B.SNOW,B.GRAVEL,B.CACTUS,...NEW_BUILD_BLOCKS];
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH,[I.CHEST]:B.CHEST};
@@ -619,7 +621,7 @@ const hardness={...hardnessNew,
   [B.STONE]:3.0,[B.COBBLE]:3.4,[B.COAL]:3.5,[B.IRON]:4.2,[B.GOLD]:4.0,[B.DIAMOND]:5.0,[B.FURNACE]:3.8,
   [B.DOOR_X]:1.4,[B.DOOR_X_TOP]:1.4,[B.DOOR_X_OPEN]:1.4,[B.DOOR_X_OPEN_TOP]:1.4,
   [B.DOOR_Z]:1.4,[B.DOOR_Z_TOP]:1.4,[B.DOOR_Z_OPEN]:1.4,[B.DOOR_Z_OPEN_TOP]:1.4,
-  [B.TORCH]:.15,[B.CHEST]:2.5,
+  [B.TORCH]:.15,[B.CHEST]:2.5,[B.WOOD_SLAB_TOP]:1.25,
   [B.WARP_WORKBENCH_X]:3.2,[B.WARP_WORKBENCH_X_END]:3.2,
   [B.WARP_WORKBENCH_Z]:3.2,[B.WARP_WORKBENCH_Z_END]:3.2,
   [B.BEDROCK]:Infinity
@@ -1158,7 +1160,7 @@ function makeSaveData(){
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
     inventorySlots:inventorySlots.map(v=>v?{id:v.id,qty:v.qty}:null),selectedHotbarIndex,
     equippedArmor:[...equippedArmor],equippedBackpack,backpackSlots:backpackSlots.map(v=>v?{...v}:null),offhandItem:offhandItem?{...offhandItem}:null,
-    worldDrops:serializeWorldDrops(),
+    worldDrops:serializeWorldDrops(),fires:serializeBurningBlocks(),
     testMobs:activeMap==='testworld'?serializeTestMobs():undefined,
     player:{x:player.pos.x,y:player.pos.y,z:player.pos.z,yaw:player.yaw,pitch:player.pitch},
     edits:serializeEdits(),chests:serializeChests(),villageLootGranted:[...villageLootGranted],
@@ -1289,6 +1291,7 @@ function applySaveData(data){
   restoreSummonedChimeras(data);
   if(activeMap==='testworld')restoreTestMobs(data.testMobs);
   restoreWorldDrops(data.worldDrops);
+  restoreBurningBlocks(data.fires);
 
   if(data.player&&Number.isFinite(data.player.x)&&Number.isFinite(data.player.y)&&Number.isFinite(data.player.z)){
     player.pos.set(data.player.x,data.player.y,data.player.z);
@@ -1365,6 +1368,7 @@ async function spawnChimeraVisualTest(){
   }
 }
 function resetWorldRuntime(){
+  closeExplorerMap(false);closeBinoculars();
   testPanelOpen=false;$('testWorldPanel').classList.remove('open');
   $('testWorldPanel').setAttribute('aria-hidden','true');$('testWorldOpen').hidden=true;
   multiSleepReset();
@@ -1378,9 +1382,10 @@ function resetWorldRuntime(){
   setAvatarDamageFlash(playerAvatar,false);
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
   equippedArmor.fill(null);equippedBackpack=false;backpackSlots.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
-  clearFlyingArrows();
+  clearFlyingArrows();selectedArrowAmmo=I.ARROW;
   while(thrownKnives.length){const shot=thrownKnives.pop();scene.remove(shot.model)}
   while(activeFlames.length){const f=activeFlames.pop();scene.remove(f.group)}
+  burningBlocks.clear();fireUpdateAccumulator=0;
   stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
   started=false;craftOpen=false;inventoryOpen=false;crafting.classList.remove('open');inventoryScreen.classList.remove('open');primaryActionStop();
   for(const c of chunks.values())removeChunkMeshes(c);
@@ -4710,6 +4715,7 @@ function updateViewLabel(){
   document.getElementById('crosshair')?.classList.toggle('view-front',cameraMode===2);
 }
 function cycleCameraMode(){
+  if(binocularActive)closeBinoculars();
   if(!started||dead||sleeping||craftOpen||inventoryOpen)return;
   cameraMode=(cameraMode+1)%3;
   updateViewLabel();
@@ -5098,6 +5104,24 @@ function spawn(useBed=false){
 }
 
 const ray=new THREE.Raycaster();ray.far=6;
+// Unlike target(), water aiming must not skip the water surface to hit stone.
+function targetWater(){
+  aimPlayerRay();
+  const cx=chunkCoord(Math.floor(player.pos.x)),cz=chunkCoord(Math.floor(player.pos.z)),nearby=[];
+  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+    const c=chunks.get(chunkKey(cx+dx,cz+dz));
+    if(c?.renderMeshes)nearby.push(...c.renderMeshes);
+  }
+  for(const h of ray.intersectObjects(nearby,false)){
+    if(h.distance>5.6)break;
+    const p=lookup.get(h.object.uuid)?.[h.instanceId];
+    if(!p)continue;
+    const id=get(p.x,p.y,p.z);
+    if(id===B.WATER)return p;
+    if(solid(id))break;
+  }
+  return null;
+}
 function target(){
   aimPlayerRay();
   const cx=chunkCoord(Math.floor(player.pos.x)),cz=chunkCoord(Math.floor(player.pos.z)),nearby=[];
@@ -5179,6 +5203,7 @@ function updateStaminaRecovery(dt,isRunning){
   }
 }
 function showDeathScreen(){
+  closeExplorerMap(false);closeBinoculars();
   playerKnockbackX=0;playerKnockbackZ=0;playerKnockbackTime=0;
   ridingHorse=null;
   setShieldGuard(false);
@@ -5330,7 +5355,7 @@ const NON_STACKABLE=new Set([
   I.GOLD_HELMET,I.GOLD_CHEST,I.GOLD_LEGS,I.GOLD_BOOTS,
   I.DIAMOND_HELMET,I.DIAMOND_CHEST,I.DIAMOND_LEGS,I.DIAMOND_BOOTS,
   I.CHIMERA_HELMET,I.CHIMERA_CHEST,I.CHIMERA_LEGS,I.CHIMERA_BOOTS,
-  I.BED,I.BOW,I.SADDLE,I.SHIELD,I.CHIMERA_DAGGER,I.CHIMERA_BOW
+  I.BED,I.BOW,I.SADDLE,I.SHIELD,I.WATER_BUCKET,I.CHIMERA_DAGGER,I.CHIMERA_BOW
 ]);
 function maxStackFor(id){return NON_STACKABLE.has(id)?1:64}
 const ARMOR_NAMES=['頭','胸','脚','足'];
@@ -5719,6 +5744,7 @@ function removeFromSlot(index,qty=1){
 }
 function consumeSelected(qty=1){return removeFromSlot(selectedHotbarIndex,qty)}
 function selectHotbar(index){
+  if(binocularActive)closeBinoculars();
   if(eatingHeld)resetEating();
   if(bowDrawing)endBowDraw(false);
   selectedHotbarIndex=Math.max(0,Math.min(8,index));syncDerivedInventory();renderHotbar();
@@ -6029,6 +6055,8 @@ $('chestClose').addEventListener('click',()=>setChestOpen(false));
 $('chestScreen').addEventListener('pointerdown',e=>{if(e.target===$('chestScreen'))setChestOpen(false)});
 $('chestSingle').addEventListener('click',()=>{chestOneAtATime=!chestOneAtATime;renderChestUI()});
 function setInventoryOpen(v){
+  if(v&&explorerMapOpen)closeExplorerMap(false);
+  if(v&&binocularActive)closeBinoculars();
   if(v&&testPanelOpen)setTestPanelOpen(false);
   setShieldGuard(false);
   inventoryOpen=v;inventoryScreen.classList.toggle('open',v);inventoryScreen.setAttribute('aria-hidden',String(!v));
@@ -6178,7 +6206,7 @@ function doorSupportedBaseY(x,aimY,z){
   return null;
 }
 function place(){
-  if(chatViewActive||chestOpen||craftOpen||inventoryOpen||testPanelOpen)return;
+  if(chatViewActive||chestOpen||craftOpen||inventoryOpen||testPanelOpen||explorerMapOpen)return;
   if(started&&!dead&&!sleeping){
     firstPersonHand.swing(.6);
     triggerAvatarAction('use');
@@ -6327,6 +6355,11 @@ function place(){
     const wallX=-Math.round(n.x),wallZ=-Math.round(n.z);
     direction=Math.abs(wallX)>Math.abs(wallZ)?(wallX>0?1:3):(wallZ>0?2:0);
   }
+  if(blockId===B.WOOD_SLAB){
+    // On a ceiling, or on the upper half of a wall, place a TOP half-slab.
+    if(n.y<-.5||(Math.abs(n.y)<.5&&h.point.y-p.y>0))
+      blockId=B.WOOD_SLAB_TOP;
+  }
   blockId=detailedBlockModels.placedVariant(blockId,direction);
   if(mobs.some(m=>mobOverlapsBlock(m,x,y,z))){
     flash('モブの中にはブロックを置けません');return;
@@ -6420,12 +6453,14 @@ function dropMobLoot(root){
 }
 // Visual flight effects for the new bow item.
 const flyingArrows=[],BOW_DRAW_MS=900;
+let selectedArrowAmmo=I.ARROW;
+const usableArrowAmmo=()=>((inventory[selectedArrowAmmo]||0)>0?selectedArrowAmmo:(inventory[I.ARROW]||0)>0?I.ARROW:(inventory[I.POISON_ARROW]||0)>0?I.POISON_ARROW:null);
 let bowDrawing=false,bowDrawStart=0,bowLastShot=-1000;
 const arrowForward=new THREE.Vector3(0,0,-1);
-function arrowModel(){
+function arrowModel(poison=false){
   const m=new THREE.Group();
   cube(m,.045,.045,.7,0x986337,0,0,.04);
-  cube(m,.14,.13,.15,0xbec6cc,0,0,-.38);
+  cube(m,.14,.13,.15,poison?0x36ed76:0xbec6cc,0,0,-.38);
   cube(m,.13,.025,.17,0xe8e1c8,0,.06,.34);
   cube(m,.025,.13,.17,0xdce0df,0,0,.34);
   return m;
@@ -6504,15 +6539,15 @@ function updateSkeletonArrows(dt){
     shot.model.quaternion.setFromUnitVectors(arrowForward,velocity.clone().normalize());
   }
 }
-function spawnFlyingArrow(origin,direction,power=1,visualOnly=false,bowId=I.BOW){
+function spawnFlyingArrow(origin,direction,power=1,visualOnly=false,bowId=I.BOW,ammoType=I.ARROW){
   const vec=new THREE.Vector3(direction.x,direction.y,direction.z);
   if(![origin.x,origin.y,origin.z,vec.x,vec.y,vec.z,power].every(Number.isFinite)||vec.lengthSq()<.5)return false;
   vec.normalize();if(flyingArrows.length>=36)removeFlyingArrow(0);
-  const model=arrowModel(),velocity=vec.multiplyScalar(14+17*Math.max(.15,Math.min(1,power)));
+  const model=arrowModel(ammoType===I.POISON_ARROW),velocity=vec.multiplyScalar(14+17*Math.max(.15,Math.min(1,power)));
   model.position.set(origin.x,origin.y,origin.z);
   model.quaternion.setFromUnitVectors(arrowForward,velocity.clone().normalize());
   scene.add(model);
-  flyingArrows.push({model,velocity,age:0,power,visualOnly,bowId});
+  flyingArrows.push({model,velocity,age:0,power,visualOnly,bowId,ammoType});
   return true;
 }
 function updateFlyingArrows(dt){
@@ -6529,7 +6564,7 @@ function updateFlyingArrows(dt){
       position.add(step);
       if(position.y<Y_MIN||position.y>WORLD_TOP+2){stopped=true;break}
       if(solid(get(Math.round(position.x),Math.round(position.y),Math.round(position.z)))){stopped=true;break}
-      if(!shot.visualOnly&&arrowHitNearbyMob(position,shot.power,shot.bowId)){stopped=true;break}
+      if(!shot.visualOnly&&arrowHitNearbyMob(position,shot.power,shot.bowId,shot.ammoType)){stopped=true;break}
     }
     if(stopped){removeFlyingArrow(i);continue}
     shot.model.position.copy(position);
@@ -6540,7 +6575,7 @@ function bowHitDamage(power,bow){
   const charged=Math.max(.15,Math.min(1,Number.isFinite(power)?power:0));
   return bow===I.CHIMERA_BOW?Math.round(2+5*charged):bow===I.CROSSBOW?Math.round(3+5*charged):Math.max(1,Math.round(1+3*charged));
 }
-function arrowHitNearbyMob(point,power,bowId=I.BOW){
+function arrowHitNearbyMob(point,power,bowId=I.BOW,ammoType=I.ARROW){
   for(const m of mobs){
     if(m.userData.hp<=0)continue;
     const [bottom,top]=mobVerticalBounds(m);
@@ -6550,7 +6585,7 @@ function arrowHitNearbyMob(point,power,bowId=I.BOW){
       if(high!=null&&point.y>m.position.y+high+.1)continue;
       const dx=point.x-x,dz=point.z-z;
       if(dx*dx+dz*dz>(r+.10)*(r+.10))continue;
-      damageMob(m,bowHitDamage(power,bowId),'arrow',power);
+      damageMob(m,bowHitDamage(power,bowId),'arrow',power,'host',ammoType===I.POISON_ARROW);
       return true;
     }
   }
@@ -6560,13 +6595,13 @@ function updateBowDraw(now){
   if(!bowDrawing)return;
   if(!started||dead||(selected!==I.BOW&&selected!==I.CHIMERA_BOW&&selected!==I.CROSSBOW)){endBowDraw(false);return}
   const pct=Math.min(100,(now-bowDrawStart)/BOW_DRAW_MS*100);
-  breakLabel.textContent='弓 '+Math.floor(pct)+'%（離すと発射）';
+  breakLabel.textContent=(usableArrowAmmo()===I.POISON_ARROW?'毒矢':'弓')+' '+Math.floor(pct)+'%（離すと発射）';
   breakFill.style.width=pct+'%';
   breakMeter.classList.add('active');
 }
 function startBowDraw(){
   if(bowDrawing)return;
-  if((inventory[I.ARROW]||0)<1){flash('矢がありません。クラフトで作れます');return}
+  if(!usableArrowAmmo()){flash('矢も毒矢もありません');return}
   bowDrawing=true;bowDrawStart=performance.now();
   updateBowDraw(bowDrawStart);
 }
@@ -6578,19 +6613,20 @@ function endBowDraw(fire=false){
   if(!fire||(selected!==I.BOW&&selected!==I.CHIMERA_BOW&&selected!==I.CROSSBOW)||dead||!started||craftOpen||inventoryOpen||chestOpen)return;
   const now=performance.now();
   if(now-bowLastShot<230)return;
-  if((inventory[I.ARROW]||0)<1){flash('矢がありません');return}
+  const ammo=usableArrowAmmo();
+  if(!ammo){flash('矢も毒矢もありません');return}
   aimPlayerRay();
   const origin=gameplayAimOrigin.clone().addScaledVector(gameplayAimDirection,.65);
   origin.y-=.08;
   const power=Math.max(.2,Math.min(1,duration/BOW_DRAW_MS));
-  if(removeItem(I.ARROW,1)!==0){flash('矢がありません');return}
+  if(removeItem(ammo,1)!==0){flash('矢がありません');return}
   bowLastShot=now;
   triggerAvatarAction('fire');
-  spawnFlyingArrow(origin,gameplayAimDirection,power,false,selected);
+  spawnFlyingArrow(origin,gameplayAimDirection,power,false,selected,ammo);
   if(multiRole&&multiplayerNetwork.connected){
     multiplayerNetwork.send({t:'arrowShot',x:origin.x,y:origin.y,z:origin.z,
       dx:gameplayAimDirection.x,dy:gameplayAimDirection.y,dz:gameplayAimDirection.z,
-      power,id:multiOwnId()});
+      power,ammoType:ammo,id:multiOwnId()});
   }
 }
 // Java Edition-style attack recharge: a sword takes about 0.625 seconds
@@ -6616,16 +6652,17 @@ function meleeMobDamage(weapon){
   return weapon===I.CHIMERA_DAGGER?5:weapon===I.SPEAR?3:weapon===I.IRON_DAGGER?2:weapon===I.BATTLE_AXE?5:weapon===I.HAMMER?6:weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
     weapon===I.GOLD_SWORD?2:weapon===I.STONE_SWORD?2:1;
 }
-function damageMob(root,damage,via='melee',power=1,attackerId='host'){
+function damageMob(root,damage,via='melee',power=1,attackerId='host',poison=false){
   if(!root||!mobs.includes(root)||root.userData.hp<=0)return;
   if(multiRole==='guest'){
     const id=root.userData.netId;
     if(!id||!multiplayerNetwork.connected)return;
     setMobHitFlash(root);
-    multiplayerNetwork.send({t:'mobHit',id,via,power});
+    multiplayerNetwork.send({t:'mobHit',id,via,power,poison:!!poison});
     return true;
   }
   root.userData.hp-=damage;
+  if(poison&&via==='arrow'&&root.userData.hp>0){root.userData.poisonRemaining=6;root.userData.poisonTimer=1}
   setMobHitFlash(root);
   if(root.userData.type==='golem'&&root.userData.hp>0){
     root.userData.hostile=true;
@@ -6655,6 +6692,83 @@ function damageMob(root,damage,via='melee',power=1,attackerId='host'){
 
 /* Expansion: recoverable throwing knives, animated fire, and utility items. */
 const thrownKnives=[],activeFlames=[];
+
+const burningBlocks=new Map();
+const FLAMMABLE_BLOCKS=new Set([B.LOG,B.LEAF,B.PLANK,B.WOOD_STAIRS,B.WOOD_STAIRS_E,
+  B.WOOD_STAIRS_S,B.WOOD_STAIRS_W,B.WOOD_SLAB,B.WOOD_FENCE,
+  B.FENCE_GATE,B.FENCE_GATE_E,B.FENCE_GATE_S,B.FENCE_GATE_W,
+  B.BOOKSHELF,B.BARREL,B.CRAFTING_TABLE,B.CHEST]);
+const FIRE_OFFSETS=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+let fireUpdateAccumulator=0;
+const fireKey=(x,y,z)=>x+','+y+','+z;
+function serializeBurningBlocks(){
+  return [...burningBlocks.values()].slice(0,70).map(f=>({x:f.x,y:f.y,z:f.z,age:f.age,life:f.life}));
+}
+function restoreBurningBlocks(rows){
+  burningBlocks.clear();
+  if(!Array.isArray(rows))return;
+  for(const f of rows.slice(0,70)){
+    if(!f||![f.x,f.y,f.z,f.age,f.life].every(Number.isFinite)||
+       ![f.x,f.y,f.z].every(Number.isInteger)||!inside(f.x,f.y,f.z)||
+       !FLAMMABLE_BLOCKS.has(get(f.x,f.y,f.z)))continue;
+    const life=Math.max(12,Math.min(65,f.life));
+    burningBlocks.set(fireKey(f.x,f.y,f.z),{
+      x:f.x,y:f.y,z:f.z,age:Math.max(0,Math.min(life-.1,f.age)),
+      life,spark:0,spread:0
+    });
+  }
+}
+function startWoodFire(x,y,z){
+  if(!inside(x,y,z)||!FLAMMABLE_BLOCKS.has(get(x,y,z)))return false;
+  const key=fireKey(x,y,z);
+  if(burningBlocks.has(key))return true;
+  if(burningBlocks.size>=70)return false;
+  burningBlocks.set(key,{x,y,z,age:0,life:28+Math.random()*19,spark:0,spread:0});
+  createFlame(x,y+.28,z,3.4,'molotov');markSaveDirty();
+  return true;
+}
+function extinguishNearWater(x,y,z){
+  let changed=false;
+  for(const [key,f] of burningBlocks){
+    if(Math.abs(f.x-x)<=1&&Math.abs(f.y-y)<=1&&Math.abs(f.z-z)<=1){
+      burningBlocks.delete(key);changed=true;
+    }
+  }
+  if(changed)markSaveDirty();
+}
+function updateBurningBlocks(dt){
+  if(multiRole==='guest'||!started)return;
+  fireUpdateAccumulator+=dt;
+  if(fireUpdateAccumulator<.35)return;
+  const passed=Math.min(1,fireUpdateAccumulator);
+  fireUpdateAccumulator=0;
+  const affected=[];
+  for(const [key,f] of [...burningBlocks]){
+    if(!FLAMMABLE_BLOCKS.has(get(f.x,f.y,f.z))){
+      burningBlocks.delete(key);continue;
+    }
+    if(FIRE_OFFSETS.some(([dx,dy,dz])=>get(f.x+dx,f.y+dy,f.z+dz)===B.WATER)){
+      burningBlocks.delete(key);markSaveDirty();continue;
+    }
+    f.age+=passed;f.spark+=passed;f.spread+=passed;
+    if(f.spark>=2.65){f.spark=0;createFlame(f.x,f.y+.28,f.z,3.2,'molotov')}
+    if(f.spread>=6.5){
+      f.spread=0;
+      const options=FIRE_OFFSETS.map((o,i)=>({o,sort:Math.random()})).sort((a,b)=>a.sort-b.sort);
+      let count=0;
+      for(const {o:[dx,dy,dz]} of options){
+        if(count>=2)break;
+        if(Math.random()<.60&&startWoodFire(f.x+dx,f.y+dy,f.z+dz))count++;
+      }
+    }
+    if(f.age>=f.life){
+      burningBlocks.delete(key);set(f.x,f.y,f.z,B.AIR);
+      affected.push({x:f.x,z:f.z});markSaveDirty();
+    }
+  }
+  if(affected.length)rebuildEdited(...affected);
+}
+
 function launchThrowingKnife(){
   if((inventory[I.THROWING_KNIFE]||0)<1)return;
   aimPlayerRay();
@@ -6715,6 +6829,7 @@ function createFlame(x,y,z,life=5,source='fire'){
 }
 function updateExpansionEffects(dt){
   updateThrownKnives(dt);
+  updateBurningBlocks(dt);
   for(let i=activeFlames.length-1;i>=0;i--){
     const f=activeFlames[i];f.age+=dt;f.damageClock+=dt;
     for(let j=0;j<f.shards.length;j++){
@@ -6752,7 +6867,8 @@ function igniteBlockAt(x,y,z){
     if(Math.hypot(player.pos.x-x,player.pos.z-z)<4)damagePlayer(5,'TNTの爆発');
     flash('TNTが爆発した！');return true;
   }
-  createFlame(x,y+.6,z,4,'molotov');return true;
+  if(startWoodFire(x,y,z)){flash('火がついた！ 木は燃え続けて周囲に広がる');return true}
+  createFlame(x,y+.6,z,5,'molotov');return true;
 }
 function throwMolotov(){
   if((inventory[I.MOLOTOV]||0)<1)return;
@@ -6766,7 +6882,120 @@ function throwMolotov(){
   for(let i=0;i<5;i++)createFlame(impact.x+(Math.random()-.5)*1.8,y,impact.z+(Math.random()-.5)*1.8,6,'molotov');
   flash('火炎瓶を投げた！');
 }
+
+/* Real world map: procedural terrain rendered north-up, incrementally so iPads
+   remain responsive. The arrow is the player, not a text-only coordinate. */
+let explorerMapOpen=false,explorerMapZoom=2,explorerMapRenderSerial=0;
+let binocularActive=false,binocularPreviousMode=0;
+function drawExplorerMap(){
+  const g=$('explorerMapCanvas').getContext('2d',{alpha:false});if(!g)return;
+  const ticket=++explorerMapRenderSerial,size=100,tile=4,scale=explorerMapZoom;
+  const cx=Math.floor(player.pos.x),cz=Math.floor(player.pos.z);
+  const x0=cx-50*scale,z0=cz-50*scale;
+  $('explorerMapCoords').textContent='X '+cx+' · Z '+cz;
+  $('explorerMapScale').textContent=size*scale+' × '+size*scale;
+  g.fillStyle='#c8c4a8';g.fillRect(0,0,400,400);
+  let row=0;
+  function batch(){
+    if(!explorerMapOpen||ticket!==explorerMapRenderSerial)return;
+    const end=Math.min(size,row+5);
+    for(;row<end;row++)for(let col=0;col<size;col++){
+      const x=x0+col*scale,z=z0+row*scale;
+      const info=columnInfo(x,z),h=info.h,bio=info.bio;
+      let color;
+      if(activeMap==='testworld')color=[118,127,132];
+      else if(h<=SEA||info.river||info.lake)color=[47,118,160];
+      else if(bio===2||bio===6)color=[216,193,132];
+      else if(bio===4)color=[221,236,229];
+      else if(bio===3)color=[70,110,83];
+      else if(bio===5)color=[81,116,84];
+      else if(bio===8)color=[45,116,62];
+      else if(bio===1)color=[75,138,78];
+      else if(info.rugged>.52)color=[119,128,127];
+      else color=[122,166,91];
+      const lift=Math.max(-23,Math.min(23,(h-SEA)*.62));
+      g.fillStyle='rgb('+color.map(c=>Math.max(0,Math.min(255,Math.round(c+lift)))).join(',')+')';
+      g.fillRect(col*tile,row*tile,tile,tile);
+    }
+    if(row<size){requestAnimationFrame(batch);return}
+    g.strokeStyle='rgba(40,55,42,.17)';g.lineWidth=1;
+    for(let i=0;i<=size;i+=10){
+      const n=i*tile+.5;
+      g.beginPath();g.moveTo(n,0);g.lineTo(n,400);g.stroke();
+      g.beginPath();g.moveTo(0,n);g.lineTo(400,n);g.stroke();
+    }
+    const mark=(p,color,label)=>{
+      if(!p||![p.x,p.z].every(Number.isFinite))return;
+      const x=(p.x-x0)/scale*tile,z=(p.z-z0)/scale*tile;
+      if(x<0||x>=400||z<0||z>=400)return;
+      g.beginPath();g.arc(x,z,5,0,Math.PI*2);g.fillStyle=color;g.fill();
+      g.strokeStyle='#fff';g.lineWidth=2;g.stroke();
+      if(label){g.font='bold 12px monospace';g.fillStyle='#fff';g.fillText(label,x+9,z-7)}
+    };
+    mark(initialSpawn,'#e9c34c','SPAWN');mark(bedSpawn,'#dc83b7','BED');
+    g.save();g.translate((cx-x0)/scale*tile,(cz-z0)/scale*tile);
+    g.rotate(-player.yaw);g.lineWidth=3;g.strokeStyle='#23362e';g.fillStyle='#fff';
+    g.beginPath();g.moveTo(0,-12);g.lineTo(8,9);g.lineTo(0,4);g.lineTo(-8,9);g.closePath();
+    g.stroke();g.fill();g.restore();
+  }
+  requestAnimationFrame(batch);
+}
+function closeExplorerMap(returnFocus=true){
+  if(!explorerMapOpen)return;
+  explorerMapOpen=false;explorerMapRenderSerial++;
+  $('explorerMapOverlay').classList.remove('open');
+  $('explorerMapOverlay').setAttribute('aria-hidden','true');
+  if(returnFocus&&started&&!matchMedia('(pointer:coarse)').matches)
+    renderer.domElement.requestPointerLock?.();
+}
+function openExplorerMap(){
+  if(!started||dead||sleeping)return;
+  if(inventoryOpen)setInventoryOpen(false);
+  if(craftOpen)setCraftOpen(false);
+  if(testPanelOpen)setTestPanelOpen(false);
+  if(chestOpen)setChestOpen(false);
+  closeBinoculars();
+  explorerMapOpen=true;
+  $('explorerMapOverlay').classList.add('open');
+  $('explorerMapOverlay').setAttribute('aria-hidden','false');
+  Object.keys(keys).forEach(k=>keys[k]=false);resetSprint();
+  primaryActionStop();document.exitPointerLock?.();
+  drawExplorerMap();
+}
+function closeBinoculars(){
+  if(!binocularActive)return;
+  binocularActive=false;cameraMode=binocularPreviousMode;
+  camera.fov=73;camera.updateProjectionMatrix();updateViewLabel();
+  $('binocularOverlay').classList.remove('active');
+  $('binocularOverlay').setAttribute('aria-hidden','true');
+}
+function toggleBinoculars(){
+  if(!started||dead||sleeping)return;
+  if(binocularActive){closeBinoculars();return}
+  binocularPreviousMode=cameraMode;
+  binocularActive=true;cameraMode=0;updateViewLabel();
+  camera.fov=24;camera.updateProjectionMatrix();
+  $('binocularOverlay').classList.add('active');
+  $('binocularOverlay').setAttribute('aria-hidden','false');
+  flash('双眼鏡：拡大中 · もう一度使用すると解除');
+}
+$('explorerMapClose').addEventListener('click',()=>closeExplorerMap());
+$('explorerMapOverlay').addEventListener('pointerdown',e=>{
+  if(e.target===$('explorerMapOverlay'))closeExplorerMap()
+});
+$('explorerMapPlus').addEventListener('click',()=>{
+  explorerMapZoom=Math.max(1,explorerMapZoom/2);drawExplorerMap();
+});
+$('explorerMapMinus').addEventListener('click',()=>{
+  explorerMapZoom=Math.min(8,explorerMapZoom*2);drawExplorerMap();
+});
+$('binocularClose').addEventListener('click',closeBinoculars);
+
 function useExpansionItem(){
+  if(selected===I.POISON_ARROW||selected===I.ARROW){
+    selectedArrowAmmo=selected;
+    flash(selected===I.POISON_ARROW?'毒矢を装填した。弓で撃てます':'普通の矢を装填した');return true;
+  }
   if(selected===I.THROWING_KNIFE){launchThrowingKnife();return true}
   if(selected===I.MOLOTOV){throwMolotov();return true}
   if(selected===I.FLINT_STEEL){
@@ -6795,17 +7024,37 @@ function useExpansionItem(){
     const angle=Math.atan2(target.x-player.pos.x,target.z-player.pos.z)*180/Math.PI;
     flash('スポーン地点：'+Math.round(angle)+'°の方向');return true;
   }
-  if(selected===I.MAP){
-    flash('現在地 X '+Math.floor(player.pos.x)+' / Z '+Math.floor(player.pos.z));return true;
-  }
-  if(selected===I.BINOCULARS){
-    flash('双眼鏡：遠景を確認');return true;
-  }
+  if(selected===I.MAP){openExplorerMap();return true}
+  if(selected===I.BINOCULARS){toggleBinoculars();return true}
   if(selected===I.BUCKET){
-    const hit=target(),p=hit&&hit.distance<=5?lookup.get(hit.object.uuid)?.[hit.instanceId]:null;
-    if(p&&get(p.x,p.y,p.z)===B.WATER){
-      set(p.x,p.y,p.z,B.AIR);rebuildEdited(p);flash('水を汲んだ');return true;
+    const p=targetWater();
+    if(!p){flash('水面に照準を合わせてください');return true}
+    if(!canFitItem(I.WATER_BUCKET,1)&&inventorySlots[selectedHotbarIndex]?.qty!==1){
+      flash('水入りバケツを入れる空きがありません');return true;
     }
+    if(consumeSelected(1)!==1)return true;
+    set(p.x,p.y,p.z,B.AIR);rebuildEdited(p);
+    if(!inventorySlots[selectedHotbarIndex]){
+      inventorySlots[selectedHotbarIndex]={id:I.WATER_BUCKET,qty:1};
+      syncDerivedInventory();renderHotbar();markSaveDirty();
+    }else if(addItem(I.WATER_BUCKET,1)>0)
+      spawnWorldDrop(I.WATER_BUCKET,1,player.pos.x,player.pos.y+1,player.pos.z);
+    flash('水を汲んだ！ 水入りバケツを入手');return true;
+  }
+  if(selected===I.WATER_BUCKET){
+    const hit=target(),p=hit&&hit.distance<=5?lookup.get(hit.object.uuid)?.[hit.instanceId]:null;
+    if(!p||!hit.face){flash('水を流す地面や壁を狙ってください');return true}
+    const n=hit.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);
+    if(!inside(x,y,z)||get(x,y,z)!==B.AIR){flash('水を置くスペースがありません');return true}
+    if(consumeSelected(1)!==1)return true;
+    set(x,y,z,B.WATER);rebuildEdited({x,z});
+    if(!inventorySlots[selectedHotbarIndex]){
+      inventorySlots[selectedHotbarIndex]={id:I.BUCKET,qty:1};
+      syncDerivedInventory();renderHotbar();markSaveDirty();
+    }else if(addItem(I.BUCKET,1)>0)
+      spawnWorldDrop(I.BUCKET,1,player.pos.x,player.pos.y+1,player.pos.z);
+    extinguishNearWater(x,y,z);
+    flash('水を流した。空のバケツが戻った');return true;
   }
   return false;
 }
@@ -6979,6 +7228,8 @@ function craftRecipe(i){
   renderHotbar();renderCrafting();
 }
 function setCraftOpen(v){
+  if(v&&explorerMapOpen)closeExplorerMap(false);
+  if(v&&binocularActive)closeBinoculars();
   if(v&&testPanelOpen)setTestPanelOpen(false);
   craftOpen=v;crafting.classList.toggle('open',v);crafting.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
@@ -7023,6 +7274,8 @@ addEventListener('blur',()=>{
 });
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
+  if(explorerMapOpen){if(k==='escape'){e.preventDefault();closeExplorerMap()}return}
+  if(binocularActive&&k==='escape'){e.preventDefault();closeBinoculars();return}
   if(testPanelOpen){if(k==='escape'){e.preventDefault();setTestPanelOpen(false)}return}
 
   if(chatViewActive){
@@ -7297,7 +7550,7 @@ function loop(now){
   // A single-player sleeper retains the normal short sunrise transition.
   if(started&&!dead&&multiRole==='host'&&sleeping&&!chestOpen)
     advanceDayTime(dt);
-  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen&&!testPanelOpen){
+  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen&&!testPanelOpen&&!explorerMapOpen){
     updateBowDraw(now);
     updateMining(dt);
     updateEating(dt);
@@ -7378,6 +7631,14 @@ function loop(now){
 
     mobs.forEach((m,i)=>{
       animateMobStep(m,dt);
+      if(multiRole!=='guest'&&m.userData.poisonRemaining>0){
+        const d=m.userData;
+        d.poisonRemaining=Math.max(0,d.poisonRemaining-dt);d.poisonTimer=(d.poisonTimer??1)-dt;
+        if(d.poisonTimer<=0){
+          d.poisonTimer+=1;damageMob(m,1,'poison');
+          if(!mobs.includes(m))return;
+        }
+      }
       if(m.userData.hitFlash>0){
         m.userData.hitFlash-=dt;
         if(m.userData.hitFlash<=0)restoreMobColors(m);
@@ -8048,7 +8309,7 @@ function multiProcessMobHit(message,from){
   const damage=via==='arrow'
     ?bowHitDamage(power,pose.held)
     :meleeMobDamage(pose.held);
-  damageMob(m,damage,via,power,from.id);
+  damageMob(m,damage,via,power,from.id,via==='arrow'&&message.poison===true);
   if(multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
 }
 // Host processes guest chest transfers in a single serial handler.
@@ -8099,11 +8360,11 @@ function validArrowPacket(p){
 }
 function showRemoteArrow(p){
   if(!validArrowPacket(p)||p.id===multiOwnId())return;
-  spawnFlyingArrow({x:p.x,y:p.y,z:p.z},{x:p.dx,y:p.dy,z:p.dz},p.power,true);
+  spawnFlyingArrow({x:p.x,y:p.y,z:p.z},{x:p.dx,y:p.dy,z:p.dz},p.power,true,I.BOW,p.ammoType===I.POISON_ARROW?I.POISON_ARROW:I.ARROW);
 }
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
-  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.TRAPDOOR_OPEN_W||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.WOOD_SLAB_TOP||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
   if(get(b.x,b.y,b.z)===b.v)return;
   multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
   finally{multiApplying=false}

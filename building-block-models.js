@@ -127,7 +127,7 @@ export function createBuildingBlockModels(THREE,B){
     [B.OBSIDIAN]:textured.obsidian,
     [B.RED_BRICKS]:textured['brick-red'],
     [B.WOOD_STAIRS]:textured.wood,[B.STONE_STAIRS]:textured['brick-stone'],
-    [B.WOOD_SLAB]:textured.wood,
+    [B.WOOD_SLAB]:textured.wood,[B.WOOD_SLAB_TOP]:textured.wood,
     [B.IRON_BARS]:textured.iron,[B.WOOD_FENCE]:textured.fence,
     [B.FENCE_GATE]:textured.fence,[B.LADDER]:textured.wood,
     [B.TRAPDOOR]:textured.fence,[B.LANTERN]:flat.lanternFrame,
@@ -146,8 +146,9 @@ export function createBuildingBlockModels(THREE,B){
     [B.LADDER,[B.LADDER,B.LADDER_E,B.LADDER_S,B.LADDER_W],false],
     [B.TRAPDOOR,[B.TRAPDOOR_OPEN_N,B.TRAPDOOR_OPEN_E,B.TRAPDOOR_OPEN_S,B.TRAPDOOR_OPEN_W],true]
   ])ids.forEach((id,dir)=>{variants.set(id,{base,dir,open});m[id]=m[base]});
+  variants.set(B.WOOD_SLAB_TOP,{base:B.WOOD_SLAB,dir:0,open:false});
   const custom=new Set([
-    B.WOOD_STAIRS,B.STONE_STAIRS,B.WOOD_SLAB,B.IRON_BARS,
+    B.WOOD_STAIRS,B.STONE_STAIRS,B.WOOD_SLAB,B.WOOD_SLAB_TOP,B.IRON_BARS,
     B.WOOD_FENCE,B.FENCE_GATE,B.LADDER,B.TRAPDOOR,
     B.LANTERN,B.BARREL,B.CAMPFIRE,...variants.keys()
   ]);
@@ -166,6 +167,7 @@ export function createBuildingBlockModels(THREE,B){
   function collisionBoxes(id){
     const type=canonical(id),d=dir(id);
     if(id===B.WOOD_SLAB)return [[-.5,.5,-.5,0,-.5,.5]];
+    if(id===B.WOOD_SLAB_TOP)return [[-.5,.5,0,.5,-.5,.5]];
     if(type===B.WOOD_STAIRS||type===B.STONE_STAIRS){
       const [x,z]=rotateDir(0,-.25,d);
       const upper=Math.abs(x)>.20
@@ -201,8 +203,12 @@ export function createBuildingBlockModels(THREE,B){
       // Actual half-height leading tread, full-height trailing riser.
       add(mat,0,-.25,0,1,.5,1);
       add(mat,0,.25,-.25,1,.5,.5);
-    }else if(type===B.WOOD_SLAB){
-      add(wood,0,-.25,0,1,.5,1);
+    }else if(type===B.WOOD_SLAB||type===B.WOOD_SLAB_TOP){
+      const upper=type===B.WOOD_SLAB_TOP,cy=upper?.25:-.25;
+      add(wood,0,cy,0,1,.50,1);
+      // Narrow darker rim makes the real half-block silhouette obvious.
+      add('wood-dark',0,cy+.235,.47,1,.03,.045);
+      add('wood-dark',0,cy+.235,-.47,1,.03,.045);
     }else if(type===B.IRON_BARS){
       // Open lattice, unmistakably thinner than a stone wall.
       for(const x of [-.42,-.14,.14,.42])add('iron',x,0,0,.09,1,.10);
@@ -282,7 +288,7 @@ export function createBuildingBlockModels(THREE,B){
   }
   function build(id,points,scene,meshes,lookup,built,read){
     if(!points.length)return;
-    const type=canonical(id),d=dir(id),openedState=opened(id);
+    const type=id===B.WOOD_SLAB_TOP?B.WOOD_SLAB_TOP:canonical(id),d=dir(id),openedState=opened(id);
     const angle=-d*Math.PI/2,buckets=new Map();
     function bucket(part,anchor){
       const key=part.shape+':'+part.mat;
