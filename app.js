@@ -633,6 +633,22 @@ const expansionRecipes=[
   {name:'火打石と打ちがね',out:I.FLINT_STEEL,qty:1,needs:[[I.IRON_INGOT,1],[B.GRAVEL,1]],unlockLevel:7}
 ];
 workbenchRecipes.push(...expansionRecipes);
+// Every class weapon can be remade if lost. All-rounders can craft any of
+// them once the relevant level is reached, but other jobs must specialize.
+const jobWeaponIngredients=kind=>({
+  sword:[[I.IRON_INGOT,2],[I.STICK,1]],
+  greatsword:[[I.IRON_INGOT,6],[I.STICK,2]],
+  axe:[[I.IRON_INGOT,5],[I.STICK,2]],
+  spear:[[I.IRON_INGOT,3],[I.STICK,3]],
+  dual:[[I.IRON_INGOT,3],[I.STICK,2]],
+  shield:[[I.IRON_INGOT,5],[B.PLANK,3]],
+  bow:[[I.STICK,4],[I.WOOL,2]],
+  staff:[[I.STICK,3],[B.GLASS,1]]
+}[kind]||[[I.IRON_INGOT,2],[I.STICK,2]]);
+workbenchRecipes.push(...Object.values(JOBS).map(j=>({
+  name:names[j.weapon],out:j.weapon,qty:1,
+  needs:jobWeaponIngredients(j.kind),unlockLevel:j.level
+})));
 const warpWorkbenchRecipes=[]; // Warp-device ingredients will be specified separately.
 const furnaceRecipes=[
   {name:'鉄インゴット',out:I.IRON_INGOT,qty:1,needs:[[I.RAW_IRON,1],[B.COAL,1]],unlockLevel:7,xp:4},
@@ -7525,7 +7541,8 @@ function renderCrafting(){
   }
   list.forEach((r,i)=>{
     if(search&&!(r.name+' '+(names[r.out]||'')).toLocaleLowerCase('ja').includes(search))return;
-    const locked=level<r.unlockLevel,can=!locked&&hasNeeds(r);
+    const wrongJob=!!jobWeapon(r.out)&&(!jobSelected||!jobCanUse(activeJob,r.out));
+    const locked=level<r.unlockLevel||wrongJob,can=!locked&&hasNeeds(r);
     const d=document.createElement('div');d.className='recipe'+(locked?' locked':'');
     const needText=r.needs.map(([id,n])=>`${names[id]} ×${n}`).join(' ＋ ');
     const verb=craftMode==='furnace'?'焼く':'作る';
@@ -7535,7 +7552,7 @@ function renderCrafting(){
     const copy=document.createElement('div');copy.className='recipe-copy';
     const rn=document.createElement('div');rn.className='recipe-name';rn.textContent=(locked?'🔒 ':'')+r.name;
     const lv=document.createElement('span');lv.className='recipe-level';lv.textContent='LV '+r.unlockLevel;rn.appendChild(lv);
-    const needs=document.createElement('div');needs.className='recipe-needs';needs.textContent=locked?'設計図未取得':needText;
+    const needs=document.createElement('div');needs.className='recipe-needs';needs.textContent=wrongJob?'このジョブでは使用できません':level<r.unlockLevel?'設計図未取得':needText;
     copy.append(rn,needs);main.appendChild(copy);
 
     const button=document.createElement('button');button.disabled=!can;button.textContent=verb;
@@ -7545,6 +7562,7 @@ function renderCrafting(){
 }
 function craftRecipe(i){
   const list=currentRecipeList(),r=list[i];
+  if(jobWeapon(r.out)&&(!jobSelected||!jobCanUse(activeJob,r.out))){flash('現在のジョブでは製作できません');return}
   if(level<r.unlockLevel){flash('LV '+r.unlockLevel+'で設計図を獲得');return}
   if(!hasNeeds(r)){flash('材料が足りません');return}
   if(!canFitItem(r.out,r.qty)){flash('インベントリがいっぱいです');return}
