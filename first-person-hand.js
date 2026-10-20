@@ -56,6 +56,18 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   const leftTorch=new THREE.Group();
   leftTorch.position.set(0,.60,-.155);
   leftRoot.add(leftTorch);
+  // Mercenary and Berserker each visibly hold their second blade in the
+  // left fist instead of displaying two parallel swords in one hand.
+  const jobDualBlades=new Map();
+  for(const id of [191,200]){
+    const model=makeJobWeaponModel(THREE,id);
+    model.position.set(.025,.60,-.16);
+    model.rotation.set(-.13,-.32,.20);
+    model.scale.setScalar(.89);
+    model.visible=false;
+    leftRoot.add(model);
+    jobDualBlades.set(id,model);
+  }
   const torchBrown=basic(0x825025),torchLightWood=basic(0xb77a39),torchBand=basic(0x4b3528);
   const torchOrange=basic(0xff8b12),torchYellow=basic(0xffd850),torchWhite=basic(0xfff4b0);
   shape(leftTorch,.11,.49,.11,torchBrown,0,.20,0);
@@ -389,12 +401,14 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       const leftItem=getOffhand();
       const torchEquipped=leftItem?.id===147&&Number(leftItem.qty)>0;
       const shieldEquipped=leftItem?.id===156&&Number(leftItem.qty)>0;
-      leftRoot.visible=visible&&(torchEquipped||shieldEquipped);
-      leftTorch.visible=torchEquipped;
-      shield.visible=shieldEquipped;
-      if(!visible)return;
       const st=getHeld();
       const id=(st && Number(st.qty)>0)?st.id:null;
+      const dualActive=jobWeapon(id)?.kind==='dual'&&!torchEquipped&&!shieldEquipped;
+      leftRoot.visible=visible&&(torchEquipped||shieldEquipped||dualActive);
+      leftTorch.visible=torchEquipped;
+      shield.visible=shieldEquipped;
+      for(const [weaponId,blade] of jobDualBlades)blade.visible=dualActive&&weaponId===id;
+      if(!visible)return;
       if(id!==currentId){currentId=id;buildHeld(id)}
       const movement=Math.min(1,Math.max(0,Number(getMovement())||0)/4.4);
       walkPhase+=dt*(7.8+movement*2.9);
@@ -411,7 +425,8 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
           OFFHAND_Y+(guarding?.27:0)+movement*Math.abs(Math.sin(walkPhase))*.02,
           OFFHAND_Z+(guarding?.11:0)
         );
-        leftRoot.rotation.set(-swing*.035,0,OFFHAND_TILT+(guarding?.19:0)-bob*.18);
+        leftRoot.rotation.set(-swing*(dualActive?.20:.035),0,
+          OFFHAND_TILT+(guarding?.19:0)+(dualActive?swing*.32:0)-bob*.18);
       }
       root.position.set(
         FIRST_PERSON_ARM_X+bob*.45,
