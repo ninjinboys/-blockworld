@@ -631,7 +631,8 @@ const rockBlocks=new Set([
   B.STONE,B.COBBLE,B.COAL,B.IRON,B.GOLD,B.DIAMOND,B.FURNACE,...WARP_WORKBENCH_BLOCKS,
   B.STONE_BRICKS,B.MOSSY_STONE_BRICKS,B.CRACKED_STONE_BRICKS,B.POLISHED_STONE,
   B.MARBLE,B.OBSIDIAN,B.RED_BRICKS,B.STONE_STAIRS,
-  B.STONE_STAIRS_E,B.STONE_STAIRS_S,B.STONE_STAIRS_W
+  B.STONE_STAIRS_E,B.STONE_STAIRS_S,B.STONE_STAIRS_W,
+  B.IRON_BARS,B.LANTERN
 ]);
 
 let selected=null,seed=(Date.now()>>>0),weather='clear',started=false,craftOpen=false,craftMode='inventory',level=1,xp=0,miningHeld=false,miningKey=null,miningElapsed=0,miningId=null;
@@ -1051,14 +1052,15 @@ function markSaveDirty(){
   }
 }
 function serializeEdits(){return [...editChunks.entries()].map(([k,m])=>[k,[...m.entries()]])}
-// Torches are persisted as normal edited blocks (world id 31); this index is
-// rebuilt from old/new saves and maintained by set() for local + P2P edits.
+// Torches and lanterns are saved as normal block edits (31/52). Index both
+// light emitters so already-placed lanterns start lighting after save/load.
 const TORCH_LIGHT_RADIUS=8,TORCH_LIGHT_COUNT=7;
 const torchLocations=new Map();
+const isLightEmitter=id=>id===B.TORCH||id===B.LANTERN;
 const torchCellKey=(x,y,z)=>x+','+y+','+z;
 function indexTorchCell(x,y,z,id){
   const key=torchCellKey(x,y,z);
-  if(id===B.TORCH)torchLocations.set(key,{x,y,z});
+  if(isLightEmitter(id))torchLocations.set(key,{x,y,z,id});
   else torchLocations.delete(key);
 }
 function rebuildTorchIndex(){
@@ -1067,7 +1069,7 @@ function rebuildTorchIndex(){
     const parts=key.split(',').map(Number);
     if(parts.length!==2||!parts.every(Number.isInteger))continue;
     for(const [i,id] of entries){
-      if(id!==B.TORCH||!Number.isInteger(i)||i<0||i>=CHUNK*HEIGHT*CHUNK)continue;
+      if(!isLightEmitter(id)||!Number.isInteger(i)||i<0||i>=CHUNK*HEIGHT*CHUNK)continue;
       const x=parts[0]*CHUNK+(i%CHUNK);
       const z=parts[1]*CHUNK+(Math.floor(i/CHUNK)%CHUNK);
       const y=Y_MIN+Math.floor(i/(CHUNK*CHUNK));
@@ -2193,7 +2195,7 @@ function set(x,y,z,v){
   let edits=editChunks.get(k);
   if(!edits){edits=new Map();editChunks.set(k,edits)}
   edits.set(i,v);
-  if(v===B.TORCH||torchLocations.has(torchCellKey(x,y,z)))indexTorchCell(x,y,z,v);
+  if(isLightEmitter(v)||torchLocations.has(torchCellKey(x,y,z)))indexTorchCell(x,y,z,v);
   markSaveDirty();
   if(multiRole&&!multiApplying&&multiplayerNetwork.connected)multiplayerNetwork.send({t:'block',x,y,z,v});
 }
@@ -2413,8 +2415,8 @@ function buildTorchMeshes(p,sceneChunk,built){
     scene.add(mesh);meshes.push(mesh);lookup.set(mesh.uuid,p);built.push(mesh);
   }
 }
-// Pool a small number of real point lights so iPads don't need one GPU
-// light per placed torch. All torches still block zombie spawning, lit or not.
+// Pool real point lights for torches AND lanterns instead of making a GPU
+// light for every block. Meshes also glow via their unlit flame/glass material.
 const torchLights=Array.from({length:TORCH_LIGHT_COUNT},()=>{
   const light=new THREE.PointLight(0xffb76a,24,TORCH_LIGHT_RADIUS+1,1.25);
   light.castShadow=false;light.visible=false;scene.add(light);return light;
@@ -2438,7 +2440,12 @@ function updateTorchLights(now){
   for(let i=0;i<torchLights.length;i++){
     const light=torchLights[i],match=eligible[i];
     light.visible=!!match;
-    if(match)light.position.set(match.t.x,match.t.y+.32,match.t.z);
+    if(match){
+      const lantern=match.t.id===B.LANTERN;
+      light.color.setHex(lantern?0xffdfa0:0xffb76a);
+      light.intensity=lantern?30:24;
+      light.position.set(match.t.x,match.t.y+(lantern?-.08:.32),match.t.z);
+    }
   }
 }
 const warpWorkbenchVisual=createWarpWorkbenchModel(THREE);
@@ -5376,11 +5383,14 @@ function toolSpeed(id){
   if(softLike.has(id))return shovelSpeed;
   if(!rockBlocks.has(id))return 1;
   const t=pickTier();
-  if(t>=4)return 7.0;
-  if(selected===I.GOLD_PICK)return 6.0;
-  if(t>=3)return 5.2;
-  if(t>=2)return 3.6;
-  if(t>=1)return 2.2;
+  // Mining is deliberately responsive even on touch devices. These
+  // multipliers make stone take ~0.75s (wood), ~0.43s (stone),
+  // ~0.30s (iron), ~0.25s (gold) or ~0.19s (diamond).
+  if(t>=4)return 16.0;
+  if(selected===I.GOLD_PICK)return 12.0;
+  if(t>=3)return 10.0;
+  if(t>=2)return 7.0;
+  if(t>=1)return 4.0;
   return 1;
 }
 function canMineBlock(id,showMessage=true){
