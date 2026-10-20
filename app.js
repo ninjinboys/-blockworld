@@ -3385,6 +3385,7 @@ function mobLowStepObstacle(m,x,rootY,z,angle){
 // climbed when the entire head/body clears it; higher walls stay blocked.
 // Always read placed/removed voxels through get(), never only surfaceAt().
 function mobWalkStep(m,angle,distance,isZombie=false){
+  if(performance.now()<(m.userData.jobDebuffUntil||0))distance*=.42;
   const steps=Math.max(1,Math.ceil(Math.abs(distance)/.09)),step=distance/steps;
   const rootOffset=isZombie?.51:.04;
   let moved=false;
@@ -6336,6 +6337,7 @@ function place(){
   const horse=aimedHorse();
   if(horse&&selected!==I.CHIMERA_SOUL&&useHorse(horse))return;
   if(useExpansionItem())return;
+  if(jobWeapon(selected)?.kind==='staff'){castJobMagic(jobWeapon(selected));return}
   if(selected===I.CHIMERA_SOUL){
     const hit=target(),ground=hit&&hit.distance<=5?lookup.get(hit.object.uuid)?.[hit.instanceId]:null;
     if(!ground||!hit.face||hit.face.normal.y<.5){
@@ -7286,6 +7288,42 @@ function updateEating(dt){
   healthRegenTimer=0;renderHealth();markSaveDirty();
   // Health HUD reflects the restored hearts.
 }
+let lastJobSpellAt=-Infinity;
+function castJobMagic(weapon){
+  if(!weapon||weapon.kind!=='staff'||!jobCanUse(activeJob,selected))return false;
+  const now=performance.now(),delay=Math.round(weapon.cooldown*(activeJob==='all'?1.25:1));
+  if(now-lastJobSpellAt<delay)return true;
+  lastJobSpellAt=now;
+  aimPlayerRay();
+  const hit=ray.intersectObjects(mobs,true)
+    .find(h=>h.distance<=weapon.range);
+  const center=hit?hit.point.clone():gameplayAimOrigin.clone()
+    .addScaledVector(gameplayAimDirection,Math.min(weapon.range,5));
+  // Visual magic sphere pulses at the point of impact and dissipates.
+  const orb=new THREE.Mesh(new THREE.SphereGeometry(Math.min(weapon.radius*.45,1.15),12,8),
+    new THREE.MeshBasicMaterial({color:activeJob==='supportMage'?0x91e7bb:0xa894ff,
+      transparent:true,opacity:.37,depthWrite:false}));
+  orb.position.copy(center);scene.add(orb);
+  setTimeout(()=>{scene.remove(orb);orb.geometry.dispose();orb.material.dispose()},360);
+  let count=0;
+  for(const m of [...mobs]){
+    if(m.userData.hp<=0||m.position.distanceTo(center)>weapon.radius+1.1)continue;
+    // AOE spell follows the current job weapon statistics, with all-rounder
+    // receiving the stated weaker version of every specialty.
+    const attack=Math.max(1,Math.round(weapon.damage*(activeJob==='all'?.65:1)));
+    damageMob(m,attack,'magic',1,'host');
+    if(weapon.key==='supportMage')m.userData.jobDebuffUntil=now+6500;
+    count++;
+  }
+  if(weapon.key==='supportMage'&&health<MAX_HEALTH){
+    health=Math.min(MAX_HEALTH,health+2);renderHealth();markSaveDirty();
+  }
+  triggerAvatarAction('fire');
+  firstPersonHand.swing(.8,'swing');
+  flash(weapon.key==='supportMage'?'支援魔法：範囲内の敵を弱体化・体力回復':
+    '範囲魔法 '+count+'体に命中');
+  return true;
+}
 let jobAttackHeld=false;
 function primaryActionStart(){
   if(jobOpen)return;
@@ -7388,6 +7426,7 @@ function chooseJob(key){
   activeJob=key;jobSelected=true;markSaveDirty();
   if(!owns){
     addItem(id,1);
+    if(JOBS[key].kind==='bow'&&(inventory[I.ARROW]||0)<16)addItem(I.ARROW,32);
     const hotbarIndex=inventorySlots.findIndex((st,i)=>i<9&&st?.id===id);
     if(hotbarIndex>=0)selectHotbar(hotbarIndex);
   }
