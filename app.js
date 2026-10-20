@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {JOBS,STARTING_JOBS,JOB_WEAPON_IDS,jobWeapon,jobCanUse,jobNextOptions,jobCanChange,
-  drawJobWeaponIcon} from './job-system.js?v=20261020jobsPolish04';
+  drawJobWeaponIcon} from './job-system.js?v=20261020real3d01';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261020jobsFirstPerson04';
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261020jobsAvatar04';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
@@ -211,7 +211,7 @@ const inventorySlots=Array(36).fill(null);
 // Each world has its own job progression. Legacy worlds start unassigned
 // without removing any of their existing inventory.
 let activeJob='all',jobSelected=false;
-for(const [key,data] of Object.entries(JOBS))names[data.weapon]=data.name+'の専用'+
+for(const [key,data] of Object.entries(JOBS).filter(([,data])=>Number.isInteger(data.weapon)))names[data.weapon]=data.name+'の専用'+
   ({sword:'剣',greatsword:'大剣',axe:'戦斧',spear:'槍',dual:'双剣',shield:'盾',bow:'弓',staff:'杖'}[data.kind]||'武器');
 
 const equippedArmor=[null,null,null,null]; // helmet / chest / legs / boots
@@ -645,7 +645,7 @@ const jobWeaponIngredients=kind=>({
   bow:[[I.STICK,4],[I.WOOL,2]],
   staff:[[I.STICK,3],[B.GLASS,1]]
 }[kind]||[[I.IRON_INGOT,2],[I.STICK,2]]);
-workbenchRecipes.push(...Object.values(JOBS).map(j=>({
+workbenchRecipes.push(...Object.values(JOBS).filter(j=>Number.isInteger(j.weapon)).map(j=>({
   name:names[j.weapon],out:j.weapon,qty:1,
   needs:jobWeaponIngredients(j.kind),unlockLevel:j.level
 })));
@@ -7420,7 +7420,7 @@ function renderJobScreen(){
     const title=document.createElement('strong');
     title.textContent=j.name+(current?' ✔':'');
     const detail=document.createElement('span');
-    detail.textContent='LV '+j.level+'　·　'+names[j.weapon];
+    detail.textContent='LV '+j.level+'　·　'+(Number.isInteger(j.weapon)?names[j.weapon]:'専用武器なし・全武器使用可能');
     const body=document.createElement('small');
     body.textContent=j.desc+(eligible&&!current?' · タップして選択':
       !current&&level<j.level?' · LV'+j.level+'で解放':'');
