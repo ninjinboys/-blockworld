@@ -74,6 +74,16 @@ export function makeDetailedJobWeapon(T,d){
   const rivets=(xPositions,yPositions,z=.1)=>{
     for(const x of xPositions)for(const y of yPositions)bead(x,y,z,.028,'gold');
   };
+  // Real rear-face meshes. Mirror only raised decor, NEVER the weapon
+  // body: duplicating coincident solid surfaces would cause z-fighting.
+  function mirrorRear(start,name){
+    const details=g.children.slice(start);
+    if(!details.length)return;
+    const back=new T.Group();back.name=name+' (reverse face)';
+    back.scale.z=-1;
+    for(const src of details)back.add(src.clone());
+    g.add(back);
+  }
   // Long blades: all parts stay true volumetric 3D meshes, with a blade
   // bevel, darker spine, inset glowing runes and a real sculpted crossguard.
   function sword(){
@@ -89,11 +99,13 @@ export function makeDetailedJobWeapon(T,d){
       [.15,.39],[guard*.85,.36],[guard,.29],[guard*.84,.22],
       [.14,.23],[0,.17],[-.14,.23],[-guard*.84,.22]],.19,'gold',0,.017);
     gem(0,.30,.113,.085,.095,.035);
+    gem(0,.30,-.113,.085,.095,.035);
     // Faceted blade profile has raised shoulders and a tapering point.
     const pts=[[-w*.84,y0],[-w,y0+.12],[-w*.93,y0+L*.72],
       [-w*.64,y0+L*.88],[0,y0+L],[w*.64,y0+L*.88],
       [w*.93,y0+L*.72],[w,y0+.12],[w*.84,y0]];
     poly(pts,huge?.21:.105,'blade',0,.018);
+    const backStart=g.children.length;
     poly([[-w*.62,y0+.05],[-w*.57,y0+L*.79],[0,y0+L*.99],
       [w*.57,y0+L*.79],[w*.62,y0+.05]],huge?.15:.07,
       huge?'black':'steel',.085,.009);
@@ -119,6 +131,7 @@ export function makeDetailedJobWeapon(T,d){
       }
       for(let i=0;i<3;i++)diamond(0,y0+L*(.19+i*.24),.215,.035,.08);
     }
+    mirrorRear(backStart,'Sword rear raised bevels and luminous runes');
   }
   function axe(){
     wrap(-.55,.62,.096,10);band(-.55);band(.65);
@@ -132,15 +145,18 @@ export function makeDetailedJobWeapon(T,d){
         [side*.91,1.40],[side*1.06,1.17],[side*.73,1.23],
         [side*.44,1.33]];
       poly(pts,.17,'blade',0,.023);
+      const backStart=g.children.length;
       poly([[side*.36,1.42],[side*.55,1.81],[side*.92,1.97],
         [side*.77,1.73],[side*.8,1.39]],.045,'black',.105,.01);
       poly([[side*.55,1.40],[side*.73,1.70],[side*.85,1.83],
         [side*.8,1.50]],.022,'gold',.144,.009);
       for(const y of [1.45,1.65])diamond(side*.62,y,.165,.029,.065);
+      mirrorRear(backStart,'Battle-axe rear steel plating and runes');
     }
     poly([[-.31,1.43],[-.17,1.9],[0,2.05],
       [.17,1.9],[.31,1.43],[0,1.35]],.245,'black',.02,.02);
     gem(0,1.76,.17,.15,.19,.055);
+    gem(0,1.76,-.17,.15,.19,.055);
     tip(0,2.11,.03,.17,.24);
     gem(0,-.63,0,.085,.10,.08);
   }
@@ -151,9 +167,11 @@ export function makeDetailedJobWeapon(T,d){
     cylinder(.105,.105,.16,'gold',0,1.87,0,8);
     poly([[-.10,1.97],[-.20,2.15],[-.25,2.36],[0,3.08],
       [.25,2.36],[.20,2.15],[.10,1.97]],.13,'edge',0,.02);
+    const backStart=g.children.length;
     poly([[-.085,2.09],[0,3.0],[.085,2.09]],.02,'steel',.087,.004);
     pipe([0,2.15,.115],[0,2.89,.112],.011,'accent',5);
     gem(0,2.22,.133,.09,.145,.03);
+    mirrorRear(backStart,'Spearhead rear blade ridge and gem');
     for(const side of [-1,1]){
       poly([[0,1.98],[side*.34,2.07],[side*.29,2.26],
         [side*.19,2.12]],.13,'gold',0,.013);
@@ -177,6 +195,19 @@ export function makeDetailedJobWeapon(T,d){
     poly(inset,.265,'steel',0,.023);
     const inner=polygon.map(([x,y])=>[x*.68,y*.77+.03]);
     poly(inner,.27,heavy?'black':elite?'blade':'black',-.012,.015);
+    // Riveted layered backplate with genuine raised armor ribs.
+    poly(polygon.map(([x,y])=>[x*.82,y*.84]),.05,'recessed',-.20,.01);
+    for(const sign of [-1,1]){
+      const x=sign*w*.68;
+      poly([[x-sign*.09,top*.72],[x+sign*.09,top*.72],
+        [x+sign*.09,bottom*.73],[x-sign*.09,bottom*.73]],
+        .06,'gold',-.275,.01);
+      rivets([sign*w*.60],[top*.53,.07,-.20,bottom*.59],-.325);
+      poly([[sign*.21,top*.78],[sign*w*.69,top*.66],
+        [sign*w*.64,top*.53],[sign*.20,top*.64]],.07,'steel',-.27,.01);
+      poly([[sign*.21,bottom*.78],[sign*w*.69,bottom*.67],
+        [sign*w*.64,bottom*.52],[sign*.20,bottom*.63]],.07,'steel',-.27,.01);
+    }
     // Real shield grip on reverse face, not a painted motif.
     cube(.34,.44,.15,'brown',0,-.04,-.27);
     for(const y of [-.20,.21]){
@@ -219,15 +250,19 @@ export function makeDetailedJobWeapon(T,d){
         pipe([x1,y1,0],[x2,y2,0],powerful?.105-t*.025:swift?.051:.069,
           i%2===0?'gold':'brown',10);
         pipe([x1+.03,y1,.025],[x2+.03,y2,.025],.017,'blade',7);
+        pipe([x1+.03,y1,-.025],[x2+.03,y2,-.025],.017,'blade',7);
       }
       const [tipx,tipy]=vertices.at(-1);
       gem(tipx,tipy,.06,.055,.11,.048);
       pipe([tipx,tipy,0],[-.13,0,0],.012,'linen',6);
+      const backStart=g.children.length;
       poly([[span*.31,sy*.36*ht],[span*.65,sy*.58*ht],
         [span*.69,sy*.72*ht],[span*.42,sy*.47*ht]],.08,'steel',.06,.008);
+      mirrorRear(backStart,'Bow reverse limb armor');
     }
     cube(.12,.31,.17,'gold',0,0,0);
     gem(0,0,.12,.11,.10,.06);
+    gem(0,0,-.12,.11,.10,.06);
     if(powerful)for(const y of [-.55,.55]){
       poly([[.33,y],[.57,y+.11],[.45,y+.22]],.085,'steel',.10,.007);
     }
@@ -253,9 +288,11 @@ export function makeDetailedJobWeapon(T,d){
         attack?'black':'gold');
       gem(side*(ringR+.08),centerY,.04,.075,.15,.065);
     }
+    const backStart=g.children.length;
     for(const y of [1.53,2.12]){
       poly([[-.13,y],[0,y+.13],[.13,y]],.065,'gold',.15,.008);
     }
+    mirrorRear(backStart,'Magic staff rear metalwork');
     if(attack){
       // Sinister black fangs and additional red spines.
       for(const side of [-1,1]){
