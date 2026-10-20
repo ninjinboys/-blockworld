@@ -6751,11 +6751,12 @@ function updateFlyingArrows(dt){
     shot.model.quaternion.setFromUnitVectors(arrowForward,shot.velocity.clone().normalize());
   }
 }
-function bowHitDamage(power,bow){
+function bowHitDamage(power,bow,attackerJob=activeJob){
   const charged=Math.max(.15,Math.min(1,Number.isFinite(power)?power:0));
   const jobBow=jobWeapon(bow);
-  if(jobBow?.kind==='bow')return Math.max(1,Math.round((1+jobBow.damage*charged)*(activeJob==='all'?.65:1)));
-  return bow===I.CHIMERA_BOW?Math.round(2+5*charged):bow===I.CROSSBOW?Math.round(3+5*charged):Math.max(1,Math.round(1+3*charged));
+  if(jobBow?.kind==='bow')return Math.max(1,Math.round((1+jobBow.damage*charged)*(attackerJob==='all'?.65:1)));
+  const raw=bow===I.CHIMERA_BOW?Math.round(2+5*charged):bow===I.CROSSBOW?Math.round(3+5*charged):Math.max(1,Math.round(1+3*charged));
+  return attackerJob==='all'&&jobSelected?Math.max(1,Math.round(raw*.65)):raw;
 }
 function arrowHitNearbyMob(point,power,bowId=I.BOW,ammoType=I.ARROW){
   for(const m of mobs){
@@ -6836,13 +6837,14 @@ function attackMob(){
     firstPersonHand.swing(1,weapon.kind==='spear'?'thrust':'swing');
     triggerAvatarAction(weapon.kind==='spear'?'thrust':'attack');
   }
-  const damage=meleeMobDamage(selected);
+  let damage=meleeMobDamage(selected);
+  if(jobSelected&&activeJob==='all'&&!weapon)damage=Math.max(1,Math.round(damage*.65));
   damageMob(root,damage);
   return true;
 }
-function meleeMobDamage(weapon){
+function meleeMobDamage(weapon,attackerJob=activeJob){
   const j=jobWeapon(weapon);
-  if(j)return Math.max(1,Math.round(j.damage*(activeJob==='all'?.65:1)));
+  if(j)return Math.max(1,Math.round(j.damage*(attackerJob==='all'?.65:1)));
   return weapon===I.CHIMERA_DAGGER?5:weapon===I.SPEAR?3:weapon===I.IRON_DAGGER?2:weapon===I.BATTLE_AXE?5:weapon===I.HAMMER?6:weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
     weapon===I.GOLD_SWORD?2:weapon===I.STONE_SWORD?2:1;
 }
@@ -8302,6 +8304,7 @@ function multiCode(){
 function multiCurrentPose(){
   return {
     x:player.pos.x,y:player.pos.y,z:player.pos.z,
+    job:activeJob,jobSelected,
     yaw:player.yaw,pitch:player.pitch,
     speed:Math.hypot(player.vel.x,player.vel.z),
     onGround:player.onGround,armor:[...equippedArmor],
@@ -8657,6 +8660,8 @@ function multiProcessMobHit(message,from){
   const pose=from.player;
   if(![pose.x,pose.y,pose.z].every(Number.isFinite))return;
   const via=message.via==='arrow'?'arrow':'melee';
+  const shooterJob=JOBS[pose.job]?pose.job:'all';
+  if(jobWeapon(pose.held)&&!jobCanUse(shooterJob,pose.held))return;
   const dist=Math.hypot(pose.x-m.position.x,pose.y-m.position.y,pose.z-m.position.z);
   if(dist>(via==='arrow'?70:5.5))return;
   const now=performance.now(),delay=via==='arrow'?140:320;
@@ -8664,8 +8669,8 @@ function multiProcessMobHit(message,from){
   from.lastMobHitAt=now;
   const power=Number(message.power);
   const damage=via==='arrow'
-    ?bowHitDamage(power,pose.held)
-    :meleeMobDamage(pose.held);
+    ?bowHitDamage(power,pose.held,shooterJob)
+    :meleeMobDamage(pose.held,shooterJob);
   damageMob(m,damage,via,power,from.id,via==='arrow'&&message.poison===true);
   if(multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
 }
@@ -8769,8 +8774,8 @@ async function multiWelcome(message){
   const data={...message.world,version:4,inventorySlots:Array(36).fill(null),
     equippedArmor:[null,null,null,null],offhandItem:null,
     selectedHotbarIndex:0,level:1,xp:0,health:20,stamina:20,staminaRunSeconds:0,
-    staminaRegenSeconds:0,cameraMode:0,player:null,bedSpawn:null};
-  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor','offhandItem','offhandTorch'])
+    staminaRegenSeconds:0,cameraMode:0,player:null,bedSpawn:null,activeJob:'all',jobSelected:false};
+  if(who)for(const field of ['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor','offhandItem','offhandTorch','activeJob','jobSelected'])
     if(Object.hasOwn(who,field))data[field]=who[field];
   try{
     await initializeAccountWorld(data,message.slot);
