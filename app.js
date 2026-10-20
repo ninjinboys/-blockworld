@@ -5486,7 +5486,8 @@ function armorReduction(){
     if(armorPartForId(id)<0)continue;
     protection+=id>=I.CHIMERA_HELMET?.14:id>=I.DIAMOND_HELMET?.12:id>=I.GOLD_HELMET?.07:.09;
   }
-  return Math.min(.55,protection);
+  const defense=jobSelected?(JOBS[activeJob]?.defense||0):0;
+  return Math.min(.86,1-(1-Math.min(.55,protection))*(1-defense));
 }
 function normalizeArmor(raw){
   equippedArmor.fill(null);
@@ -6734,6 +6735,8 @@ function updateFlyingArrows(dt){
 }
 function bowHitDamage(power,bow){
   const charged=Math.max(.15,Math.min(1,Number.isFinite(power)?power:0));
+  const jobBow=jobWeapon(bow);
+  if(jobBow?.kind==='bow')return Math.max(1,Math.round((1+jobBow.damage*charged)*(activeJob==='all'?.65:1)));
   return bow===I.CHIMERA_BOW?Math.round(2+5*charged):bow===I.CROSSBOW?Math.round(3+5*charged):Math.max(1,Math.round(1+3*charged));
 }
 function arrowHitNearbyMob(point,power,bowId=I.BOW,ammoType=I.ARROW){
@@ -6752,10 +6755,11 @@ function arrowHitNearbyMob(point,power,bowId=I.BOW,ammoType=I.ARROW){
   }
   return false;
 }
+const isBowWeapon=id=>id===I.BOW||id===I.CHIMERA_BOW||id===I.CROSSBOW||jobWeapon(id)?.kind==='bow';
 function updateBowDraw(now){
   if(!bowDrawing)return;
-  if(!started||dead||(selected!==I.BOW&&selected!==I.CHIMERA_BOW&&selected!==I.CROSSBOW)){endBowDraw(false);return}
-  const pct=Math.min(100,(now-bowDrawStart)/BOW_DRAW_MS*100);
+  if(!started||dead||!isBowWeapon(selected)||!jobCanUse(activeJob,selected)){endBowDraw(false);return}
+  const pct=Math.min(100,(now-bowDrawStart)/(jobWeapon(selected)?.draw||BOW_DRAW_MS)*100);
   breakLabel.textContent=(usableArrowAmmo()===I.POISON_ARROW?'毒矢':'弓')+' '+Math.floor(pct)+'%（離すと発射）';
   breakFill.style.width=pct+'%';
   breakMeter.classList.add('active');
@@ -6771,15 +6775,15 @@ function endBowDraw(fire=false){
   const duration=performance.now()-bowDrawStart;
   bowDrawing=false;bowDrawStart=0;
   clearMining();
-  if(!fire||(selected!==I.BOW&&selected!==I.CHIMERA_BOW&&selected!==I.CROSSBOW)||dead||!started||craftOpen||inventoryOpen||chestOpen)return;
+  if(!fire||!isBowWeapon(selected)||!jobCanUse(activeJob,selected)||dead||!started||craftOpen||inventoryOpen||chestOpen)return;
   const now=performance.now();
-  if(now-bowLastShot<230)return;
+  if(now-bowLastShot<(jobWeapon(selected)?.cooldown||230))return;
   const ammo=usableArrowAmmo();
   if(!ammo){flash('矢も毒矢もありません');return}
   aimPlayerRay();
   const origin=gameplayAimOrigin.clone().addScaledVector(gameplayAimDirection,.65);
   origin.y-=.08;
-  const power=Math.max(.2,Math.min(1,duration/BOW_DRAW_MS));
+  const power=Math.max(.2,Math.min(1,duration/(jobWeapon(selected)?.draw||BOW_DRAW_MS)));
   if(removeItem(ammo,1)!==0){flash('矢がありません');return}
   bowLastShot=now;
   triggerAvatarAction('fire');
@@ -6795,21 +6799,32 @@ function endBowDraw(fire=false){
 const PLAYER_MELEE_COOLDOWN_MS=625;
 let lastPlayerMeleeAt=-Infinity;
 function attackMob(){
+  const weapon=jobWeapon(selected);
+  if(weapon&&!jobCanUse(activeJob,selected))return false;
   aimPlayerRay();
-  const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=(selected===I.SPEAR?5.5:4.5));
+  const reach=weapon?weapon.range:(selected===I.SPEAR?5.5:4.5);
+  const hits=ray.intersectObjects(mobs,true).filter(h=>h.distance<=reach);
   if(!hits.length)return false;
   let root=hits[0].object;
   while(root.parent&&!mobs.includes(root))root=root.parent;
   if(!mobs.includes(root))return false;
   const now=performance.now();
-  if(now-lastPlayerMeleeAt<([I.CHIMERA_DAGGER,I.IRON_DAGGER].includes(selected)?425:[I.HAMMER,I.BATTLE_AXE].includes(selected)?850:PLAYER_MELEE_COOLDOWN_MS))return true;
+  const delay=weapon?Math.round(weapon.cooldown*(activeJob==='all'?1.25:1)):
+    [I.CHIMERA_DAGGER,I.IRON_DAGGER].includes(selected)?425:
+    [I.HAMMER,I.BATTLE_AXE].includes(selected)?850:PLAYER_MELEE_COOLDOWN_MS;
+  if(now-lastPlayerMeleeAt<delay)return true;
   lastPlayerMeleeAt=now;
-
+  if(weapon){
+    firstPersonHand.swing(1,weapon.kind==='spear'?'thrust':'swing');
+    triggerAvatarAction(weapon.kind==='spear'?'thrust':'attack');
+  }
   const damage=meleeMobDamage(selected);
   damageMob(root,damage);
   return true;
 }
 function meleeMobDamage(weapon){
+  const j=jobWeapon(weapon);
+  if(j)return Math.max(1,Math.round(j.damage*(activeJob==='all'?.65:1)));
   return weapon===I.CHIMERA_DAGGER?5:weapon===I.SPEAR?3:weapon===I.IRON_DAGGER?2:weapon===I.BATTLE_AXE?5:weapon===I.HAMMER?6:weapon===I.DIAMOND_SWORD?4:weapon===I.IRON_SWORD?3:
     weapon===I.GOLD_SWORD?2:weapon===I.STONE_SWORD?2:1;
 }
@@ -7271,10 +7286,18 @@ function updateEating(dt){
   healthRegenTimer=0;renderHealth();markSaveDirty();
   // Health HUD reflects the restored hearts.
 }
+let jobAttackHeld=false;
 function primaryActionStart(){
   if(jobOpen)return;
   if(chatViewActive||!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen||testPanelOpen||explorerMapOpen)return;
   if(ridingHorse){dismountHorse();return}
+  const jobItem=jobWeapon(selected);
+  if(jobItem&&!jobCanUse(activeJob,selected)){
+    flash('この武器は別のジョブ専用です。JOB画面で確認してください');return;
+  }
+  if(jobItem?.kind==='staff'){castJobMagic(jobItem);return}
+  if(jobItem?.kind==='bow'){startBowDraw();return}
+  if(jobItem){jobAttackHeld=true;attackMob();return}
   // Usable equipment responds to the main action button as well as USE.
   if([I.MAP,I.BINOCULARS,I.POISON_ARROW,I.ARROW,I.GLIDER].includes(selected)){
     useExpansionItem();return;
@@ -7282,11 +7305,12 @@ function primaryActionStart(){
   firstPersonHand.swing(1,selected===I.SPEAR?'thrust':'swing');
   if(selected!==I.BOW&&selected!==I.CHIMERA_BOW&&selected!==I.CROSSBOW)
     triggerAvatarAction(selected===I.SPEAR?'thrust':'attack');
-  if(selected===I.BOW||selected===I.CHIMERA_BOW||selected===I.CROSSBOW){startBowDraw();return}
+  if(isBowWeapon(selected)){startBowDraw();return}
   if(attackMob()){miningHeld=false;clearMining();return}
   miningHeld=true;startMining();
 }
 function primaryActionStop(fire=false){
+  jobAttackHeld=false;
   endBowDraw(fire);
   eatingHeld=false;eatingElapsed=0;eatingStartedAt=0;eatingSlot=-1;eatingItem=null;
   miningHeld=false;clearMining();
@@ -7818,6 +7842,7 @@ function loop(now){
     advanceDayTime(dt);
   if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen&&!testPanelOpen&&!explorerMapOpen&&!jobOpen){
     updateBowDraw(now);
+    if(jobAttackHeld&&jobWeapon(selected)&&!['bow','staff'].includes(jobWeapon(selected).kind))attackMob();
     updateMining(dt);
     updateEating(dt);
     if(multiRole!=='guest')advanceDayTime(dt);
