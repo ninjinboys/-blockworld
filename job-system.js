@@ -101,9 +101,10 @@ export function makeJobWeaponModel(T,id){
   const k=d.kind;
   if(['sword','greatsword','axe','spear','dual'].includes(k)){
     const dual=k==='dual',spear=k==='spear',great=k==='greatsword';
-    const n=dual?2:1;
+    // Each twin blade is held in a separate hand by the avatar rigs.
+    const n=1;
     for(let i=0;i<n;i++){
-      const x=dual?(i===0?-.23:.23):0;
+      const x=0;
       const upper=spear?1.78:great?1.22:k==='axe'?.95:dual?.72:.85;
       box(.11,upper*.51,.11,colors.wood,x,upper*.23,0);
       box(.14,.30,.13,colors.grip,x,.06,0);
