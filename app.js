@@ -7,7 +7,7 @@ import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
-import {createBuildingBlockModels} from './building-block-models.js?v=20261020sleepingBag03';
+import {createBuildingBlockModels} from './building-block-models.js?v=20261020twoBlockBedrollFence04';
 import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261020waterBucket02';
 import {drawDetailedItemIcon} from './item-art-icons.js?v=20261019pixelArt01';
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut,
