@@ -218,7 +218,9 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       state={right,left,mainId:null,offhandId:null};
       model.userData.heldItemsView=state;
     }
-    const main=validId(mainId),offhand=offhandId===147||offhandId===156?offhandId:null;
+    const main=validId(mainId),offhand=
+      offhandId===147||offhandId===156?offhandId:
+      jobWeapon(main)?.kind==='dual'?main:null;
     if(main!==state.mainId){
       removeParts(state.right);
       if(main!=null){
@@ -260,7 +262,11 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       removeParts(state.left);
       if(offhand!=null){
         const item=build(offhand);
-        if(offhand===156){
+        if(jobWeapon(offhand)?.kind==='dual'){
+          item.position.set(-.04,-.06,-.05);
+          item.rotation.set(-.10,-.19,.17);
+          item.scale.setScalar(.83);
+        }else if(offhand===156){
           // The heater shield covers the forearm, with its point downward
           // and the outer edge clear of the character's body.
           item.position.set(-.12,.24,-.10);
@@ -319,6 +325,13 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
           rightArm.rotation.y=-.21*jab;
           state.right.rotation.x=-.24-1.00*jab;
           leftArm.rotation.x+=.22*jab;
+        }else if(kind==='attack'&&jobWeapon(state.mainId)?.kind==='dual'&&seconds<.37){
+          // Twin blades alternate instead of mimicking a single heavy sword.
+          const quick=Math.sin(Math.PI*seconds/.37);
+          rightArm.rotation.x=baseX+1.25*quick;
+          rightArm.rotation.z=baseZ+.17*quick;
+          leftArm.rotation.x=leftArm.rotation.x+1.20*(1-quick);
+          leftArm.rotation.z=-.27*quick;
         }else if(kind==='attack'&&seconds<.46){
           let x;
           if(seconds<.12)x=baseX+(1.55-baseX)*ease(seconds/.12);
