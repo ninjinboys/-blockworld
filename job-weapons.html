@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NEXACRAFT | ジョブ専用武器 3Dモデル</title>
+<meta name="description" content="NEXACRAFTの17種類のジョブ専用武器を360度回転して確認し、GLB形式の本物の3Dモデルとしてダウンロードできます。">
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:#0b121d;color:#e5ebf1}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#0b121d}
+button,a{font:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #70ead8;outline-offset:3px}
+header{padding:19px clamp(12px,3vw,30px) 14px;border-bottom:1px solid #263647;background:linear-gradient(100deg,#132636,#141927)}
+header h1{font-size:clamp(23px,4vw,35px);letter-spacing:.05em;margin:4px 0}
+header p{margin:0;color:#aac1ca;font-size:13px}
+main{display:grid;grid-template-columns:minmax(250px,315px) minmax(0,1fr);gap:0;max-width:1600px;margin:auto;min-height:calc(100dvh - 104px)}
+aside{border-right:1px solid #30414e;padding:14px;max-height:calc(100dvh - 108px);overflow:auto}
+aside h2{margin:6px 4px 13px;font-size:16px}
+.list{display:grid;grid-template-columns:1fr;gap:6px}
+.group{font-size:11px;font-weight:800;letter-spacing:.08em;color:#78baa9;text-transform:uppercase;margin:13px 3px 4px}
+.entry{width:100%;min-height:46px;text-align:left;border:1px solid #354454;border-radius:8px;background:#172532;color:#f3f3f3;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer}
+.entry span{font-size:14px;font-weight:700}
+.entry small{color:#a9c4c5;font-size:11px;white-space:nowrap}
+.entry.active{border:2px solid #85ead4;background:#23404b}
+.viewer-area{min-width:0;display:flex;flex-direction:column;padding:clamp(10px,2vw,20px);gap:12px}
+.viewer-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.viewer-head h2{font-size:clamp(20px,2.8vw,27px);margin:0}
+.viewer-head p{margin:3px 0 0;color:#aac1ca;font-size:12px}
+canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+.stage{position:relative;background:radial-gradient(circle at 50% 48%,#354451,#161e29 70%);border:1px solid #36495a;border-radius:12px;min-height:clamp(330px,62vh,650px);overflow:hidden}
+#view{height:clamp(330px,62vh,650px)}
+.badge{position:absolute;top:12px;left:12px;color:#daf7f2;background:#0b1726cc;border:1px solid #47756c;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:800;pointer-events:none}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.actions button,.actions a{border:1px solid #4b6679;color:#e8f8f6;background:#1b3541;padding:9px 13px;min-height:44px;text-decoration:none;border-radius:7px;cursor:pointer;font-size:13px}
+.actions button.primary{background:#a5dfcb;color:#0b242b;border-color:#b8ffee;font-weight:900}
+.actions button:disabled{opacity:.5;cursor:wait}
+.actions button:hover,.actions a:hover{filter:brightness(1.12)}
+#status{min-height:20px;margin:0;color:#9fc7bd;font-size:12px}
+.help{color:#8fa2b4;font-size:12px;line-height:1.7;margin:0}
+footer{font-size:12px;color:#728699;margin:0 3px}
+@media(max-width:800px){main{display:flex;flex-direction:column;min-height:0}aside{max-height:none;border-right:0;border-bottom:1px solid #30414e;padding:10px}aside h2{margin:3px 4px 8px}.list{display:flex;overflow:auto;gap:7px;padding-bottom:5px}.entry{flex:0 0 auto;width:auto;min-width:105px;max-width:205px;flex-direction:column;align-items:flex-start;min-height:61px}.group{display:none}.viewer-area{padding:10px}.stage,#view{min-height:360px;height:52vh}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+<script type="importmap">{
+ "imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+ }
+}</script>
+</head>
+<body>
+<header><h1>⚔ NEXACRAFT — 3D武器工房</h1><p>画像ではなく、実際の立体メッシュです。回転・拡大・角度切替・GLB書き出し対応。</p></header>
+<main>
+<aside><h2>ジョブ専用武器 — 17モデル</h2><div id="weapons" class="list"><p>モデル読み込み中…</p></div></aside>
+<section class="viewer-area">
+<div class="viewer-head"><div><h2 id="weaponName">3Dモデル読み込み中</h2><p id="weaponInfo">模型の立体形状をそのまま確認できます。</p></div><a href="./" style="font-size:12px;color:#9cdbc8">ゲームに戻る ↗</a></div>
+<div class="stage"><canvas id="view" aria-label="3D武器モデルビューア。指で回転できます。"></canvas><div class="badge">REAL 3D GEOMETRY · THREE.JS</div></div>
+<div class="actions">
+<button id="reset" type="button" disabled>斜め</button>
+<button id="front" type="button" disabled>正面</button>
+<button id="side" type="button" disabled>側面</button>
+<button id="back" type="button" disabled>背面</button>
+<button id="toggleSpin" type="button" disabled>自動回転 OFF</button>
+<button id="download" class="primary" type="button" disabled>⬇ 3Dモデル（.glb）</button>
+</div>
+<p id="status" role="status">モデルを準備しています…</p>
+<p class="help">マウスドラッグ・指のスワイプで360°回転。ホイール・2本指でズーム。GLBファイルはBlenderなどの3Dソフトに読み込めます。オールラウンダー専用武器はありません。</p>
+<footer>モデル定義はゲーム内で装備するものと共通です。</footer>
+</section>
+</main>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+import {JOBS,JOB_WEAPON_IDS,makeJobWeaponModel} from './job-system.js?v=20261020real3d01';
+const list=document.querySelector('#weapons'),canvas=document.querySelector('#view'),
+  title=document.querySelector('#weaponName'),info=document.querySelector('#weaponInfo'),
+  status=document.querySelector('#status');
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(36,1,.05,100);
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:false,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.3;
+scene.add(new THREE.HemisphereLight(0xdcecff,0x66717a,2.6));
+const sun=new THREE.DirectionalLight(0xffffff,3.3);sun.position.set(4,7,7);scene.add(sun);
+const rim=new THREE.DirectionalLight(0x92ccd6,2.0);rim.position.set(-5,3,-6);scene.add(rim);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true;controls.dampingFactor=.08;
+controls.enablePan=false;controls.minDistance=1.2;controls.maxDistance=20;
+const definitions=Object.entries(JOBS).filter(([,v])=>Number.isInteger(v.weapon));
+let current=null,selectedKey=null,center=new THREE.Vector3(),dist=4,spin=false;
+const buttons=[...document.querySelectorAll('.actions button')];
+function makeEntry(key,data){
+  const btn=document.createElement('button');btn.type='button';
+  btn.className='entry';btn.dataset.job=key;
+  const strong=document.createElement('span');strong.textContent=data.name;
+  const small=document.createElement('small');small.textContent=
+    data.kind==='greatsword'?'大剣':data.kind==='sword'?'剣':
+    data.kind==='dual'?'双剣':data.kind==='shield'?'盾':
+    data.kind==='spear'?'槍':data.kind==='axe'?'戦斧':
+    data.kind==='bow'?'弓':'杖';
+  btn.append(strong,small);
+  btn.addEventListener('click',()=>select(key));
+  return btn;
+}
+for(const [key,data] of definitions)list.append(makeEntry(key,data));
+list.querySelector('p')?.remove();
+function cameraAt(mode){
+  const d=dist,offset=mode==='front'?[0,.15,d]:
+    mode==='back'?[0,.15,-d]:
+    mode==='side'?[d,.15,0]:[d*.85,d*.54,d*.85];
+  camera.position.copy(center).add(new THREE.Vector3(...offset));
+  camera.near=Math.max(.02,d/100);camera.far=100;
+  camera.updateProjectionMatrix();
+  controls.target.copy(center);controls.update();
+}
+function select(key){
+  const data=JOBS[key];if(!data||!Number.isInteger(data.weapon))return;
+  selectedKey=key;
+  if(current)scene.remove(current);
+  // This is the EXACT exported game mesh, not a picture, sprite, or raster.
+  current=makeJobWeaponModel(THREE,data.weapon);
+  scene.add(current);
+  current.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(current),v=new THREE.Vector3();
+  box.getCenter(center);box.getSize(v);
+  dist=Math.max(2.5,v.length()*1.33+1);
+  controls.maxDistance=Math.max(12,dist*4);
+  cameraAt('threeQuarter');
+  title.textContent=data.name+' — '+(data.level>1?'進化専用武器':'初期ジョブ武器');
+  info.textContent='解放 LV '+data.level+'　·　'+data.desc+'　·　武器ID '+data.weapon;
+  for(const el of list.querySelectorAll('button'))el.classList.toggle('active',el.dataset.job===key);
+  status.textContent='3Dメッシュ読み込み完了：'+current.children.length+'パーツ';
+  buttons.forEach(b=>b.disabled=false);
+}
+document.querySelector('#reset').addEventListener('click',()=>cameraAt('threeQuarter'));
+document.querySelector('#front').addEventListener('click',()=>cameraAt('front'));
+document.querySelector('#side').addEventListener('click',()=>cameraAt('side'));
+document.querySelector('#back').addEventListener('click',()=>cameraAt('back'));
+document.querySelector('#toggleSpin').addEventListener('click',e=>{
+  spin=!spin;controls.autoRotate=spin&&!matchMedia('(prefers-reduced-motion:reduce)').matches;
+  controls.autoRotateSpeed=2.3;e.currentTarget.textContent=spin?'自動回転 ON':'自動回転 OFF';
+});
+document.querySelector('#download').addEventListener('click',async e=>{
+  if(!current)return;
+  const button=e.currentTarget;button.disabled=true;status.textContent='GLBデータを生成中…';
+  try{
+    const file=await(new GLTFExporter()).parseAsync(current,{
+      binary:true,onlyVisible:true,trs:false,maxTextureSize:1024
+    });
+    const blob=new Blob([file],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob);
+    const anchor=document.createElement('a');anchor.href=url;
+    anchor.download='nexacraft-'+selectedKey+'-weapon.glb';document.body.appendChild(anchor);
+    anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
+    status.textContent='実際の3Dモデル（.glb）を書き出しました。';
+  }catch(err){console.error(err);status.textContent='書き出しエラー：'+String(err.message||err);}
+  finally{button.disabled=false;}
+});
+function resize(){
+  const rect=canvas.getBoundingClientRect(),w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height));
+  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+}
+const observer=new ResizeObserver(resize);observer.observe(canvas);resize();
+let animation=0;
+function frame(){
+  animation=requestAnimationFrame(frame);controls.update();renderer.render(scene,camera);
+}
+const wanted=new URLSearchParams(location.search).get('job');
+select(JOBS[wanted]?.weapon?wanted:'warrior');
+frame();
+window.addEventListener('pagehide',()=>{
+  cancelAnimationFrame(animation);observer.disconnect();controls.dispose();renderer.dispose();
+},{once:true});
+</script>
+</body>
+</html>
