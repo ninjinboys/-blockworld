@@ -111,7 +111,12 @@ export function createBuildingBlockModels(THREE,B){
     fire:new THREE.MeshBasicMaterial({color:0xff8e20,toneMapped:false}),
     fireHot:new THREE.MeshBasicMaterial({color:0xffe45d,toneMapped:false}),
     ember:new THREE.MeshBasicMaterial({color:0xf04b21,toneMapped:false}),
-    charcoal:new THREE.MeshLambertMaterial({color:0x392f2a})
+    charcoal:new THREE.MeshLambertMaterial({color:0x392f2a}),
+    sleepingBase:new THREE.MeshLambertMaterial({color:0x314d40}),
+    sleepingFabric:new THREE.MeshLambertMaterial({color:0x558d77}),
+    sleepingTrim:new THREE.MeshLambertMaterial({color:0x29443c}),
+    sleepingPillow:new THREE.MeshLambertMaterial({color:0xd8d7b8}),
+    sleepingStitch:new THREE.MeshLambertMaterial({color:0xadd4aa})
   };
   const mats={...textured,...flat};
   const cube=new THREE.BoxGeometry(1,1,1);
@@ -135,7 +140,7 @@ export function createBuildingBlockModels(THREE,B){
     [B.BARREL]:[textured.barrel,textured.barrel,textured['barrel-top'],textured['barrel-top'],textured.barrel,textured.barrel],
     [B.TNT]:[textured.tnt,textured.tnt,textured['tnt-top'],textured.tnt,textured.tnt,textured.tnt],
     [B.CAMPFIRE]:flat.charcoal,
-    [B.SLEEPING_BAG_WORLD]:textured.fence
+    [B.SLEEPING_BAG_WORLD]:flat.sleepingFabric,[B.SLEEPING_BAG_HEAD]:flat.sleepingFabric
   };
   const variants=new Map();
   // base ids: 44/45/49/50/51 are the default north-facing blocks.
@@ -148,10 +153,18 @@ export function createBuildingBlockModels(THREE,B){
     [B.TRAPDOOR,[B.TRAPDOOR_OPEN_N,B.TRAPDOOR_OPEN_E,B.TRAPDOOR_OPEN_S,B.TRAPDOOR_OPEN_W],true]
   ])ids.forEach((id,dir)=>{variants.set(id,{base,dir,open});m[id]=m[base]});
   variants.set(B.WOOD_SLAB_TOP,{base:B.WOOD_SLAB,dir:0,open:false});
+  // Bedroll pieces use two saved blocks; variants rotate both halves together.
+  for(const [base,ids] of [
+    [B.SLEEPING_BAG_WORLD,[B.SLEEPING_BAG_WORLD,B.SLEEPING_BAG_E,B.SLEEPING_BAG_S,B.SLEEPING_BAG_W]],
+    [B.SLEEPING_BAG_HEAD,[B.SLEEPING_BAG_HEAD,B.SLEEPING_BAG_HEAD_E,B.SLEEPING_BAG_HEAD_S,B.SLEEPING_BAG_HEAD_W]]
+  ])ids.forEach((id,direction)=>{
+    variants.set(id,{base,dir:direction,open:false});
+    m[id]=m[base];
+  });
   const custom=new Set([
     B.WOOD_STAIRS,B.STONE_STAIRS,B.WOOD_SLAB,B.WOOD_SLAB_TOP,B.IRON_BARS,
     B.WOOD_FENCE,B.FENCE_GATE,B.LADDER,B.TRAPDOOR,
-    B.LANTERN,B.BARREL,B.CAMPFIRE,B.SLEEPING_BAG_WORLD,...variants.keys()
+    B.LANTERN,B.BARREL,B.CAMPFIRE,B.SLEEPING_BAG_WORLD,B.SLEEPING_BAG_HEAD,...variants.keys()
   ]);
   const gateIds=[B.FENCE_GATE,B.FENCE_GATE_E,B.FENCE_GATE_S,B.FENCE_GATE_W];
   const openGateIds=[B.FENCE_GATE_OPEN_N,B.FENCE_GATE_OPEN_E,B.FENCE_GATE_OPEN_S,B.FENCE_GATE_OPEN_W];
@@ -177,10 +190,17 @@ export function createBuildingBlockModels(THREE,B){
       return [[-.5,.5,-.5,0,-.5,.5],upper];
     }
     if(type===B.IRON_BARS)return [[-.12,.12,-.5,.5,-.5,.5],[-.5,.5,-.5,.5,-.12,.12]];
-    if(type===B.WOOD_FENCE)return [[-.19,.19,-.5,.5,-.19,.19],[-.50,.50,-.12,.32,-.07,.07],[-.07,.07,-.12,.32,-.50,.50]];
+    // Minecraft-like fences occupy a 1.5-block-tall collision volume despite
+    // the narrower 3D wooden rails. A normal jump (~1.48 blocks) cannot clear
+    // them. Open fence gates stay non-colliding.
+    if(type===B.WOOD_FENCE)return [
+      [-.19,.19,-.5,1,-.19,.19],
+      [-.50,.50,-.12,1,-.10,.10],
+      [-.10,.10,-.12,1,-.50,.50]
+    ];
     if(type===B.FENCE_GATE){
       if(opened(id))return [];
-      return d%2===0?[[-.50,.50,-.5,.5,-.10,.10]]:[[-.10,.10,-.5,.5,-.50,.50]];
+      return d%2===0?[[-.50,.50,-.5,1,-.10,.10]]:[[-.10,.10,-.5,1,-.50,.50]];
     }
     if(type===B.LADDER||type===B.LANTERN||type===B.CAMPFIRE||type===B.SLEEPING_BAG_WORLD)return [];
     if(type===B.TRAPDOOR){
@@ -273,13 +293,23 @@ export function createBuildingBlockModels(THREE,B){
       add('iron',0,.29,0,.43,.095,.43,'cylinder');
       add('wood',0,-.39,0,.38,.07,.38,'cylinder');
       add('trim',0,.43,0,.08,.034,.12);
-    }else if(type===B.SLEEPING_BAG_WORLD){
-      // A laid-out, low bedroll, not a full voxel. It can be walked across.
-      add('wood-dark',0,-.475,0,.83,.05,.96);
-      add('fence',0,-.395,.09,.73,.11,.73);
-      add('wood-top',0,-.352,-.33,.71,.18,.24);
-      add('trim',0,-.43,.42,.83,.04,.08);
-      for(const x of [-.34,.34])add('wood-dark',x,-.405,.06,.045,.12,.78);
+    }else if(type===B.SLEEPING_BAG_WORLD||type===B.SLEEPING_BAG_HEAD){
+      // Each half occupies exactly one block, and both face the same
+      // direction. Local -Z points to the head (pillow); the seam is flush.
+      const head=type===B.SLEEPING_BAG_HEAD;
+      add('sleepingBase',0,-.46,0,.91,.075,.995);
+      add('sleepingFabric',0,-.402,head?.13:0,.83,.11,head?.72:.94);
+      for(const x of [-.42,.42])
+        add('sleepingTrim',x,-.394,0,.058,.125,.97);
+      // Quilted seam and small embroidered stripes, without text sprites.
+      for(const z of (head?[.18,.38]:[-.32,.10,.34]))
+        add('sleepingStitch',0,-.342,z,.71,.01,.025);
+      if(head){
+        add('sleepingPillow',0,-.315,-.32,.71,.16,.31);
+        add('sleepingTrim',0,-.39,-.496,.89,.07,.035);
+      }else{
+        add('sleepingTrim',0,-.39,.485,.89,.085,.04);
+      }
     }else if(type===B.CAMPFIRE){
       add('charcoal',0,-.43,0,.88,.08,.88);
       for(const x of [-.20,.20]){
