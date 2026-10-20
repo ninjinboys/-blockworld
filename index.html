@@ -144,6 +144,7 @@
 <div id="hud">
   <div id="stats"><div id="coords">X 0 Y 0 Z 0</div><div id="biome">Plains</div><div id="clock">☀ 06:00</div><div id="weather">Clear</div></div>
   <button id="viewModeButton" type="button" aria-label="視点切り替え">視点：一人称</button>
+  <button id="jobOpenButton" type="button" aria-label="ジョブと進化を選択">⚔ JOB：未選択</button>
   <div id="accountBox">
     <div><strong id="accountName">---</strong><span id="saveStatus">未ログイン</span></div>
     <div class="account-actions"><button id="inviteFriendsBtn" type="button">友達招待</button><button id="saveNow" type="button">保存</button><button id="worldListBtn" type="button">ワールド</button><button id="logoutBtn" type="button">ログアウト</button></div>
@@ -226,6 +227,17 @@
  <div class="binocular-crosshair" aria-hidden="true"></div>
  <button id="binocularClose" type="button">双眼鏡を外す ✕</button>
 </div>
+<section id="jobScreen" class="job-screen" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="jobTitle">
+  <div class="job-panel">
+    <header class="job-header">
+      <div><div class="job-eyebrow">NEXACRAFT · CLASS SYSTEM</div><h2 id="jobTitle">⚔ ジョブ選択</h2><p id="jobCurrent">現在のジョブ：未選択</p></div>
+      <button id="jobClose" type="button" aria-label="ジョブ選択を閉じる">✕</button>
+    </header>
+    <p id="jobInfo">基本ジョブを選ぼう。LV30で進化、LV90で二次進化。最大LV150。</p>
+    <div id="jobOptions" class="job-grid"></div>
+    <p class="job-bottom">ジョブ専用武器は選択時に入手。装備・道具はこれまでどおり使えます。</p>
+  </div>
+</section>
 <div id="inventoryScreen" aria-hidden="true">
   <div class="inventory-panel">
     <div class="inventory-head">
@@ -373,7 +385,7 @@
   },true);
 })();
 </script>
-<script type="module" src="app.js?v=20261020twoBlockBedrollFence04"></script>
+<script type="module" src="app.js?v=20261020jobsBuild01"></script>
 <script type="module" src="device-account-transfer-ui.js?v=20261014deviceTransfer02"></script>
 </body>
 </html>
