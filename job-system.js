@@ -28,7 +28,8 @@ const byWeapon=new Map(Object.entries(JOBS).map(([key,j])=>[j.weapon,{...j,key}]
 export const jobWeapon=id=>byWeapon.get(id)||null;
 export function jobCanUse(activeJob,id){
   const item=jobWeapon(id);
-  return !item||activeJob==='all'||JOBS[activeJob]?.group===item.group;
+  return !item||activeJob==='all'||activeJob===item.key||
+    (JOBS[activeJob]?.group===item.key);
 }
 export function jobNextOptions(key,level){
   const job=JOBS[key];
