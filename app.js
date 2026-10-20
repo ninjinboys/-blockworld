@@ -7324,14 +7324,21 @@ function castJobMagic(weapon){
   orb.position.copy(center);scene.add(orb);
   setTimeout(()=>{scene.remove(orb);orb.geometry.dispose();orb.material.dispose()},360);
   let count=0;
-  for(const m of [...mobs]){
-    if(m.userData.hp<=0||m.position.distanceTo(center)>weapon.radius+1.1)continue;
-    // AOE spell follows the current job weapon statistics, with all-rounder
-    // receiving the stated weaker version of every specialty.
-    const attack=Math.max(1,Math.round(weapon.damage*(activeJob==='all'?.65:1)));
-    damageMob(m,attack,'magic',1,'host');
-    if(weapon.key==='supportMage')m.userData.jobDebuffUntil=now+6500;
-    count++;
+  const matches=[...mobs].filter(m=>m.userData.hp>0&&
+    m.position.distanceTo(center)<=weapon.radius+1.1);
+  count=matches.length;
+  if(multiRole==='guest'){
+    // One validated area spell packet, not one mobHit message per target.
+    // The host applies all damage and effects authoritatively.
+    if(multiplayerNetwork.connected)
+      multiplayerNetwork.send({t:'jobSpell',weapon:selected,
+        x:center.x,y:center.y,z:center.z});
+  }else{
+    for(const m of matches){
+      const attack=Math.max(1,Math.round(weapon.damage*(activeJob==='all'?.65:1)));
+      damageMob(m,attack,'magic',1,'host');
+      if(weapon.key==='supportMage')m.userData.jobDebuffUntil=now+6500;
+    }
   }
   if(weapon.key==='supportMage'&&health<MAX_HEALTH){
     health=Math.min(MAX_HEALTH,health+2);renderHealth();markSaveDirty();
@@ -8652,6 +8659,28 @@ function multiApplyMobSnapshot(packet){
   for(const m of [...mobs])
     if(!seen.has(m.userData.netId))removeZombie(m);
 }
+function multiProcessJobSpell(message,from){
+  if(multiRole!=='host'||!from?.player||
+     ![message.x,message.y,message.z].every(Number.isFinite))return;
+  const pose=from.player,job=JOBS[pose.job]?pose.job:'all';
+  const weapon=jobWeapon(Number(message.weapon));
+  if(!weapon||weapon.kind!=='staff'||pose.held!==Number(message.weapon)||
+     !jobCanUse(job,weapon.weapon))return;
+  if(![pose.x,pose.y,pose.z].every(Number.isFinite))return;
+  const origin=new THREE.Vector3(pose.x,pose.y+EYE,pose.z);
+  const center=new THREE.Vector3(message.x,message.y,message.z);
+  if(origin.distanceTo(center)>weapon.range+2)return;
+  const now=performance.now(),delay=Math.round(weapon.cooldown*(job==='all'?1.25:1));
+  if(now-(from.lastJobSpellAt??-Infinity)<delay)return;
+  from.lastJobSpellAt=now;
+  for(const m of [...mobs]){
+    if(m.userData.hp<=0||m.position.distanceTo(center)>weapon.radius+1.1)continue;
+    damageMob(m,Math.max(1,Math.round(weapon.damage*(job==='all'?.65:1))),
+      'magic',1,from.id);
+    if(weapon.key==='supportMage')m.userData.jobDebuffUntil=now+6500;
+  }
+  if(multiplayerNetwork.connected)multiplayerNetwork.send(multiMobSnapshot());
+}
 function multiProcessMobHit(message,from){
   if(multiRole!=='host'||!from?.player||
      typeof message.id!=='string'||!/^[0-9a-f-]{36}$/.test(message.id))return;
@@ -9057,6 +9086,7 @@ function multiRoomData(message,peerId){
     }
     if(message.t==='chimeraSummon'){hostHandleChimeraSummon(message,from,peerId);return}
     if(message.t==='mobHit'){multiProcessMobHit(message,from);return}
+    if(message.t==='jobSpell'){multiProcessJobSpell(message,from);return}
     if(message.t==='pose'&&message.player&&Number.isFinite(message.player.x)){
       from.player=message.player;from.lastPoseAt=performance.now();
       multiShowAvatar(from.id,from.player);
