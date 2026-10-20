@@ -4973,6 +4973,43 @@ function blocked(px,py,pz){
   }
   return false;
 }
+// Walk up the two 0.5-block treads of a real stair without pressing Jump.
+// A step is permitted only when its *actual collision surface* is at most
+// half a block higher than the player's feet. Full cubes and fences cannot
+// be climbed. Inspect every block touched by the player hitbox: sampling
+// only the center voxel misses the first stair near an edge/corner.
+function tryAutoStep(nx,nz){
+  if(ridingHorse||playerInWater())return false;
+  if(!player.onGround&&!blocked(player.pos.x,player.pos.y-.085,player.pos.z))
+    return false;
+  const epsilon=1e-4,feet=player.pos.y;
+  const minX=Math.ceil(nx-PR-.5+epsilon),maxX=Math.floor(nx+PR+.5-epsilon);
+  const minZ=Math.ceil(nz-PR-.5+epsilon),maxZ=Math.floor(nz+PR+.5-epsilon);
+  const lowY=Math.floor(feet-.51),highY=Math.ceil(feet+.51);
+  let nextFoot=null;
+  for(let x=minX;x<=maxX;x++)for(let z=minZ;z<=maxZ;z++)
+    for(let y=lowY;y<=highY;y++){
+      const id=get(x,y,z),base=detailedBlockModels.canonical(id);
+      if(id!==B.WOOD_SLAB&&id!==B.WOOD_SLAB_TOP&&
+         base!==B.WOOD_STAIRS&&base!==B.STONE_STAIRS)continue;
+      const shapes=detailedBlockModels.collisionBoxes(id);
+      for(const [lx,rx,by,ty,lz,rz] of shapes||[]){
+        if(nx+PR<=x+lx+epsilon||nx-PR>=x+rx-epsilon||
+           nz+PR<=z+lz+epsilon||nz-PR>=z+rz-epsilon)continue;
+        const top=y+ty;
+        if(top>feet+.012&&top<=feet+.512&&
+           feet+PH>y+by+epsilon)
+          nextFoot=Math.max(nextFoot??-Infinity,top+.015);
+      }
+    }
+  if(nextFoot===null||blocked(player.pos.x,nextFoot,player.pos.z)||
+     blocked(nx,nextFoot,nz))return false;
+  player.pos.set(nx,nextFoot,nz);
+  player.vel.y=0;
+  player.onGround=true;
+  fallOriginY=null;
+  return true;
+}
 function movePlayerAxis(axis,amount){
   if(!amount)return true;
   const steps=Math.max(1,Math.ceil(Math.abs(amount)/0.08));
@@ -4982,20 +5019,7 @@ function movePlayerAxis(axis,amount){
     const ny=player.pos.y+(axis==='y'?step:0);
     const nz=player.pos.z+(axis==='z'?step:0);
     if(blocked(nx,ny,nz)){
-      if(axis!=='y'&&player.onGround&&!ridingHorse){
-        // Auto-step 0.5m only if a partial-height tread is genuinely there.
-        const y=player.pos.y+.51;
-        const fx=Math.round(nx),fy=Math.round(player.pos.y),fz=Math.round(nz);
-        const near=[get(fx,fy,fz),get(fx,fy+1,fz),
-          get(Math.round(player.pos.x),fy,Math.round(player.pos.z))];
-        const stair=near.some(v=>v===B.WOOD_SLAB||
-          detailedBlockModels.canonical(v)===B.WOOD_STAIRS||
-          detailedBlockModels.canonical(v)===B.STONE_STAIRS);
-        if(stair&&!blocked(nx,y,nz)&&!blocked(player.pos.x,y,player.pos.z)){
-          player.pos.set(nx,y,nz);player.vel.y=0;player.onGround=true;
-          fallOriginY=null;continue;
-        }
-      }
+      if(axis!=='y'&&tryAutoStep(nx,nz))continue;
       if(axis==='x')player.vel.x=0;
       if(axis==='z')player.vel.z=0;
       if(axis==='y'){
@@ -7210,7 +7234,13 @@ function chooseCraftMode(){
   return 'inventory';
 }
 function currentRecipeList(){
-  return craftMode==='workbench'?workbenchRecipes:craftMode==='furnace'?[...furnaceRecipes,...furnaceWoodRecipes]:craftMode==='warp'?warpWorkbenchRecipes:recipes;
+  const list=craftMode==='workbench'?workbenchRecipes:
+    craftMode==='furnace'?[...furnaceRecipes,...furnaceWoodRecipes]:
+    craftMode==='warp'?warpWorkbenchRecipes:recipes;
+  // Always display recipes from the lowest unlock level to the highest,
+  // including newly added items. Sorting a copy keeps the original lists
+  // intact; craftRecipe(i) uses the very same sorted indices as the UI.
+  return [...list].sort((a,b)=>(a.unlockLevel??0)-(b.unlockLevel??0));
 }
 function renderCrafting(){
   const title=document.querySelector('.craft-title'),sub=document.querySelector('.craft-sub');
