@@ -54,7 +54,10 @@ Object.assign(B,{
   FENCE_GATE_E:63,FENCE_GATE_S:64,FENCE_GATE_W:65,
   FENCE_GATE_OPEN_N:66,FENCE_GATE_OPEN_E:67,FENCE_GATE_OPEN_S:68,FENCE_GATE_OPEN_W:69,
   LADDER_E:70,LADDER_S:71,LADDER_W:72,
-  TRAPDOOR_OPEN_N:73,TRAPDOOR_OPEN_E:74,TRAPDOOR_OPEN_S:75,TRAPDOOR_OPEN_W:76,WOOD_SLAB_TOP:77,SLEEPING_BAG_WORLD:78
+  TRAPDOOR_OPEN_N:73,TRAPDOOR_OPEN_E:74,TRAPDOOR_OPEN_S:75,TRAPDOOR_OPEN_W:76,WOOD_SLAB_TOP:77,
+  SLEEPING_BAG_WORLD:78,SLEEPING_BAG_HEAD:79,
+  SLEEPING_BAG_E:80,SLEEPING_BAG_S:81,SLEEPING_BAG_W:82,
+  SLEEPING_BAG_HEAD_E:83,SLEEPING_BAG_HEAD_S:84,SLEEPING_BAG_HEAD_W:85
 });
 const SHAPED_VARIANT_BASE=new Map([
   [B.WOOD_STAIRS_E,B.WOOD_STAIRS],[B.WOOD_STAIRS_S,B.WOOD_STAIRS],[B.WOOD_STAIRS_W,B.WOOD_STAIRS],
@@ -65,7 +68,13 @@ const SHAPED_VARIANT_BASE=new Map([
   [B.LADDER_E,B.LADDER],[B.LADDER_S,B.LADDER],[B.LADDER_W,B.LADDER],
   [B.TRAPDOOR_OPEN_N,B.TRAPDOOR],[B.TRAPDOOR_OPEN_E,B.TRAPDOOR],
   [B.TRAPDOOR_OPEN_S,B.TRAPDOOR],[B.TRAPDOOR_OPEN_W,B.TRAPDOOR],
-  [B.WOOD_SLAB_TOP,B.WOOD_SLAB]
+  [B.WOOD_SLAB_TOP,B.WOOD_SLAB],
+  [B.SLEEPING_BAG_E,B.SLEEPING_BAG_WORLD],
+  [B.SLEEPING_BAG_S,B.SLEEPING_BAG_WORLD],
+  [B.SLEEPING_BAG_W,B.SLEEPING_BAG_WORLD],
+  [B.SLEEPING_BAG_HEAD_E,B.SLEEPING_BAG_HEAD],
+  [B.SLEEPING_BAG_HEAD_S,B.SLEEPING_BAG_HEAD],
+  [B.SLEEPING_BAG_HEAD_W,B.SLEEPING_BAG_HEAD]
 ]);
 const I={
   STICK:101,CRAFTING_TABLE:102,FURNACE:103,WOOD_PICK:104,STONE_PICK:105,
@@ -144,9 +153,27 @@ names[I.BACKPACK]='リュック';
 names[I.GLIDER]='グライダー';
 names[I.SLEEPING_BAG]='寝袋';
 names[B.SLEEPING_BAG_WORLD]='設置した寝袋';
+names[B.SLEEPING_BAG_HEAD]='設置した寝袋';
 names[I.FLINT_STEEL]='火打石と打ちがね';
 names[I.WATER_BUCKET]='水入りバケツ';
 for(const [variant,base] of SHAPED_VARIANT_BASE)names[variant]=names[base];
+// Each new sleeping bag occupies two neighboring cells. The original ID 78
+// remains the north-facing foot so older single-cell saves still load safely.
+const SLEEPING_BAG_FEET=[B.SLEEPING_BAG_WORLD,B.SLEEPING_BAG_E,B.SLEEPING_BAG_S,B.SLEEPING_BAG_W];
+const SLEEPING_BAG_HEADS=[B.SLEEPING_BAG_HEAD,B.SLEEPING_BAG_HEAD_E,B.SLEEPING_BAG_HEAD_S,B.SLEEPING_BAG_HEAD_W];
+const SLEEPING_BAG_DIRECTIONS=[[0,-1],[1,0],[0,1],[-1,0]];
+const SLEEPING_BAG_BLOCKS=new Set([...SLEEPING_BAG_FEET,...SLEEPING_BAG_HEADS]);
+const isSleepingBagBlock=id=>SLEEPING_BAG_BLOCKS.has(id);
+for(const id of SLEEPING_BAG_BLOCKS)names[id]='設置した寝袋';
+function sleepingBagOther(x,y,z,id=get(x,y,z)){
+  const footDir=SLEEPING_BAG_FEET.indexOf(id),headDir=SLEEPING_BAG_HEADS.indexOf(id);
+  const foot=footDir>=0,d=foot?footDir:headDir;
+  if(d<0)return null;
+  const [dx,dz]=SLEEPING_BAG_DIRECTIONS[d];
+  const tx=x+(foot?dx:-dx),tz=z+(foot?dz:-dz);
+  if(get(tx,y,tz)!==(foot?SLEEPING_BAG_HEADS[d]:SLEEPING_BAG_FEET[d]))return null;
+  return {x:tx,y,z:tz};
+}
 const NEW_BUILD_BLOCKS=[B.STONE_BRICKS,B.MOSSY_STONE_BRICKS,B.CRACKED_STONE_BRICKS,B.POLISHED_STONE,B.MARBLE,B.OBSIDIAN,B.RED_BRICKS,B.WOOD_STAIRS,B.STONE_STAIRS,B.WOOD_SLAB,B.IRON_BARS,B.WOOD_FENCE,B.FENCE_GATE,B.LADDER,B.TRAPDOOR,B.LANTERN,B.BOOKSHELF,B.BARREL,B.TNT,B.CAMPFIRE];
 const NEW_ITEM_IDS=[I.SPEAR,I.IRON_DAGGER,I.BATTLE_AXE,I.HAMMER,I.CROSSBOW,I.THROWING_KNIFE,I.MOLOTOV,I.HEAL_POTION,I.STAMINA_POTION,I.POISON_ARROW,I.BUCKET,I.FISHING_ROD,I.COMPASS,I.MAP,I.BINOCULARS,I.ROPE,I.NAME_TAG,I.BACKPACK,I.GLIDER,I.SLEEPING_BAG,I.FLINT_STEEL,I.WATER_BUCKET];
 const biomeNames=['Plains','Forest','Desert','Taiga','Snowy Peaks','Swamp','Ocean','River','Jungle'];
@@ -155,6 +182,7 @@ const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FU
 const WARP_WORKBENCH_BLOCKS=new Set([B.WARP_WORKBENCH_X,B.WARP_WORKBENCH_X_END,B.WARP_WORKBENCH_Z,B.WARP_WORKBENCH_Z_END]);
 const isWarpWorkbench=id=>WARP_WORKBENCH_BLOCKS.has(id);
 const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST,[B.WARP_WORKBENCH_X]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_X_END]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z_END]:I.WARP_WORKBENCH,[B.SLEEPING_BAG_WORLD]:I.SLEEPING_BAG};
+for(const id of SLEEPING_BAG_BLOCKS)specialBlockDrops[id]=I.SLEEPING_BAG;
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
   [I.STICK]:0,[I.CRAFTING_TABLE]:0,[I.FURNACE]:0,[I.WOOD_PICK]:0,[I.STONE_PICK]:0,
@@ -864,7 +892,7 @@ const DOOR_OPEN=new Set([B.DOOR_X_OPEN,B.DOOR_X_OPEN_TOP,B.DOOR_Z_OPEN,B.DOOR_Z_
 const DOOR_TOP=new Set([B.DOOR_X_TOP,B.DOOR_X_OPEN_TOP,B.DOOR_Z_TOP,B.DOOR_Z_OPEN_TOP]);
 const isDoor=id=>DOOR_ALL.has(id);
 const NON_COLLIDING_BUILDINGS=new Set([
-  B.SLEEPING_BAG_WORLD,B.LADDER,B.LADDER_E,B.LADDER_S,B.LADDER_W,
+  ...SLEEPING_BAG_BLOCKS,B.LADDER,B.LADDER_E,B.LADDER_S,B.LADDER_W,
   B.LANTERN,B.CAMPFIRE,
   B.FENCE_GATE_OPEN_N,B.FENCE_GATE_OPEN_E,B.FENCE_GATE_OPEN_S,B.FENCE_GATE_OPEN_W
 ]);
@@ -6147,6 +6175,7 @@ function finishMine(x,y,z,id){
   const bedFoot=isBedBlock(id)?canonicalBedFoot(x,y,z):null;
   const bedOther=isBedBlock(id)?findBedOtherHalf(x,y,z,id):null;
   const warpOther=isWarpWorkbench(id)?warpWorkbenchOther(x,y,z,id):null;
+  const bagOther=isSleepingBagBlock(id)?sleepingBagOther(x,y,z,id):null;
   const brokeRespawnBed=!!(bedFoot&&bedSpawn&&bedSpawn.x===bedFoot.x&&bedSpawn.y===bedFoot.y&&bedSpawn.z===bedFoot.z);
 
   set(x,y,z,B.AIR);
@@ -6158,6 +6187,7 @@ function finishMine(x,y,z,id){
   }
   if(bedOther)set(bedOther.x,bedOther.y,bedOther.z,B.AIR);
   if(warpOther)set(warpOther.x,warpOther.y,warpOther.z,B.AIR);
+  if(bagOther)set(bagOther.x,bagOther.y,bagOther.z,B.AIR);
   if(doorOther&&isDoor(get(doorOther.x,doorOther.y,doorOther.z)))
     set(doorOther.x,doorOther.y,doorOther.z,B.AIR);
   if(brokeRespawnBed)bedSpawn=null;
@@ -6173,14 +6203,15 @@ function finishMine(x,y,z,id){
   if(id===B.TORCH)drop=I.TORCH;
   if(id===B.CHEST)drop=I.CHEST;
   if(isWarpWorkbench(id))drop=I.WARP_WORKBENCH;
+  if(isSleepingBagBlock(id))drop=I.SLEEPING_BAG;
 
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
-  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH||drop===I.CHEST||drop===I.WARP_WORKBENCH)){
+  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH||drop===I.CHEST||drop===I.WARP_WORKBENCH||drop===I.SLEEPING_BAG)){
     const spawnAt=minedDropPosition(x,y,z);
     spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{pickupDelay:.45});
   }
-  rebuildEdited({x,z},...(bedOther?[bedOther]:[]),...(doorOther?[doorOther]:[]),...(warpOther?[warpOther]:[]));gainXP(blockXP[id]||1,names[id]||'採掘');
+  rebuildEdited({x,z},...(bedOther?[bedOther]:[]),...(doorOther?[doorOther]:[]),...(warpOther?[warpOther]:[]),...(bagOther?[bagOther]:[]));gainXP(blockXP[id]||1,names[id]||'採掘');
   if(brokeRespawnBed)flash('ベッドが壊れたため初期スポーンに戻りました');
 }
 
@@ -6294,12 +6325,23 @@ function place(){
   if(aimed&&isWarpWorkbench(get(aimed.x,aimed.y,aimed.z))){
     setCraftOpen(true);return;
   }
-  if(aimed&&get(aimed.x,aimed.y,aimed.z)===B.SLEEPING_BAG_WORLD){
+  if(aimed&&isSleepingBagBlock(get(aimed.x,aimed.y,aimed.z))){
     if(!isNightTime()){flash('寝袋で眠れるのは夜だけです');return}
     if(sleeping)return;
-    // A placed sleeping bag is single-use. Remove it once sleep has started.
-    sleepInBed({x:aimed.x,y:aimed.y,z:aimed.z},true);
-    if(sleeping){set(aimed.x,aimed.y,aimed.z,B.AIR);rebuildEdited({x:aimed.x,z:aimed.z});markSaveDirty()}
+    const targetId=get(aimed.x,aimed.y,aimed.z);
+    const partner=sleepingBagOther(aimed.x,aimed.y,aimed.z,targetId);
+    // Standalone ID 78 is supported for existing saved single-cell bags.
+    if(!partner&&targetId!==B.SLEEPING_BAG_WORLD){
+      flash('寝袋の片側が壊れています');return;
+    }
+    const foot=SLEEPING_BAG_HEADS.includes(targetId)&&partner?partner:aimed;
+    sleepInBed({x:foot.x,y:foot.y,z:foot.z},true);
+    if(sleeping){
+      // Single-use: remove both bedroll cells, never leave a stray pillow.
+      set(aimed.x,aimed.y,aimed.z,B.AIR);
+      if(partner)set(partner.x,partner.y,partner.z,B.AIR);
+      rebuildEdited({x:aimed.x,z:aimed.z},...(partner?[partner]:[]));
+    }
     return;
   }
   if(aimed&&h.distance<=5&&detailedBlockModels.interact(get(aimed.x,aimed.y,aimed.z))){
@@ -6396,10 +6438,26 @@ function place(){
     consumeSelected(1);rebuildEdited({x,z});return;
   }
   if(selected===I.SLEEPING_BAG){
-    if(!solid(get(x,y-1,z))){flash('寝袋は床の上に設置してください');return}
-    set(x,y,z,B.SLEEPING_BAG_WORLD);
-    if(consumeSelected(1)!==1){set(x,y,z,B.AIR);return}
-    rebuildEdited({x,z});renderHotbar();flash('寝袋を設置しました。夜に寝袋を狙って「使う」で眠れます');return;
+    const {dx,dz}=bedDirectionFromYaw(),x2=x+dx,z2=z+dz;
+    if(!inside(x2,y,z2)||get(x2,y,z2)!==B.AIR){
+      flash('寝袋は縦2マスの空きが必要です');return;
+    }
+    if(!solid(get(x,y-1,z))||!solid(get(x2,y-1,z2))){
+      flash('寝袋は2マスとも床の上に設置してください');return;
+    }
+    if(mobs.some(m=>mobOverlapsBlock(m,x,y,z)||mobOverlapsBlock(m,x2,y,z2))){
+      flash('モブのいる場所には寝袋を設置できません');return;
+    }
+    const direction=SLEEPING_BAG_DIRECTIONS.findIndex(v=>v[0]===dx&&v[1]===dz);
+    if(direction<0)return;
+    const foot=SLEEPING_BAG_FEET[direction],head=SLEEPING_BAG_HEADS[direction];
+    set(x,y,z,foot);set(x2,y,z2,head);
+    if(consumeSelected(1)!==1){
+      set(x,y,z,B.AIR);set(x2,y,z2,B.AIR);
+      rebuildEdited({x,z},{x:x2,z:z2});return;
+    }
+    rebuildEdited({x,z},{x:x2,z:z2});renderHotbar();
+    flash('2マスの寝袋を設置しました。夜に「使う」で眠れます');return;
   }
   if(selected===I.BED){
     const dir=bedDirectionFromYaw(),x2=x+dir.dx,z2=z+dir.dz;
@@ -8461,7 +8519,7 @@ function showRemoteArrow(p){
 }
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
-  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.SLEEPING_BAG_WORLD||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.SLEEPING_BAG_HEAD_W||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
   if(get(b.x,b.y,b.z)===b.v)return;
   multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
   finally{multiApplying=false}
