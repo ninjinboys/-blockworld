@@ -4058,7 +4058,7 @@ const TEST_MOB_BY_KEY=new Map(TEST_MOB_CATALOG.map(row=>[row.key,row]));
 const TEST_ITEM_IDS=[...new Set([
   ...Object.values(B).filter(id=>id>B.AIR&&id<=B.BEDROCK),
   ...NEW_BUILD_BLOCKS,
-  ...Object.values(I)
+  ...Object.values(I),...JOB_WEAPON_IDS
 ])].filter(id=>Number.isInteger(id)&&names[id]).sort((a,b)=>a-b);
 
 // Test-spawned models use the same builders, AI, hit boxes, drops and attacks.
@@ -6173,6 +6173,7 @@ function setInventoryOpen(v){
   if(v&&explorerMapOpen)closeExplorerMap(false);
   if(v&&binocularActive)closeBinoculars();
   if(v&&testPanelOpen)setTestPanelOpen(false);
+  if(v&&jobOpen)setJobOpen(false);
   setShieldGuard(false);
   inventoryOpen=v;inventoryScreen.classList.toggle('open',v);inventoryScreen.setAttribute('aria-hidden',String(!v));
   Object.keys(keys).forEach(k=>keys[k]=false);
@@ -6324,6 +6325,7 @@ function doorSupportedBaseY(x,aimY,z){
   return null;
 }
 function place(){
+  if(jobOpen)return;
   if(chatViewActive||chestOpen||craftOpen||inventoryOpen||testPanelOpen||explorerMapOpen)return;
   if(started&&!dead&&!sleeping){
     firstPersonHand.swing(.6);
@@ -7270,6 +7272,7 @@ function updateEating(dt){
   // Health HUD reflects the restored hearts.
 }
 function primaryActionStart(){
+  if(jobOpen)return;
   if(chatViewActive||!started||dead||sleeping||craftOpen||inventoryOpen||chestOpen||testPanelOpen||explorerMapOpen)return;
   if(ridingHorse){dismountHorse();return}
   // Usable equipment responds to the main action button as well as USE.
@@ -7288,6 +7291,96 @@ function primaryActionStop(fire=false){
   eatingHeld=false;eatingElapsed=0;eatingStartedAt=0;eatingSlot=-1;eatingItem=null;
   miningHeld=false;clearMining();
 }
+
+
+// Job tree: six basic classes, LV30 specializations, tank at LV90.
+// Only the Testworld debug map permits selecting any evolution for testing.
+let jobOpen=false;
+function updateJobHud(){
+  const button=$('jobOpenButton');if(!button)return;
+  const entry=JOBS[activeJob]||JOBS.all;
+  button.textContent='⚔ JOB：'+(jobSelected?entry.name:'未選択');
+  button.classList.toggle('ready',!jobSelected||jobNextOptions(activeJob,level).length>0);
+  button.title='ジョブ選択・進化（現在 LV '+level+'）';
+}
+function renderJobScreen(){
+  const name=jobSelected?JOBS[activeJob].name:'未選択';
+  $('jobCurrent').textContent='現在のジョブ：'+name+'　·　LV '+level+'/150';
+  $('jobTitle').textContent=jobSelected?'⚔ ジョブ進化':'⚔ ジョブ選択';
+  $('jobInfo').textContent=jobSelected
+    ?(activeMap==='testworld'?'Testworld：好きなジョブ・進化先を試せます':
+      (jobNextOptions(activeJob,level).length?'新しい進化先を選べます！':
+        'LV30で一次進化、盾兵系はLV90で二次進化。進化先は選択すると確定します。'))
+    :'初期ジョブを選んで専用武器を受け取ろう。LV30で一次進化、LV90でタンクに進化。';
+  const options=activeMap==='testworld'
+    ?Object.keys(JOBS)
+    :jobSelected?[activeJob,...(JOBS[activeJob]?.next||[])]:STARTING_JOBS;
+  $('jobOptions').replaceChildren();
+  for(const key of options){
+    const j=JOBS[key],current=jobSelected&&key===activeJob;
+    const eligible=activeMap==='testworld'||(!jobSelected&&STARTING_JOBS.includes(key))||
+      (jobSelected&&jobCanChange(activeJob,key,level));
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='job-card'+(current?' current':eligible?' available':'');
+    button.disabled=!eligible||current;
+    const title=document.createElement('strong');
+    title.textContent=j.name+(current?' ✔':'');
+    const detail=document.createElement('span');
+    detail.textContent='LV '+j.level+'　·　'+names[j.weapon];
+    const body=document.createElement('small');
+    body.textContent=j.desc+(eligible&&!current?' · タップして選択':'');
+    button.append(title,detail,body);
+    if(eligible&&!current)button.addEventListener('click',()=>chooseJob(key));
+    $('jobOptions').appendChild(button);
+  }
+}
+function setJobOpen(open){
+  jobOpen=!!open;
+  const screen=$('jobScreen');if(!screen)return;
+  screen.classList.toggle('open',jobOpen);
+  screen.setAttribute('aria-hidden',String(!jobOpen));
+  if(jobOpen){
+    if(inventoryOpen)setInventoryOpen(false);
+    if(craftOpen)setCraftOpen(false);
+    if(chestOpen)setChestOpen(false);
+    if(testPanelOpen)setTestPanelOpen(false);
+    Object.keys(keys).forEach(k=>keys[k]=false);
+    resetSprint();primaryActionStop();document.exitPointerLock?.();
+    renderJobScreen();
+  }else if(started&&!dead&&!matchMedia('(pointer:coarse)').matches){
+    renderer.domElement.requestPointerLock?.();
+  }
+}
+function chooseJob(key){
+  if(!JOBS[key])return;
+  const allowed=activeMap==='testworld'||
+    (!jobSelected&&STARTING_JOBS.includes(key))||
+    (jobSelected&&jobCanChange(activeJob,key,level));
+  if(!allowed)return;
+  const id=JOBS[key].weapon;
+  const owns=(inventory[id]||0)>0;
+  if(!owns&&!canFitItem(id,1)){flash('持ち物を1枠空けてからジョブを選んでください');return}
+  activeJob=key;jobSelected=true;markSaveDirty();
+  if(!owns){
+    addItem(id,1);
+    const hotbarIndex=inventorySlots.findIndex((st,i)=>i<9&&st?.id===id);
+    if(hotbarIndex>=0)selectHotbar(hotbarIndex);
+  }
+  updateJobHud();renderJobScreen();renderHotbar();
+  flash(JOBS[key].name+'になりました！ '+names[id]+'を入手');
+  setJobOpen(false);
+  saveCurrentGame(false);
+}
+$('jobOpenButton').addEventListener('pointerdown',e=>{
+  e.preventDefault();e.stopPropagation();
+  if(!started||dead||!worldReady)return;
+  setJobOpen(!jobOpen);
+});
+$('jobClose').addEventListener('click',()=>setJobOpen(false));
+$('jobScreen').addEventListener('pointerdown',e=>{
+  if(e.target===$('jobScreen'))setJobOpen(false);
+});
 
 function renderHotbar(){
   syncDerivedInventory();hotbarEl.innerHTML='';
@@ -7406,6 +7499,7 @@ function setCraftOpen(v){
   resetSprint();
   if(v){
     if(inventoryOpen)setInventoryOpen(false);
+    if(jobOpen)setJobOpen(false);
     craftMode=chooseCraftMode();
     primaryActionStop();document.exitPointerLock?.();$('craftSearch').value='';renderCrafting();
     if(craftMode==='inventory')flash('作業台・かまど・転送作業台に照準を合わせると専用メニューが開きます');
@@ -7722,7 +7816,7 @@ function loop(now){
   // A single-player sleeper retains the normal short sunrise transition.
   if(started&&!dead&&multiRole==='host'&&sleeping&&!chestOpen)
     advanceDayTime(dt);
-  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen&&!testPanelOpen&&!explorerMapOpen){
+  if(started&&!dead&&!sleeping&&!craftOpen&&!inventoryOpen&&!chestOpen&&!testPanelOpen&&!explorerMapOpen&&!jobOpen){
     updateBowDraw(now);
     updateMining(dt);
     updateEating(dt);
@@ -9152,7 +9246,8 @@ $('startBtn').addEventListener('click',()=>{
   if(multiRole)multiSleepBannerUpdate(multiSleepSnapshot.asleep,multiSleepSnapshot.total);
   chatSyncVisible();
   if(dead){showDeathScreen();return}
-  if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
+  if(!jobSelected){setJobOpen(true)}
+  else if(!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();
   void spawnChimeraVisualTest();
   // Opt-in visual QA: opening the game with ?hurtTest=1 fires exactly one
   // real damage event after entering a world, no zombie required.
