@@ -1295,7 +1295,13 @@ function applySaveData(data){
   generatorVersion=Math.max(1,Number(data.generatorVersion)||1);
   restoreExploration(data);
   level=Math.max(1,Math.min(150,Number(data.level)||1));xp=Math.max(0,Number(data.xp)||0);
-  activeJob=JOBS[data.activeJob]?data.activeJob:'all';
+  // Earlier Testworld builds incorrectly allowed LV30/90 specializations
+  // from LV1. Repair any already-saved early class on load without touching
+  // inventory, player level or other world data.
+  const restoredJob=JOBS[data.activeJob]?data.activeJob:'all';
+  const restoredRank=JOBS[restoredJob].level;
+  activeJob=restoredRank<=level?restoredJob:
+    restoredJob==='tank'&&level>=30?'shieldElite':JOBS[restoredJob].group;
   jobSelected=!!(data.jobSelected&&JOBS[data.activeJob]);
   weather=data.weather==='rain'?'rain':'clear';
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
@@ -7396,17 +7402,16 @@ function renderJobScreen(){
   $('jobCurrent').textContent='現在のジョブ：'+name+'　·　LV '+level+'/150';
   $('jobTitle').textContent=jobSelected?'⚔ ジョブ進化':'⚔ ジョブ選択';
   $('jobInfo').textContent=jobSelected
-    ?(activeMap==='testworld'?'Testworld：好きなジョブ・進化先を試せます':
-      (jobNextOptions(activeJob,level).length?'新しい進化先を選べます！':
-        'LV30で一次進化、盾兵系はLV90で二次進化。進化先は選択すると確定します。'))
-    :'初期ジョブを選んで専用武器を受け取ろう。LV30で一次進化、LV90でタンクに進化。';
-  const options=activeMap==='testworld'
-    ?Object.keys(JOBS)
-    :jobSelected?[activeJob,...(JOBS[activeJob]?.next||[])]:STARTING_JOBS;
+    ?(jobNextOptions(activeJob,level).length?'進化可能！ 好きな進化先を選ぼう。':
+      '一次進化はLV30、盾兵系のタンク進化はLV90で解放されます。')
+    :'LV1では初期ジョブのみ選択可能。専用武器は作業台で素材を集めて製作します。';
+  // Testworld also obeys evolution levels. Debug item spawning is separate
+  // from the job tree: no immediate LV30/LV90 class unlocks.
+  const options=jobSelected?[activeJob,...(JOBS[activeJob]?.next||[])]:STARTING_JOBS;
   $('jobOptions').replaceChildren();
   for(const key of options){
     const j=JOBS[key],current=jobSelected&&key===activeJob;
-    const eligible=activeMap==='testworld'||(!jobSelected&&STARTING_JOBS.includes(key))||
+    const eligible=(!jobSelected&&STARTING_JOBS.includes(key))||
       (jobSelected&&jobCanChange(activeJob,key,level));
     const button=document.createElement('button');
     button.type='button';
@@ -7417,7 +7422,8 @@ function renderJobScreen(){
     const detail=document.createElement('span');
     detail.textContent='LV '+j.level+'　·　'+names[j.weapon];
     const body=document.createElement('small');
-    body.textContent=j.desc+(eligible&&!current?' · タップして選択':'');
+    body.textContent=j.desc+(eligible&&!current?' · タップして選択':
+      !current&&level<j.level?' · LV'+j.level+'で解放':'');
     button.append(title,detail,body);
     if(eligible&&!current)button.addEventListener('click',()=>chooseJob(key));
     $('jobOptions').appendChild(button);
@@ -7442,22 +7448,17 @@ function setJobOpen(open){
 }
 function chooseJob(key){
   if(!JOBS[key])return;
-  const allowed=activeMap==='testworld'||
-    (!jobSelected&&STARTING_JOBS.includes(key))||
+  const allowed=(!jobSelected&&STARTING_JOBS.includes(key))||
     (jobSelected&&jobCanChange(activeJob,key,level));
-  if(!allowed)return;
-  const id=JOBS[key].weapon;
-  const owns=(inventory[id]||0)>0;
-  if(!owns&&!canFitItem(id,1)){flash('持ち物を1枠空けてからジョブを選んでください');return}
-  activeJob=key;jobSelected=true;markSaveDirty();
-  if(!owns){
-    addItem(id,1);
-    if(JOBS[key].kind==='bow'&&(inventory[I.ARROW]||0)<16)addItem(I.ARROW,32);
-    const hotbarIndex=inventorySlots.findIndex((st,i)=>i<9&&st?.id===id);
-    if(hotbarIndex>=0)selectHotbar(hotbarIndex);
+  if(!allowed){
+    flash('このジョブはまだ解放されていません（LV'+JOBS[key].level+'以上）');
+    return;
   }
+  // Changing jobs never grants a weapon, arrows or crafting ingredients.
+  // The player must make their job weapon at a crafting table.
+  activeJob=key;jobSelected=true;markSaveDirty();
   updateJobHud();renderJobScreen();renderHotbar();
-  flash(JOBS[key].name+'になりました！ '+names[id]+'を入手');
+  flash(JOBS[key].name+'になりました！ 専用武器は作業台で製作できます');
   setJobOpen(false);
   saveCurrentGame(false);
 }
