@@ -1709,3 +1709,5 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 .job-bottom{margin:0;font-size:11px;color:#afc1ba}
 @media(max-width:760px){#jobOpenButton{top:calc(118px + env(safe-area-inset-top));right:8px;max-width:143px;font-size:10px}.job-panel{padding:12px;max-height:92dvh;gap:8px}.job-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.job-card{padding:10px;min-height:118px}.job-card strong{font-size:15px}}
 @media(max-width:440px){.job-grid{grid-template-columns:1fr}.job-card{min-height:95px}}
+
+.job-3d-link{color:#b5efd8;font-size:13px;font-weight:800;text-decoration:none;padding:10px 0;line-height:1.6}.job-3d-link:focus-visible{outline:2px solid #b8f5d6;outline-offset:4px}.job-3d-link:hover{text-decoration:underline}
