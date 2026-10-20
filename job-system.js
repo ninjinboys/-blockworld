@@ -2,13 +2,14 @@
  * Existing survival equipment remains usable. Job weapons 190–207 are
  * restricted to their job (except the weaker all-rounder).
  */
+import {makeDetailedJobWeapon} from './job-weapon-models.js?v=20261020real3d01';
 export const JOBS={
   sword:{name:'剣士',group:'sword',level:1,weapon:190,kind:'sword',damage:3,cooldown:630,range:4.5,desc:'標準的な片手剣。LV30で4方向に進化',next:['warrior','swordmaster','axer','lancer']},
   merc:{name:'傭兵',group:'merc',level:1,weapon:191,kind:'dual',damage:2,cooldown:360,range:4.2,desc:'双剣で素早く攻撃',next:['berserker']},
   shield:{name:'盾兵',group:'shield',level:1,weapon:192,kind:'shield',damage:1,cooldown:950,range:3.9,defense:.20,desc:'盾による防御と打撃',next:['heavy','shieldElite']},
   archer:{name:'弓兵',group:'archer',level:1,weapon:193,kind:'bow',damage:4,cooldown:670,range:60,draw:680,desc:'遠距離攻撃の専門職',next:['powerArcher','swiftArcher']},
   mage:{name:'魔術師',group:'mage',level:1,weapon:194,kind:'staff',damage:2,cooldown:1150,range:3.4,radius:2.2,desc:'複数の敵に魔法攻撃',next:['battleMage','supportMage']},
-  all:{name:'オールラウンダー',group:'all',level:1,weapon:195,kind:'sword',damage:2,cooldown:740,range:4.5,desc:'すべてのジョブ武器を使えるが性能は低い',next:[]},
+  all:{name:'オールラウンダー',group:'all',level:1,weapon:null,kind:null,damage:0,cooldown:740,range:4.5,desc:'全ての武器を使用可能。ただし専門職より弱い。専用武器はない',next:[]},
   warrior:{name:'戦士',group:'sword',level:30,weapon:196,kind:'greatsword',damage:12,cooldown:1540,range:5,desc:'大剣／超高攻撃力・低速'},
   swordmaster:{name:'剣士',group:'sword',level:30,weapon:197,kind:'sword',damage:7,cooldown:630,range:4.7,desc:'剣／高攻撃力・標準速度'},
   axer:{name:'戦斧',group:'sword',level:30,weapon:198,kind:'axe',damage:10,cooldown:1320,range:4.4,desc:'戦斧／高攻撃力・低速'},
@@ -23,8 +24,9 @@ export const JOBS={
   supportMage:{name:'バッファー・デバッファー',group:'mage',level:30,weapon:207,kind:'staff',damage:1,cooldown:1400,range:9,radius:8.5,desc:'広範囲の敵を弱体化。味方の回復も得意'}
 };
 export const STARTING_JOBS=['sword','merc','shield','archer','mage','all'];
-export const JOB_WEAPON_IDS=Object.values(JOBS).map(j=>j.weapon);
-const byWeapon=new Map(Object.entries(JOBS).map(([key,j])=>[j.weapon,{...j,key}]));
+export const JOB_WEAPON_IDS=Object.values(JOBS).map(j=>j.weapon).filter(Number.isInteger);
+const byWeapon=new Map(Object.entries(JOBS).filter(([,j])=>Number.isInteger(j.weapon))
+  .map(([key,j])=>[j.weapon,{...j,key}]));
 export const jobWeapon=id=>byWeapon.get(id)||null;
 export function jobCanUse(activeJob,id){
   const item=jobWeapon(id);
@@ -87,119 +89,6 @@ export function drawJobWeaponIcon(g,id){
   return true;
 }
 export function makeJobWeaponModel(T,id){
-  const d=jobWeapon(id);if(!d)return null;
-  const g=new T.Group(),mats=new Map();
-  const colors={metal:d.key==='heavy'?0x7e94a0:d.key==='warrior'?0xdac47e:0xb8cad5,
-    blade:d.key==='berserker'?0xff7894:d.key==='swordmaster'?0x9df6fa:0xe2f3fc,
-    edge:0x708594,wood:0x956843,grip:0x343b4c,
-    gold:d.key==='swiftArcher'?0x78d9ba:0xd8ac5d,
-    dark:0x27313a,leather:0x775740,
-    magic:d.key==='supportMage'?0x72e4ac:d.key==='battleMage'?0xff718a:0x9876ee};
-  const mat=c=>{if(!mats.has(c))mats.set(c,new T.MeshLambertMaterial({color:c,side:T.DoubleSide}));return mats.get(c)};
-  function box(w,h,dep,col,x=0,y=0,z=0){
-    const mesh=new T.Mesh(new T.BoxGeometry(w,h,dep),mat(col));
-    mesh.position.set(x,y,z);mesh.castShadow=true;g.add(mesh);return mesh;
-  }
-  function rod(a,b,r,c,rad=6){
-    const p=new T.Vector3(...a),q=new T.Vector3(...b),v=q.clone().sub(p);
-    const mesh=new T.Mesh(new T.CylinderGeometry(r,r,v.length(),rad),mat(c));
-    mesh.position.copy(p).add(q).multiplyScalar(.5);
-    mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),v.normalize());
-    mesh.castShadow=true;g.add(mesh);
-  }
-  const k=d.kind;
-  if(['sword','greatsword','axe','spear','dual'].includes(k)){
-    const dual=k==='dual',spear=k==='spear',great=k==='greatsword';
-    // Each twin blade is held in a separate hand by the avatar rigs.
-    const n=1;
-    for(let i=0;i<n;i++){
-      const x=0;
-      const upper=spear?1.78:great?1.22:k==='axe'?.95:dual?.72:.85;
-      box(.11,upper*.51,.11,colors.wood,x,upper*.23,0);
-      box(.14,.30,.13,colors.grip,x,.06,0);
-      for(let j=0;j<3;j++)box(.16,.025,.14,colors.gold,x,-.09+j*.10,0);
-      box(.36,.09,.23,colors.gold,x,upper*.51,0);
-      if(k==='axe'){
-        box(.56,.46,.18,colors.metal,x,upper*.76,0);
-        box(.08,.48,.2,colors.blade,x-.28,upper*.76,0);
-        box(.09,.42,.2,colors.edge,x+.28,upper*.76,0);
-      }else if(spear){
-        rod([x,upper*.50,0],[x,upper,0],.055,colors.wood);
-        const tip=new T.Mesh(new T.ConeGeometry(.17,.58,4),mat(colors.blade));
-        tip.position.set(x,upper+.23,0);tip.rotation.y=Math.PI/4;g.add(tip);
-        box(.2,.17,.15,colors.metal,x,upper-.06,0);
-      }else{
-        const bladeH=great?1.10:dual?(d.level>=30?.72:.53):d.level>=30?.99:.78;
-        const bladeW=great?.43:dual?.15:d.level>=30?.23:.2;
-        box(bladeW,bladeH,.12,colors.metal,x,upper*.51+bladeH*.5+.04,0);
-        box(bladeW*.22,bladeH*.98,.125,colors.blade,x-bladeW*.34,upper*.51+bladeH*.5+.04,-.008);
-        const tip=new T.Mesh(new T.ConeGeometry(bladeW*.60,.20,4),mat(colors.blade));
-        tip.position.set(x,upper*.51+bladeH+.14,0);tip.rotation.y=Math.PI/4;g.add(tip);
-      }
-    }
-  }else if(k==='shield'){
-    // Pointed full-size knight shield with gilded rim and reinforced center.
-    box(.30,.45,.22,colors.wood,0,-.06,.04);
-    const shape=new T.Shape();
-    shape.moveTo(-.45,.43);shape.lineTo(.45,.43);shape.lineTo(.48,-.17);
-    shape.lineTo(0,-.98);shape.lineTo(-.48,-.17);shape.closePath();
-    for(const [z,color,depth] of [[-.07,colors.edge,.13],[-.17,colors.metal,.035],[-.21,colors.leather,.03]]){
-      const mesh=new T.Mesh(new T.ExtrudeGeometry(shape,{depth,bevelEnabled:false}),mat(color));
-      mesh.position.z=z;g.add(mesh);
-    }
-    box(.15,.71,.075,colors.gold,0,-.02,-.24);
-    box(.57,.13,.076,colors.gold,0,.1,-.24);
-    if(d.level>=30){
-      box(.40,.43,.055,colors.metal,0,-.31,-.24);
-      for(const x of [-.33,.33])box(.055,.55,.06,colors.blade,x,-.18,-.26);
-    }
-    if(d.key==='heavy'){
-      g.scale.set(1.3,1.2,1.0);
-      box(.41,.22,.09,colors.gold,0,.32,-.31);
-    }else if(d.key==='tank'){
-      box(.20,.20,.11,colors.magic,0,-.21,-.33);
-      g.scale.set(1.1,1.1,1.0);
-    }
-  }else if(k==='bow'){
-    box(.15,.45,.17,colors.wood,0,.04,0);
-    const height=d.key==='powerArcher'?1.85:d.key==='swiftArcher'?1.15:1.5;
-    const width=d.key==='powerArcher'?.43:d.key==='swiftArcher'?.26:.35;
-    const thickness=d.key==='powerArcher'?.13:.09;
-    for(let i=0;i<10;i++){
-      const t=i/9,a=(t-.5)*height;
-      const x=-width*Math.sin(Math.PI*t);
-      const seg=box(thickness,height/7,.13,i%2?colors.wood:colors.gold,x,a,0);
-      seg.rotation.z=(t-.5)*1.1;
-    }
-    rod([.02,-height*.49,-.025],[.02,height*.49,-.025],.015,colors.blade,4);
-    box(.18,.26,.13,colors.gold,-.34,.0,0);
-  }else if(k==='staff'){
-    rod([0,-.27,0],[0,1.33,0],.055,colors.wood);
-    box(.14,.12,.16,colors.gold,0,1.15,0);
-    const crystal=new T.Mesh(new T.OctahedronGeometry(.25,0),mat(colors.magic));
-    crystal.position.set(0,1.46,0);
-    if(d.level>=30)crystal.scale.setScalar(1.37);
-    g.add(crystal);
-    for(const sign of [-1,1]){
-      rod([0,1.08,0],[sign*.25,1.45,0],.039,colors.metal);
-      const orb=new T.Mesh(new T.SphereGeometry(.09,8,6),mat(colors.blade));
-      orb.position.set(sign*.27,1.48,0);g.add(orb);
-    }
-    box(.14,.10,.13,colors.gold,0,-.31,0);
-    if(d.key==='battleMage'){
-      for(let i=0;i<6;i++){
-        const theta=i*Math.PI/3;
-        const gem=new T.Mesh(new T.OctahedronGeometry(.055,0),mat(colors.magic));
-        gem.position.set(Math.cos(theta)*.40,1.45,Math.sin(theta)*.40);
-        g.add(gem);
-      }
-    }
-    if(d.key==='supportMage'){
-      const halo=new T.Mesh(new T.TorusGeometry(.39,.04,5,12),mat(colors.magic));
-      halo.rotation.x=Math.PI/2;halo.position.y=1.45;g.add(halo);
-    }
-  }
-  // Each variant remains identifiable by class through the accent color.
-  g.name='Job-exclusive weapon: '+d.name+' '+id;
-  return g;
+  const d=jobWeapon(id);
+  return d?makeDetailedJobWeapon(T,d):null;
 }
