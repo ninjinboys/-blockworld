@@ -3,6 +3,7 @@
  * This file affects rendering only, never inventories, saves or combat.
  */
 import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
+import {makeJobWeaponModel,jobWeapon} from './job-system.js?v=20261020jobsModels02';
 
 export function makeAvatarHeldItems(THREE,drawItemIcon){
   const swords=new Set([111,115,119,123]);
@@ -167,6 +168,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     return g;
   }
   function build(id){
+    if(jobWeapon(id))return makeJobWeaponModel(THREE,id);
     if(id>=168&&id<=188)return makeNewHeldItemModel(THREE,id);
     if(id===156)return shield();
     if(id===147||id===31)return torch();
@@ -198,7 +200,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       });
     }
   }
-  function validId(id){return Number.isInteger(id)&&id>0&&id<=188?id:null}
+  function validId(id){return Number.isInteger(id)&&id>0&&id<=207?id:null}
   function sync(model,mainId,offhandId){
     if(!model?.userData?.limbs)return;
     let state=model.userData.heldItemsView;
@@ -229,6 +231,11 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
           item.rotation.y=-.20;
         }else if(main===147||main===31){
           item.scale.setScalar(1.25);
+        }else if(jobWeapon(main)){
+          const kind=jobWeapon(main).kind;
+          item.scale.setScalar(kind==='greatsword'?.66:kind==='spear'?.69:kind==='shield'?.86:.75);
+          item.rotation.set(-.14,.1,-.12);
+          item.position.set(0,-.06,-.05);
         }else if(main>=168&&main<=188){
           const longItem=[168,170,171,172,179,186].includes(main);
           item.scale.setScalar(main===168?1.05:longItem?.78:.66);
@@ -280,7 +287,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     // Restore the grip after a completed jab (never leave the spear tilted).
     state.right.rotation.x=-.24;
     const ease=t=>{const x=Math.max(0,Math.min(1,t));return x*x*(3-2*x)};
-    if(drawing&&(state.mainId===149||state.mainId===CHIMERA_BOW)){
+    if(drawing&&(state.mainId===149||state.mainId===CHIMERA_BOW||jobWeapon(state.mainId)?.kind==='bow')){
       // Two-handed bow stance: both arms reach forward, one draws the string.
       rightArm.rotation.x=1.25;
       rightArm.rotation.y=-.16;
@@ -301,7 +308,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
       const seconds=(now-at)/1000;
       if(Number.isFinite(seconds)&&seconds>=0){
         const baseX=rightArm.rotation.x,baseZ=rightArm.rotation.z;
-        if(kind==='thrust'&&state.mainId===168&&seconds<.43){
+        if(kind==='thrust'&&(state.mainId===168||jobWeapon(state.mainId)?.kind==='spear')&&seconds<.43){
           // Draw back, extend the elbow, drive the spear straight ahead,
           // and retract. Distinct from the sword's vertical chopping arc.
           const jab=seconds<.09?ease(seconds/.09)*.35:
