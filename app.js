@@ -204,8 +204,10 @@ const inventory={
   ...Object.fromEntries(NEW_BUILD_BLOCKS.map(id=>[id,0])),...Object.fromEntries(NEW_ITEM_IDS.map(id=>[id,0])),
   ...Object.fromEntries(JOB_WEAPON_IDS.map(id=>[id,0]))
 };
-// Legacy saves may contain buffalo meat (retired item 154). Convert it to beef.
-const migrateOldMeat=id=>Number(id)===154?I.RAW_BEEF:Number(id);
+// Preserve old saves when retired items disappear. The obsolete
+// all-rounder-only sword (195) becomes an ordinary iron sword instead.
+const migrateOldMeat=id=>Number(id)===154?I.RAW_BEEF:
+  Number(id)===195?I.IRON_SWORD:Number(id);
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
 // Each world has its own job progression. Legacy worlds start unassigned
