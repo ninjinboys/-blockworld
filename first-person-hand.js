@@ -3,6 +3,7 @@
  * No external textures. Hotbar art uses the game's existing drawItemIcon().
  */
 import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
+import {makeJobWeaponModel,jobWeapon} from './job-system.js?v=20261020jobsModels02';
 
 export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isGuarding=()=>false,isVisible,getMovement,isMining,isHurt=()=>false}){
   const basic=(color)=>new THREE.MeshBasicMaterial({
@@ -318,7 +319,11 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     clearHeld();
     if(id==null)return;
     const placeBlock=Object.hasOwn(blockColors,id)&&id!==5;
-    if(id>=168&&id<=188){
+    if(jobWeapon(id)){
+      object=makeJobWeaponModel(THREE,id);
+      object.rotation.set(-.16,.20,jobWeapon(id).kind==='bow'?-.70:-.39);
+      object.scale.setScalar(jobWeapon(id).kind==='shield'?.80:jobWeapon(id).kind==='greatsword'?.70:.88);
+    }else if(id>=168&&id<=188){
       object=makeNewHeldItemModel(THREE,id);
       object.rotation.set(-.18,.28,-.58);
       object.scale.setScalar(.89);
