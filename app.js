@@ -7385,6 +7385,7 @@ function primaryActionStop(fire=false){
 let jobOpen=false;
 function updateJobHud(){
   const button=$('jobOpenButton');if(!button)return;
+  button.style.display=started&&worldReady?'block':'none';
   const entry=JOBS[activeJob]||JOBS.all;
   button.textContent='⚔ JOB：'+(jobSelected?entry.name:'未選択');
   button.classList.toggle('ready',!jobSelected||jobNextOptions(activeJob,level).length>0);
@@ -9358,7 +9359,7 @@ $('viewModeButton').addEventListener('pointerdown',e=>{e.preventDefault();e.stop
 updateViewLabel();
 $('startBtn').addEventListener('click',()=>{
   if(!worldReady||!currentAccount)return;
-  started=true;cover.style.display='none';last=performance.now();renderHealth();
+  started=true;cover.style.display='none';last=performance.now();renderHealth();updateJobHud();
   $('testWorldOpen').hidden=activeMap!=='testworld';
   if(multiRole)multiSleepBannerUpdate(multiSleepSnapshot.asleep,multiSleepSnapshot.total);
   chatSyncVisible();
