@@ -1687,7 +1687,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 @media(max-height:530px){.explorer-map-dialog{padding:8px}.explorer-map-head h2{font-size:19px}.explorer-map-frame{max-height:62dvh}#explorerMapCanvas{width:min(100%,59dvh)}}
 
 /* Job progression: accessible from the persistent in-world HUD. */
-#jobOpenButton{pointer-events:auto;touch-action:manipulation;position:fixed;z-index:23;top:calc(72px + env(safe-area-inset-top));right:12px;max-width:185px;min-height:40px;padding:7px 10px;border:2px solid #a88c5d;border-radius:8px;background:#243e43ec;color:#f9ebbf;font-size:12px;font-weight:900;box-shadow:0 3px 12px #0017;cursor:pointer}
+#jobOpenButton{pointer-events:auto;touch-action:manipulation;position:fixed;z-index:23;top:calc(119px + env(safe-area-inset-top));right:12px;max-width:185px;min-height:40px;padding:7px 10px;border:2px solid #a88c5d;border-radius:8px;background:#243e43ec;color:#f9ebbf;font-size:12px;font-weight:900;box-shadow:0 3px 12px #0017;cursor:pointer}
 #jobOpenButton.ready{border-color:#e9cf6e;box-shadow:0 0 0 2px #f7cc5540,0 0 14px #c8946b80}
 .job-screen{position:fixed;z-index:72;inset:0;display:none;align-items:center;justify-content:center;background:#07111ee8;color:#f7f4e9;padding:12px max(10px,env(safe-area-inset-right)) 12px max(10px,env(safe-area-inset-left));box-sizing:border-box}
 .job-screen.open{display:flex}
@@ -1707,5 +1707,5 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 .job-card.current{border-color:#e3c566;background:#344837}
 .job-card.available{border-color:#74d5b7;background:#1a4646}
 .job-bottom{margin:0;font-size:11px;color:#afc1ba}
-@media(max-width:760px){#jobOpenButton{top:calc(48px + env(safe-area-inset-top));right:8px;max-width:143px;font-size:10px}.job-panel{padding:12px;max-height:92dvh;gap:8px}.job-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.job-card{padding:10px;min-height:118px}.job-card strong{font-size:15px}}
+@media(max-width:760px){#jobOpenButton{top:calc(118px + env(safe-area-inset-top));right:8px;max-width:143px;font-size:10px}.job-panel{padding:12px;max-height:92dvh;gap:8px}.job-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.job-card{padding:10px;min-height:118px}.job-card strong{font-size:15px}}
 @media(max-width:440px){.job-grid{grid-template-columns:1fr}.job-card{min-height:95px}}
