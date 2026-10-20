@@ -1,4 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
+import {JOBS,STARTING_JOBS,JOB_WEAPON_IDS,jobWeapon,jobCanUse,jobNextOptions,jobCanChange,
+  drawJobWeaponIcon} from './job-system.js?v=20261020jobs01';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261020spearThrust03';
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261020spearThrust03';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
@@ -199,12 +201,19 @@ const inventory={
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.CHIMERA_HIDE]:0,
   [I.CHIMERA_FANG]:0,[I.CHIMERA_DAGGER]:0,[I.CHIMERA_HORN]:0,[I.CHIMERA_BOW]:0,[I.BED]:0,
   [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0,[I.WARP_WORKBENCH]:0,
-  ...Object.fromEntries(NEW_BUILD_BLOCKS.map(id=>[id,0])),...Object.fromEntries(NEW_ITEM_IDS.map(id=>[id,0]))
+  ...Object.fromEntries(NEW_BUILD_BLOCKS.map(id=>[id,0])),...Object.fromEntries(NEW_ITEM_IDS.map(id=>[id,0])),
+  ...Object.fromEntries(JOB_WEAPON_IDS.map(id=>[id,0]))
 };
 // Legacy saves may contain buffalo meat (retired item 154). Convert it to beef.
 const migrateOldMeat=id=>Number(id)===154?I.RAW_BEEF:Number(id);
 const hotbarSlots=Array(9).fill(null),acquiredOrder=[];
 const inventorySlots=Array(36).fill(null);
+// Each world has its own job progression. Legacy worlds start unassigned
+// without removing any of their existing inventory.
+let activeJob='all',jobSelected=false;
+for(const [key,data] of Object.entries(JOBS))names[data.weapon]=data.name+'の専用'+
+  ({sword:'剣',greatsword:'大剣',axe:'戦斧',spear:'槍',dual:'双剣',shield:'盾',bow:'弓',staff:'杖'}[data.kind]||'武器');
+
 const equippedArmor=[null,null,null,null]; // helmet / chest / legs / boots
 let equippedBackpack=false;
 const backpackSlots=Array(9).fill(null);
@@ -408,6 +417,7 @@ function mobDropIcon(g,id){
 }
 function drawItemIcon(g,id){
   g.clearRect(0,0,16,16);
+  if(drawJobWeaponIcon(g,id))return;
   if(drawDetailedItemIcon(g,id))return;
   if(id===I.WOOL||id===I.RAW_PORK||id===I.RAW_BEEF||id===I.LEATHER||
     id===I.COOKED_PORK||id===I.COOKED_BEEF||id===I.LION_FANG||
@@ -1186,6 +1196,7 @@ function makeSaveData(){
   return {
     version:4,worldSlot:currentWorldSlot,mapType:activeMap,generatorVersion,savedAt:Date.now(),seed:seed>>>0,
     level,xp,weather,dayTime,health,stamina,staminaRunSeconds,staminaRegenSeconds,cameraMode,
+    activeJob,jobSelected,
     initialSpawn:initialSpawn?{x:initialSpawn.x,y:initialSpawn.y,z:initialSpawn.z}:null,
     bedSpawn:bedSpawn?{x:bedSpawn.x,y:bedSpawn.y,z:bedSpawn.z}:null,
     inventory:{...inventory},acquiredOrder:[...acquiredOrder],hotbarSlots:[...hotbarSlots],selected,
@@ -1267,7 +1278,9 @@ function applySaveData(data){
   if(Number.isFinite(data.seed))seed=data.seed>>>0;
   generatorVersion=Math.max(1,Number(data.generatorVersion)||1);
   restoreExploration(data);
-  level=Math.max(1,Number(data.level)||1);xp=Math.max(0,Number(data.xp)||0);
+  level=Math.max(1,Math.min(150,Number(data.level)||1));xp=Math.max(0,Number(data.xp)||0);
+  activeJob=JOBS[data.activeJob]?data.activeJob:'all';
+  jobSelected=!!(data.jobSelected&&JOBS[data.activeJob]);
   weather=data.weather==='rain'?'rain':'clear';
   dayTime=Number.isFinite(data.dayTime)?Math.max(0,Math.min(.999999,data.dayTime)):.24;
   health=Number.isFinite(Number(data.health))?Math.max(0,Math.min(MAX_HEALTH,Math.floor(Number(data.health)))):MAX_HEALTH;
@@ -1412,6 +1425,7 @@ function resetWorldRuntime(){
   damageScreenTint.style.opacity='0';
   setAvatarDamageFlash(playerAvatar,false);
   cameraMode=0;updateViewLabel();playerAvatar.visible=false;
+  activeJob='all';jobSelected=false;setJobOpen(false);
   equippedArmor.fill(null);equippedBackpack=false;backpackSlots.fill(null);offhandItem=null;shieldGuarding=false;refreshShieldControl();applyArmorAppearance(playerAvatar,equippedArmor);
   clearFlyingArrows();selectedArrowAmmo=I.ARROW;gliderActive=false;
   while(thrownKnives.length){const shot=thrownKnives.pop();scene.remove(shot.model)}
@@ -1447,7 +1461,7 @@ async function initializeAccountWorld(save,slot){
   let hasSavedPos=false;
   if(save)hasSavedPos=applySaveData(save);
   else{
-    seed=freshSeed();generatorVersion=6;level=1;xp=0;weather='clear';dayTime=.24;selected=null;
+    seed=freshSeed();generatorVersion=6;level=1;xp=0;activeJob='all';jobSelected=false;weather='clear';dayTime=.24;selected=null;
     stamina=MAX_STAMINA;staminaRunSeconds=0;staminaRegenSeconds=0;
     health=MAX_HEALTH;dead=false;fallOriginY=null;initialSpawn=null;bedSpawn=null;healthRegenTimer=0;
     clearInventorySlots();selectedHotbarIndex=0;inventorySelectedSlot=null;offhandItem=null;shieldGuarding=false;refreshShieldControl();syncDerivedInventory();
@@ -5379,21 +5393,25 @@ function defeatedMobXP(mob){
 }
 function nextBlueprint(){return [...recipes,...workbenchRecipes].sort((a,b)=>a.unlockLevel-b.unlockLevel).find(r=>r.unlockLevel>level)||null}
 function updateProgress(){
-  const need=xpNeeded(level),pct=Math.max(0,Math.min(100,xp/need*100));
-  levelText.textContent='LV '+level;xpText.textContent=xp+' / '+need+' XP';xpFill.style.width=pct+'%';
+  const need=xpNeeded(level),pct=level>=150?100:Math.max(0,Math.min(100,xp/need*100));
+  levelText.textContent='LV '+level;xpText.textContent=level>=150?'MAX LEVEL':xp+' / '+need+' XP';xpFill.style.width=pct+'%';
+  updateJobHud();
   const next=nextBlueprint();blueprintText.textContent=next?'次の設計図：'+next.name.replace(/ ×\d+$/,'')+'（LV '+next.unlockLevel+'）':'全設計図を獲得済み';
 }
 function gainXP(amount,source=''){
-  if(amount<=0)return;
+  if(amount<=0||level>=150)return;
   xp+=amount;let unlocked=[];
-  while(xp>=xpNeeded(level)){
+  while(level<150&&xp>=xpNeeded(level)){
     xp-=xpNeeded(level);level++;
     const rs=[...recipes,...workbenchRecipes].filter(r=>r.unlockLevel===level);unlocked.push(...rs.map(r=>r.name.replace(/ ×\d+$/,'')));
   }
+  if(level>=150)xp=0;
   updateProgress();markSaveDirty();
   // XP increases are already visible in the permanent XP bar.
   // Keep the infrequent level-up / blueprint notice only.
-  if(unlocked.length)flash('LEVEL UP! LV '+level+'　設計図獲得：'+unlocked.join(' / '));
+  if(jobSelected&&jobNextOptions(activeJob,level).length){
+    flash('ジョブ進化が解放！ JOBから進化先を選べます（LV '+level+'）');
+  }else if(unlocked.length)flash('LEVEL UP! LV '+level+'　設計図獲得：'+unlocked.join(' / '));
 }
 function pickTier(){
   if(selected===I.DIAMOND_PICK)return 4;
@@ -5438,6 +5456,7 @@ function canMineBlock(id,showMessage=true){
   return true;
 }
 const NON_STACKABLE=new Set([
+  ...JOB_WEAPON_IDS,
   I.WOOD_PICK,I.STONE_PICK,I.IRON_PICK,I.GOLD_PICK,I.DIAMOND_PICK,
   I.STONE_SWORD,I.IRON_SWORD,I.GOLD_SWORD,I.DIAMOND_SWORD,
   I.WOOD_AXE,I.STONE_AXE,I.IRON_AXE,I.GOLD_AXE,I.DIAMOND_AXE,
@@ -8121,7 +8140,7 @@ function multiCurrentPose(){
 }
 function multiProfile(){
   return {name:currentAccount.name,savedAt:Date.now(),level,xp,health,stamina,staminaRunSeconds,
-    staminaRegenSeconds,cameraMode,selectedHotbarIndex,
+    staminaRegenSeconds,cameraMode,selectedHotbarIndex,activeJob,jobSelected,
     inventorySlots:inventorySlots.map(s=>s?{id:s.id,qty:s.qty}:null),
     equippedArmor:[...equippedArmor],equippedBackpack,backpackSlots:backpackSlots.map(v=>v?{...v}:null),offhandItem:offhandItem?{...offhandItem}:null,
     bedSpawn:bedSpawn?{...bedSpawn}:null,
@@ -8615,7 +8634,7 @@ function multiUpdateRoster(people){
       if(!seen.has(id))multiRemoveAvatar(id);
 }
 function multiProfileFromWorld(world){
-  const fields=['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds',
+  const fields=['inventorySlots','selectedHotbarIndex','level','xp','health','stamina','staminaRunSeconds','activeJob','jobSelected',
     'staminaRegenSeconds','cameraMode','player','bedSpawn','equippedArmor'];
   const p={savedAt:world.savedAt||Date.now()};
   for(const k of fields)if(Object.hasOwn(world,k))p[k]=world[k];
