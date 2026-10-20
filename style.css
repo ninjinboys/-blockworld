@@ -1685,3 +1685,27 @@ canvas{display:block;width:100%;height:100%;touch-action:none}#game{position:fix
 #binocularClose{position:absolute;right:max(20px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);min-height:46px;padding:9px 14px;pointer-events:auto;border:2px solid #9ac7b7;border-radius:8px;background:#12282be6;color:#effffb;font-weight:900;font-size:13px;cursor:pointer}
 @media(max-width:760px){.explorer-map-dialog{max-height:95dvh}.explorer-map-frame{max-height:56dvh}#explorerMapCanvas{width:min(100%,50dvh)}#binocularClose{top:auto;bottom:calc(245px + env(safe-area-inset-bottom));transform:none;right:15px;font-size:12px}}
 @media(max-height:530px){.explorer-map-dialog{padding:8px}.explorer-map-head h2{font-size:19px}.explorer-map-frame{max-height:62dvh}#explorerMapCanvas{width:min(100%,59dvh)}}
+
+/* Job progression: accessible from the persistent in-world HUD. */
+#jobOpenButton{position:fixed;z-index:23;top:calc(72px + env(safe-area-inset-top));right:12px;max-width:185px;min-height:40px;padding:7px 10px;border:2px solid #a88c5d;border-radius:8px;background:#243e43ec;color:#f9ebbf;font-size:12px;font-weight:900;box-shadow:0 3px 12px #0017;cursor:pointer}
+#jobOpenButton.ready{border-color:#e9cf6e;box-shadow:0 0 0 2px #f7cc5540,0 0 14px #c8946b80}
+.job-screen{position:fixed;z-index:72;inset:0;display:none;align-items:center;justify-content:center;background:#07111ee8;color:#f7f4e9;padding:12px max(10px,env(safe-area-inset-right)) 12px max(10px,env(safe-area-inset-left));box-sizing:border-box}
+.job-screen.open{display:flex}
+.job-panel{width:min(820px,98vw);max-height:94dvh;display:flex;flex-direction:column;min-height:0;gap:12px;padding:clamp(14px,3vw,24px);box-sizing:border-box;border:2px solid #b49a67;border-radius:15px;background:linear-gradient(150deg,#182f37,#102129);box-shadow:0 22px 64px #000c}
+.job-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.job-eyebrow{color:#e7bd72;font-size:11px;letter-spacing:.13em;font-weight:900}
+.job-header h2{font-size:clamp(21px,4vw,29px);margin:4px 0 7px}
+#jobCurrent{margin:0;color:#dfca9e;font-size:14px}
+#jobInfo{margin:0;color:#d6deda;font-size:13px}
+#jobClose{cursor:pointer;min-width:45px;min-height:45px;border-radius:9px;background:#334c52;border:1px solid #8c9996;color:white;font-size:19px}
+.job-grid{min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px;align-content:start}
+.job-card{display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-align:left;padding:15px 14px;border-radius:10px;border:2px solid #506b72;background:#1d3540;color:#f7fbfa;min-height:130px;cursor:pointer}
+.job-card strong{font-size:18px}
+.job-card span{font-size:12px;color:#e9c77f}
+.job-card small{font-size:12px;color:#c6d4cf;line-height:1.5}
+.job-card:disabled{cursor:default;opacity:.56}
+.job-card.current{border-color:#e3c566;background:#344837}
+.job-card.available{border-color:#74d5b7;background:#1a4646}
+.job-bottom{margin:0;font-size:11px;color:#afc1ba}
+@media(max-width:760px){#jobOpenButton{top:calc(48px + env(safe-area-inset-top));right:8px;max-width:143px;font-size:10px}.job-panel{padding:12px;max-height:92dvh;gap:8px}.job-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.job-card{padding:10px;min-height:118px}.job-card strong{font-size:15px}}
+@media(max-width:440px){.job-grid{grid-template-columns:1fr}.job-card{min-height:95px}}
