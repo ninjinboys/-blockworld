@@ -42,8 +42,12 @@ export function jobCanChange(from,to,level){
 export function drawJobWeaponIcon(g,id){
   const data=jobWeapon(id);if(!data)return false;
   const {kind,group}=data;
-  const ink=group==='mage'?'#a89afa':group==='archer'?'#e6b67f':
-    group==='shield'?'#a4bdca':group==='merc'?'#e7b9a0':'#b9dbe8';
+  const ink=data.key==='supportMage'?'#80dfba':data.key==='battleMage'?'#e19bf6':
+    data.key==='powerArcher'?'#e9b85c':data.key==='swiftArcher'?'#8ee5be':
+    data.key==='berserker'?'#ef788b':data.key==='heavy'?'#c0d3df':
+    data.key==='warrior'?'#f2c66b':group==='mage'?'#a89afa':
+    group==='archer'?'#e6b67f':group==='shield'?'#a4bdca':
+    group==='merc'?'#e7b9a0':'#b9dbe8';
   const h='#ffffff',edge='#283b50',gold='#e2ad62';
   const rect=(x,y,w,z,col)=>{g.fillStyle=col;g.fillRect(x,y,w,z)};
   g.clearRect(0,0,16,16);
@@ -78,14 +82,19 @@ export function drawJobWeaponIcon(g,id){
     rect(7,1,2,5,h);rect(4,11,9,2,gold);
     rect(7,13,3,3,edge);
   }
+  if(data.level>=30){rect(0,0,3,3,gold);rect(1,1,1,1,h)}
+  if(data.level>=90){rect(12,0,4,3,h)}
   return true;
 }
 export function makeJobWeaponModel(T,id){
   const d=jobWeapon(id);if(!d)return null;
   const g=new T.Group(),mats=new Map();
-  const colors={metal:0xb8cad5,blade:0xe2f3fc,edge:0x708594,wood:0x956843,
-    grip:0x343b4c,gold:0xd8ac5d,dark:0x27313a,leather:0x775740,
-    magic:d.group==='mage'?0x9876ee:0x83dbea};
+  const colors={metal:d.key==='heavy'?0x7e94a0:d.key==='warrior'?0xdac47e:0xb8cad5,
+    blade:d.key==='berserker'?0xff7894:d.key==='swordmaster'?0x9df6fa:0xe2f3fc,
+    edge:0x708594,wood:0x956843,grip:0x343b4c,
+    gold:d.key==='swiftArcher'?0x78d9ba:0xd8ac5d,
+    dark:0x27313a,leather:0x775740,
+    magic:d.key==='supportMage'?0x72e4ac:d.key==='battleMage'?0xff718a:0x9876ee};
   const mat=c=>{if(!mats.has(c))mats.set(c,new T.MeshLambertMaterial({color:c,side:T.DoubleSide}));return mats.get(c)};
   function box(w,h,dep,col,x=0,y=0,z=0){
     const mesh=new T.Mesh(new T.BoxGeometry(w,h,dep),mat(col));
@@ -120,8 +129,8 @@ export function makeJobWeaponModel(T,id){
         tip.position.set(x,upper+.23,0);tip.rotation.y=Math.PI/4;g.add(tip);
         box(.2,.17,.15,colors.metal,x,upper-.06,0);
       }else{
-        const bladeH=great?1.04:dual?.53:.78;
-        const bladeW=great?.39:dual?.13:.2;
+        const bladeH=great?1.10:dual?(d.level>=30?.72:.53):d.level>=30?.99:.78;
+        const bladeW=great?.43:dual?.15:d.level>=30?.23:.2;
         box(bladeW,bladeH,.12,colors.metal,x,upper*.51+bladeH*.5+.04,0);
         box(bladeW*.22,bladeH*.98,.125,colors.blade,x-bladeW*.34,upper*.51+bladeH*.5+.04,-.008);
         const tip=new T.Mesh(new T.ConeGeometry(bladeW*.60,.20,4),mat(colors.blade));
@@ -140,27 +149,55 @@ export function makeJobWeaponModel(T,id){
     }
     box(.15,.71,.075,colors.gold,0,-.02,-.24);
     box(.57,.13,.076,colors.gold,0,.1,-.24);
+    if(d.level>=30){
+      box(.40,.43,.055,colors.metal,0,-.31,-.24);
+      for(const x of [-.33,.33])box(.055,.55,.06,colors.blade,x,-.18,-.26);
+    }
+    if(d.key==='heavy'){
+      g.scale.set(1.3,1.2,1.0);
+      box(.41,.22,.09,colors.gold,0,.32,-.31);
+    }else if(d.key==='tank'){
+      box(.20,.20,.11,colors.magic,0,-.21,-.33);
+      g.scale.set(1.1,1.1,1.0);
+    }
   }else if(k==='bow'){
     box(.15,.45,.17,colors.wood,0,.04,0);
+    const height=d.key==='powerArcher'?1.85:d.key==='swiftArcher'?1.15:1.5;
+    const width=d.key==='powerArcher'?.43:d.key==='swiftArcher'?.26:.35;
+    const thickness=d.key==='powerArcher'?.13:.09;
     for(let i=0;i<10;i++){
-      const t=i/9,a=(t-.5)*1.5;
-      const x=-.35*Math.sin(Math.PI*t);
-      const seg=box(.09,.22,.13,i%2?colors.wood:colors.gold,x,a,0);
+      const t=i/9,a=(t-.5)*height;
+      const x=-width*Math.sin(Math.PI*t);
+      const seg=box(thickness,height/7,.13,i%2?colors.wood:colors.gold,x,a,0);
       seg.rotation.z=(t-.5)*1.1;
     }
-    rod([.02,-.74,-.025],[.02,.74,-.025],.015,colors.blade,4);
+    rod([.02,-height*.49,-.025],[.02,height*.49,-.025],.015,colors.blade,4);
     box(.18,.26,.13,colors.gold,-.34,.0,0);
   }else if(k==='staff'){
     rod([0,-.27,0],[0,1.33,0],.055,colors.wood);
     box(.14,.12,.16,colors.gold,0,1.15,0);
     const crystal=new T.Mesh(new T.OctahedronGeometry(.25,0),mat(colors.magic));
-    crystal.position.set(0,1.46,0);g.add(crystal);
+    crystal.position.set(0,1.46,0);
+    if(d.level>=30)crystal.scale.setScalar(1.37);
+    g.add(crystal);
     for(const sign of [-1,1]){
       rod([0,1.08,0],[sign*.25,1.45,0],.039,colors.metal);
       const orb=new T.Mesh(new T.SphereGeometry(.09,8,6),mat(colors.blade));
       orb.position.set(sign*.27,1.48,0);g.add(orb);
     }
     box(.14,.10,.13,colors.gold,0,-.31,0);
+    if(d.key==='battleMage'){
+      for(let i=0;i<6;i++){
+        const theta=i*Math.PI/3;
+        const gem=new T.Mesh(new T.OctahedronGeometry(.055,0),mat(colors.magic));
+        gem.position.set(Math.cos(theta)*.40,1.45,Math.sin(theta)*.40);
+        g.add(gem);
+      }
+    }
+    if(d.key==='supportMage'){
+      const halo=new T.Mesh(new T.TorusGeometry(.39,.04,5,12),mat(colors.magic));
+      halo.rotation.x=Math.PI/2;halo.position.y=1.45;g.add(halo);
+    }
   }
   // Each variant remains identifiable by class through the accent color.
   g.name='Job-exclusive weapon: '+d.name+' '+id;
