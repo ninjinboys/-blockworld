@@ -4996,12 +4996,19 @@ function updateWorldDrops(dt,now){
 function blocked(px,py,pz){
   const e=1e-4;
   const minX=Math.ceil((px-PR)-0.5+e),maxX=Math.floor((px+PR)+0.5-e);
-  const minY=Math.ceil(py-0.5+e),maxY=Math.floor((py+PH)+0.5-e);
+  // Fence collision extends to 1.0 above the block center (1.5 high).
+  // Read the cell below normal foot height or a jump could skip its hitbox.
+  const minY=Math.ceil(py-1.0+e),maxY=Math.floor((py+PH)+0.5-e);
   const minZ=Math.ceil((pz-PR)-0.5+e),maxZ=Math.floor((pz+PR)+0.5-e);
   for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)for(let z=minZ;z<=maxZ;z++){
     const id=get(x,y,z);if(!solid(id))continue;
     const shapes=detailedBlockModels.collisionBoxes(id);
-    if(!shapes)return true;
+    if(!shapes){
+      // The expanded vertical search must not mistake ordinary floor blocks
+      // beneath the player's feet for a collision.
+      if(py+PH>y-.5+e&&py<y+.5-e)return true;
+      continue;
+    }
     for(const [lx,rx,by,ty,lz,rz] of shapes)
       if(px+PR>x+lx+e&&px-PR<x+rx-e&&py+PH>y+by+e&&py<y+ty-e&&
          pz+PR>z+lz+e&&pz-PR<z+rz-e)return true;
