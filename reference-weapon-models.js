@@ -342,6 +342,34 @@ export function makeReferenceWeapon(T,d){
       'silver',.462,.073);
     for(const y of [-.16,-.57,-.95])rivet(s*.79,y,.468);
   }
+  // Reference-match refinement: two CONTINUOUS forged side faceplates.
+  // A single tall surface, rather than two disjoint silver tiles, creates
+  // the strong vertical architectural silhouette in the front-view sheet.
+  // Underlying armor remains visible as step-cut layers at both extremities.
+  for(const s of [-1,1]){
+    const flip=p=>p.map(([x,y])=>[s*x,y]);
+    panel(flip([[.27,.56],[.43,.74],[.56,.71],[.66,.48],
+      [.61,.14],[.59,-.22],[.64,-.63],[.57,-.93],
+      [.41,-1.23],[.28,-1.15],[.21,-.82],[.24,-.18]]),
+      'graphite',.550,.083);
+    panel(flip([[.30,.53],[.43,.65],[.52,.63],[.57,.43],
+      [.53,.09],[.52,-.23],[.57,-.63],[.51,-.87],
+      [.39,-1.13],[.29,-1.05],[.26,-.82],[.28,-.17]]),
+      'silver',.601,.068);
+    // A separate forged bevel runs uninterrupted down the inner edge.
+    panel(flip([[.30,.45],[.36,.52],[.35,.11],[.33,-.28],
+      [.36,-.87],[.29,-.98],[.275,-.79]]),'edge',.649,.018);
+    // A broad longitudinal faceted steel ridge catches directional light.
+    panel(flip([[.435,.46],[.49,.50],[.48,.21],[.47,-.18],
+      [.50,-.69],[.45,-.93],[.41,-.93],[.43,-.33]]),
+      'iron',.648,.024);
+    line([s*.305,.46],[s*.295,-.95],.681,'edge',.009);
+    line([s*.505,.49],[s*.493,.09],.679,'gild',.009);
+    line([s*.50,-.34],[s*.495,-.77],.680,'gild',.009);
+    for(const y of [.53,.19,-.24,-.62,-.99]){
+      rivet(s*.55,y,.668);
+    }
+  }
   // Central uninterrupted recessed black strip, engineered to sit visibly
   // BETWEEN the side plates rather than flush with their surface.
   panel([[-.21,.95],[0,1.26],[.21,.95],[.175,-1.31],
@@ -443,9 +471,60 @@ export function makeReferenceWeapon(T,d){
     const y=.50-i*.255,x=s*(i%2?.41:.46);
     line([x,y],[x-s*.034,y+.052],.589,'edge',.0035);
   }
-  // Slightly taller and slimmer than the previous squarish shield.
-  // Changes the DISPLAY MESH ONLY, never collision, stats or recipes.
-  g.scale.x=.88;
+  // Procedural scratched PBR-metal finish. Metal, bronze and edge wear
+  // are textured independently, without an image plane or downloaded asset.
+  // Uses 256px maps, shared between corresponding meshes for mobile GPU use.
+  if(typeof document!=='undefined' && typeof T.CanvasTexture==='function'){
+    function forgedSurface(tint,seed){
+      const canvas=document.createElement('canvas');
+      canvas.width=256;canvas.height=256;
+      const ctx=canvas.getContext('2d');
+      if(!ctx)return null;
+      const n=256;
+      let state=seed>>>0;
+      const rand=()=>((state=Math.imul(state,1664525)+1013904223>>>0)/4294967296);
+      ctx.fillStyle=tint;
+      ctx.fillRect(0,0,n,n);
+      // Subtle oxidized spots and dents, not an overlaid flat noise picture.
+      for(let i=0;i<1150;i++){
+        const x=rand()*n,y=rand()*n,r=.4+rand()*7;
+        ctx.fillStyle=rand()>.50?'rgba(248,245,226,.055)':'rgba(18,25,28,.060)';
+        ctx.beginPath();ctx.ellipse(x,y,r,r*(.15+rand()*.45),
+          rand()*Math.PI,0,Math.PI*2);ctx.fill();
+      }
+      // Scratches and diagonal tooling marks etched into aged metal.
+      for(let i=0;i<410;i++){
+        const x=rand()*n,y=rand()*n,len=1+rand()*18;
+        ctx.beginPath();ctx.moveTo(x,y);
+        ctx.lineTo(x+len*(rand()>.5?1:-1),y-len*(.20+rand()*.3));
+        ctx.strokeStyle=rand()>.47?'rgba(255,247,230,.24)':'rgba(20,25,29,.16)';
+        ctx.lineWidth=rand()>.93?1.2:.48;ctx.stroke();
+      }
+      const texture=new T.CanvasTexture(canvas);
+      texture.wrapS=T.RepeatWrapping;texture.wrapT=T.RepeatWrapping;
+      texture.repeat.set(1.30,1.50);
+      if(T.SRGBColorSpace)texture.colorSpace=T.SRGBColorSpace;
+      texture.anisotropy=2;
+      return texture;
+    }
+    const steelFinish=forgedSurface('#e7e9e6',0x4a19e);
+    const goldFinish=forgedSurface('#e7d8c1',0x7c4a12);
+    const darkFinish=forgedSurface('#b3b4b2',0x539a74);
+    for(const k of ['iron','silver','edge']){
+      if(steelFinish){M[k].map=steelFinish;M[k].needsUpdate=true;}
+    }
+    for(const k of ['bronze','gild']){
+      if(goldFinish){M[k].map=goldFinish;M[k].needsUpdate=true;}
+    }
+    if(darkFinish){M.graphite.map=darkFinish;M.graphite.needsUpdate=true;}
+  }
+  // Orthographic front reference: width 0.39~0.41 of full height.
+  // Side reference: slim chassis with genuinely raised armor and 2 handles.
+  // The previous model was nearly square in frontal projection and its
+  // full unscaled Z range was almost as deep as its total visible width.
+  // THESE ARE GEOMETRIC 3D TRANSFORMS, NOT a change to a flat image.
+  g.scale.x=.715;
+  g.scale.z=.285;
   g.userData.referenceSheet='Heavy Soldier Tower Shield — 4-view reference / 3D re-sculpt';
   g.userData.hasRearLeatherGrips=true;
  }
