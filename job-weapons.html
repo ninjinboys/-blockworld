@@ -122,7 +122,16 @@ function select(key){
   selectedKey=key;
   if(current)scene.remove(current);
   // This is the EXACT exported game mesh, not a picture, sprite, or raster.
-  current=makeJobWeaponModel(THREE,data.weapon);
+  if(data.kind==='dual'){
+    // Reference sheet: exhibit both separately modeled Berserker blades.
+    // Game equipment still constructs one blade for each player's hand.
+    const pair=new THREE.Group();
+    const left=makeJobWeaponModel(THREE,data.weapon);
+    const right=makeJobWeaponModel(THREE,data.weapon);
+    left.position.x=-.55;right.position.x=.55;
+    right.rotation.y=Math.PI;
+    pair.add(left,right);current=pair;
+  }else current=makeJobWeaponModel(THREE,data.weapon);
   scene.add(current);
   current.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(current),v=new THREE.Vector3();
