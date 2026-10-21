@@ -260,82 +260,194 @@ export function makeReferenceWeapon(T,d){
   }
  }
  function shield(){
-  // Reference silhouette: three bronze cathedral finials and V point.
-  const outline=[[-.90,.84],[-.68,1.21],[-.50,.96],
-   [-.34,1.02],[0,1.41],[.34,1.02],[.50,.96],
-   [.68,1.21],[.90,.84],[1.00,-.71],
-   [.70,-1.15],[0,-1.48],[-.70,-1.15],[-1.00,-.71]];
-  prism(outline,.43,'bronze',0,.033);
-  prism(outline.map(([x,y])=>[x*.947,y*.948]),.41,'graphite',.016,.021);
-  prism(outline.map(([x,y])=>[x*.895,y*.897]),.41,'iron',.040,.014);
+  // 2026-10-21 orthographic Heavy Soldier TOWER SHIELD.
+  // All five depths are physical closed/raised 3D mesh geometry.
+  // Front reference: three cathedral finials, dark vertical energy trench,
+  // overlapping long silver panels, stepped gold edge, pointed lower prow.
+  // Back reference: black riveted shell, buttresses, TWO leather cross grips.
+  const edge=[
+    [-.74,.89],[-.77,1.13],[-.60,1.34],[-.46,1.01],
+    [-.29,1.08],[0,1.54],[.29,1.08],[.46,1.01],
+    [.60,1.34],[.77,1.13],[.74,.89],
+    [.89,.76],[.87,-.64],[.69,-1.12],[.32,-1.42],
+    [0,-1.58],[-.32,-1.42],[-.69,-1.12],[-.87,-.64],[-.89,.76]
+  ];
+  const scaled=(p,sx,sy)=>p.map(([x,y])=>[x*sx,y*sy]);
+  const profile=(points,th,mat,z,bevel=.014)=>prism(points,th,mat,z,bevel);
+  const mirrored=(pts,s)=>pts.map(([x,y])=>[s*x,y]);
+  const panel=(points,mat,z,th=.07)=>profile(points,th,mat,z,.007);
+  const line=(a,b,z,mat='gild',r=.012)=>trim(a,b,z,mat,r);
+  // Full-depth enclosed metal core. Size retains tower proportions:
+  // ~1.8 units wide, ~3.1 units tall and ~0.50 units thick.
+  profile(edge,.48,'bronze',0,.026);
+  profile(scaled(edge,.960,.965),.49,'graphite',.005,.018);
+  profile(scaled(edge,.907,.940),.50,'iron',.015,.012);
+  profile(scaled(edge,.856,.907),.504,'graphite',.026,.007);
+  // Separate dark inset creates a structural negative-space look.
   for(const s of [-1,1]){
-   prism([[s*.82,.83],[s*.98,.80],[s*.98,-.67],
-     [s*.73,-1.08],[s*.57,-1.07],[s*.83,-.53]],.17,'bronze',.253,.015);
-   prism([[s*.59,.94],[s*.68,1.25],[s*.81,.89],
-     [s*.93,.78],[s*.72,.52],[s*.54,.78]],.19,'gild',.304,.019);
-   gem(s*.67,1.01,.421,.055,.106,.037);
-   // Each protective panel is an individual multi-depth steel forging.
-   for(const [high,low] of [[.70,.05],[-.06,-.83]]){
-    prism([[s*.20,high],[s*.46,high+.05],[s*.69,high-.18],
-      [s*.63,low+.13],[s*.44,low],[s*.19,low+.13]],
-      .115,'graphite',.323,.012);
-    prism([[s*.245,high-.06],[s*.46,high-.02],[s*.60,high-.21],
-      [s*.56,low+.16],[s*.40,low+.08],[s*.25,low+.15]],
-      .091,'silver',.411,.009);
-    trim([s*.28,high-.13],[s*.29,low+.22],.483,'edge',.013);
-    rivet(s*.49,high-.18,.492);
-   }
-   prism([[s*.63,-.80],[s*.83,-.69],[s*.84,-.90],
-     [s*.64,-1.12],[s*.38,-1.22]],.11,'gild',.366,.011);
-   prism([[s*.64,-.82],[s*.76,-.80],
-     [s*.72,-.97],[s*.43,-1.12]],.067,'silver',.440,.008);
-   trim([s*.74,.14],[s*.75,-.45],.455,'light',.017);
+    // Side profile: fully extruded bronze guard gives a thick side wall,
+    // plus bronze/silver nose plates proud of the shield's front face.
+    panel(mirrored([[.76,.83],[.91,.78],[.92,-.64],
+     [.70,-1.16],[.59,-1.21],[.79,-.57]],s),'bronze',.300,.19);
+    panel(mirrored([[.79,.61],[.84,.55],[.85,-.60],
+     [.67,-1.06],[.64,-.94],[.78,-.45]],s),'graphite',.415,.082);
+    panel(mirrored([[.80,.39],[.85,.27],[.85,-.57],
+     [.68,-.98],[.67,-.81],[.78,-.44]],s),'silver',.463,.046);
+    // Side glimmer runs behind overlapping lower steel plates.
+    line([s*.72,.28],[s*.75,-.71],.501,'light',.013);
+    // Pointed bronze side finial, three-dimensional with cyan inset.
+    panel(mirrored([[.44,.99],[.56,1.21],[.63,1.43],
+     [.76,1.10],[.86,.92],[.72,.73],[.54,.81]],s),'bronze',.378,.19);
+    panel(mirrored([[.55,1.10],[.63,1.32],[.70,1.09],
+     [.64,.93]],s),'inset',.496,.06);
+    gem(s*.635,1.119,.544,.057,.133,.052);
+    line([s*.60,1.31],[s*.65,1.02],.555,'gild',.010);
+    // Thick broad shoulder support connecting crown to side wall.
+    panel(mirrored([[.29,.94],[.58,.99],[.83,.77],
+      [.70,.53],[.43,.49],[.22,.69]],s),'bronze',.370,.104);
+    panel(mirrored([[.33,.88],[.55,.92],[.73,.75],
+      [.65,.61],[.40,.57],[.26,.69]],s),'graphite',.436,.060);
+    line([s*.32,.86],[s*.68,.72],.477,'gild',.022);
+    // The two main tall silver armor plates are separately forged,
+    // thickness-stepped, faceted and divided by real dark gaps.
+    const topArmor=[[.23,.68],[.46,.83],[.66,.69],[.64,.14],
+      [.54,-.20],[.37,-.32],[.17,-.23],[.19,.25]];
+    panel(mirrored(topArmor,s),'graphite',.385,.15);
+    panel(mirrored([[.26,.60],[.46,.73],[.57,.62],[.58,.18],
+      [.49,-.10],[.36,-.22],[.24,-.16],[.25,.30]],s),'silver',.488,.074);
+    panel(mirrored([[.31,.56],[.45,.64],[.49,.53],[.50,.14],
+      [.42,-.08],[.34,-.13]],s),'iron',.543,.023);
+    // Long seam following the bevel of each upper protective plate.
+    line([s*.29,.54],[s*.30,-.10],.564,'edge',.011);
+    line([s*.56,.57],[s*.55,.18],.541,'gild',.010);
+    for(const p of [[.45,.66],[.51,-.13]])rivet(s*p[0],p[1],.560);
+    // Lower armored halves form long tapered breastplates.
+    panel(mirrored([[.16,-.29],[.34,-.23],[.61,-.30],
+      [.67,-.79],[.51,-1.23],[.23,-1.41],[.11,-1.10]],s),
+      'graphite',.382,.155);
+    panel(mirrored([[.21,-.34],[.39,-.29],[.57,-.38],
+      [.60,-.79],[.46,-1.13],[.23,-1.29],[.17,-1.09]],s),
+      'silver',.477,.089);
+    panel(mirrored([[.23,-.42],[.42,-.39],[.50,-.50],
+      [.51,-.85],[.39,-1.05],[.25,-1.13]],s),'iron',.540,.022);
+    line([s*.28,-.48],[s*.25,-1.13],.563,'edge',.012);
+    line([s*.52,-.45],[s*.52,-.79],.548,'gild',.012);
+    for(const p of [[.49,-.44],[.45,-1.12]])rivet(s*p[0],p[1],.548);
+    // Overlapping faceted lower end guards and pointed bronze corners.
+    panel(mirrored([[.52,-.90],[.72,-.72],[.85,-.79],
+      [.79,-1.04],[.61,-1.32],[.29,-1.48],[.37,-1.25]],s),
+      'bronze',.387,.133);
+    panel(mirrored([[.55,-.92],[.71,-.79],[.76,-.83],
+      [.72,-1.02],[.53,-1.23],[.37,-1.35],[.42,-1.22]],s),
+      'silver',.462,.073);
+    for(const y of [-.16,-.57,-.95])rivet(s*.79,y,.468);
   }
-  // A recessed central energy channel with gold separations and real jewels.
-  prism([[-.22,.91],[0,1.25],[.22,.91],
-    [.18,-1.17],[0,-1.34],[-.18,-1.17]],.111,'gild',.346,.013);
-  prism([[-.145,.80],[0,1.14],[.145,.80],
-    [.115,-1.10],[0,-1.26],[-.115,-1.10]],
-    .072,'inset',.413,.009);
-  curve([[0,.76,.468],[0,.33,.468],[0,-.17,.468],[0,-.96,.468]],.018,'light');
-  for(const y of [-.80,-.16,.46]){
-   diamond(0,y,.487,.09,.17,'bronze',.046);
-   gem(0,y,.519,.058,.105,.040);
+  // Central uninterrupted recessed black strip, engineered to sit visibly
+  // BETWEEN the side plates rather than flush with their surface.
+  panel([[-.21,.95],[0,1.26],[.21,.95],[.175,-1.31],
+    [0,-1.55],[-.175,-1.31]],'bronze',.422,.108);
+  panel([[-.142,.84],[0,1.15],[.142,.84],[.119,-1.31],
+    [0,-1.47],[-.119,-1.31]],'graphite',.486,.071);
+  panel([[-.078,.76],[0,.91],[.078,.76],[.075,-1.23],
+    [0,-1.38],[-.075,-1.23]],'inset',.532,.033);
+  // Fluorescent turquoise line and forked geometric circuitry.
+  curve([[0,.74,.560],[0,.39,.560],[0,-.18,.560],
+    [0,-.89,.560],[0,-1.23,.560]],.015,'light');
+  for(const [y,size] of [[.16,.13],[-.34,.095],[-.72,.073]]){
+    diamond(0,y,.582,size*.69,size,'bronze',.042);
+    diamond(0,y,.620,size*.48,size*.75,'light',.025);
+    for(const s of [-1,1]){
+      line([0,y+.11],[s*.066,y+.20],.608,'light',.009);
+      line([s*.066,y+.20],[0,y+.28],.608,'light',.007);
+    }
   }
-  prism([[-.73,.80],[-.42,.96],[-.31,1.02],[0,1.42],
-    [.31,1.02],[.42,.96],[.73,.80],[.43,.71],
-    [0,.64],[-.43,.71]],.175,'bronze',.441,.019);
-  diamond(0,.98,.563,.262,.357,'graphite',.082);
-  diamond(0,.98,.616,.188,.262,'gild',.051);
-  gem(0,.98,.676,.133,.188,.064);
-  prism([[-.39,-1.10],[0,-1.48],[.39,-1.10],
-    [.23,-1.03],[0,-1.26],[-.23,-1.03]],.127,'bronze',.440,.012);
-  gem(0,-1.26,.538,.065,.092,.041);
-  // Full shield BACK is built separately, with TWO leather crossbars.
-  prism(outline.map(([x,y])=>[x*.88,y*.87]),.075,'graphite',-.249,.014);
+  // Cathedral crest in front of the shell, its silhouette has THREE
+  // distinct upward finials, a V-shaped nested central frame and both
+  // a small apex gem and a big diamond at the heart of the crown.
+  panel([[-.73,.87],[-.45,1.07],[-.26,1.13],[0,1.56],
+    [.26,1.13],[.45,1.07],[.73,.87],
+    [.55,.77],[.30,.86],[0,.60],[-.30,.86],[-.55,.77]],
+    'bronze',.535,.16);
+  panel([[-.60,.87],[-.35,1.04],[-.22,1.10],[0,1.45],
+    [.22,1.10],[.35,1.04],[.60,.87],
+    [.46,.85],[.21,.93],[0,.75],[-.21,.93],[-.46,.85]],
+    'gild',.640,.065);
+  panel([[-.20,1.02],[0,1.41],[.20,1.02],
+    [.17,.84],[0,.65],[-.17,.84]],'graphite',.693,.072);
+  diamond(0,.984,.756,.205,.295,'bronze',.081);
+  diamond(0,.984,.805,.153,.220,'inset',.047);
+  gem(0,.993,.861,.125,.175,.065);
+  // Upper smallest diamond in its own raised cathedral apex.
+  diamond(0,1.384,.749,.080,.125,'bronze',.052);
+  gem(0,1.390,.790,.049,.087,.042);
   for(const s of [-1,1]){
-   prism([[s*.18,.72],[s*.66,.82],[s*.72,.30],
-     [s*.60,-.91],[s*.24,-1.09]],.08,'iron',-.301,.012);
-   prism([[s*.22,.63],[s*.57,.68],[s*.58,-.90],
-     [s*.27,-1.00]],.044,'inset',-.367,.007);
-   for(const y of [.60,.25,-.10,-.45,-.83])rivet(s*.64,y,-.414);
+    line([s*.23,1.06],[s*.49,.923],.702,'bronze',.022);
+    line([s*.27,.92],[s*.53,.85],.725,'gild',.012);
+    rivet(s*.49,.916,.710);
   }
-  prism([[-.11,1.16],[.11,1.16],[.17,-1.07],
-    [0,-1.29],[-.17,-1.07]],.11,'bronze',-.390,.008);
-  for(const y of [.42,-.46]){
-   for(const x of [-.60,.60]){
-    cube(.20,.25,.13,'bronze',x,y,-.475);
-    cube(.13,.17,.09,'graphite',x,y,-.555);
-    for(const dy of [-.08,.08])rivet(x,y+dy,-.615);
-   }
-   cube(1.28,.175,.185,'wrap',0,y,-.585);
-   cube(1.05,.139,.16,'leather',0,y,-.697);
-   for(let i=0;i<13;i++){
-    const x=-.50+i*.083;
-    rod([x,y-.064,-.794],[x+.045,y+.063,-.794],.009,'wrap',5);
-   }
-   for(const x of [-.55,.55])cube(.052,.19,.19,'bronze',x,y,-.680);
+  // Triangular bottom crest with a clear separate turquoise gem.
+  panel([[-.33,-1.30],[0,-1.61],[.33,-1.30],
+    [.20,-1.16],[0,-1.41],[-.20,-1.16]],'bronze',.474,.15);
+  panel([[-.20,-1.34],[0,-1.53],[.20,-1.34],
+    [0,-1.42]],'graphite',.571,.060);
+  diamond(0,-1.397,.608,.118,.173,'gild',.047);
+  gem(0,-1.399,.645,.064,.104,.036);
+  // REAR: matte heavily reinforced plate, each part a genuine
+  // separate extrusion; NOT the front surface mirrored backwards.
+  panel(scaled(edge,.906,.921),'graphite',-.302,.090);
+  for(const s of [-1,1]){
+    panel(mirrored([[.12,.89],[.57,.99],[.68,.62],[.64,-.95],
+      [.46,-1.31],[.19,-1.34]],s),'iron',-.374,.073);
+    panel(mirrored([[.20,.68],[.49,.77],[.56,.59],
+      [.55,-1.02],[.36,-1.21],[.22,-1.16]],s),
+      'graphite',-.434,.041);
+    panel(mirrored([[.65,.77],[.75,.73],[.76,-.77],
+      [.62,-1.15],[.54,-1.13],[.67,-.67]],s),
+      'bronze',-.414,.075);
+    for(const y of [.80,.49,.18,-.15,-.51,-.86,-1.10])
+      rivet(s*.635,y,-.484);
+    line([s*.43,.65],[s*.43,-.92],-.481,'bronze',.013);
+    // Rear top shoulders and small riveted corner guards.
+    panel(mirrored([[.19,.98],[.48,1.03],[.61,1.27],
+      [.72,.96],[.64,.78],[.27,.79]],s),
+      'bronze',-.432,.085);
+    rivet(s*.54,.95,-.494);
   }
+  // Raised central dorsal brace with gothic pointed arch.
+  panel([[-.13,1.42],[0,1.59],[.13,1.42],
+    [.185,-1.21],[0,-1.51],[-.185,-1.21]],'bronze',-.454,.072);
+  panel([[-.083,1.34],[0,1.48],[.083,1.34],
+    [.105,-1.19],[0,-1.40],[-.105,-1.19]],'graphite',-.505,.050);
+  for(const y of [.91,.65,.18,-.34,-.86,-1.25])rivet(0,y,-.545);
+  // TWO independent horizontally oriented real leather grips.
+  // Bronze anchors, dark leather cylinders, thin spiral leather stitches.
+  for(const y of [.39,-.49]){
+    for(const s of [-1,1]){
+      cube(.18,.31,.17,'bronze',s*.54,y,-.583);
+      cube(.123,.225,.10,'graphite',s*.54,y,-.678);
+      for(const dy of [-.088,.088])rivet(s*.54,y+dy,-.752);
+      // Buckled bronze joint at each end of the grip.
+      cube(.056,.20,.19,'gild',s*.48,y,-.731);
+    }
+    rod([-.50,y,-.750],[.50,y,-.750],.096,'leather',12);
+    // Real cross-laced leather wrapping following the round crossbar.
+    for(let i=0;i<13;i++){
+      const x=-.455+i*.076;
+      curve([[x,y-.067,-.818],[x+.024,y,-.854],
+        [x+.054,y+.066,-.822]],.009,'wrap');
+    }
+  }
+  // Weathered forged seam lines (physical fine metallic meshes) front
+  // and back, spaced so armor relief is visible from any angle.
+  for(const s of [-1,1])for(let i=0;i<7;i++){
+    const y=.50-i*.255,x=s*(i%2?.41:.46);
+    line([x,y],[x-s*.034,y+.052],.589,'edge',.0035);
+  }
+  // Slightly taller and slimmer than the previous squarish shield.
+  // Changes the DISPLAY MESH ONLY, never collision, stats or recipes.
+  g.scale.x=.88;
+  g.userData.referenceSheet='Heavy Soldier Tower Shield — 4-view reference / 3D re-sculpt';
+  g.userData.hasRearLeatherGrips=true;
  }
  function bow(){
   const w=.71,h=1.38;
