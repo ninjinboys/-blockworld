@@ -257,52 +257,66 @@ export function makeDetailedJobWeapon(T,d){
   // Long blades: all parts stay true volumetric 3D meshes, with a blade
   // bevel, darker spine, inset glowing runes and a real sculpted crossguard.
   function sword(){
-    const huge=k==='greatsword',dual=k==='dual',elite=rank>=30;
-    if(!dual){referenceSword(huge,elite);return;}
-    const L=huge?1.88:dual?(elite?1.03:.77):elite?1.28:1.04;
-    const w=huge?.43:dual?(elite?.18:.13):elite?.225:.175;
-    const y0=.30;
-    wrap(-.28,.25,huge?.14:.105,huge?10:7);
-    band(-.26,huge?.15:.115);band(.26,huge?.15:.12);
-    gem(0,-.36,0,.095,.11,.09);
-    const guard=huge?.68:dual?.31:.48;
-    poly([[-guard,.29],[-guard*.85,.36],[-.15,.39],[0,.31],
-      [.15,.39],[guard*.85,.36],[guard,.29],[guard*.84,.22],
-      [.14,.23],[0,.17],[-.14,.23],[-guard*.84,.22]],.19,'gold',0,.017);
-    gem(0,.30,.113,.085,.095,.035);
-    gem(0,.30,-.113,.085,.095,.035);
-    // Faceted blade profile has raised shoulders and a tapering point.
-    const pts=[[-w*.84,y0],[-w,y0+.12],[-w*.93,y0+L*.72],
-      [-w*.64,y0+L*.88],[0,y0+L],[w*.64,y0+L*.88],
-      [w*.93,y0+L*.72],[w,y0+.12],[w*.84,y0]];
-    poly(pts,huge?.21:.105,'blade',0,.018);
-    const backStart=g.children.length;
-    poly([[-w*.62,y0+.05],[-w*.57,y0+L*.79],[0,y0+L*.99],
-      [w*.57,y0+L*.79],[w*.62,y0+.05]],huge?.15:.07,
-      huge?'black':'steel',.085,.009);
-    poly([[-w*.12,y0+.1],[0,y0+L*.90],[w*.12,y0+.1]],
-      .012,'edge',.174,0);
-    pipe([0,y0+.11,.187],[0,y0+L*.66,.187],.012,'accent',5);
-    for(const t of [.27,.46,.61])diamond(0,y0+L*t,.201,w*.16,L*.042);
-    if(huge){
-      for(const sign of [-1,1]){
-        poly([[sign*w*.78,y0+.24],[sign*w*1.10,y0+.30],
-          [sign*w*.91,y0+.43]],.06,'gold',.1,.006);
+    if(k!=='dual'){referenceSword(k==='greatsword',rank>=30);return}
+    const berserker=key==='berserker',y0=.34;
+    const length=berserker?1.33:1.04,w=berserker?.29:.19;
+    // Each of these is ONE genuine 3D blade. First-person and third-person
+    // rigs equip an instance in EACH hand, rather than two swords in one hand.
+    wrap(-.45,.21,.105,9);
+    for(const y of [-.47,.20])band(y,.141);
+    for(const face of [-1,1])gem(0,-.53,face*.085,.094,.12,.047);
+    // Swept, serrated asymmetric blade for the Berserker, straight practical
+    // steel for the Mercenary. Curvature exists in the actual mesh silhouette.
+    const blade=berserker
+      ?[[-w*.69,y0],[-w*1.11,y0+.25],
+        [-w*1.34,y0+.48],[-w*1.16,y0+.65],
+        [-w*.92,y0+.86],[-w*.75,y0+length*.96],
+        [-w*1.22,y0+length*1.03],
+        [-w*.19,y0+length*.92],
+        [w*.17,y0+length*.78],[w*.70,y0+length*.38],
+        [w*.97,y0+.22],[w*.80,y0]]
+      :[[-w,y0],[-w*1.12,y0+.21],[-w*.85,y0+length*.8],
+        [0,y0+length],[w*.85,y0+length*.8],[w,y0+.21]];
+    poly(blade,berserker?.18:.14,berserker?'steel':'blade',0,.016);
+    for(const face of [-1,1]){
+      const z=face*(berserker?.112:.092);
+      const dark=berserker?'recessed':'black';
+      poly([[-w*.65,y0+.08],[-w*.86,y0+.37],
+        [-w*.54,y0+length*.70],[0,y0+length*.89],
+        [w*.12,y0+length*.66],[w*.55,y0+.27],
+        [w*.59,y0+.07]],.025,dark,z,.006);
+      // Visible refined silver knife edge and glowing runic center.
+      poly([[-w*.70,y0+.09],[-w*.86,y0+.31],
+        [-w*.57,y0+length*.85],[0,y0+length*.90],
+        [-w*.33,y0+length*.49]],.012,'edge',z+face*.033,.004);
+      curve([[0,y0+.07,z+face*.044],
+        [-w*.21,y0+length*.35,z+face*.044],
+        [-w*.36,y0+length*.7,z+face*.044]],.015,'accent');
+      for(const t of [0.24,0.48,0.7]){
+        diamond(-w*.21,y0+length*t,z+face*.064,.044,.077);
       }
-      rivets([-.18,.18],[y0+.14,y0+.45],.18);
-    }else if(elite){
-      poly([[-w*.5,y0+.32],[0,y0+.68],[w*.5,y0+.32]],.017,'gold',.177,.003);
-    }
-    if(dual&&elite){
-      // Crimson asymmetric jagged outer blade spine for the Berserker.
-      for(const sign of [-1,1])for(let i=0;i<3;i++){
-        const y=y0+L*(.28+i*.18);
-        poly([[sign*w*.89,y-.065],[sign*(w+.15),y+.035],
-          [sign*w*.83,y+.12]],.065,'black',-.045,.007);
+      if(berserker){
+        for(let i=0;i<3;i++){
+          const yy=y0+.27+i*.25;
+          poly([[-w*.95,yy-.065],[-w*1.65,yy+.02],
+            [-w*1.03,yy+.13]],.075,'black',0,.012);
+          gem(-w*.73,yy+.05,z+face*.05,.029,.05,.021);
+        }
       }
-      for(let i=0;i<3;i++)diamond(0,y0+L*(.19+i*.24),.215,.035,.08);
     }
-    mirrorRear(backStart,'Sword rear raised bevels and luminous runes');
+    const gd=berserker?.53:.36;
+    poly([[-gd,.24],[-gd*.93,.44],[-gd*.68,.36],
+      [-.13,.42],[0,.31],[.13,.42],[gd*.68,.36],
+      [gd*.93,.44],[gd,.24],[gd*.68,.17],
+      [0,.14],[-gd*.68,.17]],.18,berserker?'black':'gold',0,.019);
+    for(const face of [-1,1]){
+      gem(0,.30,face*.119,berserker?.13:.08,berserker?.17:.09,.055);
+      for(const side of [-1,1]){
+        poly([[side*.13,.30],[side*gd*.92,.37],
+          [side*gd*.70,.26]],.025,'gold',face*.105,.005);
+      }
+    }
+    cylinder(.14,.12,.14,'gold',0,.15,0);
   }
   function axe(){
     wrap(-.55,.62,.096,10);band(-.55);band(.65);
