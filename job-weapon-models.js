@@ -96,15 +96,15 @@ export function makeDetailedJobWeapon(T,d){
     wrap(gripBottom,gripTop,isGreat?.14:.116,isGreat?9:7);
     // Matching criss-cross straps visibly wrap across the grip.
     for(const dir of [-1,1]){
-      let last=null;
-      const steps=88;
+      const stitches=[];
+      const steps=48;
       for(let i=0;i<=steps;i++){
         const t=i/steps,ang=dir*t*Math.PI*(isGreat?17:13)+(dir<0?Math.PI:0);
         const rad=isGreat?.153:.129;
-        const here=[rad*Math.sin(ang),gripBottom+t*(gripTop-gripBottom),rad*Math.cos(ang)];
-        if(last)pipe(last,here,.009,'brown',5);
-        last=here;
+        stitches.push([rad*Math.sin(ang),gripBottom+t*(gripTop-gripBottom),rad*Math.cos(ang)]);
       }
+      // Continuous 3D tube = 1 GPU draw call per woven strap.
+      curve(stitches,.009,'brown');
     }
     band(gripBottom,isGreat?.175:.141);
     band(gripTop,isGreat?.175:.142);
