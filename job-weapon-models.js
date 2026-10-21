@@ -549,36 +549,89 @@ export function makeDetailedJobWeapon(T,d){
     }
   }
   function bow(){
-    const powerful=key==='powerArcher',swift=key==='swiftArcher';
-    const ht=powerful?1.66:swift?1.38:1.52,span=powerful?.60:swift?.39:.51;
-    wrap(-.20,.20,.117,4);band(-.20,.135);band(.20,.135);
-    // Two shaped recurved limbs with distinct riser profiles.
-    for(const sy of [-1,1]){
-      const vertices=[
-        [-.045,.10],[span*.48,.30],[span*.88,.56],[span,.74],
-        [span*.86,.90],[span*.66,1.04],[span*.70,1.15]
-      ].map(([x,y])=>[x,sy*y*ht/1.5]);
-      for(let i=1;i<vertices.length;i++){
-        const [x1,y1]=vertices[i-1],[x2,y2]=vertices[i],t=i/vertices.length;
-        pipe([x1,y1,0],[x2,y2,0],powerful?.105-t*.025:swift?.051:.069,
-          i%2===0?'gold':'brown',10);
-        pipe([x1+.03,y1,.025],[x2+.03,y2,.025],.017,'blade',7);
-        pipe([x1+.03,y1,-.025],[x2+.03,y2,-.025],.017,'blade',7);
+    const power=key==='powerArcher',fast=key==='swiftArcher';
+    const halfH=power?1.13:fast?.79:.94;
+    const width=power?.68:fast?.45:.60;
+    const thickness=power?.125:fast?.057:.084;
+    // Proper recurve silhouette, reinforced riser and taut straight
+    // bowstring. Fast bow is visibly thin, power bow massive.
+    wrap(-.24,.25,power?.142:.111,power?7:5);
+    for(const y of [-.24,.25])band(y,power?.163:.137);
+    cube(.16,.45,.18,'gold',-.025,.02,0);
+    for(const face of [-1,1]){
+      const z=face*.13;
+      poly([[-.11,-.18],[.11,-.18],
+        [.22,.04],[.11,.25],[-.11,.25],[-.22,.04]],.052,
+        'black',z,.010);
+      gem(0,.045,z+face*.027,.11,.12,.034);
+      poly([[-.12,.25],[.14,.25],[.04,.34],
+        [-.15,.32]],.044,'gold',z,.008);
+    }
+    const limbTips=[];
+    for(const sign of [-1,1]){
+      const sy=sign;
+      // x/y points of a compound-reflex bow curved away then inward.
+      const stations=[
+        [-.015,.21],[width*.34,.32],[width*.74,.53],
+        [width,.71],[width*.91,.84],[width*.70,.98],
+        [width*.79,1.09]
+      ].map(([x,y])=>[x,sy*y*halfH/1.08]);
+      limbTips.push(stations.at(-1));
+      for(let i=1;i<stations.length;i++){
+        const p=stations[i-1],q=stations[i],pr=(i/(stations.length-1));
+        pipe([p[0],p[1],0],[q[0],q[1],0],
+          thickness*(1-pr*.52),i%2===0?'brown':'black',12);
+        pipe([p[0]-.020,p[1],.054],
+          [q[0]-.020,q[1],.054],.019,'gold',8);
+        pipe([p[0]-.020,p[1],-.054],
+          [q[0]-.020,q[1],-.054],.019,'steel',8);
       }
-      const [tipx,tipy]=vertices.at(-1);
-      gem(tipx,tipy,.06,.055,.11,.048);
-      pipe([tipx,tipy,0],[-.13,0,0],.012,'linen',6);
-      const backStart=g.children.length;
-      poly([[span*.31,sy*.36*ht],[span*.65,sy*.58*ht],
-        [span*.69,sy*.72*ht],[span*.42,sy*.47*ht]],.08,'steel',.06,.008);
-      mirrorRear(backStart,'Bow reverse limb armor');
+      const tip=stations.at(-1);
+      // A true curved forged limb plate following the geometry.
+      for(const face of [-1,1]){
+        poly([
+          [width*.31,sy*.31*halfH],
+          [width*.87,sy*.53*halfH],
+          [width*1.04,sy*.73*halfH],
+          [width*.74,sy*.88*halfH],
+          [width*.79,sy*1.07*halfH],
+          [width*.61,sy*.99*halfH],
+          [width*.78,sy*.72*halfH],
+          [width*.54,sy*.56*halfH]
+        ],power?.17:.092,power?'steel':fast?'black':'brown',
+        face*(power?.085:.075),.009);
+        // Glowing power channel differs from the streamlined fast limbs.
+        curve([
+          [width*.52,sy*.46*halfH,face*.139],
+          [width*.89,sy*.69*halfH,face*.139],
+          [width*.67,sy*.96*halfH,face*.139]
+        ],power?.017:.012,fast?'gold':'accent');
+      }
+      // One string segment each side, together a continuous bowstring.
+      const stringX=width*.79;
+      pipe([tip[0],tip[1],0],[stringX,0,0],.014,'linen',7);
+      gem(tip[0],tip[1],.032,power?.076:.053,.107,.040);
+      for(const face of [-1,1]){
+        diamond(width*.72,sy*.64*halfH,face*.16,.045,.083);
+      }
+      if(power){
+        // Heavy limbs feature broad reinforcing metal spurs.
+        poly([[width*.69,sy*.52*halfH],
+          [width*1.23,sy*.65*halfH],
+          [width*.97,sy*.81*halfH]],.14,'steel',0,.015);
+        for(const face of [-1,1])
+          gem(width*.92,sy*.72*halfH,face*.11,.07,.10,.034);
+      }else if(fast){
+        // Slim speed bow has two directional fins, not heavy armor.
+        poly([[width*.65,sy*.70*halfH],
+          [width*1.13,sy*.89*halfH],
+          [width*.65,sy*.81*halfH]],.075,'gold',0,.006);
+      }
     }
-    cube(.12,.31,.17,'gold',0,0,0);
-    gem(0,0,.12,.11,.10,.06);
-    gem(0,0,-.12,.11,.10,.06);
-    if(powerful)for(const y of [-.55,.55]){
-      poly([[.33,y],[.57,y+.11],[.45,y+.22]],.085,'steel',.10,.007);
-    }
+    // Real cross grip and bowstring knock - visible from the side.
+    poly([[-.22,-.12],[-.28,.04],[-.13,.21],
+      [.03,.11],[.03,-.14]],.12,'gold',0,.011);
+    for(const face of [-1,1])diamond(0,.03,face*.16,.076,.105);
   }
   function staff(){
     const attack=key==='battleMage',support=key==='supportMage',up=rank>=30;
