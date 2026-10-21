@@ -342,84 +342,136 @@ export function makeReferenceWeapon(T,d){
       'silver',.462,.073);
     for(const y of [-.16,-.57,-.95])rivet(s*.79,y,.468);
   }
-  // Reference-match refinement: two CONTINUOUS forged side faceplates.
-  // A single tall surface, rather than two disjoint silver tiles, creates
-  // the strong vertical architectural silhouette in the front-view sheet.
-  // Underlying armor remains visible as step-cut layers at both extremities.
-  for(const s of [-1,1]){
-    const flip=p=>p.map(([x,y])=>[s*x,y]);
-    panel(flip([[.27,.56],[.43,.74],[.56,.71],[.66,.48],
-      [.61,.14],[.59,-.22],[.64,-.63],[.57,-.93],
-      [.41,-1.23],[.28,-1.15],[.21,-.82],[.24,-.18]]),
-      'graphite',.550,.083);
-    panel(flip([[.30,.53],[.43,.65],[.52,.63],[.57,.43],
-      [.53,.09],[.52,-.23],[.57,-.63],[.51,-.87],
-      [.39,-1.13],[.29,-1.05],[.26,-.82],[.28,-.17]]),
-      'silver',.601,.068);
-    // A separate forged bevel runs uninterrupted down the inner edge.
-    panel(flip([[.30,.45],[.36,.52],[.35,.11],[.33,-.28],
-      [.36,-.87],[.29,-.98],[.275,-.79]]),'edge',.649,.018);
-    // A broad longitudinal faceted steel ridge catches directional light.
-    panel(flip([[.435,.46],[.49,.50],[.48,.21],[.47,-.18],
-      [.50,-.69],[.45,-.93],[.41,-.93],[.43,-.33]]),
-      'iron',.648,.024);
-    line([s*.305,.46],[s*.295,-.95],.681,'edge',.009);
-    line([s*.505,.49],[s*.493,.09],.679,'gild',.009);
-    line([s*.50,-.34],[s*.495,-.77],.680,'gild',.009);
-    for(const y of [.53,.19,-.24,-.62,-.99]){
-      rivet(s*.55,y,.668);
+  // Reference-front reconstruction: project the supplied front elevation
+  // into actual layered raised metalwork. Broad SILVER protective armour
+  // must dominate the front; do not substitute thin upright dark bands.
+  const faceMetal=(pts,depth,z,mat='silver')=>panel(pts,mat,z,depth);
+  for(const side of [-1,1]){
+    const F=points=>mirrored(points,side);
+    // Thick black backing and its bronze perimeter act as the continuous
+    // cladding behind each broad silver side panel.
+    faceMetal(F([[.215,.68],[.36,.85],[.56,.80],[.73,.59],
+      [.75,.23],[.72,-.28],[.77,-.67],[.69,-1.12],
+      [.48,-1.44],[.27,-1.43],[.20,-1.20],[.20,-.48]]),
+      .18,.622,'graphite');
+    faceMetal(F([[.242,.66],[.39,.81],[.57,.72],[.695,.56],
+      [.695,.20],[.665,-.30],[.70,-.69],[.624,-1.02],
+      [.45,-1.337],[.28,-1.33],[.255,-1.16],[.24,-.45]]),
+      .095,.733,'silver');
+    // Raised narrow edge facet makes the large metal panel read as
+    // a single shaped forged plate with a wide specular front surface.
+    faceMetal(F([[.258,.56],[.36,.70],[.415,.72],[.377,.24],
+      [.367,-.27],[.39,-.89],[.32,-1.17],[.289,-1.10]]),
+      .029,.795,'edge');
+    // Deep bevel on outer edge; dark seams delineate overlapping plates.
+    faceMetal(F([[.59,.59],[.66,.55],[.64,.04],
+      [.64,-.34],[.68,-.69],[.58,-1.08],
+      [.54,-1.17],[.565,-.74],[.56,-.24]]),
+      .052,.792,'iron');
+    // The reference has a raised SHORTER panel above the main continuous
+    // plate, sitting slightly outward, with actual beveled thickness.
+    faceMetal(F([[.36,.13],[.58,.24],[.72,.13],[.745,-.20],
+      [.705,-.64],[.57,-.86],[.38,-.72],[.36,-.41]]),
+      .107,.833,'graphite');
+    faceMetal(F([[.405,.065],[.582,.170],[.665,.067],[.690,-.20],
+      [.66,-.55],[.556,-.72],[.43,-.645],[.418,-.32]]),
+      .074,.912,'silver');
+    // Large bright raised plane instead of three skinny white slivers.
+    faceMetal(F([[.44,-.006],[.568,.082],[.587,-.125],
+      [.58,-.51],[.535,-.59],[.47,-.55]]),
+      .021,.966,'edge');
+    line([side*.407,.034],[side*.413,-.575],.974,'gild',.011);
+    line([side*.660,.04],[side*.675,-.51],.958,'iron',.011);
+    for(const [x,y] of [[.582,.13],[.674,-.61],[.50,-.72]]){
+      rivet(side*x,y,.965);
     }
+    // Separate triangular lower armour plate with folded steel corners.
+    faceMetal(F([[.24,-.85],[.44,-.78],[.67,-.86],
+      [.714,-1.08],[.54,-1.37],[.31,-1.50],
+      [.26,-1.33]]),.125,.836,'graphite');
+    faceMetal(F([[.30,-.92],[.45,-.865],[.63,-.94],
+      [.64,-1.08],[.505,-1.31],[.329,-1.406]]),
+      .090,.922,'silver');
+    faceMetal(F([[.34,-.99],[.43,-.943],[.445,-1.188],
+      [.385,-1.31],[.341,-1.335]]),.024,.980,'edge');
+    for(const y of [-1.00,-1.23])rivet(side*.579,y,.978);
+    // Bronze side-fin, a narrow architectural rib NOT a dark broad band.
+    faceMetal(F([[.75,.68],[.88,.74],[.86,-.68],
+      [.70,-1.13],[.652,-1.23],[.724,-.64]]),
+      .080,.717,'bronze');
+    line([side*.804,.36],[side*.788,-.58],.777,'gild',.013);
   }
-  // Central uninterrupted recessed black strip, engineered to sit visibly
-  // BETWEEN the side plates rather than flush with their surface.
-  panel([[-.21,.95],[0,1.26],[.21,.95],[.175,-1.31],
-    [0,-1.55],[-.175,-1.31]],'bronze',.422,.108);
-  panel([[-.142,.84],[0,1.15],[.142,.84],[.119,-1.31],
-    [0,-1.47],[-.119,-1.31]],'graphite',.486,.071);
-  panel([[-.078,.76],[0,.91],[.078,.76],[.075,-1.23],
-    [0,-1.38],[-.075,-1.23]],'inset',.532,.033);
-  // Fluorescent turquoise line and forked geometric circuitry.
-  curve([[0,.74,.560],[0,.39,.560],[0,-.18,.560],
-    [0,-.89,.560],[0,-1.23,.560]],.015,'light');
-  for(const [y,size] of [[.16,.13],[-.34,.095],[-.72,.073]]){
-    diamond(0,y,.582,size*.69,size,'bronze',.042);
-    diamond(0,y,.620,size*.48,size*.75,'light',.025);
-    for(const s of [-1,1]){
-      line([0,y+.11],[s*.066,y+.20],.608,'light',.009);
-      line([s*.066,y+.20],[0,y+.28],.608,'light',.007);
-    }
+
+  // ONE wide central recessed trench bordered by two bronze rails.
+  // Center occupies ~20% of shield width, with a single luminous spine.
+  faceMetal([[-.218,.89],[0,1.18],[.218,.89],[.194,-1.32],
+    [0,-1.54],[-.194,-1.32]],.125,.765,'bronze');
+  faceMetal([[-.174,.785],[0,1.065],[.174,.785],
+    [.149,-1.29],[0,-1.44],[-.149,-1.29]],
+    .072,.843,'graphite');
+  faceMetal([[-.127,.71],[0,.916],[.127,.71],
+    [.117,-1.255],[0,-1.370],[-.117,-1.255]],
+    .040,.893,'inset');
+  for(const side of [-1,1]){
+    line([side*.154,.68],[side*.143,-1.25],.939,'bronze',.020);
+    line([side*.114,.67],[side*.106,-1.22],.944,'gild',.008);
   }
-  // Cathedral crest in front of the shell, its silhouette has THREE
-  // distinct upward finials, a V-shaped nested central frame and both
-  // a small apex gem and a big diamond at the heart of the crown.
-  panel([[-.73,.87],[-.45,1.07],[-.26,1.13],[0,1.56],
-    [.26,1.13],[.45,1.07],[.73,.87],
-    [.55,.77],[.30,.86],[0,.60],[-.30,.86],[-.55,.77]],
-    'bronze',.535,.16);
-  panel([[-.60,.87],[-.35,1.04],[-.22,1.10],[0,1.45],
-    [.22,1.10],[.35,1.04],[.60,.87],
-    [.46,.85],[.21,.93],[0,.75],[-.21,.93],[-.46,.85]],
-    'gild',.640,.065);
-  panel([[-.20,1.02],[0,1.41],[.20,1.02],
-    [.17,.84],[0,.65],[-.17,.84]],'graphite',.693,.072);
-  diamond(0,.984,.756,.205,.295,'bronze',.081);
-  diamond(0,.984,.805,.153,.220,'inset',.047);
-  gem(0,.993,.861,.125,.175,.065);
-  // Upper smallest diamond in its own raised cathedral apex.
-  diamond(0,1.384,.749,.080,.125,'bronze',.052);
-  gem(0,1.390,.790,.049,.087,.042);
+  // The energy motif follows the drawing: a continuous bright stroke,
+  // one central framed diamond, subtle small diamond ornaments BELOW,
+  // and a distinct lower crystal at the pointed shield nose.
+  const emitZ=.965;
+  curve([[0,.72,emitZ],[0,.29,emitZ],[0,-.12,emitZ],
+    [0,-.46,emitZ],[0,-.98,emitZ]],.018,'light');
+  // Dominant middle diamond: outer bevel, black inset, cyan faceted gem.
+  diamond(0,-.12,.993,.130,.203,'gild',.054);
+  diamond(0,-.12,1.027,.092,.148,'inset',.036);
+  gem(0,-.12,1.061,.065,.113,.041);
+  for(const [y,rx,ry] of [[-.54,.060,.103],[-.77,.039,.068]]){
+    diamond(0,y,.994,rx,ry,'gild',.028);
+    diamond(0,y,1.017,rx*.55,ry*.64,'light',.014);
+  }
+  // Narrow branch intersections above and below the large central gem.
   for(const s of [-1,1]){
-    line([s*.23,1.06],[s*.49,.923],.702,'bronze',.022);
-    line([s*.27,.92],[s*.53,.85],.725,'gild',.012);
-    rivet(s*.49,.916,.710);
+    line([0,-.29],[s*.064,-.38],emitZ,'light',.009);
+    line([s*.064,-.38],[0,-.46],emitZ,'light',.009);
+    line([0,.20],[s*.062,.27],emitZ,'light',.009);
   }
-  // Triangular bottom crest with a clear separate turquoise gem.
-  panel([[-.33,-1.30],[0,-1.61],[.33,-1.30],
-    [.20,-1.16],[0,-1.41],[-.20,-1.16]],'bronze',.474,.15);
-  panel([[-.20,-1.34],[0,-1.53],[.20,-1.34],
-    [0,-1.42]],'graphite',.571,.060);
-  diamond(0,-1.397,.608,.118,.173,'gild',.047);
-  gem(0,-1.399,.645,.064,.104,.036);
+
+  // Crown: broad bronze GOTHIC V, neither a row of standalone diamonds
+  // nor thin upright metal prongs. This overhangs the silver side plates.
+  faceMetal([[-.76,.86],[-.52,1.03],[-.30,1.08],[0,1.55],
+    [.30,1.08],[.52,1.03],[.76,.86],
+    [.60,.70],[.36,.76],[0,.515],[-.36,.76],[-.60,.70]],
+    .202,.958,'bronze');
+  faceMetal([[-.68,.854],[-.44,.991],[-.255,1.028],[0,1.444],
+    [.255,1.028],[.44,.991],[.68,.854],
+    [.547,.782],[.309,.845],[0,.625],[-.309,.845],[-.547,.782]],
+    .080,1.081,'gild');
+  faceMetal([[-.44,.936],[-.24,.990],[0,1.374],
+    [.24,.990],[.44,.936],[.235,.792],[0,.580],[-.235,.792]],
+    .070,1.158,'graphite');
+  // Triangular jewel setting is larger than the old narrow upper spire.
+  diamond(0,.985,1.225,.267,.346,'bronze',.076);
+  diamond(0,.985,1.271,.196,.264,'gild',.062);
+  diamond(0,.985,1.315,.142,.200,'inset',.034);
+  gem(0,.988,1.364,.112,.163,.054);
+  // Apex is a second SMALL turquoise jewel above the main crown jewel.
+  diamond(0,1.423,1.260,.101,.142,'bronze',.054);
+  gem(0,1.424,1.308,.065,.102,.036);
+  for(const s of [-1,1]){
+    line([s*.24,.966],[s*.62,.849],1.18,'gild',.016);
+    line([s*.23,.823],[0,.594],1.200,'bronze',.020);
+    rivet(s*.545,.855,1.150);
+  }
+  // Lower face is not an extension of the energy stripe: a separate
+  // faceted armoured bronze spur supports one turquoise gemstone.
+  faceMetal([[-.31,-1.275],[0,-1.605],[.31,-1.275],
+    [.214,-1.194],[0,-1.381],[-.214,-1.194]],
+    .150,1.013,'bronze');
+  faceMetal([[-.185,-1.321],[0,-1.535],[.185,-1.321],
+    [0,-1.421]],.067,1.102,'graphite');
+  diamond(0,-1.394,1.148,.128,.174,'gild',.041);
+  gem(0,-1.394,1.186,.073,.107,.045);
   // REAR: matte heavily reinforced plate, each part a genuine
   // separate extrusion; NOT the front surface mirrored backwards.
   panel(scaled(edge,.906,.921),'graphite',-.302,.090);
