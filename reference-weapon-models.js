@@ -160,44 +160,196 @@ export function makeReferenceWeapon(T,d){
   guard(.32,great?.79:.64,great?.32:.25);
  }
  function axe(){
-  // Two opposing deep hollow-backed crescents, not flat triangles.
-  grip(-.85,.40,.125,13);pommel(-1.02,1.18);
-  rod([0,.35,0],[0,1.93,0],.119,'leather',12);
-  for(const y of [.45,.92,1.37]){
-   add(new T.CylinderGeometry(.164,.164,.055,12),'bronze',0,y,0);
-   for(const f of [-1,1]){gem(0,y,f*.13,.061,.083,.027);}
-  }
-  prism([[-.22,1.30],[0,1.20],[.22,1.30],
-    [.28,1.99],[0,2.30],[-.28,1.99]],.28,'graphite',0,.02);
-  for(const s of [-1,1]){
-   const blade=[[s*.18,1.28],[s*.42,1.48],[s*.66,1.44],
-    [s*.94,1.30],[s*1.19,1.29],[s*1.05,1.55],
-    [s*.92,1.90],[s*1.02,2.12],[s*1.18,2.29],
-    [s*.86,2.23],[s*.54,2.07],[s*.29,1.93]];
-   prism(blade,.30,'silver',0,.017);
-   for(const f of [-1,1]){
-    prism([[s*.23,1.43],[s*.52,1.54],[s*.81,1.52],
-     [s*.83,1.89],[s*.94,2.16],[s*.60,2.04],[s*.32,1.85]],
-      .065,'graphite',f*.173,.010);
-    prism([[s*.65,1.52],[s*.89,1.44],[s*.90,1.83],
-      [s*.98,2.15],[s*.79,2.07]],.025,'iron',f*.216,.003);
-    curve([[s*.41,1.57,f*.225],[s*.65,1.68,f*.225],
-      [s*.62,1.93,f*.225]],.018,'light');
-    for(const y of [1.63,1.94]){
-     diamond(s*.59,y,f*.240,.055,.079,'gild',.024);
-     gem(s*.59,y,f*.266,.026,.049,.021);
+  // 2026-10-22 BATTLE AXE / WAR AXE: hand-sculpted four-view reference.
+  // Front: opposed deep concave crescent blades, bright outer sharpened
+  // edges, dark internal steel, bronze swept V crown & central cyan gem.
+  // Side: slim forged blade profile; back: dark steel with engraved ribs.
+  // Shaft: long wrapped leather grip, engraved steel upper shank, bronze
+  // collars and matching jeweled pointed pommel.
+  const P=(pts,dep,mat,z=0,bev=.007)=>prism(pts,dep,mat,z,bev);
+  const F=(points,sign)=>points.map(([x,y])=>[x*sign,y]);
+  const riv=(x,y,z,r=.024)=>add(new T.SphereGeometry(r,9,6),'bronze',x,y,z);
+  const hair=(a,b,z,mat='edge',size=.004)=>trim(a,b,z,mat,size);
+  const band=(y,r=.133,h=.066)=>{
+    add(new T.CylinderGeometry(r,r,h,14),'bronze',0,y,0);
+    add(new T.CylinderGeometry(r*.89,r*.89,.014,14),'gild',0,y+h*.50,0);
+    add(new T.CylinderGeometry(r*.90,r*.90,.014,14),'graphite',0,y-h*.50,0);
+    for(const side of [-1,1]){
+      for(const f of [-1,1])riv(side*r*.68,y,f*r*.69,.012);
     }
-   }
+  };
+  // The long staff has TWO materials. Gold bands divide dark carved steel
+  // at the top from the dark brown cross-wrapped lower two-thirds.
+  rod([0,-1.46,0],[0,1.54,0],.077,'graphite',16);
+  rod([0,-1.30,0],[0,-.06,0],.092,'leather',16);
+  // Cross-wrap visible as physical spiral laces from all camera angles.
+  for(let dir of [-1,1]){
+    const pts=[];
+    const turns=dir===1?12:-12;
+    for(let i=0;i<=144;i++){
+      const t=i/144,angle=t*turns*Math.PI*2+(dir===1?0:Math.PI);
+      pts.push([Math.cos(angle)*.098,-1.30+t*1.24,
+        Math.sin(angle)*.098]);
+    }
+    curve(pts,.010,'wrap');
   }
-  prism([[-.31,1.40],[0,1.25],[.31,1.40],
-   [.33,1.78],[.20,2.07],[0,2.28],
-   [-.20,2.07],[-.33,1.78]],.37,'bronze',0,.020);
+  for(const y of [-1.28,-.64,-.10,.17,1.13]){
+    band(y,y>.90?.151:y<-.95?.137:.136,y>.90?.10:.066);
+  }
+  // The upper exposed forging has a proper narrow rectangular black steel
+  // shaft with 2 raised gold rails framing a continuous cyan channel.
+  P([[-.102,.12],[-.110,1.25],[0,1.48],[.110,1.25],
+    [.102,.12]],.165,'iron',.008,.014);
   for(const f of [-1,1]){
-   diamond(0,1.75,f*.22,.21,.31,'graphite',.053);
-   diamond(0,1.75,f*.261,.153,.23,'gild',.035);
-   gem(0,1.75,f*.297,.120,.175,.052);
-   trim([-.23,1.46],[0,1.32],f*.24);trim([.23,1.46],[0,1.32],f*.24);
+    P([[-.070,.24],[-.075,1.26],[0,1.37],[.075,1.26],
+      [.070,.24]],.034,'inset',f*.106,.005);
+    curve([[0,.27,f*.130],[0,.52,f*.130],
+      [0,.87,f*.130],[0,1.15,f*.130]],.012,'light');
+    for(const y of [.47,.83]){
+      diamond(0,y,f*.151,.039,.071,'bronze',.030);
+      gem(0,y,f*.176,.024,.043,.017);
+    }
+    for(const sign of [-1,1]){
+      hair([sign*.081,.28],[sign*.086,1.18],f*.128,'gild',.008);
+    }
   }
+  // Socket where both steel crescents join the shaft.
+  P([[-.19,1.13],[0,1.03],[.19,1.13],
+    [.22,1.57],[.17,2.02],[0,2.31],
+    [-.17,2.02],[-.22,1.57]],.203,'graphite',0,.015);
+  for(const sign of [-1,1]){
+    // Opposing asymmetrical-in-depth curved blades: true enclosed 3D
+    // extrusions. Outer horns rise sharply, lower points droop. The inner
+    // contour curves inward in a C, forming a visible NOTCH, not a square.
+    const crescent=F([
+      [.14,1.50],[.24,1.68],[.36,1.81],
+      [.48,1.86],[.58,1.82],[.64,1.74],
+      [.69,1.61],[.65,1.42],[.54,1.23],
+      [.51,1.00],[.63,.86],[.77,1.10],
+      [.87,1.40],[.92,1.79],[.90,2.14],
+      [.79,2.47],[.68,2.68],
+      [.64,2.42],[.58,2.22],[.49,2.09],
+      [.36,2.04],[.21,2.07],[.14,2.18]],sign);
+    P(crescent,.174,'silver',0,.009);
+    // Bright sharpened crescent around the OUTER edge. Narrow outer
+    // metallic band and broad graphite inlay make the outline readable.
+    const inner=F([
+      [.20,1.61],[.35,1.88],[.49,1.98],
+      [.62,1.89],[.71,1.73],[.74,1.53],
+      [.70,1.36],[.62,1.19],[.59,1.02],
+      [.73,1.27],[.80,1.58],[.81,1.90],
+      [.76,2.25],[.68,2.54],[.64,2.31],
+      [.55,2.08],[.41,1.97],[.24,2.00]],sign);
+    for(const f of [-1,1]){
+      const z=f*.108;
+      P(inner,.043,'graphite',z,.009);
+      // Recessed dark inset inside the crescent where cyan runes live.
+      P(F([[.24,1.63],[.39,1.87],[.53,1.95],
+        [.65,1.80],[.72,1.61],[.72,1.41],
+        [.61,1.12],[.61,1.34],[.64,1.56],
+        [.57,1.70],[.46,1.78],[.34,1.77]],sign),
+        .022,'inset',z+f*.035,.004);
+      // Separate hammered outer-edge silver facet: bright at outermost.
+      P(F([[.68,2.56],[.79,2.32],[.86,2.07],
+        [.875,1.76],[.82,1.44],[.69,1.06],
+        [.60,.90],[.65,1.17],[.74,1.47],
+        [.77,1.76],[.75,2.04],[.68,2.37]],sign),
+        .030,'edge',z+f*.045,.005);
+      // Long slanted forge seam runs behind the outer crescent edge.
+      curve([[sign*.64,2.27,f*.167],[sign*.76,2.04,f*.167],
+        [sign*.79,1.75,f*.167],[sign*.75,1.48,f*.167],
+        [sign*.63,1.17,f*.167]],.008,'iron');
+      // Low-profile pointed inset tracing the C-shaped inner void.
+      curve([[sign*.38,1.96,f*.155],[sign*.51,1.90,f*.155],
+        [sign*.65,1.70,f*.155],[sign*.63,1.45,f*.155]],.009,'bronze');
+      if(f===1){
+        // Characteristic bright cyan 3-pronged runes on FRONT only,
+        // one near upper horn and one near lower inner crescent.
+        curve([[sign*.62,2.25,.160],[sign*.58,2.13,.160],
+          [sign*.56,1.98,.160]],.017,'light');
+        diamond(sign*.59,2.09,.190,.049,.076,'gild',.023);
+        gem(sign*.59,2.09,.211,.027,.048,.018);
+        hair([sign*.58,2.13],[sign*.49,2.17],.191,'light',.011);
+        curve([[sign*.62,1.56,.173],[sign*.54,1.40,.173],
+          [sign*.58,1.25,.173]],.015,'light');
+        diamond(sign*.57,1.40,.185,.041,.062,'gild',.019);
+        gem(sign*.57,1.40,.209,.022,.038,.017);
+      }else{
+        // Reverse view deliberately uses carved black steel channels,
+        // no mirrored glowing runes unlike the front reference.
+        for(const y of [1.44,1.66,1.90]){
+          hair([sign*.53,y],[sign*.68,y+.065],-.165,'iron',.008);
+        }
+      }
+      // Small forged abrasion lines are 3D, no flat image billboard.
+      for(let i=0;i<7;i++){
+        const y=1.13+i*.16,x=sign*(.76+.055*Math.sin(i*.7));
+        hair([x,y],[x-sign*.031,y+.045],f*.165,'silver',.003);
+      }
+    }
+    // Metal socket arms cradle the blade root, integrating axe head
+    // with a proper curved bridge as seen in its front and back views.
+    P(F([[.16,1.55],[.26,1.86],[.45,2.02],
+      [.52,2.14],[.41,2.11],[.25,2.04],[.15,1.95]],sign),
+      .220,'bronze',0,.017);
+  }
+  // Ornamental gothic V across BOTH arms with three-dimensional bevels.
+  // The topmost bronze vertex sits lower than the outer blade tips.
+  P([[-.30,2.09],[-.42,2.17],[-.54,2.35],
+     [-.44,2.23],[-.30,2.20],[0,2.43],
+     [.30,2.20],[.44,2.23],[.54,2.35],
+     [.42,2.17],[.30,2.09],[0,1.84]],.243,'bronze',0,.017);
+  for(const f of [-1,1]){
+    // Forged bronze plate along central shaft / head in front and rear.
+    P([[-.24,1.65],[-.29,1.96],[0,2.37],
+       [.29,1.96],[.24,1.65],[.11,1.47],[0,1.32],
+       [-.11,1.47]],.065,'gild',f*.160,.009);
+    P([[-.19,1.74],[0,2.24],[.19,1.74],
+       [.10,1.55],[0,1.44],[-.10,1.55]],
+      .047,'graphite',f*.214,.008);
+    // Back central jewel frame in solid metal, FRONT actual turquoise.
+    diamond(0,1.95,f*.264,.204,.305,'bronze',.077);
+    diamond(0,1.95,f*.307,.153,.221,'gild',.047);
+    if(f===1){
+      diamond(0,1.95,.338,.121,.174,'inset',.032);
+      gem(0,1.95,.374,.105,.151,.050);
+    }else{
+      diamond(0,1.95,-.340,.118,.176,'graphite',.039);
+      diamond(0,1.95,-.369,.051,.090,'bronze',.021);
+    }
+    for(const sign of [-1,1]){
+      curve([[sign*.18,1.94,f*.221],[sign*.32,2.15,f*.221],
+        [sign*.48,2.24,f*.221]],.021,'gild');
+      riv(sign*.39,2.17,f*.236,.017);
+    }
+    // Collar with a small matching jewel at the blade socket's base.
+    P([[-.19,1.25],[0,1.15],[.19,1.25],
+      [.21,1.44],[0,1.56],[-.21,1.44]],
+      .056,'bronze',f*.166,.010);
+    gem(0,1.36,f*.216,.044,.080,.028);
+  }
+  band(1.12,.195,.11);
+  // Directionally aligned gold brackets link head to the long steel shaft.
+  for(const f of [-1,1]){
+    curve([[0,1.16,f*.165],[0,.99,f*.165],
+      [0,.82,f*.165]],.012,'light');
+  }
+  // Pointed ornate jeweled pommel, at the end of the leather-wrapped pole.
+  P([[-.105,-1.36],[-.17,-1.48],[-.27,-1.55],
+    [-.21,-1.75],[0,-1.99],[.21,-1.75],
+    [.27,-1.55],[.17,-1.48],[.105,-1.36]],
+    .173,'bronze',0,.014);
+  for(const f of [-1,1]){
+    P([[-.135,-1.50],[-.18,-1.62],[0,-1.89],
+      [.18,-1.62],[.135,-1.50]],
+      .059,'graphite',f*.111,.007);
+    diamond(0,-1.640,f*.151,.153,.216,'gild',.056);
+    diamond(0,-1.640,f*.184,.109,.161,'inset',.029);
+    gem(0,-1.640,f*.220,.077,.110,.041);
+  }
+  g.userData.referenceSheet='2026-10-22 Battle Axe War Axe 4-view 3D sculpt';
+  g.userData.axeBladeProfile='opposed thin concave crescents with cut-out lower arches';
+  g.userData.axeViews='front cyan runes; dark forged back; slim side; jeweled socket and pommel';
  }
  function spear(){
   // Long proportional wooden-and-black-steel shaft, winged brass socket.
