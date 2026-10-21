@@ -3,9 +3,149 @@ import {makeReferenceWeapon} from './reference-weapon-models.js?v=20261021threeS
  * Models consist of extruded bevelled polygon meshes, cylinders, ring meshes,
  * crystals, and fittings; they are NOT 2D billboards or image planes.
  */
+
+// SHIELD LINEAGE: all three classes now belong to the same equipment family
+// as the reference-matched Heavy Soldier tower shield. Use THE SAME actual
+// 3D shield mesh as a structural source and forge rank-specific armour above
+// it. Never branch back into unrelated hexagonal/paladin/spiked designs.
+function makeShieldFamilyWeapon(T,d){
+  if(!['shield','shieldElite','tank'].includes(d.key))return null;
+  const model=makeReferenceWeapon(T,{...d,key:'heavy'});
+  if(!model)throw new Error('Heavy Soldier shield reference model is missing');
+  const starter=d.key==='shield', elite=d.key==='shieldElite', tank=d.key==='tank';
+  // Heavy's dimensions are designed into the reference model. Scale ONLY
+  // this new independent instance: never modify the original Heavy model.
+  model.scale.x*=starter?.80:elite?.91:1.14;
+  model.scale.y*=starter?.76:elite?.92:1.08;
+  model.scale.z*=starter?.80:elite?.94:1.23;
+  const materials={
+    gold:new T.MeshStandardMaterial({color:0x9c794e,metalness:.84,roughness:.32,side:T.DoubleSide}),
+    bevel:new T.MeshStandardMaterial({color:0xd2b37b,metalness:.88,roughness:.27,side:T.DoubleSide}),
+    steel:new T.MeshStandardMaterial({color:starter?0x96a9b0:0xc7d1d4,metalness:.84,roughness:.31,side:T.DoubleSide}),
+    shadow:new T.MeshStandardMaterial({color:0x2b353d,metalness:.69,roughness:.41,side:T.DoubleSide}),
+    glow:new T.MeshStandardMaterial({color:0x3ff1da,metalness:.24,roughness:.20,emissive:0x36dac5,emissiveIntensity:.78,side:T.DoubleSide})
+  };
+  function polygon(points,depth,mat,z,bevel=.009){
+    const shape=new T.Shape();shape.moveTo(...points[0]);
+    for(let i=1;i<points.length;i++)shape.lineTo(...points[i]);shape.closePath();
+    const geo=new T.ExtrudeGeometry(shape,{
+      depth,steps:1,bevelEnabled:bevel>0,bevelThickness:bevel,
+      bevelSize:bevel,bevelSegments:2
+    });
+    const mesh=new T.Mesh(geo,materials[mat]);mesh.position.set(0,0,z-depth/2);
+    mesh.castShadow=true;mesh.receiveShadow=true;model.add(mesh);return mesh;
+  }
+  const sides=(points,sign)=>points.map(([x,y])=>[sign*x,y]);
+  function gem(x,y,z,rx,ry,rz){
+    const v=new T.Mesh(new T.OctahedronGeometry(1),materials.glow);
+    v.position.set(x,y,z);v.scale.set(rx,ry,rz);v.castShadow=true;
+    model.add(v);return v;
+  }
+  function line(a,b,z,mat='bevel',thickness=.012){
+    const from=new T.Vector3(a[0],a[1],z),to=new T.Vector3(b[0],b[1],z);
+    const direction=to.clone().sub(from);
+    const m=new T.Mesh(new T.CylinderGeometry(thickness,thickness,direction.length(),8),materials[mat]);
+    m.position.copy(from).add(to).multiplyScalar(.5);
+    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction.normalize());
+    model.add(m);return m;
+  }
+  function stoneSetting(y,size,z){
+    polygon([[0,y+size*1.65],[size,y],[0,y-size*1.65],[-size,y]],.074,'gold',z);
+    polygon([[0,y+size*1.28],[size*.75,y],[0,y-size*1.28],[-size*.75,y]],.036,'shadow',z+.05,.004);
+    gem(0,y,z+.091,size*.60,size*.97,.055);
+  }
+  if(starter){
+    // Shield Soldier: short, lightweight heir of the Heavy shield.
+    // Bronze V crown, twin silver faceplates, one cyan diamond insignia.
+    for(const sign of [-1,1]){
+      polygon(sides([[.25,.60],[.44,.71],[.61,.55],
+        [.58,-.07],[.51,-.72],[.35,-1.04],
+        [.25,-.94]],sign),.072,'gold',1.39);
+      polygon(sides([[.285,.54],[.44,.63],[.54,.50],
+        [.53,-.05],[.45,-.67],[.33,-.90],
+        [.28,-.84]],sign),.055,'steel',1.441,.006);
+      line([sign*.32,.47],[sign*.315,-.79],1.487,'bevel',.012);
+      polygon(sides([[.39,.75],[.57,.97],[.67,.77],
+        [.55,.67]],sign),.074,'gold',1.35);
+    }
+    // Forged centre jewel and closed-ended luminous canal.
+    polygon([[-.115,.52],[0,.76],[.115,.52],
+      [.10,-1.09],[0,-1.29],[-.10,-1.09]],.069,'shadow',1.49);
+    line([0,.43],[0,-.89],1.555,'glow',.014);
+    stoneSetting(-.19,.085,1.56);
+    model.userData.shieldStyle='Heavy-family shield / compact bronze and silver';
+  }else if(elite){
+    // Evolved shield soldier: same silver layered armour and cathedral
+    // silhouette, with sharper V crests and more deliberate rune tracery.
+    for(const sign of [-1,1]){
+      polygon(sides([[.20,.74],[.50,.86],[.70,.60],
+        [.66,-.45],[.52,-1.04],[.25,-1.32],
+        [.23,-.94]],sign),.096,'gold',1.39,.013);
+      polygon(sides([[.24,.66],[.50,.78],[.62,.55],
+        [.59,-.36],[.47,-.94],[.28,-1.19]],sign),
+        .066,'steel',1.454,.008);
+      polygon(sides([[.31,.56],[.43,.62],[.42,-.29],
+        [.37,-.88],[.30,-.98]],sign),.023,'bevel',1.518,.003);
+      // A pair of tapering bronze wings are relatives of the Heavy crest.
+      polygon(sides([[.30,.91],[.60,1.15],[.75,1.30],
+        [.70,.88],[.51,.75]],sign),.115,'gold',1.33,.012);
+      line([sign*.29,.43],[sign*.30,-1.02],1.55,'bevel',.013);
+      line([sign*.63,.19],[sign*.62,-.49],1.53,'glow',.013);
+    }
+    polygon([[-.15,.78],[0,1.20],[.15,.78],
+      [.13,-1.17],[0,-1.40],[-.13,-1.17]],.090,'shadow',1.54,.009);
+    line([0,.70],[0,-1.08],1.62,'glow',.015);
+    stoneSetting(.03,.122,1.615);
+    stoneSetting(-.67,.058,1.614);
+    model.userData.shieldStyle='Heavy-family shield / elegant silver reinforced cathedral';
+  }else if(tank){
+    // Tank: the HEAVIEST branch of the same Heavy family, NOT a spiked
+    // scarlet bulwark. Wider angular layered armour, thicker bronze rim,
+    // one central cyan gem and strong internal frame from the reference.
+    for(const sign of [-1,1]){
+      polygon(sides([[.21,.80],[.54,.99],[.79,.71],
+        [.84,.15],[.80,-.50],[.66,-1.17],
+        [.39,-1.43],[.20,-1.21]],sign),.175,'gold',1.39,.019);
+      polygon(sides([[.26,.73],[.55,.87],[.70,.62],
+        [.72,.12],[.69,-.51],[.59,-1.07],
+        [.39,-1.31],[.26,-1.08]],sign),.124,'shadow',1.501,.013);
+      polygon(sides([[.30,.63],[.55,.78],[.64,.52],
+        [.65,.08],[.62,-.44],[.53,-.98],
+        [.39,-1.18],[.30,-1.03]],sign),.107,'steel',1.591,.011);
+      polygon(sides([[.34,.55],[.48,.66],[.51,.39],
+        [.50,-.54],[.42,-.92],[.36,-.99]],sign),
+        .035,'bevel',1.662,.006);
+      // Solid stepped corner cheek guards and lower flare.
+      polygon(sides([[.60,.88],[.91,.79],[.95,.38],
+        [.82,.12],[.71,.22]],sign),.17,'gold',1.47,.014);
+      polygon(sides([[.67,-.87],[.88,-.76],[.82,-1.10],
+        [.55,-1.39],[.44,-1.37]],sign),.157,'gold',1.45,.013);
+      line([sign*.32,.51],[sign*.35,-1.01],1.729,'bevel',.021);
+      line([sign*.70,.28],[sign*.72,-.72],1.695,'glow',.016);
+    }
+    // Vertical temple spine and giant protective jewel.
+    polygon([[-.207,.84],[0,1.26],[.207,.84],
+      [.175,-1.31],[0,-1.52],[-.175,-1.31]],
+      .124,'gold',1.658,.015);
+    polygon([[-.133,.75],[0,1.14],[.133,.75],
+      [.113,-1.24],[0,-1.40],[-.113,-1.24]],
+      .090,'shadow',1.744,.008);
+    line([0,.64],[0,-1.18],1.810,'glow',.020);
+    stoneSetting(-.11,.182,1.815);
+    stoneSetting(-.84,.088,1.804);
+    model.userData.shieldStyle='Heavy-family shield / broad layered silver siege armour';
+  }
+  model.name=(d.name||d.key)+' · Heavy Soldier shield family 3D';
+  model.userData.jobWeapon=d.key;
+  model.userData.shieldFamily='Heavy Soldier reference';
+  model.userData.weaponTier=starter?'starter':elite?'evolved':'tank';
+  return model;
+}
 export function makeDetailedJobWeapon(T,d){
   const matched=makeReferenceWeapon(T,d);
   if(matched)return matched;
+  const family=makeShieldFamilyWeapon(T,d);
+  if(family)return family;
   const g=new T.Group(),key=d.key,k=d.kind,rank=d.level||1;
   const royal=['warrior','swordmaster','axer','lancer'].includes(key);
   const scarlet=['berserker','battleMage','tank'].includes(key);
