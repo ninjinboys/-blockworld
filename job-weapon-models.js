@@ -84,10 +84,181 @@ export function makeDetailedJobWeapon(T,d){
     for(const src of details)back.add(src.clone());
     g.add(back);
   }
+  // Reference-matched sword geometry: rebuilt from the front, edge and
+  // rear silhouettes of the user's Swordsman / Warrior concept sheets.
+  // Important: EVERY layer here is actual volumetric geometry, not an image.
+  function referenceSword(isGreat=false,master=false){
+    const p=isGreat?1.19:master?1.10:1, w=isGreat?.47:master?.325:.302;
+    const bladeBase=.46, bladeLength=(isGreat?2.17:1.93)*p;
+    const top=bladeBase+bladeLength,bladeDepth=isGreat?.27:.19;
+    // Dark leather handle with a diagonal double-cross woven leather wrap.
+    const gripBottom=isGreat?-.79:-.62,gripTop=.24;
+    wrap(gripBottom,gripTop,isGreat?.14:.116,isGreat?9:7);
+    // Matching criss-cross straps visibly wrap across the grip.
+    for(const dir of [-1,1]){
+      let last=null;
+      const steps=88;
+      for(let i=0;i<=steps;i++){
+        const t=i/steps,ang=dir*t*Math.PI*(isGreat?17:13)+(dir<0?Math.PI:0);
+        const rad=isGreat?.153:.129;
+        const here=[rad*Math.sin(ang),gripBottom+t*(gripTop-gripBottom),rad*Math.cos(ang)];
+        if(last)pipe(last,here,.009,'brown',5);
+        last=here;
+      }
+    }
+    band(gripBottom,isGreat?.175:.141);
+    band(gripTop,isGreat?.175:.142);
+    // Distinctive pommel: faceted gold cage, protruding dark-metal diamond,
+    // turquoise cut jewel on BOTH front and back.
+    const basePom=gripBottom-.11;
+    poly([[-.135,basePom+.04],[-.162,basePom-.105],[0,basePom-.27],
+      [.162,basePom-.105],[.135,basePom+.04],[0,basePom+.13]],
+      .18,'gold',0,.014);
+    poly([[-.093,basePom+.022],[0,basePom+.092],[.095,basePom+.02],
+      [.11,basePom-.10],[0,basePom-.21],[-.11,basePom-.10]],
+      .19,'black',.015,.007);
+    for(const sign of [-1,1]){
+      const z=sign*.137;
+      gem(0,basePom-.072,z,.076,.125,.042);
+      pipe([-.102,basePom-.12,z],[0,basePom+.095,z],.014,'gold',6);
+      pipe([.102,basePom-.12,z],[0,basePom+.095,z],.014,'gold',6);
+    }
+    for(const y of [gripBottom+.09,gripTop-.05]){
+      cylinder(isGreat?.175:.149,isGreat?.16:.137,.04,'gold',0,y,0,12);
+      cylinder(isGreat?.158:.136,isGreat?.158:.136,.016,'accent',0,y+.023,0,12);
+    }
+    // Trapezoidal blade with raised angular shoulders and a narrow spear
+    // point; the old simple straight box had no correspondence to the sheet.
+    const silhouette=[
+      [-w*.87,bladeBase],[-w,bladeBase+.17],
+      [-w*.90,bladeBase+.34],[-w*1.11,bladeBase+.39],
+      [-w*.99,bladeBase+.50],[-w*.87,top-.56],
+      [-w*.83,top-.40],[-w*.96,top-.32],
+      [-w*.68,top-.14],[0,top],
+      [w*.68,top-.14],[w*.96,top-.32],
+      [w*.83,top-.40],[w*.87,top-.56],
+      [w*.99,bladeBase+.50],[w*1.11,bladeBase+.39],
+      [w*.90,bladeBase+.34],[w,bladeBase+.17],[w*.87,bladeBase]
+    ];
+    poly(silhouette,bladeDepth,'blade',0,.008);
+    // True extruded bevel layers on both blade faces. Reverse faces
+    // are individually modeled, not a transparent texture projection.
+    for(const face of [-1,1]){
+      const z=face*(bladeDepth*.5+.017);
+      const inner=face*(bladeDepth*.5+.035);
+      for(const side of [-1,1]){
+        poly([[side*w*.94,bladeBase+.06],
+          [side*w*.73,bladeBase+.19],
+          [side*w*.69,top-.50],
+          [side*w*.62,top-.22],
+          [side*w*.79,top-.28],
+          [side*w*.85,bladeBase+.39]],
+          .020,'steel',z,.003);
+        poly([[side*w*.82,bladeBase+.15],
+          [side*w*.57,bladeBase+.43],
+          [side*w*.51,top-.33],
+          [side*w*.69,top-.22],
+          [side*w*.72,bladeBase+.49]],
+          .014,'edge',inner,.002);
+      }
+      // Inset charcoal fuller in the middle with a faceted silver ridge.
+      const fuller=[[-w*.43,bladeBase+.065],[-w*.37,top-.58],
+        [-w*.16,top-.17],[0,top-.08],[w*.16,top-.17],
+        [w*.37,top-.58],[w*.43,bladeBase+.065]];
+      poly(fuller,.022,'black',z+face*.018,.003);
+      poly([[-w*.29,bladeBase+.105],[-w*.23,top-.58],
+        [0,top-.20],[w*.23,top-.58],[w*.29,bladeBase+.105]],
+        .012,'recessed',z+face*.031,.002);
+      // Thin illuminated cyan rune channel with diamond interruptions.
+      const front=face*(bladeDepth*.5+.072);
+      curve([[0,bladeBase+.11,front],
+        [0,bladeBase+.39,front],[0,bladeBase+.65,front],
+        [0,top-.64,front]],.013,'accent');
+      for(const t of [.25,.46,.62]){
+        const yy=bladeBase+bladeLength*t;
+        const rw=t===.46?.076:.041;
+        poly([[0,yy+rw*1.75],[rw,yy],
+          [0,yy-rw*1.75],[-rw,yy]],
+          .018,'accent',front,.003);
+        poly([[0,yy+rw*.90],[rw*.35,yy],
+          [0,yy-rw*.9],[-rw*.35,yy]],
+          .01,'black',front+face*.018,0);
+      }
+      // Reference's forked cyan line details around larger runes.
+      for(const t of [.21,.43,.66]){
+        const y=bladeBase+bladeLength*t;
+        for(const side of [-1,1]){
+          pipe([0,y-.075,front],[side*.058,y+.02,front],.010,'accent',5);
+          pipe([side*.058,y+.02,front],[0,y+.08,front],.008,'accent',5);
+        }
+      }
+      // Tiny cold-silver forged scratches follow the blade facet direction.
+      for(let i=0;i<8;i++){
+        const y=bladeBase+.18+((i*11)%19)/19*bladeLength*.74;
+        const side=i%2?1:-1;
+        pipe([side*w*.73,y,inner+face*.008],
+          [side*w*.60,y+.055+((i*3)%4)*.015,inner+face*.008],
+          .0035,'edge',4);
+      }
+    }
+    // Large angular flared crossguard with branching wing tips, directly
+    // derived from the reference's bronze + silver layered profile.
+    const guardY=.305,span=isGreat?.79:.655;
+    const guardBody=[[-span,guardY+.08],[-span*.91,guardY+.22],
+      [-span*.71,guardY+.14],[-.22,guardY+.17],
+      [-.13,guardY+.29],[0,guardY+.12],
+      [.13,guardY+.29],[.22,guardY+.17],
+      [span*.71,guardY+.14],[span*.91,guardY+.22],
+      [span,guardY+.08],[span*.88,guardY-.09],
+      [span*.57,guardY-.005],[.16,guardY-.05],
+      [0,guardY-.18],[-.16,guardY-.05],
+      [-span*.57,guardY-.005],[-span*.88,guardY-.09]];
+    poly(guardBody,.24,'gold',0,.017);
+    for(const face of [-1,1]){
+      const z=face*.143;
+      poly([[-span*.91,guardY+.13],[-span*.73,guardY+.105],
+        [-.22,guardY+.085],[-.13,guardY+.18],
+        [0,guardY+.055],[.13,guardY+.18],
+        [.22,guardY+.085],[span*.73,guardY+.105],
+        [span*.91,guardY+.13],[span*.82,guardY+.012],
+        [.17,guardY+.025],[0,guardY-.12],
+        [-.17,guardY+.025],[-span*.82,guardY+.012]],
+        .029,'black',z,.008);
+      for(const side of [-1,1]){
+        poly([[side*.14,guardY+.11],[side*.32,guardY+.082],
+          [side*span*.88,guardY+.141],
+          [side*span*.70,guardY+.051],
+          [side*.27,guardY+.035]],
+          .018,'blade',face*.184,.004);
+        poly([[side*.25,guardY-.029],[side*span*.70,guardY-.011],
+          [side*span*.91,guardY-.084],
+          [side*span*.75,guardY-.058],[side*.18,guardY-.084]],
+          .020,'steel',face*.171,.006);
+        bead(side*span*.84,guardY+.085,face*.20,.022,'gold');
+      }
+      // Central diamond is a raised, framed jewel, not just a cyan plane.
+      poly([[0,guardY+.29],[.17,guardY+.08],
+        [0,guardY-.17],[-.17,guardY+.08]],
+        .058,'gold',face*.19,.014);
+      poly([[0,guardY+.235],[.115,guardY+.08],
+        [0,guardY-.11],[-.115,guardY+.08]],
+        .040,'black',face*.237,.003);
+      gem(0,guardY+.076,face*.273,.096,.155,.038);
+      pipe([0,guardY+.18,face*.292],[0,guardY-.01,face*.292],
+        .009,'edge',5);
+    }
+    // Steel collar and layered gold sockets just below the guard.
+    cylinder(isGreat?.185:.153,isGreat?.14:.13,.16,'black',0,.14,0,12);
+    for(const y of [.095,.18]){
+      cylinder(isGreat?.20:.175,isGreat?.18:.16,.038,'gold',0,y,0,12);
+    }
+    g.userData.referenceMatch='Swordsman sword image / Warrior greatsword design';
+  }
   // Long blades: all parts stay true volumetric 3D meshes, with a blade
   // bevel, darker spine, inset glowing runes and a real sculpted crossguard.
   function sword(){
     const huge=k==='greatsword',dual=k==='dual',elite=rank>=30;
+    if(!dual){referenceSword(huge,elite);return;}
     const L=huge?1.88:dual?(elite?1.03:.77):elite?1.28:1.04;
     const w=huge?.43:dual?(elite?.18:.13):elite?.225:.175;
     const y0=.30;
