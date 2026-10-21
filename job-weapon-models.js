@@ -615,127 +615,223 @@ export function makeDetailedJobWeapon(T,d){
       }
       return;
     }
-    let outline;
-    if(heavy){
-      outline=[[-w*.77,top+.17],[-w,top*.70],[-w,bottom*.73],
-        [-w*.62,bottom],[0,bottom-.19],[w*.62,bottom],
-        [w,bottom*.73],[w,top*.70],[w*.77,top+.17],
-        [w*.28,top*.96],[0,top+.27],[-w*.28,top*.96]];
-    }else if(tank){
-      outline=[[-w*.73,top+.10],[-w*1.06,top*.63],
-        [-w,0],[-w*.77,bottom*.77],[0,bottom-.20],
-        [w*.77,bottom*.77],[w,0],[w*1.06,top*.63],
-        [w*.73,top+.10],[0,top+.23]];
-    }else if(elite){
-      outline=[[-w*.63,top+.07],[-w,top*.67],
-        [-w*.94,-.05],[-w*.69,bottom*.70],[0,bottom-.13],
-        [w*.69,bottom*.70],[w*.94,-.05],
-        [w,top*.67],[w*.63,top+.07],[0,top+.20]];
-    }else{
-      outline=[[-w*.65,top],[-w,top*.69],[-w*.96,-.10],
-        [0,bottom-.07],[w*.96,-.10],[w,top*.69],[w*.65,top]];
-    }
-    const shape=(pts,scaleX=1,scaleY=1)=>pts.map(([x,y])=>[x*scaleX,y*scaleY]);
-    poly(outline,.31,'gold',.015,.031);
-    poly(shape(outline,.92,.93),.32,'black',.017,.022);
-    poly(shape(outline,.86,.86),.38,'steel',-.006,.016);
-    // Faceted back is dark metal, NOT a copy of the front decoration.
-    poly(shape(outline,.82,.85),.10,'recessed',-.20,.011);
-    for(const sy of [-1,1]){
-      for(const y of [-.30,.27]){
-        poly([[sy*w*.22,y+.06],[sy*w*.70,y+.09],
-          [sy*w*.72,y-.07],[sy*w*.21,y-.08]],
-          .045,'gold',-.278,.006);
-        bead(sy*w*.58,y,-.307,.038,'steel');
-      }
-      const x=sy*w*.71;
-      poly([[x-.06,top*.77],[x+.06,top*.77],
-        [x+.08,bottom*.69],[x-.08,bottom*.69]],
-        .068,'black',-.277,.008);
-      for(const y of [top*.55,.02,bottom*.53])bead(x,y,-.33,.039,'gold');
-    }
-    // Hand grip and leather straps visible from back when rotating.
-    cube(.35,.49,.11,'leather',0,-.03,-.33);
-    for(const y of [-.21,.21]){
-      cube(w*1.00,.105,.10,'brown',0,y,-.37);
-      for(const x of [-w*.50,w*.50])bead(x,y,-.43,.035,'gold');
-    }
-    // Large front central ridge and separate raised defensive plates.
-    for(const face of [1]){
-      const z=.25;
-      poly([[-.12,top*.94],[0,top+(.14)],[.12,top*.94],
-        [.19,bottom*.75],[0,bottom-.11],
-        [-.19,bottom*.75]],.099,'gold',z,.010);
-      poly([[-.071,top*.75],[.071,top*.75],
-        [.10,bottom*.71],[0,bottom*.98],
-        [-.10,bottom*.71]],.027,'black',z+.072,.007);
-      pipe([0,top*.68,z+.117],[0,bottom*.76,z+.117],.017,'accent');
-      poly([[-w*.78,.13],[w*.78,.13],
-        [w*.64,-.047],[-w*.64,-.047]],.084,'gold',z,.011);
-      // Split flank plates are fully extruded and overlap the centerplate.
+
+    // Individually sculpted shield designs. The old path gave all three
+    // shield jobs an almost identical diamond plate; avoid any shared
+    // faceplate silhouette, crest or size across these independent models.
+    // Coordinates are actual closed beveled THREE.ExtrudeGeometry meshes.
+    const panel=(pts,dep,material,z=0,bev=.009)=>poly(pts,dep,material,z,bev);
+    const backHandle=(y,half,z)=>{
+      // A leather-gripped metal crossbar, both mounts visible from rear.
       for(const side of [-1,1]){
-        poly([[side*.18,top*.79],[side*w*.78,top*.72],
-          [side*w*.81,top*.37],[side*w*.56,.12],
-          [side*.18,.03]],.070,
-          heavy?'blade':elite?'steel':'black',z+.016,.015);
-        poly([[side*.21,bottom*.05],[side*w*.56,-.08],
-          [side*w*.83,bottom*.49],[side*w*.62,bottom*.79],
-          [side*.20,bottom*.76]],.074,
-          heavy?'blade':'steel',z+.019,.012);
-        for(const y of [top*.52,-.09,bottom*.48])
-          bead(side*w*.68,y,z+.111,.034);
-        // Gold-painted actual raised linear ribs.
-        pipe([side*w*.76,top*.56,z+.116],
-          [side*w*.70,bottom*.63,z+.119],.028,'gold');
+        const x=side*half;
+        cube(.13,.21,.13,'gold',x,y,z+.03);
+        cube(.09,.15,.11,'black',x,y,z-.055);
+        for(const dy of [-.062,.062])bead(x,y+dy,z-.12,.023,'gold');
       }
-      // Jewel is enclosed inside an extruded diamond-shaped setting.
-      poly([[0,.34],[.24,.075],[0,-.20],[-.24,.075]],
-        .082,'gold',z+.10,.015);
-      poly([[0,.25],[.15,.075],[0,-.11],[-.15,.075]],
-        .045,'recessed',z+.173,.006);
-      gem(0,.072,z+.206,heavy?.146:.11,heavy?.182:.136,.049);
-      for(const y of [.44,-.40])diamond(0,y,z+.127,.050,.085);
+      pipe([-half,y,z-.14],[half,y,z-.14],.075,'leather',10);
+      for(let i=0;i<12;i++){
+        const x=-half+.04+i*(2*half-.08)/12;
+        pipe([x,y-.054,z-.197],[x+.040,y+.052,z-.197],.007,'brown',5);
+      }
+    };
+    const sideGem=(x,y,z,rx,ry)=>{
+      diamond(x,y,z,.030+rx*1.25,.045+ry*1.20);
+      gem(x,y,z+.034,rx,ry,.031);
+    };
+    if(key==='shield'){
+      // STARTER SHIELD: small iron-edged HEXAGONAL KITE, dark oak-backed,
+      // reinforced with an eight-point hand-forged cross. No crown/spikes.
+      const outline=[[-.44,.66],[-.58,.42],[-.57,-.11],[-.43,-.48],
+        [0,-.86],[.43,-.48],[.57,-.11],[.58,.42],[.44,.66],[0,.72]];
+      panel(outline,.30,'gold',0,.022);
+      panel(outline.map(([x,y])=>[x*.93,y*.94]),.32,'black',.016,.016);
+      panel(outline.map(([x,y])=>[x*.86,y*.87]),.33,'brown',.034,.013);
+      // A real raised iron hexagon, not the other shields' layered plates.
+      panel([[-.38,.52],[0,.62],[.38,.52],[.44,.24],[.44,-.19],
+        [0,-.72],[-.44,-.19],[-.44,.24]],.089,'steel',.216,.015);
+      panel([[-.33,.44],[0,.53],[.33,.44],[.37,.22],[.36,-.14],
+        [0,-.62],[-.36,-.14],[-.37,.22]],.050,'black',.270,.011);
+      // Dark, leather/bronze-cross central insignia.
+      panel([[-.089,.42],[.089,.42],[.12,.14],[.115,-.44],
+        [0,-.55],[-.115,-.44],[-.12,.14]],.056,'gold',.318,.013);
+      panel([[-.06,.35],[.06,.35],[.075,-.38],[0,-.46],
+        [-.075,-.38]],.039,'steel',.367,.004);
+      panel([[-.35,.075],[.35,.075],[.32,-.065],[-.32,-.065]],
+        .072,'steel',.315,.009);
+      for(const s of [-1,1]){
+        // Individually applied sloping iron braces & closed corner guards.
+        panel([[s*.13,.42],[s*.35,.46],[s*.39,.29],[s*.16,.16]],
+          .051,'gold',.296,.009);
+        panel([[s*.13,-.14],[s*.38,-.20],[s*.32,-.39],
+          [s*.11,-.38]],.055,'steel',.294,.006);
+        pipe([s*.40,.40,.335],[s*.41,-.19,.335],.020,'gold');
+        for(const y of [.40,.16,-.15,-.36])bead(s*.47,y,.294,.028,'gold');
+      }
+      // Small single turquoise gem in a modest, square recessed boss.
+      panel([[-.16,.08],[0,.24],[.16,.08],[0,-.12]],
+        .058,'black',.380,.009);
+      sideGem(0,.071,.435,.075,.104);
+      // Backside is solid oak/iron with ONE handgrip, different from Elite.
+      panel(outline.map(([x,y])=>[x*.81,y*.84]),.072,'leather',-.200,.009);
+      panel([[-.12,.53],[.12,.53],[.14,-.51],[0,-.63],
+        [-.14,-.51]],.055,'steel',-.251,.011);
+      for(const s of [-1,1]){
+        panel([[s*.22,.43],[s*.41,.37],[s*.39,-.29],
+          [s*.20,-.42]],.052,'brown',-.266,.009);
+        for(const y of [.35,-.29])bead(s*.38,y,-.307,.030,'gold');
+      }
+      backHandle(-.02,.33,-.33);
+      g.userData.shieldStyle='starter iron kite with forged cross and single rear grip';
+      return;
     }
-    if(heavy){
-      // Tower shield really is tall, thick and almost full-body width.
-      for(const side of [-1,1]){
-        const x=side*w*.83;
-        poly([[x-.14,top*.77],[x,top+.26],
-          [x+.14,top*.77],[x+.12,bottom*.68],
-          [x,bottom*.86],[x-.12,bottom*.68]],.12,'gold',.265,.016);
-        for(const y of [top*.56,0,bottom*.56])bead(x,y,.36,.043,'black');
+    if(key==='shieldElite'){
+      // EVOLVED SHIELD SOLDIER: tall elegant silver/GOLD PALADIN crest
+      // with two flared heraldic wings and layered facets. Not a basic kite.
+      const outline=[[-.42,.88],[-.71,.63],[-.77,.32],[-.64,-.30],
+        [-.44,-.79],[0,-1.11],[.44,-.79],[.64,-.30],
+        [.77,.32],[.71,.63],[.42,.88],[0,1.08]];
+      panel(outline,.37,'gold',0,.023);
+      panel(outline.map(([x,y])=>[x*.93,y*.94]),.37,'black',.014,.017);
+      panel(outline.map(([x,y])=>[x*.86,y*.86]),.40,'steel',.055,.018);
+      // Symmetric independent raised silver plates, with deep dark relief.
+      for(const s of [-1,1]){
+        panel([[s*.19,.62],[s*.50,.75],[s*.67,.42],
+          [s*.52,-.17],[s*.27,-.33],[s*.18,.11]],
+          .091,'black',.267,.010);
+        panel([[s*.245,.60],[s*.48,.65],[s*.56,.39],
+          [s*.46,-.12],[s*.275,-.23],[s*.225,.11]],
+          .087,'blade',.323,.010);
+        panel([[s*.27,.51],[s*.38,.56],[s*.41,.25],
+          [s*.35,-.08]],.025,'edge',.378,.004);
+        panel([[s*.18,-.36],[s*.43,-.29],[s*.57,-.46],
+          [s*.38,-.77],[s*.13,-.91]],.114,'black',.271,.015);
+        panel([[s*.22,-.39],[s*.44,-.36],[s*.46,-.51],
+          [s*.35,-.68],[s*.21,-.77]],.085,'blade',.347,.008);
+        // Sweeping gold winged cheek guards ABOVE the top corners.
+        panel([[s*.15,.65],[s*.42,.84],[s*.71,1.07],
+          [s*.64,.67],[s*.49,.52],[s*.23,.49]],
+          .155,'gold',.30,.019);
+        panel([[s*.33,.69],[s*.59,.88],[s*.57,.69],
+          [s*.45,.58]],.040,'steel',.401,.005);
+        pipe([s*.55,.46,.43],[s*.52,-.59,.43],.023,'gold');
+        for(const y of [.35,-.01,-.43])bead(s*.61,y,.382,.027,'gold');
+        // Long pale-magenta arcane trace distinguishes evolved type.
+        pipe([s*.45,.44,.45],[s*.43,-.22,.45],.011,'accent');
       }
-      poly([[-w*.35,top*.92],[0,top+.37],
-        [w*.35,top*.92]],.12,'gold',.28,.012);
-      gem(0,top+.21,.36,.098,.14,.037);
-    }else if(elite){
-      // Noble parrying shield: arched crest and winged corner flanges.
-      for(const side of [-1,1]){
-        poly([[side*.25,top*.74],[side*w*.96,top+.10],
-          [side*w*.74,top*.41],[side*.30,top*.32]],
-          .10,'gold',.28,.012);
-        diamond(side*.37,top*.47,.38,.056,.086);
+      // Centered gilded spine interrupted by diamond jewels.
+      panel([[-.15,.75],[0,1.18],[.15,.75],
+        [.14,-.82],[0,-1.02],[-.14,-.82]],.093,'gold',.375,.013);
+      panel([[-.085,.66],[0,.94],[.085,.66],
+        [.075,-.79],[0,-.92],[-.075,-.79]],.058,'recessed',.442,.007);
+      for(const y of [.38,-.16,-.61]){
+        diamond(0,y,.480,y===.38?.110:.064,y===.38?.166:.095);
+        gem(0,y,.511,y===.38?.079:.044,y===.38?.122:.069,.043);
       }
-    }else if(tank){
-      // Offensive tank shield protrusions differ from massive tower shield.
-      for(const x of [-w*.69,0,w*.69]){
-        const spike=add(new T.ConeGeometry(.148,.46,8),'steel',[x,.14,.61]);
-        spike.rotation.x=Math.PI/2;
-        cylinder(.13,.13,.12,'gold',x,.14,.40,8).rotation.x=Math.PI/2;
+      // Recessed twin chevrons, not the heavy tower's straight power core.
+      for(const y of [.13,-.42]){
+        for(const s of [-1,1]){
+          pipe([s*.28,y+.08,.443],[0,y-.06,.479],.016,'gold');
+        }
       }
-      for(const side of [-1,1]){
-        poly([[side*w*.80,top*.78],[side*(w+.20),top*.47],
-          [side*w*.96,top*.35]],.13,'black',.21,.013);
+      // Gilded crest with upper triangular horn and inset gem.
+      panel([[-.38,.79],[0,1.27],[.38,.79],
+        [.26,.65],[0,.56],[-.26,.65]],.149,'gold',.470,.015);
+      panel([[-.19,.83],[0,1.14],[.19,.83],[0,.67]],
+        .063,'black',.555,.007);
+      gem(0,.866,.604,.129,.195,.061);
+      // Rear: dark separate plate, TWO straps rather than starter single.
+      panel(outline.map(([x,y])=>[x*.85,y*.86]),.095,'recessed',-.254,.015);
+      for(const s of [-1,1]){
+        panel([[s*.13,.81],[s*.56,.71],[s*.48,-.69],
+          [s*.22,-.92]],.076,'steel',-.327,.010);
+        panel([[s*.23,.67],[s*.46,.59],[s*.39,-.62],
+          [s*.23,-.74]],.047,'black',-.384,.007);
+        for(const y of [.57,.15,-.28,-.59])bead(s*.48,y,-.417,.032,'gold');
       }
-    }else{
-      // Small starting shield includes two wood-grain inset panels.
-      for(const side of [-1,1]){
-        poly([[side*.20,top*.48],[side*w*.60,top*.52],
-          [side*w*.58,bottom*.44],[side*.19,bottom*.37]],
-          .019,'brown',.37,.005);
-      }
+      panel([[-.095,1.06],[.095,1.06],[.14,-.86],
+        [0,-1.04],[-.14,-.86]],.081,'gold',-.383,.009);
+      backHandle(.31,.42,-.45);
+      backHandle(-.40,.42,-.45);
+      g.userData.shieldStyle='evolved silver paladin wing shield with double straps';
+      return;
     }
+    // TANK: imposing nearly square dark-steel BULWARK, capped shoulders,
+    // three forward spikes, a huge red crystal and reinforced quadrants.
+    const outline=[[-.77,.99],[-1.05,.76],[-1.10,.29],[-1.01,-.57],
+      [-.73,-.93],[0,-1.19],[.73,-.93],[1.01,-.57],
+      [1.10,.29],[1.05,.76],[.77,.99],[0,1.08]];
+    panel(outline,.54,'gold',0,.026);
+    panel(outline.map(([x,y])=>[x*.96,y*.95]),.54,'black',.015,.020);
+    panel(outline.map(([x,y])=>[x*.91,y*.90]),.57,'steel',.028,.017);
+    panel(outline.map(([x,y])=>[x*.85,y*.84]),.61,'recessed',.060,.016);
+    // Broad aggressive, visibly separated angular armour plates.
+    for(const s of [-1,1]){
+      panel([[s*.17,.79],[s*.83,.79],[s*.96,.47],
+        [s*.90,.06],[s*.30,.07],[s*.18,.31]],
+        .116,'black',.366,.015);
+      panel([[s*.23,.72],[s*.78,.69],[s*.82,.43],
+        [s*.75,.16],[s*.31,.17]],.105,'steel',.439,.014);
+      panel([[s*.29,.62],[s*.63,.59],[s*.70,.32],
+        [s*.37,.25]],.034,'blade',.509,.007);
+      panel([[s*.24,-.06],[s*.87,-.04],[s*.89,-.52],
+        [s*.65,-.78],[s*.20,-.95]],.122,'black',.366,.015);
+      panel([[s*.30,-.15],[s*.78,-.16],[s*.79,-.48],
+        [s*.60,-.70],[s*.29,-.77]],.104,'steel',.453,.010);
+      panel([[s*.36,-.22],[s*.65,-.24],[s*.64,-.49],
+        [s*.41,-.65]],.036,'blade',.520,.005);
+      // Structural outer flanges extend beyond main chassis.
+      panel([[s*.78,.81],[s*1.15,.67],[s*1.09,.30],
+        [s*.87,.37]],.17,'gold',.307,.014);
+      panel([[s*.84,-.36],[s*1.14,-.51],[s*.86,-.94],
+        [s*.68,-.77]],.16,'black',.326,.013);
+      for(const y of [.56,.07,-.43,-.72])bead(s*.87,y,.500,.039,'gold');
+      pipe([s*.90,.54,.511],[s*.90,-.51,.515],.032,'gold');
+      pipe([s*.36,.48,.535],[s*.34,-.64,.540],.013,'accent');
+    }
+    // Tank's distinctive three forward-facing STEEL SPIKES, actually 3D.
+    for(const x of [-.66,0,.66]){
+      const spike=add(new T.ConeGeometry(x===0?.18:.16,x===0?.60:.49,10),
+        'blade',[x,.10,.94]);
+      spike.rotation.x=Math.PI/2;
+      const flange=cylinder(x===0?.18:.15,x===0?.18:.15,.13,
+        'gold',x,.10,.64,10);
+      flange.rotation.x=Math.PI/2;
+      // Raised dark socket plate behind each spearpoint.
+      panel([[x-.19,.36],[x+.19,.36],[x+.20,-.16],
+        [x-.20,-.16]],.062,'black',.576,.009);
+    }
+    // Reinforced bronze X across the center of the heavy bulwark.
+    for(const s of [-1,1]){
+      pipe([s*.75,.65,.56],[0,.07,.62],.065,'gold');
+      pipe([s*.75,-.72,.56],[0,.07,.62],.065,'gold');
+      pipe([s*.74,.64,.61],[0,.07,.655],.023,'steel');
+    }
+    panel([[-.24,.86],[0,1.13],[.24,.86],
+      [.30,-.86],[0,-1.09],[-.30,-.86]],.111,'gold',.468,.016);
+    panel([[-.16,.75],[0,.93],[.16,.75],
+      [.18,-.77],[0,-.92],[-.18,-.77]],.073,'black',.540,.007);
+    // Three-layer gemstone setting with vivid red core.
+    diamond(0,.09,.674,.27,.34);
+    diamond(0,.09,.716,.20,.26,'black',.043);
+    gem(0,.09,.769,.154,.210,.078);
+    gem(0,-.63,.685,.078,.122,.035);
+    // Rear two massive handrails and cross bracing.
+    panel(outline.map(([x,y])=>[x*.87,y*.87]),.075,'black',-.312,.013);
+    for(const s of [-1,1]){
+      panel([[s*.20,.84],[s*.82,.74],[s*.80,-.69],
+        [s*.32,-.95]],.100,'steel',-.399,.014);
+      panel([[s*.29,.62],[s*.67,.58],[s*.66,-.67],
+        [s*.32,-.77]],.067,'recessed',-.463,.011);
+      for(const y of [.61,.23,-.20,-.62])bead(s*.76,y,-.503,.043,'gold');
+    }
+    panel([[-.13,1.02],[.13,1.02],[.19,-.89],
+      [0,-1.10],[-.19,-.89]],.104,'steel',-.489,.012);
+    backHandle(.37,.65,-.59);
+    backHandle(-.49,.65,-.59);
+    g.userData.shieldStyle='tank broad spiked red-core bulwark with double heavy handrails';
   }
+
   function bow(){
     const power=key==='powerArcher',fast=key==='swiftArcher';
     const halfH=power?1.13:fast?.79:.94;
