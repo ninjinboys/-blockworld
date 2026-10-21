@@ -319,51 +319,106 @@ export function makeDetailedJobWeapon(T,d){
     cylinder(.14,.12,.14,'gold',0,.15,0);
   }
   function axe(){
-    wrap(-.55,.62,.096,10);band(-.55);band(.65);
-    pipe([0,.53,0],[0,1.6,0],.087,'brown');
-    [1.06,1.44].forEach(y=>band(y,.12));
-    cube(.33,.38,.21,'black',0,1.5,0);
-    // Split war-axe cutting edges: genuine curved polygon silhouettes.
-    for(const side of [-1,1]){
-      const pts=[[side*.13,1.26],[side*.31,1.44],[side*.43,1.82],
-        [side*.79,2.02],[side*1.06,2.08],[side*.92,1.81],
-        [side*.91,1.40],[side*1.06,1.17],[side*.73,1.23],
-        [side*.44,1.33]];
-      poly(pts,.17,'blade',0,.023);
-      const backStart=g.children.length;
-      poly([[side*.36,1.42],[side*.55,1.81],[side*.92,1.97],
-        [side*.77,1.73],[side*.8,1.39]],.045,'black',.105,.01);
-      poly([[side*.55,1.40],[side*.73,1.70],[side*.85,1.83],
-        [side*.8,1.50]],.022,'gold',.144,.009);
-      for(const y of [1.45,1.65])diamond(side*.62,y,.165,.029,.065);
-      mirrorRear(backStart,'Battle-axe rear steel plating and runes');
+    // Volumetric double crescent head rebuilt to resemble the asset design:
+    // slotted heavy steel blades, gilded center boss, carved butt counterweight.
+    wrap(-.76,.55,.125,11);
+    for(const y of [-.72,-.30,.37,.59])band(y,.152);
+    pipe([0,.49,0],[0,1.65,0],.124,'brown',12);
+    pipe([0,.78,.07],[0,1.55,.07],.019,'accent');
+    for(const y of [1.00,1.47]){
+      band(y,.162);
+      for(const face of [-1,1])gem(0,y,face*.17,.060,.073,.033);
     }
-    poly([[-.31,1.43],[-.17,1.9],[0,2.05],
-      [.17,1.9],[.31,1.43],[0,1.35]],.245,'black',.02,.02);
-    gem(0,1.76,.17,.15,.19,.055);
-    gem(0,1.76,-.17,.15,.19,.055);
-    tip(0,2.11,.03,.17,.24);
-    gem(0,-.63,0,.085,.10,.08);
+    poly([[-.20,1.35],[0,1.28],[.20,1.35],
+      [.24,1.98],[0,2.29],[-.24,1.98]],.26,'black',0,.025);
+    for(const sign of [-1,1]){
+      // Concave underside and pointed upper horn are sculpted into the edge.
+      const points=[
+        [sign*.16,1.34],[sign*.30,1.46],
+        [sign*.44,1.55],[sign*.60,1.50],
+        [sign*.94,1.35],[sign*1.20,1.30],
+        [sign*1.01,1.49],[sign*.91,1.76],
+        [sign*1.02,2.02],[sign*1.20,2.23],
+        [sign*.92,2.18],[sign*.56,2.10],
+        [sign*.36,1.92],[sign*.18,1.97]
+      ];
+      poly(points,.25,'blade',0,.021);
+      for(const face of [-1,1]){
+        const z=face*.145,front=face*.177;
+        poly([[sign*.26,1.49],[sign*.51,1.57],
+          [sign*.85,1.48],[sign*.91,1.72],
+          [sign*.91,2.08],[sign*.55,2.01],
+          [sign*.37,1.84]],.035,'black',z,.011);
+        poly([[sign*.54,1.57],[sign*.80,1.54],
+          [sign*.84,1.79],[sign*.91,2.09],
+          [sign*.72,2.02],[sign*.64,1.82]],.023,'steel',front,.006);
+        pipe([sign*.63,1.61,face*.205],[sign*.81,1.85,face*.205],.012,'accent');
+        pipe([sign*.81,1.85,face*.205],[sign*.76,2.02,face*.205],.012,'accent');
+        for(const y of [1.62,1.9])diamond(sign*.55,y,face*.208,.042,.063);
+      }
+      for(const y of [1.37,2.05]){
+        poly([[sign*.40,y],[sign*.48,y+.09],
+          [sign*.59,y+.01]],.03,'gold',.04,.009);
+      }
+    }
+    // Raised center crest with a cut gemstone on both faces.
+    poly([[-.24,1.39],[0,1.29],[.24,1.39],
+      [.31,1.67],[.18,1.96],[0,2.18],
+      [-.18,1.96],[-.31,1.67]],.29,'gold',0,.023);
+    poly([[-.14,1.45],[0,1.40],[.14,1.45],
+      [.20,1.70],[0,2.08],[-.20,1.70]],.31,'black',0,.010);
+    for(const face of [-1,1]){
+      gem(0,1.76,face*.19,.139,.19,.056);
+      poly([[0,2.13],[.088,1.98],[0,1.94],
+        [-.088,1.98]],.025,'gold',face*.21,.006);
+    }
+    // Pommel is an actual gilded cage with recessed blue jewel.
+    poly([[-.14,-.73],[-.20,-.87],[0,-1.08],
+      [.20,-.87],[.14,-.73]],.18,'gold',0,.016);
+    for(const face of [-1,1])gem(0,-.87,face*.13,.077,.104,.033);
   }
   function spear(){
-    wrap(-.56,.75,.075,12);
-    pipe([0,.62,0],[0,2.12,0],.069,'brown');
-    for(const y of [-.57,.03,.70,1.15,1.79])band(y,.09);
-    cylinder(.105,.105,.16,'gold',0,1.87,0,8);
-    poly([[-.10,1.97],[-.20,2.15],[-.25,2.36],[0,3.08],
-      [.25,2.36],[.20,2.15],[.10,1.97]],.13,'edge',0,.02);
-    const backStart=g.children.length;
-    poly([[-.085,2.09],[0,3.0],[.085,2.09]],.02,'steel',.087,.004);
-    pipe([0,2.15,.115],[0,2.89,.112],.011,'accent',5);
-    gem(0,2.22,.133,.09,.145,.03);
-    mirrorRear(backStart,'Spearhead rear blade ridge and gem');
-    for(const side of [-1,1]){
-      poly([[0,1.98],[side*.34,2.07],[side*.29,2.26],
-        [side*.19,2.12]],.13,'gold',0,.013);
-      // The alternate shaft accents keep the silhouette legible at distance.
-      poly([[0,.90],[side*.19,1.00],[side*.13,1.18]],.07,'steel',0,.009);
+    // Extra-long spear / lance with broad diamond cross-section leaf point.
+    wrap(-.78,.60,.081,14);
+    pipe([0,.55,0],[0,2.37,0],.079,'brown',12);
+    // Contrast the brown wrapped grip and inlaid dark-steel midsection.
+    cylinder(.095,.095,.66,'black',0,1.48,0,10);
+    for(const y of [-.76,-.28,.36,.66,1.13,1.78,2.21])band(y,.102);
+    for(const face of [-1,1]){
+      const z=face*.095;
+      poly([[-.067,1.21],[-.062,1.83],[0,1.91],
+        [.062,1.83],[.067,1.21]],.025,'gold',z,.005);
+      pipe([0,1.25,face*.13],[0,1.86,face*.13],.012,'accent');
+      for(const y of [1.25,1.86])gem(0,y,face*.133,.050,.071,.023);
     }
-    tip(0,-.75,0,.095,.19);
+    // Winged socket holding an extruded steel spearhead with ridge.
+    cylinder(.17,.13,.19,'gold',0,2.32,0,10);
+    for(const sign of [-1,1]){
+      poly([[sign*.04,2.25],[sign*.43,2.33],
+        [sign*.35,2.55],[sign*.19,2.43],
+        [sign*.06,2.58]],.12,'gold',0,.014);
+      poly([[sign*.07,2.41],[sign*.31,2.45],
+        [sign*.28,2.50]],.021,'blade',.073,.003);
+    }
+    const p=[[-.13,2.42],[-.20,2.65],[-.31,2.94],
+      [-.22,3.24],[0,3.82],[.22,3.24],
+      [.31,2.94],[.20,2.65],[.13,2.42]];
+    poly(p,.19,'blade',0,.015);
+    for(const face of [-1,1]){
+      const z=face*.12;
+      poly([[-.10,2.54],[-.14,2.83],
+        [0,3.71],[.14,2.83],[.10,2.54]],
+        .028,'steel',z,.007);
+      poly([[-.041,2.66],[0,3.68],
+        [.041,2.66]],.013,'black',z+face*.035,.003);
+      pipe([0,2.71,face*.18],[0,3.48,face*.18],.012,'accent');
+      gem(0,2.67,face*.197,.078,.118,.035);
+      for(const y of [2.85,3.19])diamond(0,y,face*.19,.037,.080);
+    }
+    // Bottom steel spear (counterweight) shaped and gilded.
+    poly([[-.10,-.72],[-.14,-.84],[0,-1.21],
+      [.14,-.84],[.10,-.72]],.14,'steel',0,.016);
+    for(const face of [-1,1])gem(0,-.86,face*.103,.051,.085,.029);
   }
   function shield(){
     const heavy=key==='heavy',tank=key==='tank',elite=rank>=30;
