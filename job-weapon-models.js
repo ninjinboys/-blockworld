@@ -87,6 +87,15 @@ export function makeDetailedJobWeapon(T,d){
     for(const src of details)back.add(src.clone());
     g.add(back);
   }
+
+  // Do not scale the hilt or greatsword: only non-Warrior sword blades
+  // should become thinner, including BOTH sculpted sides and their jewels.
+  const flattenSwordBladeFrom=(start,ratio)=>{
+    for(const part of g.children.slice(start)){
+      part.position.z*=ratio;
+      part.scale.z*=ratio;
+    }
+  };
   // Reference-matched sword geometry: rebuilt from the front, edge and
   // rear silhouettes of the user's Swordsman / Warrior concept sheets.
   // Important: EVERY layer here is actual volumetric geometry, not an image.
@@ -143,6 +152,7 @@ export function makeDetailedJobWeapon(T,d){
       [w*.99,bladeBase+.50],[w*1.11,bladeBase+.39],
       [w*.90,bladeBase+.34],[w,bladeBase+.17],[w*.87,bladeBase]
     ];
+    const bladeMeshStart=g.children.length;
     poly(silhouette,bladeDepth,'blade',0,.008);
     // True extruded bevel layers on both blade faces. Reverse faces
     // are individually modeled, not a transparent texture projection.
@@ -204,6 +214,7 @@ export function makeDetailedJobWeapon(T,d){
           .0035,'edge',4);
       }
     }
+    if(!isGreat)flattenSwordBladeFrom(bladeMeshStart,.48);
     // Large angular flared crossguard with branching wing tips, directly
     // derived from the reference's bronze + silver layered profile.
     const guardY=.305,span=isGreat?.79:.655;
@@ -280,6 +291,7 @@ export function makeDetailedJobWeapon(T,d){
         [w*.97,y0+.22],[w*.80,y0]]
       :[[-w,y0],[-w*1.12,y0+.21],[-w*.85,y0+length*.8],
         [0,y0+length],[w*.85,y0+length*.8],[w,y0+.21]];
+    const bladeMeshStart=g.children.length;
     poly(blade,berserker?.18:.14,berserker?'steel':'blade',0,.016);
     for(const face of [-1,1]){
       const z=face*(berserker?.112:.092);
@@ -307,6 +319,8 @@ export function makeDetailedJobWeapon(T,d){
         }
       }
     }
+    // Mercenary blade: keep the handle/guard solid, blade profile slim.
+    flattenSwordBladeFrom(bladeMeshStart,.55);
     const gd=berserker?.53:.36;
     poly([[-gd,.24],[-gd*.93,.44],[-gd*.68,.36],
       [-.13,.42],[0,.31],[.13,.42],[gd*.68,.36],
