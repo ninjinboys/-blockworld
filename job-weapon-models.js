@@ -7,7 +7,7 @@ export function makeDetailedJobWeapon(T,d){
   const royal=['warrior','swordmaster','axer','lancer'].includes(key);
   const scarlet=['berserker','battleMage','tank'].includes(key);
   const emerald=['swiftArcher','supportMage'].includes(key);
-  const bright=scarlet?0xff475d:emerald?0x5be4bd:royal?0x45dfdb:0x9c91ff;
+  const bright=key==='heavy'?0x48e0d2:scarlet?0xff475d:emerald?0x5be4bd:royal?0x45dfdb:0x9c91ff;
   const metal=d.key==='heavy'?0x707e87:0x9aabb9;
   const mats={
     steel:new T.MeshStandardMaterial({color:metal,metalness:.82,roughness:.31,side:T.DoubleSide}),
@@ -427,6 +427,177 @@ export function makeDetailedJobWeapon(T,d){
     const w=heavy?1.01:tank?.82:elite?.67:.59;
     const ht=heavy?2.17:tank?1.80:elite?1.55:1.31;
     const top=ht*.47,bottom=-ht*.53;
+    if(heavy){
+      // Reference: towering cathedral-shaped shield, weathered layered
+      // gunmetal armor, bronze crown, turquoise inlays, two leather handles.
+      // True multi-layer geometry on front AND back; nothing is a flat image.
+      const outline=[
+        [-.92,.83],[-.67,1.22],[-.50,.96],[-.35,1.04],
+        [0,1.40],[.35,1.04],[.50,.96],[.67,1.22],[.92,.83],
+        [1.00,-.68],[.70,-1.13],[0,-1.47],
+        [-.70,-1.13],[-1.00,-.68]
+      ];
+      const p=(pts,material,z=.28,depth=.065,bevel=.011)=>
+        poly(pts,depth,material,z,bevel);
+      const mirror=pts=>pts.map(([x,y])=>[-x,y]).reverse();
+      const pin=(x,y,z=.41)=>bead(x,y,z,.029,'gold');
+      const seam=(a,b,z=.41,material='gold',radius=.014)=>
+        pipe([a[0],a[1],z],[b[0],b[1],z],radius,material,7);
+      // Thick fully enclosed body; the edge can be examined from the side.
+      p(outline,'gold',0,.37,.038);
+      p(outline.map(([x,y])=>[x*.955,y*.96]),'black',.035,.375,.024);
+      p(outline.map(([x,y])=>[x*.91,y*.915]),'steel',.095,.39,.020);
+      p(outline.map(([x,y])=>[x*.88,y*.89]),'recessed',.240,.06,.013);
+      // Raised bronze perimeter; individually segmented, not painted-on.
+      for(const side of [-1,1]){
+        const x=side;
+        p([[x*.82,.77],[x*1.00,.81],[x*1.025,-.72],
+          [x*.76,-1.13],[x*.58,-1.07],[x*.84,-.57]],
+          'gold',.245,.13,.020);
+        p([[x*.88,.48],[x*.96,.51],[x*.96,-.62],
+          [x*.71,-.98],[x*.74,-.65]],'black',.340,.07,.007);
+        p([[x*.79,.45],[x*.89,.36],[x*.88,-.61],
+          [x*.65,-.95],[x*.68,-.62]],'blade',.359,.052,.008);
+      }
+      // The two tall pointed bronze finials anchor the entire silhouette.
+      for(const side of [-1,1]){
+        const x=side;
+        p([[x*.52,.91],[x*.63,1.25],[x*.80,.86],
+          [x*.94,.77],[x*.77,.53],[x*.62,.73]],
+          'gold',.327,.16,.023);
+        p([[x*.61,.94],[x*.63,1.16],[x*.70,.92],
+          [x*.64,.79]],'black',.429,.033,.007);
+        gem(x*.645,.987,.456,.055,.11,.027);
+        // Shoulder guards with silver faces and their own chamfered edges.
+        p([[x*.44,.84],[x*.82,.76],[x*.80,.46],
+          [x*.57,.19],[x*.28,.25],[x*.22,.66]],
+          'gold',.34,.073,.013);
+        p([[x*.46,.76],[x*.71,.69],[x*.72,.48],
+          [x*.53,.29],[x*.31,.33],[x*.33,.63]],
+          'blade',.397,.068,.012);
+        p([[x*.43,.67],[x*.62,.64],[x*.65,.46],
+          [x*.51,.35],[x*.40,.40]],'steel',.453,.031,.006);
+        pin(x*.72,.73,.465);
+      }
+      // Central recessed longitudinal stripe, matching the reference.
+      p([[-.25,.86],[0,1.20],[.25,.86],
+        [.20,-1.14],[0,-1.33],[-.20,-1.14]],
+        'gold',.361,.074,.016);
+      p([[-.16,.77],[0,1.10],[.16,.77],
+        [.125,-1.12],[0,-1.26],[-.125,-1.12]],
+        'recessed',.412,.077,.009);
+      // Continuous turquoise tracery and the lower mid-shield diamond.
+      seam([0,.70],[0,-1.00],.464,'accent',.011);
+      for(const y of [-.63,.01,.47]){
+        p([[0,y+.12],[.055,y],[0,y-.10],[-.055,y]],
+          'gold',.473,.042,.003);
+        gem(0,y,.502,.031,.062,.020);
+      }
+      p([[0,.22],[.13,.03],[0,-.18],[-.13,.03]],
+        'gold',.496,.061,.006);
+      p([[0,.16],[.083,.03],[0,-.11],[-.083,.03]],
+        'recessed',.542,.025,.002);
+      gem(0,.028,.570,.069,.124,.029);
+      // Sculpted overlapping armor with a visible seam between every plate.
+      for(const side of [-1,1]){
+        const x=side;
+        // Upper vertical plates flank the recessed central ridge.
+        p([[x*.23,.69],[x*.52,.72],[x*.67,.44],
+          [x*.64,.11],[x*.45,-.05],[x*.20,.05]],
+          'black',.33,.093,.011);
+        p([[x*.26,.64],[x*.51,.66],[x*.60,.42],
+          [x*.58,.16],[x*.43,.03],[x*.25,.11]],
+          'blade',.394,.078,.009);
+        p([[x*.30,.56],[x*.47,.56],[x*.51,.24],
+          [x*.42,.16],[x*.32,.24]],'steel',.456,.026,.004);
+        // Shield-height plate in two segmented tiers.
+        p([[x*.20,-.10],[x*.43,-.02],[x*.68,-.14],
+          [x*.72,-.57],[x*.55,-.85],[x*.19,-.96]],
+          'black',.353,.095,.011);
+        p([[x*.24,-.16],[x*.44,-.10],[x*.61,-.21],
+          [x*.65,-.56],[x*.52,-.77],[x*.23,-.86]],
+          'blade',.405,.071,.009);
+        p([[x*.27,-.22],[x*.46,-.19],[x*.54,-.32],
+          [x*.56,-.57],[x*.46,-.66]],'steel',.458,.028,.004);
+        // Bright lower corner riveted panel, as in the front view.
+        p([[x*.61,-.80],[x*.80,-.69],[x*.83,-.88],
+          [x*.64,-1.09],[x*.35,-1.23],[x*.43,-1.04]],
+          'gold',.374,.087,.012);
+        p([[x*.60,-.83],[x*.74,-.76],[x*.77,-.86],
+          [x*.59,-1.04],[x*.40,-1.15],[x*.48,-1.03]],
+          'blade',.433,.058,.008);
+        pin(x*.54,-.88,.487);
+        // Visible long runic side channel between armor segments.
+        seam([x*.74,.13],[x*.76,-.48],.441,'accent',.012);
+        pin(x*.66,-.03,.468);
+        pin(x*.70,-.51,.471);
+        // Structural chamfers on overlapping plates.
+        seam([x*.27,.59],[x*.29,.13],.493,'edge',.012);
+        seam([x*.29,-.22],[x*.31,-.79],.490,'edge',.012);
+      }
+      // Ornate bronze top crown with faceted turquoise crystal.
+      p([[-.75,.77],[-.49,.91],[-.35,.98],[0,1.42],
+        [.35,.98],[.49,.91],[.75,.77],
+        [.51,.69],[.20,.79],[0,.66],[-.20,.79],[-.51,.69]],
+        'gold',.446,.115,.021);
+      p([[-.37,.87],[0,1.33],[.37,.87],
+        [.17,.77],[0,.62],[-.17,.77]],
+        'black',.526,.064,.015);
+      p([[-.26,.90],[0,1.19],[.26,.90],[0,.75]],
+        'gold',.566,.053,.011);
+      p([[-.15,.92],[0,1.10],[.15,.92],[0,.79]],
+        'recessed',.611,.028,.004);
+      gem(0,.949,.646,.124,.183,.052);
+      for(const x of [-.51,.51])pin(x,.822,.584);
+      // Reinforced central bottom point with its own gemstone.
+      p([[-.39,-1.08],[0,-1.43],[.39,-1.08],
+        [.20,-1.02],[0,-1.24],[-.20,-1.02]],
+        'gold',.435,.107,.015);
+      p([[-.21,-1.13],[0,-1.35],[.21,-1.13],[0,-1.20]],
+        'blade',.504,.056,.009);
+      gem(0,-1.205,.553,.065,.094,.035);
+      // Backside: matte metal chassis, armor ribs, two separate brown
+      // leather-wrap horizontal handgrips + bronze mounting brackets.
+      p(outline.map(([x,y])=>[x*.875,y*.865]),
+        'black',-.246,.051,.013);
+      for(const side of [-1,1]){
+        const x=side;
+        p([[x*.17,.76],[x*.66,.82],[x*.73,.33],
+          [x*.61,-.93],[x*.25,-1.12]],'steel',-.292,.063,.014);
+        p([[x*.22,.64],[x*.56,.67],[x*.58,-.88],
+          [x*.27,-.99]],'recessed',-.344,.049,.010);
+        for(const y of [.66,.32,0,-.38,-.68,-.94]){
+          pin(x*.67,y,-.385);
+        }
+      }
+      // Rear backbone and crowned upper rear structural strap.
+      p([[-.10,1.16],[.10,1.16],[.18,-1.06],
+        [0,-1.27],[-.18,-1.06]],'black',-.349,.074,.012);
+      p([[-.71,.87],[0,1.19],[.71,.87],
+        [.43,.75],[0,.93],[-.43,.75]],'gold',-.397,.075,.013);
+      p([[-.10,.60],[.10,.60],[.13,-1.01],
+        [0,-1.23],[-.13,-1.01]],'steel',-.407,.053,.006);
+      // 2 leather crosswise handles, visually distinct front vs back.
+      for(const y of [.40,-.46]){
+        for(const side of [-1,1]){
+          const x=side*.60;
+          cube(.18,.26,.108,'gold',x,y,-.455);
+          cube(.125,.17,.10,'black',x,y,-.519);
+          for(const dy of [-.08,.08])pin(x,y+dy,-.580);
+        }
+        cube(1.25,.16,.17,'brown',0,y,-.538);
+        cube(1.05,.137,.151,'leather',0,y,-.641);
+        for(let i=0;i<15;i++){
+          const x=-.49+i*.070;
+          const leather=pipe([x,y-.059,-.735],
+            [x+.041,y+.057,-.735],.008,'brown',5);
+        }
+        for(const end of [-.53,.53]){
+          cube(.047,.18,.175,'gold',end,y,-.636);
+        }
+      }
+      return;
+    }
     let outline;
     if(heavy){
       outline=[[-w*.77,top+.17],[-w,top*.70],[-w,bottom*.73],
