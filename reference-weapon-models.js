@@ -751,52 +751,155 @@ export function makeReferenceWeapon(T,d){
   g.userData.hasRearLeatherGrips=true;
  }
  function bow(){
-  const w=.71,h=1.38;
-  // Two sweeping recurve limbs with contrasting dark core, silver armor.
-  grip(-.24,.24,.122,6);
-  cube(.18,.56,.20,'bronze',.01,0,0);
-  for(const f of [-1,1]){
-   diamond(0,0,f*.139,.15,.216,'bronze',.058);
-   gem(0,0,f*.18,.097,.134,.040);
+  // 2026-10-22 ARCHER BOW / four-view image matched TRUE 3D model.
+  // Recurve limbs sweep backward from a small leather grip. The
+  // bowstring is a SINGLE straight taut string connecting the nocks,
+  // NOT the previous fake triangular V running into the middle.
+  // Front view: dark forged/wood limbs, long bronze-silver edges,
+  // cyan channels, central leather wrap and opposing hooked tips.
+  const P=(pts,dep,mat,z=0,b=.006)=>prism(pts,dep,mat,z,b);
+  const sideShape=(pts,s)=>pts.map(([x,y])=>[x,y*s]);
+  const draw=(pts,z,th,mat)=>P(pts,th,mat,z,.005);
+  const line=(a,b,z,mat='gild',r=.010)=>trim(a,b,z,mat,r);
+  const stud=(x,y,z,sz=.020)=>add(new T.SphereGeometry(sz,8,6),'bronze',x,y,z);
+  // The precise string nocks are both LEFT of the riser in frontal view.
+  const stringX=-.705,stringY=1.66;
+  // Only one thin, dark, tensioned string, not two diagonals and not a bow
+  // made of rods: strings are genuinely thin cylindrical geometry.
+  rod([stringX,-stringY,0],[stringX,stringY,0],.007,'wrap',7);
+  // Small end collars securing the cord to the curved metal nocks.
+  for(const s of [-1,1]){
+    rod([stringX,s*1.66,-.025],[stringX+.085,s*1.53,.004],.023,'bronze',9);
+    rod([stringX,s*1.66,.013],[stringX+.068,s*1.60,.026],.014,'gild',8);
+    gem(stringX+.055,s*1.57,.063,.032,.064,.024);
   }
-  for(const side of [-1,1]){
-   const st=[[-.045,.20],[.21,.41],[.48,.64],[.67,.84],
-     [.70,1.04],[.55,1.25],[.61,1.39]]
-     .map(([x,y])=>[x,y*side*h/1.39]);
-   for(let i=1;i<st.length;i++){
-    const a=st[i-1],b=st[i];
-    rod([a[0],a[1],0],[b[0],b[1],0],
-      .115*(1-i*.07),'graphite',12);
-    for(const f of [-1,1]){
-     rod([a[0]-.025,a[1],f*.075],[b[0]-.025,b[1],f*.075],
-      .020,'bronze',8);
+  // The real lower two-thirds leather grip has two bronze ring collars.
+  // Keep the grip compact: the reference is a bow, not an enormous hammer.
+  rod([0,-.27,0],[0,.27,0],.094,'graphite',12);
+  rod([0,-.235,0],[0,.235,0],.111,'leather',12);
+  for(let s of [-1,1]){
+    const spiral=[];
+    const turns=s===1?7:-7;
+    for(let i=0;i<=98;i++){
+      const t=i/98,a=t*turns*Math.PI*2+(s===-1?Math.PI:0);
+      spiral.push([Math.cos(a)*.116,-.23+t*.46,Math.sin(a)*.116]);
     }
-   }
-   for(const f of [-1,1]){
-    prism([[.13,side*.36],[.43,side*.59],[.70,side*.83],
-      [.58,side*1.15],[.65,side*1.39],[.47,side*1.23],
-      [.53,side*.84],[.28,side*.58]],.108,
-      'bronze',f*.050,.010);
-    prism([[.20,side*.41],[.45,side*.64],[.63,side*.85],
-      [.53,side*1.10],[.57,side*1.27],[.42,side*1.10],
-      [.44,side*.83],[.27,side*.61]],.066,
-      'graphite',f*.123,.008);
-    curve([[.29,side*.51,f*.167],[.56,side*.79,f*.167],
-      [.48,side*1.12,f*.167]],.017,'light');
-    gem(.57,side*.91,f*.169,.036,.083,.028);
-   }
-   // Three-dimensional recurved golden tip and string anchor.
-   prism([[.44,side*1.23],[.65,side*1.45],
-     [.78,side*1.30],[.60,side*1.17]],.16,'gild',0,.013);
-   gem(.66,side*1.32,.123,.067,.109,.044);
-   const tip=[.65,side*1.40,0];
-   rod(tip,[.73,0,0],.009,'silver',6);
-   // Reinforcing sweep and raised spike between upper/lower limb.
-   prism([[.37,side*.57],[.81,side*.72],
-     [.66,side*.86],[.40,side*.69]],.12,'iron',0,.011);
+    curve(spiral,.009,'wrap');
   }
-  prism([[-.25,-.18],[-.32,-.07],[-.12,.25],
-    [.10,.16],[.04,-.18]],.18,'bronze',0,.012);
+  for(const y of [-.26,.26]){
+    add(new T.CylinderGeometry(.128,.128,.062,12),'bronze',0,y,0);
+    add(new T.CylinderGeometry(.123,.123,.012,12),'gild',0,y+.030,0);
+  }
+  // The two grip gems are integrated into socket ends rather than a
+  // single oversized center diamond. They face the front and back.
+  for(const s of [-1,1]){
+    const gemY=s*.345;
+    P([[-.18,gemY-s*.06],[-.08,gemY+s*.13],
+      [.067,gemY+s*.17],[.22,gemY-s*.03],
+      [.075,gemY-s*.16],[-.10,gemY-s*.15]],.175,'bronze',0,.013);
+    for(const f of [-1,1]){
+      diamond(0,gemY,f*.120,.119,.150,'graphite',.044);
+      diamond(0,gemY,f*.149,.083,.111,'gild',.031);
+      gem(0,gemY,f*.185,.057,.080,.032);
+    }
+  }
+  // A shallow bronze brace bridges the grip to the two arched limbs.
+  // The lower guard is inverted, just like the separate lower riser.
+  for(const s of [-1,1]){
+    P(sideShape([[.03,.225],[-.18,.34],[-.36,.42],
+      [-.22,.52],[-.015,.415],[.19,.30]],s),
+      .155,'bronze',0,.013);
+    P(sideShape([[.02,.27],[-.16,.38],[-.275,.44],
+      [-.15,.455],[.10,.32]],s),.078,'iron',.100,.006);
+    // The reference's unmistakable ANTIQUE RECURVE blade silhouette.
+    // The concave outer arc has TWO bends and flared spurs; the pointed
+    // nock at +/- 1.7 is behind the riser, not parallel to it.
+    const bowLimb=[
+      [-.115,.29],[-.255,.40],[-.34,.53],[-.43,.71],
+      [-.47,.94],[-.54,1.12],[-.635,1.31],
+      [-.74,1.47],[-.78,1.70],[-.665,1.76],
+      [-.59,1.63],[-.61,1.49],[-.54,1.28],
+      [-.37,1.055],[-.24,.83],[-.16,.59],
+      [.025,.42],[.21,.33],[.085,.26]
+    ];
+    P(sideShape(bowLimb,s),.172,'graphite',0,.016);
+    // A narrower steel spine runs almost the entire length, creating
+    // an authentic 3D bevel and a narrow SIDE orthographic profile.
+    P(sideShape([[-.13,.39],[-.27,.57],[-.375,.83],
+      [-.48,1.15],[-.665,1.47],[-.705,1.61],
+      [-.679,1.67],[-.556,1.40],[-.35,1.04],
+      [-.21,.75],[-.07,.52]],s),.192,'iron',0,.009);
+    for(const f of [-1,1]){
+      // Multi-level solid bronze border on BOTH faces. A separate bright
+      // silver highlight runs along the swept outside edges.
+      const z=f*.103;
+      draw(sideShape([[-.14,.42],[-.30,.58],[-.411,.82],
+        [-.491,1.125],[-.66,1.42],[-.745,1.66],
+        [-.70,1.704],[-.588,1.43],[-.43,1.123],
+        [-.269,.81],[-.12,.55]],s),z,.040,'bronze');
+      draw(sideShape([[-.235,.53],[-.384,.79],
+        [-.468,1.116],[-.647,1.43],[-.736,1.66],
+        [-.708,1.676],[-.599,1.408],[-.43,1.106],
+        [-.306,.79]],s),z+f*.032,.023,'gild');
+      // Long dark central lane contained INSIDE each upper/lower
+      // blade; do not create an additional independent bow body.
+      draw(sideShape([[-.230,.48],[-.374,.70],[-.437,.92],
+        [-.502,1.15],[-.665,1.43],[-.631,1.47],
+        [-.446,1.17],[-.33,.94],[-.226,.70],
+        [-.107,.50]],s),z+f*.041,.035,'inset');
+      // Vertical illuminated cyan "inlaid glass" side channels.
+      curve([[-.205,s*.53,f*.165],[-.325,s*.76,f*.165],
+        [-.423,s*1.035,f*.165],[-.56,s*1.29,f*.165],
+        [-.622,s*1.43,f*.165]],.012,'light');
+      for(const t of [.70,1.31]){
+        // Each turquoise rune has a tiny arrow-like branch.
+        gem(-.33-(t-.70)*.38,s*t,f*.178,.024,.053,.023);
+      }
+      // Sharpened metallic line outside of the cyan channel.
+      curve([[-.22,s*.51,f*.151],[-.385,s*.85,f*.151],
+        [-.508,s*1.16,f*.151],[-.704,s*1.56,f*.151]],
+        .010,'silver');
+      // Raised pointed wing armour at limb roots, seen prominently
+      // on the sheet as bronze spikes jutting inward toward the string.
+      draw(sideShape([[-.085,.42],[-.41,.76],[-.60,.97],
+        [-.54,.71],[-.43,.62],[-.36,.39],[-.19,.34]],s),
+        f*.145,.116,'bronze');
+      draw(sideShape([[-.16,.42],[-.40,.695],[-.518,.82],
+        [-.45,.625],[-.31,.415]],s),
+        f*.207,.040,'iron');
+      draw(sideShape([[-.26,.46],[-.42,.68],[-.462,.70],
+        [-.355,.50]],s),f*.244,.020,'gild');
+      // Small high wing finials at the metal socket, not separate
+      // free-floating spears.
+      draw(sideShape([[.10,.31],[-.18,.55],[-.37,.58],
+        [-.31,.38],[-.095,.255]],s),f*.161,.093,'bronze');
+      draw(sideShape([[.01,.32],[-.20,.50],[-.282,.50],
+        [-.21,.34]],s),f*.215,.030,'silver');
+      stud(-.22,s*.43,f*.243,.025);
+    }
+    // A distinct curved gold cap protects each hooked nock.
+    P(sideShape([[-.626,1.48],[-.76,1.61],[-.805,1.765],
+      [-.664,1.84],[-.572,1.702],[-.607,1.58]],s),
+      .21,'bronze',0,.016);
+    P(sideShape([[-.655,1.59],[-.766,1.700],
+      [-.688,1.785],[-.620,1.675]],s),
+      .105,'gild',.094,.008);
+    P(sideShape([[-.653,1.58],[-.736,1.66],
+      [-.672,1.745],[-.638,1.67]],s),
+      .050,'inset',.158,.006);
+    gem(-.688,s*1.677,.208,.036,.069,.024);
+    // End nock rivet and string wrap, visible from 3/4 angle.
+    stud(-.687,s*1.60,.215,.019);
+  }
+  // Correct string anchor position and full-height straight alignment.
+  // Tiny braided metallic wraps at each string-to-nock attachment.
+  for(const s of [-1,1]){
+    rod([stringX,s*1.605,-.015],[stringX,s*1.715,-.015],
+      .012,'silver',7);
+  }
+  g.userData.referenceSheet='2026-10-22 Archer Bow 4-view 3D reference';
+  g.userData.stringLayout='single straight vertical string, left of riser';
+  g.userData.sideProfile='thin solid extruded recurve limbs, no image planes';
  }
  function staff(){
   grip(-.83,.51,.085,14);
