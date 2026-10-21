@@ -634,48 +634,103 @@ export function makeDetailedJobWeapon(T,d){
     for(const face of [-1,1])diamond(0,.03,face*.16,.076,.105);
   }
   function staff(){
-    const attack=key==='battleMage',support=key==='supportMage',up=rank>=30;
-    wrap(-.63,.16,.076,10);
-    pipe([0,.05,0],[0,1.50,0],.065,attack?'black':'brown');
-    for(const y of [-.58,-.02,.53,1.10,1.42])band(y,.10);
-    tip(0,-.84,0,.085,.20);
-    const centerY=1.83,crystalSize=up?.37:.29;
-    // Magic cage: sculpted curved prongs around a genuine 3D faceted gem.
-    const core=add(new T.OctahedronGeometry(1),'accent',[0,centerY,0]);
-    core.scale.set(attack?.30:crystalSize,attack?.57:.46,crystalSize*.9);
-    const ringR=support?.65:attack?.50:.47;
-    const ring=add(new T.TorusGeometry(ringR,up?.034:.025,8,44),'gold',[0,centerY,0]);
+    const attack=key==='battleMage',support=key==='supportMage',base=key==='mage';
+    const mag=attack?.57:support?.64:.46;
+    // Double-ended arcane staff: braided shaft, gilded collars, faceted
+    // purple/red/green crystal, actual 3D rings and hooked metal prongs.
+    wrap(-.82,.46,.088,12);
+    pipe([0,.42,0],[0,1.51,0],.079,attack?'black':'brown',12);
+    for(const y of [-.79,-.35,.41,.82,1.29,1.51])band(y,.118);
+    cylinder(.102,.095,.55,'black',0,.91,0,12);
+    for(const face of [-1,1]){
+      pipe([0,.71,face*.102],[0,1.15,face*.102],.014,'accent');
+      for(const y of [.74,1.12]){
+        poly([[0,y+.11],[.092,y],[0,y-.11],[-.092,y]],
+          .024,'gold',face*.122,.005);
+        gem(0,y,face*.144,.047,.060,.024);
+      }
+    }
+    // Lower crystal finial is functional 3D geometry, not a painted glyph.
+    poly([[-.16,-.79],[0,-.67],[.16,-.79],[.24,-.97],
+      [.12,-1.19],[0,-1.38],[-.12,-1.19],[-.24,-.97]],
+      .17,'gold',0,.014);
+    poly([[-.11,-.92],[0,-.83],[.11,-.92],
+      [0,-1.30]],.16,'black',.015,.008);
+    for(const face of [-1,1])gem(0,-1.04,face*.118,.085,.19,.062);
+    tip(0,-1.37,0,.062,.13);
+    // Magical cage anchored with an ornate collar and three supporting arcs.
+    const cy=2.02,rad=mag;
+    cylinder(.18,.115,.15,'gold',0,1.48,0,10);
+    const core=add(new T.OctahedronGeometry(1),'accent',[0,cy,0]);
+    core.scale.set(attack?.28:support?.40:.32,
+      attack?.62:support?.53:.47,attack?.32:support?.37:.29);
+    const ring=add(new T.TorusGeometry(rad,.049,10,48),'gold',[0,cy,0]);
     ring.rotation.y=.15;
-    const ring2=add(new T.TorusGeometry(ringR*.88,.021,8,40),'steel',[0,centerY,0]);
-    ring2.rotation.x=.54;
+    const ring2=add(new T.TorusGeometry(rad*.84,.026,9,44),
+      attack?'black':'steel',[0,cy,0]);ring2.rotation.x=.49;
+    // Visibly raised gilded crescents curl towards the floating gemstone.
     for(const side of [-1,1]){
-      curve([[0,1.36,0],[side*.29,1.54,.0],[side*ringR,1.91,0],
-        [side*.27,2.20,0],[side*.06,2.37,0]],attack?.065:.046,
-        attack?'black':'gold');
-      gem(side*(ringR+.08),centerY,.04,.075,.15,.065);
+      curve([[0,1.45,0],[side*.27,1.58,.0],
+        [side*rad*.83,1.87,0],[side*rad,2.12,0],
+        [side*rad*.71,2.43,0],[side*.12,2.57,0]],
+        attack?.081:support?.055:.066,attack?'black':'gold');
+      curve([[side*.03,1.57,.10],[side*rad*.71,1.83,.10],
+        [side*rad*.88,2.23,.10],[side*.15,2.56,.10]],
+        .022,'steel');
+      gem(side*(rad+.10),cy,.02,.083,.17,.074);
+      for(const face of [-1,1]){
+        poly([[side*.08,1.51],[side*.24,1.66],
+          [side*rad*.94,2.12],
+          [side*.30,1.94]],.065,'gold',face*.095,.009);
+      }
+      // Diamond insets on the side forks.
+      gem(side*rad*.86,2.23,.105,.061,.095,.033);
     }
-    const backStart=g.children.length;
-    for(const y of [1.53,2.12]){
-      poly([[-.13,y],[0,y+.13],[.13,y]],.065,'gold',.15,.008);
+    // Four supporting crystal points around the ring are proper octahedra.
+    for(let i=0;i<4;i++){
+      const angle=i*Math.PI/2,r=rad*.80;
+      gem(Math.sin(angle)*r,cy+Math.cos(angle)*r,.09,.065,.114,.052);
     }
-    mirrorRear(backStart,'Magic staff rear metalwork');
+    for(const face of [-1,1]){
+      poly([[-.26,1.50],[0,1.36],[.26,1.50],
+        [.15,1.64],[0,1.59],[-.15,1.64]],.071,'gold',face*.117,.013);
+      poly([[-.16,2.52],[0,2.80],[.16,2.52]],
+        .066,'gold',face*.015,.009);
+      gem(0,2.70,face*.075,.074,.12,.032);
+    }
     if(attack){
-      // Sinister black fangs and additional red spines.
+      // Attack mage = sinister black flanged head and bright crimson heart.
       for(const side of [-1,1]){
-        poly([[side*.34,1.45],[side*.77,1.67],[side*.48,1.78]],.12,'black',.01,.013);
-        poly([[side*.43,1.93],[side*.72,2.20],[side*.30,2.09]],.10,'black',-.04,.012);
+        poly([[side*.39,1.68],[side*.85,1.91],
+          [side*.65,2.08],[side*.43,1.97]],.17,'black',.0,.014);
+        poly([[side*.38,2.16],[side*.82,2.52],
+          [side*.45,2.41]],.14,'black',0,.012);
+        for(const face of [-1,1]){
+          pipe([side*.51,1.80,face*.16],
+            [side*.65,2.00,face*.16],.016,'accent');
+        }
       }
-      gem(0,2.30,.03,.09,.20,.10);
+      gem(0,2.91,0,.10,.22,.10);
     }else if(support){
+      // Support mage = orbital aureole, hanging chains and crystal pendants.
+      const halo=add(new T.TorusGeometry(.72,.028,8,44),
+        'accent',[0,cy,0]);halo.rotation.y=.26;
       for(const side of [-1,1]){
-        pipe([side*.48,1.81,.01],[side*.56,1.21,.01],.012,'gold',6);
-        gem(side*.56,1.18,0,.065,.15,.047);
-        poly([[side*.26,1.44],[side*.33,.85],
-          [side*.55,1.06],[side*.48,1.50]],.009,'linen',0,0);
+        pipe([side*.66,1.99,.04],
+          [side*.74,1.30,.04],.018,'gold');
+        gem(side*.74,1.25,.04,.090,.20,.068);
+        for(const face of [-1,1]){
+          // Short arcane cloth banners, genuinely shaped mesh surfaces.
+          poly([[side*.50,1.74],[side*.54,1.12],
+            [side*.74,1.27],[side*.69,1.79]],.011,
+            'linen',face*.045,0);
+          diamond(side*.61,1.52,face*.067,.035,.105);
+        }
       }
-      gem(0,2.38,0,.08,.20,.08);
+      gem(0,2.98,.0,.11,.19,.098);
     }else{
-      gem(0,2.34,0,.075,.15,.065);
+      // Starting magic staff: modest floating blue crystal crest.
+      gem(0,2.81,0,.092,.15,.079);
     }
   }
   if(k==='sword'||k==='greatsword'||k==='dual')sword();
