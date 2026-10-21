@@ -1,8 +1,11 @@
+import {makeReferenceWeapon} from './reference-weapon-models.js?v=20261021refSheet8v1';
 /* Genuine rotatable 3D geometry for NEXACRAFT class weapons.
  * Models consist of extruded bevelled polygon meshes, cylinders, ring meshes,
  * crystals, and fittings; they are NOT 2D billboards or image planes.
  */
 export function makeDetailedJobWeapon(T,d){
+  const matched=makeReferenceWeapon(T,d);
+  if(matched)return matched;
   const g=new T.Group(),key=d.key,k=d.kind,rank=d.level||1;
   const royal=['warrior','swordmaster','axer','lancer'].includes(key);
   const scarlet=['berserker','battleMage','tank'].includes(key);
