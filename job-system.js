@@ -2,7 +2,7 @@
  * Existing survival equipment remains usable. Job weapons 190–207 are
  * restricted to their job (except the weaker all-rounder).
  */
-import {makeDetailedJobWeapon} from './job-weapon-models.js?v=20261021referenceSword03';
+import {makeDetailedJobWeapon} from './job-weapon-models.js?v=20261021all17remodel04';
 export const JOBS={
   sword:{name:'剣士',group:'sword',level:1,weapon:190,kind:'sword',damage:3,cooldown:630,range:4.5,desc:'標準的な片手剣。LV30で4方向に進化',next:['warrior','swordmaster','axer','lancer']},
   merc:{name:'傭兵',group:'merc',level:1,weapon:191,kind:'dual',damage:2,cooldown:360,range:4.2,desc:'双剣で素早く攻撃',next:['berserker']},
