@@ -1029,89 +1029,185 @@ export function makeDetailedJobWeapon(T,d){
   }
 
   function bow(){
-    const power=key==='powerArcher',fast=key==='swiftArcher';
-    const halfH=power?1.13:fast?.79:.94;
-    const width=power?.68:fast?.45:.60;
-    const thickness=power?.125:fast?.057:.084;
-    // Proper recurve silhouette, reinforced riser and taut straight
-    // bowstring. Fast bow is visibly thin, power bow massive.
-    wrap(-.24,.25,power?.142:.111,power?7:5);
-    for(const y of [-.24,.25])band(y,power?.163:.137);
-    cube(.16,.45,.18,'gold',-.025,.02,0);
+    // Rebuild both evolved Archer bow models in the same forged wood/bronze/
+    // polished steel / cyan rune family as the reference Archer bow.
+    // POWER = broad, long, heavily braced composite; SWIFT = thin, short,
+    // swept slim recurve with light directional fins. Distinct front/side.
+    // Both strings are a SINGLE taut straight cord between the upper and
+    // lower nocks, on the LEFT of the riser; no V-shaped pseudo-strings.
+    const power=key==='powerArcher',swift=key==='swiftArcher';
+    if(!power&&!swift)throw Error('Unexpected bow model: '+key);
+    const W=power?1.15:.82,H=power?1.22:.92;
+    const tipX=power?-.735*W:-.685*W;
+    const tipY=power?1.71*H:1.67*H;
+    const sz=power?1:.80;
+    const P=(pts,depth,mat,z=0,bevel=.008)=>poly(pts,depth,mat,z,bevel);
+    const shape=(pts,side)=>pts.map(([x,y])=>[x*W,side*y*H]);
+    const section=(pts,side,depth,mat,z,bevel=.008)=>
+      P(shape(pts,side),depth,mat,z,bevel);
+    const hair=(a,b,z,material='edge',width=.008)=>
+      pipe([a[0],a[1],z],[b[0],b[1],z],width,material,7);
+    const seal=(x,y,z,r=.020)=>bead(x,y,z,r,'gold');
+    // Actual strong 3D bow body, richly cross-wrapped leather handle.
+    wrap(power?-.30:-.22,power?.30:.22,power?.121:.084,power?8:6);
+    for(const y of (power?[-.305,.305]:[-.225,.225])){
+      band(y,power?.150:.112);
+    }
+    // Riser sockets with a framed turquoise diamond at EACH end,
+    // not the single overlarge generic jewel of the old models.
+    for(const side of [-1,1]){
+      const y=side*(power?.385:.290);
+      P([[-.16*sz,y-side*.17*sz],[.08*sz,y-side*.18*sz],
+        [.20*sz,y-side*.04*sz],[.10*sz,y+side*.19*sz],
+        [-.12*sz,y+side*.18*sz],[-.23*sz,y+side*.04*sz]],
+        power?.16:.095,'gold',0,.011);
+      for(const f of [-1,1]){
+        diamond(0,y,f*(power?.119:.088),power?.119:.080,
+          power?.145:.101);
+        gem(0,y,f*(power?.170:.126),
+          power?.081:.056,power?.108:.075,power?.038:.023);
+      }
+    }
+    // Bow backs are part of each single continuous curved limb,
+    // not 2D sprites or disjoint rotated rods.
+    const powerOutline=[
+      [-.07,.32],[-.22,.43],[-.40,.67],[-.47,.86],
+      [-.54,1.10],[-.65,1.35],[-.76,1.50],
+      [-.82,1.73],[-.69,1.86],[-.59,1.69],
+      [-.64,1.53],[-.52,1.27],[-.35,1.02],
+      [-.21,.73],[-.04,.49],[.17,.35],[.08,.27]
+    ];
+    const swiftOutline=[
+      [-.08,.25],[-.18,.37],[-.31,.57],[-.39,.79],
+      [-.48,1.02],[-.59,1.27],[-.69,1.46],
+      [-.74,1.67],[-.64,1.79],[-.55,1.65],
+      [-.58,1.46],[-.48,1.23],[-.34,1.01],
+      [-.19,.73],[-.055,.48],[.12,.31],[.045,.21]
+    ];
+    // The two ends physically terminate at the cord attachment.
+    // Place the tip nocks exactly on the same x coordinate.
+    pipe([tipX,-tipY,0],[tipX,tipY,0],
+      power?.009:.0065,'linen',7);
+    for(const side of [-1,1]){
+      const outline=power?powerOutline:swiftOutline;
+      section(outline,side,power?.226:.117,'black',0,.016);
+      // Inner supporting spline, following the same bowed S rather
+      // than unrelated diagonal cylinders.
+      const core=power?[
+        [-.11,.40],[-.29,.64],[-.45,.98],[-.58,1.26],
+        [-.72,1.54],[-.73,1.71],[-.665,1.70],
+        [-.60,1.53],[-.47,1.21],[-.31,.92],
+        [-.15,.63],[.045,.39]
+      ]:[
+        [-.115,.32],[-.25,.58],[-.38,.86],
+        [-.54,1.22],[-.665,1.50],[-.675,1.67],
+        [-.612,1.66],[-.51,1.44],[-.40,1.12],
+        [-.27,.82],[-.12,.54]
+      ];
+      section(core,side,power?.226:.128,power?'steel':'brown',0,.010);
+      for(const face of [-1,1]){
+        const f=face,base=f*(power?.139:.078);
+        const bronzeRim=power?[
+          [-.16,.42],[-.35,.65],[-.46,.90],
+          [-.58,1.23],[-.73,1.53],[-.765,1.75],
+          [-.68,1.81],[-.62,1.63],[-.50,1.30],
+          [-.39,1.04],[-.21,.70]
+        ]:[
+          [-.14,.33],[-.27,.57],[-.40,.92],
+          [-.54,1.22],[-.676,1.51],[-.701,1.69],
+          [-.649,1.73],[-.577,1.50],[-.47,1.21],
+          [-.34,.89],[-.17,.55]
+        ];
+        section(bronzeRim,side,power?.061:.035,'gold',base,.006);
+        const innerSteel=power?[
+          [-.27,.58],[-.43,.93],[-.54,1.21],
+          [-.69,1.50],[-.718,1.67],[-.66,1.66],
+          [-.55,1.39],[-.42,1.07],[-.305,.77]
+        ]:[
+          [-.205,.49],[-.355,.82],[-.493,1.19],
+          [-.649,1.51],[-.655,1.64],[-.605,1.60],
+          [-.50,1.34],[-.37,1.02]
+        ];
+        section(innerSteel,side,power?.035:.025,
+          power?'blade':'steel',base+f*(power?.046:.024),.004);
+        // Long recessed enamel lane and bright turquoise inlaid wire.
+        const runePoints=power?[
+          [-.20,.52],[-.39,.84],[-.505,1.125],
+          [-.635,1.44],[-.70,1.62]
+        ]:[
+          [-.18,.46],[-.315,.75],[-.445,1.07],
+          [-.580,1.40],[-.648,1.58]
+        ];
+        curve(runePoints.map(([x,y])=>[x*W,y*side*H,
+          f*(power?.210:.123)]),power?.016:.010,'accent');
+        // Steel border lines shape the limb instead of blocky 3D rods.
+        curve((power?[
+          [-.25,.50],[-.41,.85],[-.56,1.18],
+          [-.70,1.52],[-.735,1.69]
+        ]:[
+          [-.23,.47],[-.36,.82],[-.50,1.20],
+          [-.635,1.50],[-.682,1.67]
+        ]).map(([x,y])=>[x*W,side*y*H,f*(power?.175:.109)]),
+          power?.012:.007,'edge');
+        if(power){
+          // A massive pair of bronze reinforced shoulder plates and
+          // gold/silver double ribs visually distinguishes power bow.
+          section([[-.085,.37],[-.30,.54],[-.60,.85],
+            [-.63,1.04],[-.42,.89],[-.34,.70],
+            [-.13,.53],[.085,.39]],side,.128,'gold',f*.174,.015);
+          section([[-.19,.47],[-.37,.66],[-.56,.88],
+            [-.47,.91],[-.30,.69]],side,.064,'steel',f*.246,.008);
+          section([[-.29,1.14],[-.54,1.30],
+            [-.76,1.52],[-.61,1.45],[-.46,1.31]],
+            side,.103,'bronze',f*.187,.009);
+          for(const y of [.80,1.23]){
+            diamond(-.47*W,y*side*H,f*.264,.060,.080);
+          }
+        }else{
+          // Two narrow winglets streamlined for fast nocking and low
+          // inertia, deliberately no huge power-bow shoulders.
+          section([[-.11,.36],[-.35,.59],[-.51,.71],
+            [-.42,.50],[-.23,.31]],side,.047,'gold',f*.116,.008);
+          section([[-.35,1.04],[-.55,1.23],[-.65,1.34],
+            [-.52,1.12],[-.47,.99]],side,.039,'steel',f*.117,.005);
+          const x=-.49*W,y=side*1.14*H;
+          gem(x,y,f*.152,.029,.065,.024);
+        }
+      }
+      // Physically sculpted cap (and cord lock) on both recurved tips.
+      const cap=power?[
+        [-.69,1.53],[-.82,1.69],[-.79,1.88],
+        [-.65,1.96],[-.56,1.80],[-.61,1.68]
+      ]:[
+        [-.665,1.49],[-.755,1.64],[-.735,1.82],
+        [-.60,1.87],[-.54,1.73],[-.591,1.61]
+      ];
+      section(cap,side,power?.22:.115,'gold',0,.014);
+      section(power?[
+        [-.687,1.66],[-.769,1.77],
+        [-.677,1.887],[-.616,1.79]
+      ]:[
+        [-.676,1.64],[-.719,1.73],
+        [-.636,1.807],[-.589,1.74]
+      ],side,power?.084:.049,'recessed',power?.129:.074,.006);
+      const nockX=tipX,nockY=side*tipY;
+      pipe([nockX,nockY,-.03],[nockX,nockY,.04],
+        .016,'gold',7);
+      gem(nockX,side*(power?1.76:1.73)*H,
+        power?.178:.115,power?.046:.030,power?.072:.049,.032);
+    }
+    // Narrow riser braces physically tie both limbs to the wrapped
+    // center; keep front/rear camera views fully three-dimensional.
+    P([[-.16*sz,-.15],[.10*sz,-.21],[.18*sz,0],
+      [.08*sz,.21],[-.15*sz,.17],[-.24*sz,0]],
+      power?.18:.11,'bronze',0,.012);
     for(const face of [-1,1]){
-      const z=face*.13;
-      poly([[-.11,-.18],[.11,-.18],
-        [.22,.04],[.11,.25],[-.11,.25],[-.22,.04]],.052,
-        'black',z,.010);
-      gem(0,.045,z+face*.027,.11,.12,.034);
-      poly([[-.12,.25],[.14,.25],[.04,.34],
-        [-.15,.32]],.044,'gold',z,.008);
+      gem(0,0,face*(power?.148:.104),
+        power?.079:.054,power?.135:.086,power?.044:.028);
     }
-    const limbTips=[];
-    for(const sign of [-1,1]){
-      const sy=sign;
-      // x/y points of a compound-reflex bow curved away then inward.
-      const stations=[
-        [-.015,.21],[width*.34,.32],[width*.74,.53],
-        [width,.71],[width*.91,.84],[width*.70,.98],
-        [width*.79,1.09]
-      ].map(([x,y])=>[x,sy*y*halfH/1.08]);
-      limbTips.push(stations.at(-1));
-      for(let i=1;i<stations.length;i++){
-        const p=stations[i-1],q=stations[i],pr=(i/(stations.length-1));
-        pipe([p[0],p[1],0],[q[0],q[1],0],
-          thickness*(1-pr*.52),i%2===0?'brown':'black',12);
-        pipe([p[0]-.020,p[1],.054],
-          [q[0]-.020,q[1],.054],.019,'gold',8);
-        pipe([p[0]-.020,p[1],-.054],
-          [q[0]-.020,q[1],-.054],.019,'steel',8);
-      }
-      const tip=stations.at(-1);
-      // A true curved forged limb plate following the geometry.
-      for(const face of [-1,1]){
-        poly([
-          [width*.31,sy*.31*halfH],
-          [width*.87,sy*.53*halfH],
-          [width*1.04,sy*.73*halfH],
-          [width*.74,sy*.88*halfH],
-          [width*.79,sy*1.07*halfH],
-          [width*.61,sy*.99*halfH],
-          [width*.78,sy*.72*halfH],
-          [width*.54,sy*.56*halfH]
-        ],power?.17:.092,power?'steel':fast?'black':'brown',
-        face*(power?.085:.075),.009);
-        // Glowing power channel differs from the streamlined fast limbs.
-        curve([
-          [width*.52,sy*.46*halfH,face*.139],
-          [width*.89,sy*.69*halfH,face*.139],
-          [width*.67,sy*.96*halfH,face*.139]
-        ],power?.017:.012,fast?'gold':'accent');
-      }
-      // One string segment each side, together a continuous bowstring.
-      const stringX=width*.79;
-      pipe([tip[0],tip[1],0],[stringX,0,0],.014,'linen',7);
-      gem(tip[0],tip[1],.032,power?.076:.053,.107,.040);
-      for(const face of [-1,1]){
-        diamond(width*.72,sy*.64*halfH,face*.16,.045,.083);
-      }
-      if(power){
-        // Heavy limbs feature broad reinforcing metal spurs.
-        poly([[width*.69,sy*.52*halfH],
-          [width*1.23,sy*.65*halfH],
-          [width*.97,sy*.81*halfH]],.14,'steel',0,.015);
-        for(const face of [-1,1])
-          gem(width*.92,sy*.72*halfH,face*.11,.07,.10,.034);
-      }else if(fast){
-        // Slim speed bow has two directional fins, not heavy armor.
-        poly([[width*.65,sy*.70*halfH],
-          [width*1.13,sy*.89*halfH],
-          [width*.65,sy*.81*halfH]],.075,'gold',0,.006);
-      }
-    }
-    // Real cross grip and bowstring knock - visible from the side.
-    poly([[-.22,-.12],[-.28,.04],[-.13,.21],
-      [.03,.11],[.03,-.14]],.12,'gold',0,.011);
-    for(const face of [-1,1])diamond(0,.03,face*.16,.076,.105);
+    g.userData.bowFamily='Archer reference — bronze, steel, wood and cyan';
+    g.userData.bowVariant=power?'power massive reinforced':'swift light recurve';
+    g.userData.bowString='one continuous straight taut 3D string';
   }
   function staff(){
     const attack=key==='battleMage',support=key==='supportMage',base=key==='mage';
