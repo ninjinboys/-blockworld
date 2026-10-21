@@ -128,6 +128,17 @@ export function makeReferenceWeapon(T,d){
    gem(0,y+.065,f*(depth/2+.19),.10,.14,.040);
   }
  }
+
+  // Flatten only the actual sword BLADE geometry in world-depth (Z).
+  // Keep grip, pommel and guard round so a thin blade is still 3-dimensional.
+  // Since both mesh placement and intrinsic depth are scaled, the raised
+  // front/back ornaments do not float away from the thinner steel.
+  const flattenBladeSince=(start,ratio)=>{
+    for(const mesh of g.children.slice(start)){
+      mesh.position.z*=ratio;
+      mesh.scale.z*=ratio;
+    }
+  };
  function sword(great){
   const start=.47,top=great?3.28:3.06,w=great?.51:.325;
   grip(great?-.79:-.65,.20,great?.142:.113,great?12:9);
@@ -141,7 +152,11 @@ export function makeReferenceWeapon(T,d){
     :[[-w*.75,start],[-w*.98,start+.26],[-w*.92,start+.56],
       [-w*1.04,top-.78],[-w*.84,top-.38],[0,top],
       [w*.84,top-.38],[w*1.04,top-.78],[w*.92,start+.56],[w*.98,start+.26],[w*.75,start]];
+  const bladeMeshStart=g.children.length;
   layeredBlade(sil,w,start,top,great?.32:.205);
+  // Non-Warrior sword: reduce entire blade AND raised front/back decorations
+  // to 48% of the previous Z thickness. Warrior greatsword stays unchanged.
+  if(!great)flattenBladeSince(bladeMeshStart,.48);
   guard(.32,great?.79:.64,great?.32:.25);
  }
  function axe(){
@@ -220,6 +235,7 @@ export function makeReferenceWeapon(T,d){
   // One of TWO separately held Berserker blades; serrations are mesh geometry.
   grip(-.54,.18,.113,9);pommel(-.69,.88);
   const base=.38,top=2.13;
+  const bladeMeshStart=g.children.length;
   const outline=[[-.24,base],[-.40,base+.22],[-.35,base+.40],
     [-.49,base+.57],[-.39,base+.76],[-.53,base+.93],
     [-.42,base+1.12],[-.56,base+1.34],[-.41,top-.26],
@@ -245,6 +261,8 @@ export function makeReferenceWeapon(T,d){
    prism([[-.35,y-.12],[-.62,y+.045],[-.42,y+.16]],
     .16,'iron',0,.012);
   }
+  // Berserker twin swords: thinner 3D blade with intact serrated silhouette.
+  flattenBladeSince(bladeMeshStart,.48);
   const gy=.30;
   prism([[-.66,gy+.13],[-.54,gy+.35],[-.29,gy+.17],
     [0,gy+.38],[.27,gy+.21],[.60,gy+.37],
