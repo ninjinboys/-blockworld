@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {JOBS,STARTING_JOBS,JOB_WEAPON_IDS,jobWeapon,jobCanUse,jobNextOptions,jobCanChange,
-  drawJobWeaponIcon} from './job-system.js?v=20261021referenceSword03';
+  drawJobWeaponIcon} from './job-system.js?v=20261021all17remodel04';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261021referenceSword03';
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261021referenceSword03';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
