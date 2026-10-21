@@ -10,137 +10,193 @@ import {makeReferenceWeapon} from './reference-weapon-models.js?v=20261021shield
 // it. Never branch back into unrelated hexagonal/paladin/spiked designs.
 function makeShieldFamilyWeapon(T,d){
   if(!['shield','shieldElite','tank'].includes(d.key))return null;
-  const model=makeReferenceWeapon(T,{...d,key:'heavy'});
-  if(!model)throw new Error('Heavy Soldier shield reference model is missing');
-  const starter=d.key==='shield', elite=d.key==='shieldElite', tank=d.key==='tank';
-  // Heavy's dimensions are designed into the reference model. Scale ONLY
-  // this new independent instance: never modify the original Heavy model.
-  model.scale.x*=starter?.80:elite?.91:1.14;
-  model.scale.y*=starter?.76:elite?.92:1.08;
-  model.scale.z*=starter?.80:elite?.94:1.23;
-  const materials={
-    gold:new T.MeshStandardMaterial({color:0x9c794e,metalness:.84,roughness:.32,side:T.DoubleSide}),
-    bevel:new T.MeshStandardMaterial({color:0xd2b37b,metalness:.88,roughness:.27,side:T.DoubleSide}),
-    steel:new T.MeshStandardMaterial({color:starter?0x96a9b0:0xc7d1d4,metalness:.84,roughness:.31,side:T.DoubleSide}),
-    shadow:new T.MeshStandardMaterial({color:0x2b353d,metalness:.69,roughness:.41,side:T.DoubleSide}),
-    glow:new T.MeshStandardMaterial({color:0x3ff1da,metalness:.24,roughness:.20,emissive:0x36dac5,emissiveIntensity:.78,side:T.DoubleSide})
+  // The Heavy Soldier shield establishes this family's materials and
+  // turquoise rune language, NOT its exact silhouette/mesh geometry.
+  // Each tier has exactly ONE structural body, not a cloned Heavy shield.
+  const starter=d.key==='shield',elite=d.key==='shieldElite',tank=d.key==='tank';
+  const group=new T.Group();
+  const m={
+    bronze:new T.MeshStandardMaterial({color:0x94734f,metalness:.82,roughness:.35,side:T.DoubleSide}),
+    brass:new T.MeshStandardMaterial({color:0xc4a379,metalness:.84,roughness:.29,side:T.DoubleSide}),
+    steel:new T.MeshStandardMaterial({color:0xabbcc3,metalness:.84,roughness:.31,side:T.DoubleSide}),
+    bright:new T.MeshStandardMaterial({color:0xd8e3e5,metalness:.89,roughness:.26,side:T.DoubleSide}),
+    iron:new T.MeshStandardMaterial({color:0x63717a,metalness:.81,roughness:.37,side:T.DoubleSide}),
+    dark:new T.MeshStandardMaterial({color:0x29343b,metalness:.67,roughness:.43,side:T.DoubleSide}),
+    recess:new T.MeshStandardMaterial({color:0x17252e,metalness:.45,roughness:.49,side:T.DoubleSide}),
+    leather:new T.MeshStandardMaterial({color:0x45352c,roughness:.88,side:T.DoubleSide}),
+    strap:new T.MeshStandardMaterial({color:0x74533a,roughness:.82,side:T.DoubleSide}),
+    rune:new T.MeshStandardMaterial({color:0x48e5d1,metalness:.24,roughness:.2,
+      emissive:0x38c9b6,emissiveIntensity:.58,side:T.DoubleSide})
   };
-  function polygon(points,depth,mat,z,bevel=.009){
-    const shape=new T.Shape();shape.moveTo(...points[0]);
-    for(let i=1;i<points.length;i++)shape.lineTo(...points[i]);shape.closePath();
-    const geo=new T.ExtrudeGeometry(shape,{
-      depth,steps:1,bevelEnabled:bevel>0,bevelThickness:bevel,
-      bevelSize:bevel,bevelSegments:2
-    });
-    const mesh=new T.Mesh(geo,materials[mat]);mesh.position.set(0,0,z-depth/2);
-    mesh.castShadow=true;mesh.receiveShadow=true;model.add(mesh);return mesh;
-  }
-  const sides=(points,sign)=>points.map(([x,y])=>[sign*x,y]);
-  function gem(x,y,z,rx,ry,rz){
-    const v=new T.Mesh(new T.OctahedronGeometry(1),materials.glow);
-    v.position.set(x,y,z);v.scale.set(rx,ry,rz);v.castShadow=true;
-    model.add(v);return v;
-  }
-  function line(a,b,z,mat='bevel',thickness=.012){
-    const from=new T.Vector3(a[0],a[1],z),to=new T.Vector3(b[0],b[1],z);
-    const direction=to.clone().sub(from);
-    const m=new T.Mesh(new T.CylinderGeometry(thickness,thickness,direction.length(),8),materials[mat]);
-    m.position.copy(from).add(to).multiplyScalar(.5);
-    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction.normalize());
-    model.add(m);return m;
-  }
-  function stoneSetting(y,size,z){
-    polygon([[0,y+size*1.65],[size,y],[0,y-size*1.65],[-size,y]],.074,'gold',z);
-    polygon([[0,y+size*1.28],[size*.75,y],[0,y-size*1.28],[-size*.75,y]],.036,'shadow',z+.05,.004);
-    gem(0,y,z+.091,size*.60,size*.97,.055);
-  }
+  const mesh=(geom,mat,x=0,y=0,z=0)=>{
+    const item=new T.Mesh(geom,m[mat]);item.position.set(x,y,z);
+    item.castShadow=true;item.receiveShadow=true;group.add(item);return item;
+  };
+  const plate=(pts,thickness,mat,z,bevel=.007)=>{
+    const shape=new T.Shape();
+    shape.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++)shape.lineTo(pts[i][0],pts[i][1]);
+    shape.closePath();
+    return mesh(new T.ExtrudeGeometry(shape,{depth:thickness,steps:1,
+      bevelEnabled:bevel>0,bevelThickness:bevel,bevelSize:bevel,bevelSegments:2}),
+      mat,0,0,z-thickness/2);
+  };
+  const mirror=(pts,sign)=>pts.map(([x,y])=>[sign*x,y]);
+  const rod=(a,b,r,mat)=>{
+    const p=new T.Vector3(...a),q=new T.Vector3(...b),delta=q.clone().sub(p);
+    const item=mesh(new T.CylinderGeometry(r,r,delta.length(),9),mat,
+      (p.x+q.x)/2,(p.y+q.y)/2,(p.z+q.z)/2);
+    item.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());
+    return item;
+  };
+  const gem=(x,y,z,rx,ry,rz)=>{
+    const item=mesh(new T.OctahedronGeometry(1), 'rune',x,y,z);
+    item.scale.set(rx,ry,rz);return item;
+  };
+  const diamond=(x,y,z,w,h,mat='brass',th=.025)=>plate([
+    [x,y+h],[x+w,y],[x,y-h],[x-w,y]],th,mat,z,.002);
+  const rivet=(x,y,z)=>mesh(new T.SphereGeometry(.023,8,6),'brass',x,y,z);
+  const inlay=(pts,z,r=.011)=>{for(let i=1;i<pts.length;i++){
+    rod([pts[i-1][0],pts[i-1][1],z],
+        [pts[i][0],pts[i][1],z],r,'rune');
+  }};
+  const rearGrip=(y,half,z)=>{
+    // A single physical grip bar, rather than a second shield body.
+    for(const s of [-1,1]){
+      const x=s*half;
+      mesh(new T.BoxGeometry(.112,.18,.095),'bronze',x,y,z+.09);
+      rivet(x,y+.050,z-.005);rivet(x,y-.050,z-.005);
+    }
+    rod([-half,y,z],[half,y,z],.060,'leather');
+    for(let i=0;i<9;i++){
+      const x=-half+.045+i*(half*2-.09)/9;
+      rod([x,y-.041,z-.049],[x+.035,y+.041,z-.049],.007,'strap');
+    }
+  };
   if(starter){
-    // Shield Soldier: short, lightweight heir of the Heavy shield.
-    // Bronze V crown, twin silver faceplates, one cyan diamond insignia.
-    for(const sign of [-1,1]){
-      polygon(sides([[.25,.60],[.44,.71],[.61,.55],
-        [.58,-.07],[.51,-.72],[.35,-1.04],
-        [.25,-.94]],sign),.072,'gold',1.39);
-      polygon(sides([[.285,.54],[.44,.63],[.54,.50],
-        [.53,-.05],[.45,-.67],[.33,-.90],
-        [.28,-.84]],sign),.055,'steel',1.441,.006);
-      line([sign*.32,.47],[sign*.315,-.79],1.487,'bevel',.012);
-      polygon(sides([[.39,.75],[.57,.97],[.67,.77],
-        [.55,.67]],sign),.074,'gold',1.35);
+    // LV1: one *small* and light iron kite, not a miniature full-body Heavy.
+    // Single dark metal face, restrained bronze edge, small rune and grip.
+    const outline=[[-.38,.62],[-.52,.39],[-.51,-.16],
+      [-.34,-.55],[0,-.78],[.34,-.55],[.51,-.16],
+      [.52,.39],[.38,.62],[0,.66]];
+    plate(outline,.18,'bronze',0,.018);
+    plate(outline.map(([x,y])=>[x*.90,y*.92]),.18,'dark',.007,.011);
+    // Just two broad shallow facets, modest enough for the starting job.
+    for(const s of [-1,1]){
+      plate(mirror([[.10,.40],[.34,.48],[.42,.30],[.39,-.22],
+        [.25,-.49],[.09,-.52]],s),.045,'iron',.127,.009);
+      plate(mirror([[.15,.34],[.28,.39],[.34,.20],
+        [.31,-.16],[.22,-.37]],s),.018,'steel',.161,.003);
+      for(const y of [.30,-.18])rivet(s*.438,y,.122);
     }
-    // Forged centre jewel and closed-ended luminous canal.
-    polygon([[-.115,.52],[0,.76],[.115,.52],
-      [.10,-1.09],[0,-1.29],[-.10,-1.09]],.069,'shadow',1.49);
-    line([0,.43],[0,-.89],1.555,'glow',.014);
-    stoneSetting(-.19,.085,1.56);
-    model.userData.shieldStyle='Heavy-family shield / compact bronze and silver';
+    plate([[-.065,.46],[0,.58],[.065,.46],
+      [.075,-.51],[0,-.65],[-.075,-.51]],
+      .046,'bronze',.153,.006);
+    // Small centered gem; no towering cathedral crest or multiple lights.
+    diamond(0,.09,.186,.100,.145,'dark',.026);
+    gem(0,.09,.216,.069,.10,.031);
+    rearGrip(-.055,.26,-.180);
+    group.userData.shieldStyle='Light shield: plain bronze/iron kite, single crystal';
   }else if(elite){
-    // Evolved shield soldier: same silver layered armour and cathedral
-    // silhouette, with sharper V crests and more deliberate rune tracery.
-    for(const sign of [-1,1]){
-      polygon(sides([[.20,.74],[.50,.86],[.70,.60],
-        [.66,-.45],[.52,-1.04],[.25,-1.32],
-        [.23,-.94]],sign),.096,'gold',1.39,.013);
-      polygon(sides([[.24,.66],[.50,.78],[.62,.55],
-        [.59,-.36],[.47,-.94],[.28,-1.19]],sign),
-        .066,'steel',1.454,.008);
-      polygon(sides([[.31,.56],[.43,.62],[.42,-.29],
-        [.37,-.88],[.30,-.98]],sign),.023,'bevel',1.518,.003);
-      // A pair of tapering bronze wings are relatives of the Heavy crest.
-      polygon(sides([[.30,.91],[.60,1.15],[.75,1.30],
-        [.70,.88],[.51,.75]],sign),.115,'gold',1.33,.012);
-      line([sign*.29,.43],[sign*.30,-1.02],1.55,'bevel',.013);
-      line([sign*.63,.19],[sign*.62,-.49],1.53,'glow',.013);
+    // LV30: medium, elongated angular knight shield; a clear advancement
+    // from starter but visibly smaller/simpler than Heavy Soldier's tower.
+    const outline=[[-.40,.90],[-.62,.65],[-.68,.15],
+      [-.54,-.45],[-.30,-.92],[0,-1.10],
+      [.30,-.92],[.54,-.45],[.68,.15],[.62,.65],
+      [.40,.90],[0,1.02]];
+    plate(outline,.27,'bronze',0,.021);
+    plate(outline.map(([x,y])=>[x*.93,y*.94]),.27,'dark',.005,.016);
+    plate(outline.map(([x,y])=>[x*.865,y*.89]),.270,'iron',.025,.012);
+    for(const s of [-1,1]){
+      // Two staggered silver-forged plates on each side (not a second shield).
+      plate(mirror([[.15,.65],[.38,.76],[.56,.53],[.51,-.17],
+        [.35,-.51],[.14,-.44]],s),.075,'dark',.188,.010);
+      plate(mirror([[.19,.61],[.37,.69],[.49,.49],
+        [.45,-.13],[.34,-.40],[.18,-.36]],s),
+        .065,'steel',.237,.007);
+      plate(mirror([[.17,-.44],[.33,-.40],[.48,-.58],
+        [.31,-.89],[.12,-.95]],s),.070,'dark',.202,.009);
+      plate(mirror([[.21,-.50],[.33,-.48],[.41,-.59],
+        [.28,-.78],[.17,-.82]],s),.050,'bright',.245,.006);
+      // Angular raised shoulder wings integrated into the same hull.
+      plate(mirror([[.30,.72],[.55,.88],[.63,.69],
+        [.54,.51],[.35,.55]],s),.063,'brass',.225,.010);
+      rivet(s*.55,.46,.274);rivet(s*.45,-.58,.277);
     }
-    polygon([[-.15,.78],[0,1.20],[.15,.78],
-      [.13,-1.17],[0,-1.40],[-.13,-1.17]],.090,'shadow',1.54,.009);
-    line([0,.70],[0,-1.08],1.62,'glow',.015);
-    stoneSetting(.03,.122,1.615);
-    stoneSetting(-.67,.058,1.614);
-    model.userData.shieldStyle='Heavy-family shield / elegant silver reinforced cathedral';
-  }else if(tank){
-    // Tank: the HEAVIEST branch of the same Heavy family, NOT a spiked
-    // scarlet bulwark. Wider angular layered armour, thicker bronze rim,
-    // one central cyan gem and strong internal frame from the reference.
-    for(const sign of [-1,1]){
-      polygon(sides([[.21,.80],[.54,.99],[.79,.71],
-        [.84,.15],[.80,-.50],[.66,-1.17],
-        [.39,-1.43],[.20,-1.21]],sign),.175,'gold',1.39,.019);
-      polygon(sides([[.26,.73],[.55,.87],[.70,.62],
-        [.72,.12],[.69,-.51],[.59,-1.07],
-        [.39,-1.31],[.26,-1.08]],sign),.124,'shadow',1.501,.013);
-      polygon(sides([[.30,.63],[.55,.78],[.64,.52],
-        [.65,.08],[.62,-.44],[.53,-.98],
-        [.39,-1.18],[.30,-1.03]],sign),.107,'steel',1.591,.011);
-      polygon(sides([[.34,.55],[.48,.66],[.51,.39],
-        [.50,-.54],[.42,-.92],[.36,-.99]],sign),
-        .035,'bevel',1.662,.006);
-      // Solid stepped corner cheek guards and lower flare.
-      polygon(sides([[.60,.88],[.91,.79],[.95,.38],
-        [.82,.12],[.71,.22]],sign),.17,'gold',1.47,.014);
-      polygon(sides([[.67,-.87],[.88,-.76],[.82,-1.10],
-        [.55,-1.39],[.44,-1.37]],sign),.157,'gold',1.45,.013);
-      line([sign*.32,.51],[sign*.35,-1.01],1.729,'bevel',.021);
-      line([sign*.70,.28],[sign*.72,-.72],1.695,'glow',.016);
+    plate([[-.13,.82],[0,1.08],[.13,.82],
+      [.115,-.91],[0,-1.04],[-.115,-.91]],
+      .073,'bronze',.260,.007);
+    plate([[-.081,.67],[0,.88],[.081,.67],
+      [.077,-.83],[0,-.92],[-.077,-.83]],
+      .048,'recess',.313,.006);
+    inlay([[0,.63],[0,.21],[0,-.20],[0,-.72]],.354,.013);
+    diamond(0,.14,.365,.115,.172,'brass',.036);
+    gem(0,.14,.399,.071,.111,.038);
+    // Back of the same single shell: two lighter horizontal grips.
+    rearGrip(.28,.36,-.240);rearGrip(-.35,.36,-.240);
+    group.userData.shieldStyle='Evolved shield: slender silver layers, bronze wings and rune';
+  }else{
+    // LV90 TANK: only ONE broad fortress shield. Previous regression was
+    // caused by adding an entirely new full-front shield atop Heavy's body.
+    // This hull is unique: flat shoulder profile, heavy 4-quarter plate design.
+    const outline=[[-.75,1.05],[-.95,.89],[-.98,.23],
+      [-.90,-.56],[-.68,-1.00],[0,-1.26],
+      [.68,-1.00],[.90,-.56],[.98,.23],
+      [.95,.89],[.75,1.05],[0,1.08]];
+    plate(outline,.46,'bronze',0,.031);
+    plate(outline.map(([x,y])=>[x*.95,y*.95]),.466,'dark',.003,.024);
+    plate(outline.map(([x,y])=>[x*.88,y*.90]),.468,'iron',.008,.014);
+    // Four armour QUADRANTS are smaller distinct metal plates attached to
+    // the same hull. No full-size second silhouette and no forward spikes.
+    for(const s of [-1,1]){
+      plate(mirror([[.18,.79],[.66,.87],[.82,.63],
+        [.79,.06],[.26,.06]],s),.098,'dark',.295,.017);
+      plate(mirror([[.225,.72],[.63,.79],[.72,.59],
+        [.69,.15],[.28,.14]],s),.076,'steel',.365,.009);
+      plate(mirror([[.30,.62],[.56,.68],[.62,.49],
+        [.58,.23],[.32,.23]],s),.029,'bright',.414,.006);
+      plate(mirror([[.22,-.03],[.76,-.04],[.78,-.52],
+        [.58,-.95],[.22,-1.09]],s),.106,'dark',.299,.016);
+      plate(mirror([[.275,-.12],[.67,-.12],[.69,-.47],
+        [.52,-.84],[.27,-.96]],s),.081,'steel',.372,.009);
+      plate(mirror([[.325,-.21],[.54,-.23],[.55,-.51],
+        [.37,-.78]],s),.030,'bright',.423,.005);
+      // Heavy bronze side bars and rivets clearly distinguish tank rank.
+      plate(mirror([[.80,.86],[.97,.82],[.93,-.55],
+        [.69,-.98],[.74,-.55]],s),.130,'bronze',.316,.014);
+      for(const y of [.61,.18,-.28,-.71])rivet(s*.82,y,.382);
     }
-    // Vertical temple spine and giant protective jewel.
-    polygon([[-.207,.84],[0,1.26],[.207,.84],
-      [.175,-1.31],[0,-1.52],[-.175,-1.31]],
-      .124,'gold',1.658,.015);
-    polygon([[-.133,.75],[0,1.14],[.133,.75],
-      [.113,-1.24],[0,-1.40],[-.113,-1.24]],
-      .090,'shadow',1.744,.008);
-    line([0,.64],[0,-1.18],1.810,'glow',.020);
-    stoneSetting(-.11,.182,1.815);
-    stoneSetting(-.84,.088,1.804);
-    model.userData.shieldStyle='Heavy-family shield / broad layered silver siege armour';
+    // Cross brace inside the *single* shield body.
+    plate([[-.19,.89],[0,1.10],[.19,.89],
+      [.205,-1.07],[0,-1.23],[-.205,-1.07]],
+      .101,'bronze',.398,.013);
+    plate([[-.13,.77],[0,.91],[.13,.77],
+      [.15,-.96],[0,-1.11],[-.15,-.96]],
+      .072,'recess',.474,.006);
+    inlay([[0,.65],[0,.22],[0,-.24],[0,-.92]],.527,.015);
+    diamond(0,.09,.531,.176,.258,'brass',.055);
+    diamond(0,.09,.568,.119,.174,'dark',.031);
+    gem(0,.09,.595,.103,.154,.052);
+    for(const s of [-1,1]){
+      rod([s*.65,.69,.474],[0,.10,.545],.019,'brass');
+      rod([s*.60,-.73,.476],[0,.04,.545],.019,'brass');
+    }
+    // Reinforcement bars are fixed to the back of THIS hull.
+    for(const s of [-1,1]){
+      plate(mirror([[.23,.83],[.68,.73],[.64,-.79],
+        [.31,-1.00]],s),.048,'dark',-.269,.007);
+    }
+    rearGrip(.34,.57,-.314);rearGrip(-.46,.57,-.314);
+    group.userData.shieldStyle='Tank: single thick fortress hull, four armour quadrants';
   }
-  model.name=(d.name||d.key)+' · Heavy Soldier shield family 3D';
-  model.userData.jobWeapon=d.key;
-  model.userData.shieldFamily='Heavy Soldier reference';
-  model.userData.weaponTier=starter?'starter':elite?'evolved':'tank';
-  return model;
+  group.userData.jobWeapon=d.key;
+  group.userData.shieldFamily='Heavy Soldier bronze-steel-cyan material language';
+  group.userData.weaponTier=starter?'starter':elite?'evolved':'tank';
+  group.userData.singleShieldBody=true;
+  group.name=(d.name||d.key)+' shield · distinct bronze/steel family';
+  return group;
 }
+
 export function makeDetailedJobWeapon(T,d){
   const matched=makeReferenceWeapon(T,d);
   if(matched)return matched;
