@@ -128,8 +128,15 @@ function select(key){
     const pair=new THREE.Group();
     const left=makeJobWeaponModel(THREE,data.weapon);
     const right=makeJobWeaponModel(THREE,data.weapon);
-    left.position.x=-.83;right.position.x=.83;
-    right.rotation.y=Math.PI;
+    if(key==='berserker'){
+      // The reference shows TWO matching fronts, mirrored into a pair;
+      // spacing prevents the large sculpted bronze wing guards overlapping.
+      left.position.x=-1.20;right.position.x=1.20;
+      right.scale.x=-1;
+    }else{
+      left.position.x=-.83;right.position.x=.83;
+      right.rotation.y=Math.PI;
+    }
     pair.add(left,right);current=pair;
   }else current=makeJobWeaponModel(THREE,data.weapon);
   scene.add(current);
