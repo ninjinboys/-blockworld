@@ -1,6 +1,7 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeJobWeaponModel,jobHeldBladeYaw,jobHeldWeaponScale,JOBS} from './job-system.js?v=20261022heldBladeEdgeForward21';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261022pvpFirst01';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261022pvpFirst01';
 
 const $=id=>document.getElementById(id);
 const CLASSES={
@@ -16,7 +17,7 @@ const roundLength=90;
 let myClass='sword',enemyClass='sword',role='',state='menu',roomCode='',peer=null,connection=null,peerLoader=null;
 let me=null,rival=null,myAvatar=null,enemyAvatar=null,roundEnd=0,remaining=roundLength,lastSync=0,lastClock=0;
 let keys=new Set(),clock=new THREE.Clock(),effects=[],noticeTimeout=0;
-let lookPitch=0,walkMotion=0,walkPhase=0,lastHurtUntil=0,attackVisualAt=0;
+let lookPitch=0,walkMotion=0,walkPhase=0,lastHurtUntil=0,attackVisualAt=0,enemyAttackAt=-Infinity;
 const touchLooks=new Map();
 const clampPitch=v=>THREE.MathUtils.clamp(v,-1.28,1.28);
 function rotateView(dx,dy,sensitivity=.0034){
@@ -47,6 +48,7 @@ const firstPersonHand=makeFirstPersonHand(THREE,{
  isMining:()=>false,
  isHurt:()=>performance.now()<lastHurtUntil
 });
+const avatarItems=makeAvatarHeldItems(THREE,()=>{});
 
 const ambient=new THREE.HemisphereLight(0xaad8ff,0x233a2b,2.1);scene.add(ambient);
 const sun=new THREE.DirectionalLight(0xffe9c9,2.3);sun.position.set(-10,24,17);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;scene.add(sun);
@@ -69,56 +71,66 @@ for(const z of [-8,8]){block(6,.15,.12,0x4d8487,0,.09,z)}
 const spawning=[new THREE.Vector3(-6,0,0),new THREE.Vector3(6,0,0)];
 
 function createAvatar(team,job){
- const group=new THREE.Group(),skin=mat(team==='me'?0xcbb79c:0xbbaaa0),cloth=mat(team==='me'?0x2684a5:0xb14554),metal=mat(team==='me'?0x77d6ef:0xf2a18c,.43,.39);
- const addPart=(w,h,d,m,x,y,z,parent=group)=>{
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
-  mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;
- };
- addPart(.75,.96,.48,cloth,0,1.32,0);
- addPart(.52,.53,.53,skin,0,2.17,0);
- addPart(.42,.15,.12,metal,0,2.11,.30);
- for(const s of [-1,1]){
-  addPart(.27,.74,.32,cloth,s*.58,1.28,0);
-  addPart(.28,.77,.36,cloth,s*.21,.48,0);
-  addPart(.34,.23,.44,metal,s*.21,.14,.09);
- }
- const weaponPivot=new THREE.Group();
- weaponPivot.position.set(.72,1.40,.18);group.add(weaponPivot);
- let weapon=null;
- const weaponID=JOBS[job]?.weapon;
- if(weaponID){
-  try{
-   weapon=makeJobWeaponModel(THREE,weaponID);
-   if(weapon&&weapon.isObject3D){
-    weapon.scale.setScalar(jobHeldWeaponScale(weaponID,'third'));
-    weapon.rotation.set(-.14,.1+jobHeldBladeYaw(weaponID),-.12);
-    weapon.position.set(0,-.06,-.05);
-    weaponPivot.add(weapon);
-    if(JOBS[job].kind==='dual'){
-     const otherPivot=new THREE.Group();
-     otherPivot.position.set(-.72,1.40,.18);
-     const second=makeJobWeaponModel(THREE,weaponID);
-     second.scale.setScalar(jobHeldWeaponScale(weaponID,'third'));
-     second.rotation.set(-.10,-.19-jobHeldBladeYaw(weaponID),.17);
-     otherPivot.add(second);group.add(otherPivot);
-     group.userData.leftWeaponPivot=otherPivot;
-    }
-   }
-  }catch(e){console.warn('weapon model',e)}
- }
- if(!weapon||!weapon.isObject3D){
-  const blade=addPart(.13,.9,.12,metal,0,.5,0,weaponPivot);
-  blade.rotation.x=.1;
- }
- const shadow=new THREE.Mesh(new THREE.CircleGeometry(.73,24),new THREE.MeshBasicMaterial({color:0x00121b,transparent:true,opacity:.42,depthWrite:false}));
- shadow.rotation.x=-Math.PI/2;shadow.position.y=.04;group.add(shadow);
- group.userData.weaponPivot=weaponPivot;group.userData.swing=0;
- scene.add(group);
- return group;
+  const cube=(parent,w,h,d,color,x=0,y=0,z=0)=>{
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color}));
+    mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+  };
+  const g=new THREE.Group(),limbs={};
+  const skin=0xd4a078,skinShade=0xb98059,hair=0x392921,hairLight=0x53392c;
+  const jacket=0x247f9b,jacketLight=0x38a5b6,jacketDark=0x185569;
+  const pants=0x34466b,pantsShade=0x25334f,boots=0x332d2e,sole=0x18191c;
+  const pack=0xc08a46,packTrim=0xe4b76d,eye=0x24242a;
+
+  // Shorter head and taller torso, preserving the character's overall height.
+  // The model's feet stand at y=0, and its face points along local -Z.
+  cube(g,.66,.52,.53,skin,0,1.53,0);
+  cube(g,.68,.16,.55,hair,0,1.77,.005);
+  cube(g,.69,.11,.34,hair,-.005,1.69,-.155);
+  cube(g,.17,.11,.10,hairLight,-.24,1.69,-.290);
+  cube(g,.13,.12,.09,hair,.17,1.69,-.295);
+  cube(g,.08,.10,.022,eye,-.16,1.53,-.279);
+  cube(g,.08,.10,.022,eye,.16,1.53,-.279);
+  cube(g,.15,.04,.025,skinShade,0,1.40,-.281);
+  cube(g,.07,.11,.055,skinShade,-.335,1.52,.01);
+  cube(g,.07,.11,.055,skinShade,.335,1.52,.01);
+
+  cube(g,.74,.85,.42,jacket,0,1.00,0);
+  cube(g,.69,.10,.44,jacketLight,0,1.37,0);
+  cube(g,.12,.64,.025,jacketDark,0,1.00,-.224);
+  cube(g,.20,.18,.04,jacketLight,0,1.24,-.234);
+  cube(g,.11,.07,.035,packTrim,.17,.99,-.231);
+  // The backpack also extends to match the longer torso.
+  cube(g,.53,.67,.19,pack,0,1.01,.31);
+  cube(g,.51,.11,.205,packTrim,0,1.29,.32);
+  cube(g,.13,.47,.035,packTrim,-.21,1.02,.427);
+  cube(g,.13,.47,.035,packTrim,.21,1.02,.427);
+
+  for(const [name,side] of [['left',-1],['right',1]]){
+    const arm=new THREE.Group();
+    arm.position.set(side*.36,1.30,0);
+    cube(arm,.255,.45,.35,jacket,0,-.22,0);
+    cube(arm,.262,.12,.36,jacketDark,0,-.47,0);
+    cube(arm,.225,.18,.29,skin,0,-.61,0);
+    g.add(arm);limbs[name+'Arm']=arm;
+    const leg=new THREE.Group();
+    leg.position.set(side*.20,.69,0);
+    cube(leg,.29,.54,.34,pants,0,-.24,0);
+    cube(leg,.29,.11,.345,pantsShade,0,-.51,0);
+    cube(leg,.32,.14,.43,boots,0,-.61,-.04);
+    cube(leg,.325,.055,.45,sole,0,-.69,-.045);
+    g.add(leg);limbs[name+'Leg']=leg;
+  }
+  g.userData.limbs=limbs;
+  // Slimmer silhouette: original arm-to-arm width 0.982 blocks -> 0.707 blocks.
+  // Only the horizontal axis is scaled; height and animation remain unchanged.
+  g.scale.x=.72;
+  g.scale.z=.88;
+  avatarItems.sync(g,JOBS[job]?.weapon,null);
+  return g;
 }
 function replaceAvatars(){
  if(myAvatar){scene.remove(myAvatar);myAvatar=null;}
- if(enemyAvatar)scene.remove(enemyAvatar);
+ if(enemyAvatar){avatarItems.dispose(enemyAvatar);scene.remove(enemyAvatar);}
  // In first person the user's own body must not obstruct the view.
  // The exact NEXACRAFT right-hand viewmodel is attached directly to camera.
  enemyAvatar=createAvatar('enemy',enemyClass);
@@ -129,7 +141,7 @@ function makeFighter(job,x,z){
  return {x,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,guard:false,lastAttack:-100000};
 }
 function syncAvatars(){
- if(rival&&enemyAvatar){enemyAvatar.position.set(rival.x,0,rival.z);enemyAvatar.rotation.y=rival.face;}
+ if(rival&&enemyAvatar){enemyAvatar.position.set(rival.x,0,rival.z);enemyAvatar.rotation.y=rival.face+Math.PI;}
 }
 function resize(){
  const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
@@ -305,7 +317,7 @@ function updateHud(){
  const time=Math.max(0,Math.ceil(remaining));
  $('clock').textContent=String(Math.floor(time/60)).padStart(2,'0')+':'+String(time%60).padStart(2,'0');
 }
-function animateSwing(avatar){if(avatar)avatar.userData.swing=1}
+function animateSwing(avatar){if(avatar)enemyAttackAt=performance.now()}
 function effectLine(from,to,job){
  if(!from||!to)return;
  const a=new THREE.Vector3(from.x,1.55,from.z),b=new THREE.Vector3(to.x,1.45,to.z);
@@ -319,6 +331,7 @@ function effectLine(from,to,job){
 }
 function resolveAttack(attackerIsHost){
  if(state!=='playing'||!me||!rival)return;
+ if(!attackerIsHost)animateSwing(enemyAvatar);
  const attacker=attackerIsHost?me:rival,target=attackerIsHost?rival:me;
  const job=attackerIsHost?myClass:enemyClass,c=CLASSES[job];
  const now=performance.now();
@@ -404,7 +417,7 @@ renderer.domElement.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  if(document.pointerLockElement!==renderer.domElement&&renderer.domElement.requestPointerLock){
   // First click captures the mouse; subsequent clicks swing the weapon.
-  renderer.domElement.requestPointerLock().catch(()=>{});
+  try{Promise.resolve(renderer.domElement.requestPointerLock()).catch(()=>{});}catch(e){console.warn(e)}
   return;
  }
  requestAttack();
@@ -487,17 +500,24 @@ function animate(){
  if(state==='playing'&&me){
   // Actual player eye height, view direction controlled by mouse / swipe.
   walkPhase+=dt*(walkMotion>0.1?9:0);
-  camera.position.set(me.x,2.12+Math.sin(walkPhase)*.018*Math.min(walkMotion/6,1),me.z);
+  camera.position.set(me.x,1.62+Math.sin(walkPhase)*.018*Math.min(walkMotion/6,1),me.z);
   camera.rotation.set(lookPitch,me.face+Math.PI,0,'YXZ');
  }else{
   camera.position.lerp(new THREE.Vector3(0,15,19),Math.min(1,dt*3));
   camera.lookAt(0,0,0);
  }
  if(enemyAvatar){
-  enemyAvatar.userData.swing=Math.max(0,enemyAvatar.userData.swing-dt*3.8);
-  enemyAvatar.userData.weaponPivot.rotation.z=-.35-Math.sin(enemyAvatar.userData.swing*Math.PI)*.85;
-  if(enemyAvatar.userData.leftWeaponPivot)
-   enemyAvatar.userData.leftWeaponPivot.rotation.z=Math.sin(enemyAvatar.userData.swing*Math.PI)*.7;
+  const limbs=enemyAvatar.userData.limbs;
+  if(limbs){
+   const stride=Math.min(1,Math.hypot(rival.x-(enemyAvatar.userData.lastX??rival.x),rival.z-(enemyAvatar.userData.lastZ??rival.z))*12);
+   const phase=t*.008;
+   limbs.leftLeg.rotation.x=Math.sin(phase)*stride*.6;
+   limbs.rightLeg.rotation.x=-Math.sin(phase)*stride*.6;
+   limbs.rightArm.rotation.set(-Math.sin(phase)*stride*.23,0,.05);
+   limbs.leftArm.rotation.set(Math.sin(phase)*stride*.23,0,-.05);
+   enemyAvatar.userData.lastX=rival.x;enemyAvatar.userData.lastZ=rival.z;
+  }
+  avatarItems.animate(enemyAvatar,t,{kind:'attack',at:enemyAttackAt,guarding:rival.guard});
  }
  firstPersonHand.update(dt,t);
  for(let i=effects.length-1;i>=0;i--){
