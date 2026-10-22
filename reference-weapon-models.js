@@ -140,25 +140,178 @@ export function makeReferenceWeapon(T,d){
     }
   };
  function sword(great){
-  const start=.47,top=great?3.28:3.06,w=great?.51:.325;
-  grip(great?-.79:-.65,.20,great?.142:.113,great?12:9);
-  pommel(great?-.93:-.79,great?1.14:.93);
-  // Distinct heavy cleaver point vs narrower, piercing Swordsman profile.
-  const sil=great
-    ?[[-w*.82,start],[-w*.98,start+.24],[-w*.93,start+.46],[-w*1.05,start+.63],
-      [-w*1.04,top-.72],[-w*1.24,top-.40],[-w*.93,top-.13],
-      [0,top],[w*.93,top-.13],[w*1.24,top-.40],
-      [w*1.04,top-.72],[w*1.05,start+.63],[w*.93,start+.46],[w*.98,start+.24],[w*.82,start]]
-    :[[-w*.75,start],[-w*.98,start+.26],[-w*.92,start+.56],
-      [-w*1.04,top-.78],[-w*.84,top-.38],[0,top],
-      [w*.84,top-.38],[w*1.04,top-.78],[w*.92,start+.56],[w*.98,start+.26],[w*.75,start]];
-  const bladeMeshStart=g.children.length;
-  layeredBlade(sil,w,start,top,great?.32:.205);
-  // Non-Warrior sword: reduce entire blade AND raised front/back decorations
-  // to 48% of the previous Z thickness. Warrior greatsword stays unchanged.
-  if(!great)flattenBladeSince(bladeMeshStart,.48);
-  guard(.32,great?.79:.64,great?.32:.25);
+  if(great){greatsword();return;}
+  // SWORDSMAN / SWORD — reference sheet 4-view reproduction.
+  // A straight wide SILVER blade with an exceptionally long acute
+  // spearpoint, side notches at the ricasso, recessed central black
+  // fuller, emerald runes and a large winged bronze crossguard.
+  // The model is REAL 3D: continuous forged diamond/wedge-section blade
+  // with shiny bevels, not two skinny raised silver strips on a black bar.
+  const P=(pts,depth,mat,z=0,bev=.008)=>prism(pts,depth,mat,z,bev);
+  const mirror=(pts,s)=>pts.map(([x,y])=>[x*s,y]);
+  const line=(a,b,z,mat='gild',r=.011)=>trim(a,b,z,mat,r);
+  const stud=(x,y,z,r=.017)=>add(new T.SphereGeometry(r,8,6),'bronze',x,y,z);
+
+  // Long dark-brown leather grip, spiral binding and jeweled pommel.
+  grip(-.86,.20,.119,11);
+  for(const yy of [-.84,-.25,.17]){
+    add(new T.CylinderGeometry(.141,.141,.055,12),'bronze',0,yy,0);
+    add(new T.CylinderGeometry(.134,.134,.014,12),'gild',0,yy+.032,0);
+  }
+  P([[-.115,-.83],[.114,-.83],[.225,-1.02],
+    [.135,-1.18],[0,-1.30],[-.135,-1.18],[-.225,-1.02]],
+    .168,'bronze',0,.013);
+  for(const f of [-1,1]){
+    diamond(0,-1.03,f*.115,.149,.185,'graphite',.044);
+    diamond(0,-1.03,f*.144,.110,.139,'gild',.028);
+    gem(0,-1.03,f*.175,.076,.104,.037);
+  }
+
+  // Straight sword, decidedly WIDER than the prior Swordsman weapon.
+  // Near-tip shoulders extend into ONE continuous sharp point.
+  const stations=[
+    [.49,.275,.93],[.68,.340,1],[.85,.37,1],
+    [.96,.30,1],[1.08,.423,1],
+    [1.30,.425,1],[2.70,.425,1],
+    [2.95,.432,.96],[3.09,.420,.93],
+    [3.29,.293,.65],[3.55,.155,.34],[3.83,0,0]
+  ];
+  const fractions=[0,.21,.31,.47,.76,1];
+  const elevations=[.082,.117,.163,.143,.055,.002];
+  const mats=['inset','bronze','graphite','silver','edge'];
+  const append=(ary,f,s,a,b,c)=>{
+    const tri=f*s>0?[a,b,c]:[a,c,b];
+    for(const v of tri)ary.push(v[0],v[1],v[2]);
+  };
+  const addSurface=(ary,mat)=>{
+    const geo=new T.BufferGeometry();
+    geo.setAttribute('position',new T.Float32BufferAttribute(ary,3));
+    geo.computeVertexNormals();
+    const object=new T.Mesh(geo,M[mat]);
+    object.castShadow=true;object.receiveShadow=true;g.add(object);
+  };
+  for(const face of [-1,1])for(const s of [-1,1]){
+    const sample=(i,j)=>{
+      const [y,w,t]=stations[i];
+      return [s*w*fractions[j],y,face*elevations[j]*t];
+    };
+    for(let band=0;band<5;band++){
+      const triangles=[];
+      for(let k=0;k<stations.length-1;k++){
+        const a=sample(k,band),b=sample(k,band+1);
+        const c=sample(k+1,band+1),d=sample(k+1,band);
+        append(triangles,face,s,a,b,c);
+        append(triangles,face,s,a,c,d);
+      }
+      addSurface(triangles,mats[band]);
+    }
+    // Close the thin forged blade's outside edge, from face to face.
+    const edgeSide=[];
+    for(let k=0;k<stations.length-1;k++){
+      const [ya,wa,ta]=stations[k],[yb,wb,tb]=stations[k+1];
+      const p1=[s*wa,ya,.002*ta],p2=[s*wb,yb,.002*tb],
+        p3=[s*wb,yb,-.002*tb],p4=[s*wa,ya,-.002*ta];
+      append(edgeSide,1,s,p1,p2,p3);
+      append(edgeSide,1,s,p1,p3,p4);
+    }
+    addSurface(edgeSide,'edge');
+    // Forged silver platelets over each raised shoulder, following the
+    // actual bevel — no giant fake silver spikes at the point.
+    const shoulder=[
+      [.95,.312,.38],[1.10,.37,.423],
+      [1.35,.38,.425],[2.65,.38,.425],
+      [2.91,.39,.432]
+    ];
+    const insetFacet=[];
+    const v=(k,j)=>{
+      const [y,xmin,xmax]=shoulder[k];
+      const x=j===0?xmin:j===1?(xmin+xmax)/2:xmax;
+      const depth=j===0?.151:j===1?.123:.029;
+      return [s*x,y,face*depth];
+    };
+    for(let k=0;k<shoulder.length-1;k++)
+      for(let j=0;j<2;j++){
+        const a=v(k,j),b=v(k,j+1),
+          c=v(k+1,j+1),d=v(k+1,j);
+        append(insetFacet,face,s,a,b,c);
+        append(insetFacet,face,s,a,c,d);
+      }
+    addSurface(insetFacet,'silver');
+    // Three steeply sloping facets meet at one piercing dagger point.
+    const noseVerts=[];
+    const fpoint=(x,y,z)=>[s*x,y,face*z];
+    const nose=[
+      [fpoint(.30,3.04,.155),fpoint(.40,3.10,.071),fpoint(.293,3.29,.098)],
+      [fpoint(.30,3.04,.155),fpoint(.293,3.29,.098),fpoint(.18,3.49,.087)],
+      [fpoint(.18,3.49,.087),fpoint(.293,3.29,.098),fpoint(0,3.83,0)]
+    ];
+    for(const tri of nose)append(noseVerts,face,s,...tri);
+    addSurface(noseVerts,'silver');
+  }
+
+  // The reference uses a LONG black central fuller, set below the silver
+  // and carrying a delicate continuous cyan sigil, with diamond symbols.
+  for(const f of [-1,1]){
+    const z=f*.099;
+    curve([[0,.68,z],[0,1.13,z],[0,1.74,z],
+      [0,2.41,z],[0,2.93,z]],.012,'light');
+    diamond(0,1.18,f*.109,.090,.151,'bronze',.030);
+    diamond(0,1.18,f*.128,.062,.112,'gild',.021);
+    gem(0,1.18,f*.157,.049,.081,.029);
+    for(const [y,size] of [[1.82,.057],[2.58,.033],[2.85,.025]]){
+      diamond(0,y,f*.113,size,size*1.66,'bronze',.019);
+      diamond(0,y,f*.130,size*.62,size*1.10,'light',.013);
+    }
+    for(const y of [1.53,2.22])for(const s of [-1,1]){
+      line([0,y],[s*.059,y+.080],z,'light',.008);
+      line([s*.059,y+.080],[0,y+.169],z,'light',.007);
+    }
+    // The two bronze traceries frame the recessed dark channel.
+    for(const s of [-1,1]){
+      line([s*.127,.81],[s*.131,2.67],f*.132,'bronze',.008);
+      line([s*.131,2.67],[s*.070,3.13],f*.101,'bronze',.008);
+    }
+  }
+
+  // Large gold-bronze guard with upturned angular wing tips and multiple
+  // forged physical layers around a tall turquoise diamond ornament.
+  const cy=.36;
+  const guardOutline=[
+    [-.88,cy+.03],[-.83,cy+.20],[-.67,cy+.145],
+    [-.36,cy+.108],[0,cy+.28],[.36,cy+.108],
+    [.67,cy+.145],[.83,cy+.20],[.88,cy+.03],
+    [.76,cy-.109],[.53,cy-.09],[.208,cy-.060],
+    [0,cy-.25],[-.208,cy-.060],[-.53,cy-.09],
+    [-.76,cy-.109]
+  ];
+  P(guardOutline,.272,'bronze',0,.019);
+  for(const f of [-1,1]){
+    for(const s of [-1,1]){
+      P(mirror([[.15,cy+.085],[.52,cy+.095],
+        [.81,cy+.189],[.79,cy+.054],
+        [.57,cy-.024],[.32,cy+.016]],s),
+        .061,'gild',f*.160,.009);
+      P(mirror([[.31,cy+.056],[.59,cy+.059],
+        [.74,cy+.130],[.66,cy+.031]],s),
+        .031,'graphite',f*.198,.005);
+      line([s*.33,cy+.105],[s*.77,cy+.145],
+        f*.217,'gild',.009);
+      stud(s*.73,cy+.139,f*.227);
+    }
+    P([[-.249,cy+.14],[0,cy+.387],[.249,cy+.14],
+       [.17,cy-.061],[0,cy-.312],[-.17,cy-.061]],
+       .102,'bronze',f*.182,.011);
+    P([[-.180,cy+.114],[0,cy+.282],[.180,cy+.114],
+       [.124,cy-.037],[0,cy-.207],[-.124,cy-.037]],
+       .055,'gild',f*.250,.007);
+    diamond(0,cy+.066,f*.288,.168,.239,'graphite',.045);
+    diamond(0,cy+.066,f*.315,.134,.183,'gild',.031);
+    gem(0,cy+.066,f*.355,.094,.133,.047);
+  }
+  g.userData.referenceSheet='Swordsman Sword: wider straight silver 3D wedge, black cyan fuller, acute tapered tip and bronze-wing guard';
+  g.userData.swordReferenceV2=true;
  }
+
  function greatsword(){
   // Warrior Greatsword from the supplied 4-view sheet.
   // Single WIDE black-steel blade, thin silver outer cutting bevels,
