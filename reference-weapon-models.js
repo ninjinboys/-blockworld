@@ -198,15 +198,17 @@ export function makeReferenceWeapon(T,d){
   // Genuine forged wedge: steel thickest at inner shoulders, razor-thin
   // at BOTH lateral edges and tapering to zero through the diamond point.
   // Each material band is a 3D triangular surface with its own normals.
+  // The broad, angular nose now converges along long straight facet lines.
+  // Silver occupies ~43% of each half-blade, as on the reference sheet.
   const stations=[
-    [.58,.52,.90],[.93,.60,1],[1.09,.49,1],[1.28,.61,1],
-    [1.50,.70,1],[3.31,.70,1],[3.47,.81,.95],
-    [3.63,.98,.90],[3.96,.87,.72],[4.20,.69,.52],
-    [4.68,0,0]
+    [.58,.52,.92],[.93,.60,1],[1.09,.49,1],[1.28,.62,1],
+    [1.50,.72,1],[3.24,.72,1],[3.41,.83,.98],
+    [3.58,1.02,.94],[3.73,1.02,.87],
+    [4.07,.72,.65],[4.42,.35,.39],[4.79,0,0]
   ];
-  const ribs=[0,.27,.36,.66,.83,1];
-  const elevations=[.13,.145,.26,.19,.07,.003];
-  const materials=['inset','bronze','graphite','iron','edge'];
+  const ribs=[0,.22,.36,.57,.80,1];
+  const elevations=[.122,.147,.258,.205,.090,.0015];
+  const materials=['inset','bronze','graphite','silver','edge'];
   for(const face of [-1,1])for(const side of [-1,1])
     for(let band=0;band<5;band++){
       const points=[];
@@ -229,25 +231,93 @@ export function makeReferenceWeapon(T,d){
       const m=new T.Mesh(geometry,M[materials[band]]);
       m.castShadow=true;m.receiveShadow=true;g.add(m);
     }
-  // Sharp enclosed distal steel point, not a flat octagonal cap.
-  P([[-.07,4.43],[0,4.73],[.07,4.43],[0,4.54]],
-    .014,'silver',0,.001);
+  // Raised forged silver armour: not a flat texture, but lifted 3D
+  // longitudinal facets over the sloped wedge on both sides.
+  const addTriangles=(points,mat)=>{
+    const geom=new T.BufferGeometry();
+    geom.setAttribute('position',new T.Float32BufferAttribute(points,3));
+    geom.computeVertexNormals();
+    const mesh=new T.Mesh(geom,M[mat]);
+    mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);
+  };
+  const surf=(x,t)=>{
+    for(let i=1;i<ribs.length;i++)if(x<=ribs[i]){
+      const f=(x-ribs[i-1])/(ribs[i]-ribs[i-1]);
+      return (elevations[i-1]+(elevations[i]-elevations[i-1])*f)*t;
+    }
+    return elevations[elevations.length-1]*t;
+  };
+  const triangle=(arr,face,side,a,b,c)=>{
+    for(const v of (face*side>0?[a,b,c]:[a,c,b]))
+      arr.push(v[0],v[1],v[2]);
+  };
+  for(const face of [-1,1])for(const side of [-1,1]){
+    // Two bevels build a deep, continuous raised long silver side plate.
+    const stationsArmor=[
+      [1.00,.60],[1.28,.62],[1.50,.72],[2.30,.72],
+      [3.02,.72],[3.24,.72],[3.41,.83]
+    ];
+    const v=(row,band)=>{
+      const [y,w]=stationsArmor[row];
+      const x=band===0?.40:band===1?.51:.71;
+      const ht=surf(x,.98)+(band===1?.060:.016);
+      return [side*w*x,y,face*ht];
+    };
+    const facets=[];
+    for(let k=0;k<stationsArmor.length-1;k++)
+      for(let j=0;j<2;j++){
+        const a=v(k,j),b=v(k,j+1),c=v(k+1,j+1),d=v(k+1,j);
+        triangle(facets,face,side,a,b,c);
+        triangle(facets,face,side,a,c,d);
+      }
+    addTriangles(facets,'iron');
+    // The distal nose uses broad overlapping SILVER bevels, tapering
+    // to the exact acute tip rather than forming a rounded octagon.
+    const v3=(x,y,z)=>[side*x,y,face*z];
+    const nose=[
+      [v3(.48,3.39,.232),v3(.76,3.52,.15),v3(.95,3.72,.054)],
+      [v3(.48,3.39,.232),v3(.95,3.72,.054),v3(.57,3.86,.208)],
+      [v3(.57,3.86,.208),v3(.95,3.72,.054),v3(.72,4.07,.11)],
+      [v3(.57,3.86,.208),v3(.72,4.07,.11),v3(.34,4.44,.109)],
+      [v3(.34,4.44,.109),v3(.72,4.07,.11),v3(0,4.79,0)]
+    ];
+    const silver=[];
+    for(const tri of nose)triangle(silver,face,side,...tri);
+    addTriangles(silver,'silver');
+    const polished=[];
+    const contour=[v3(.95,3.72,.004),v3(.72,4.07,.003),
+      v3(.35,4.42,.002),v3(0,4.79,0)];
+    for(let k=0;k<contour.length-1;k++){
+      const mid=[side*(k===0?.83:k===1?.54:.18),
+        k===0?3.89:k===1?4.25:4.59,
+        face*(k===0?.09:k===1?.064:.025)];
+      triangle(polished,face,side,contour[k],mid,contour[k+1]);
+    }
+    addTriangles(polished,'edge');
+  }
+  // Sharp tiny end seam and no flat distal head cap.
+  P([[-.015,4.71],[0,4.79],[.015,4.71]],
+    .006,'silver',0,0);
   for(const face of [-1,1]){
-    const z=face*.163;
+    const z=face*.153;
     for(const side of [-1,1]){
       line([side*.197,1.13],[side*.190,3.25],
         face*.178,'bronze',.012);
       line([side*.190,3.25],[side*.083,3.70],
         face*.164,'bronze',.009);
     }
-    curve([[0,.93,z],[0,1.48,z],[0,2.21,z],
-      [0,2.98,z],[0,3.41,z]],.015,'light');
-    diamond(0,2.25,face*.191,.122,.181,'bronze',.041);
-    diamond(0,2.25,face*.221,.089,.132,'gild',.030);
-    gem(0,2.25,face*.256,.065,.096,.040);
-    for(const yy of [1.24,1.54,3.04]){
-      diamond(0,yy,face*.185,.052,.089,'gild',.023);
-      diamond(0,yy,face*.205,.030,.053,'light',.015);
+    curve([[0,1.0,z],[0,1.55,z],[0,2.27,z],
+      [0,2.94,z],[0,3.52,z]],.021,'light');
+    diamond(0,2.28,face*.186,.166,.228,'bronze',.047);
+    diamond(0,2.28,face*.222,.123,.172,'gild',.034);
+    gem(0,2.28,face*.269,.089,.129,.058);
+    for(const [yy,sz] of [[1.27,.079],[1.62,.058],[3.15,.059]]){
+      diamond(0,yy,face*.190,sz,sz*1.56,'gild',.027);
+      diamond(0,yy,face*.214,sz*.58,sz*.96,'light',.018);
+    }
+    for(const y of [1.87,2.78])for(const side of [-1,1]){
+      line([0,y],[side*.102,y+.117],face*.188,'light',.012);
+      line([side*.102,y+.117],[0,y+.234],face*.188,'light',.009);
     }
   }
   g.userData.sharpEdgeGeometry=true;
