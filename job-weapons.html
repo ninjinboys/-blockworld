@@ -132,10 +132,6 @@ function select(key){
     right.rotation.y=Math.PI;
     pair.add(left,right);current=pair;
   }else current=makeJobWeaponModel(THREE,data.weapon);
-  // Warrior's 4-view design sheet shows the pommel at the TOP and the
-  // diamond point DOWN. Rotate workshop DISPLAY only; in-game sword stays
-  // in its original grip-down combat orientation.
-  if(key==='warrior')current.rotation.z=Math.PI;
   scene.add(current);
   current.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(current),v=new THREE.Vector3();
@@ -161,9 +157,7 @@ document.querySelector('#download').addEventListener('click',async e=>{
   if(!current)return;
   const button=e.currentTarget;button.disabled=true;status.textContent='GLBデータを生成中…';
   try{
-    const exportModel=selectedKey==='warrior' ? current.clone() : current;
-    if(selectedKey==='warrior')exportModel.rotation.z=0;
-    const file=await(new GLTFExporter()).parseAsync(exportModel,{
+    const file=await(new GLTFExporter()).parseAsync(current,{
       binary:true,onlyVisible:true,trs:false,maxTextureSize:1024
     });
     const blob=new Blob([file],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob);
