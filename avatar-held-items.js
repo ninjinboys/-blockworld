@@ -241,9 +241,20 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
         }else if(jobWeapon(main)){
           // Natural avatar-hand scale, independent of full-size workshop geometry.
           item.scale.setScalar(jobHeldWeaponScale(main,'third'));
-          // Blade edge faces forward; shield/bow/staff retain their display angle.
-          item.rotation.set(-.14,.1+jobHeldBladeYaw(main),-.12);
-          item.position.set(0,-.06,-.05);
+          // Avatar's FRONT camera is on the character's local -Z side.
+          // Show the SHIELD'S DECORATED FRONT and the BOW'S COMPLETE
+          // PROFILE outward, instead of the rear or thin edge.
+          const kind=jobWeapon(main).kind;
+          if(kind==='shield'){
+            item.rotation.set(-.05,Math.PI-.10,.03);
+            item.position.set(.01,-.01,-.20);
+          }else if(kind==='bow'){
+            item.rotation.set(-.04,Math.PI-.08,-.03);
+            item.position.set(.015,-.05,-.12);
+          }else{
+            item.rotation.set(-.14,.1+jobHeldBladeYaw(main),-.12);
+            item.position.set(0,-.06,-.05);
+          }
         }else if(main>=168&&main<=188){
           const longItem=[168,170,171,172,179,186].includes(main);
           item.scale.setScalar(main===168?1.05:longItem?.78:.66);
