@@ -38,20 +38,20 @@ export const jobWeapon=id=>byWeapon.get(id)||null;
  */
 export const JOB_HELD_WEAPON_SCALES=Object.freeze({
   190:{first:.43,third:.38}, // swordsman standard sword
-  191:{first:.42,third:.39}, // mercenary paired swords
-  192:{first:.48,third:.41}, // shield starter
-  193:{first:.48,third:.43}, // archer bow
+  191:{first:.57,third:.61}, // mercenary paired swords — visible but manageable
+  192:{first:.38,third:.66}, // starter shield — not camera-filling in first person
+  193:{first:.40,third:.54}, // archer bow
   194:{first:.43,third:.39}, // mage staff
   196:{first:.34,third:.29}, // warrior enormous greatsword
   197:{first:.43,third:.38}, // swordmaster
   198:{first:.36,third:.31}, // large battle axe
   199:{first:.37,third:.31}, // very long spear
   200:{first:.33,third:.30}, // berserker long dual blades
-  201:{first:.39,third:.34}, // heavy soldier tower shield
-  202:{first:.44,third:.40}, // elite shield soldier
-  203:{first:.42,third:.38}, // tank
-  204:{first:.42,third:.38}, // power bow
-  205:{first:.47,third:.43}, // swift bow
+  201:{first:.34,third:.62}, // heavy soldier shield
+  202:{first:.38,third:.64}, // elite shield soldier
+  203:{first:.37,third:.64}, // tank
+  204:{first:.36,third:.52}, // power bow
+  205:{first:.40,third:.55}, // swift bow
   206:{first:.38,third:.34}, // battle mage staff
   207:{first:.40,third:.36}  // support mage staff
 });
