@@ -675,6 +675,7 @@ export function makeReferenceWeapon(T,d){
   // gallery mirrors the right instance for a true paired display.
   const P=(pts,th,mat,z=0,b=.006)=>prism(pts,th,mat,z,b);
   const tr=(a,b,z,mat='bronze',th=.010)=>trim(a,b,z,mat,th);
+  const stud=(x,y,z)=>add(new T.SphereGeometry(.020,8,6),'bronze',x,y,z);
   const crest=(x,y,z,sx,sy)=>{
     diamond(x,y,z,sx*1.35,sy*1.25,'bronze',.053);
     diamond(x,y,z+.035,sx,sy,'graphite',.039);
