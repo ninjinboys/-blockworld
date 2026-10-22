@@ -3,7 +3,7 @@
  * This file affects rendering only, never inventories, saves or combat.
  */
 import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
-import {makeJobWeaponModel,jobWeapon} from './job-system.js?v=20261022berserkerDualReference19';
+import {makeJobWeaponModel,jobWeapon,jobHeldWeaponScale} from './job-system.js?v=20261022heldWeaponSize20';
 
 export function makeAvatarHeldItems(THREE,drawItemIcon){
   const swords=new Set([111,115,119,123]);
@@ -234,8 +234,8 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
         }else if(main===147||main===31){
           item.scale.setScalar(1.25);
         }else if(jobWeapon(main)){
-          const kind=jobWeapon(main).kind;
-          item.scale.setScalar(kind==='greatsword'?.66:kind==='spear'?.69:kind==='shield'?.86:.75);
+          // Natural avatar-hand scale, independent of full-size workshop geometry.
+          item.scale.setScalar(jobHeldWeaponScale(main,'third'));
           item.rotation.set(-.14,.1,-.12);
           item.position.set(0,-.06,-.05);
         }else if(main>=168&&main<=188){
@@ -265,7 +265,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
         if(jobWeapon(offhand)?.kind==='dual'){
           item.position.set(-.04,-.06,-.05);
           item.rotation.set(-.10,-.19,.17);
-          item.scale.setScalar(.83);
+          item.scale.setScalar(jobHeldWeaponScale(offhand,'third'));
         }else if(offhand===156){
           // The heater shield covers the forearm, with its point downward
           // and the outer edge clear of the character's body.
