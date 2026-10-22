@@ -29,7 +29,7 @@ function rotateView(dx,dy,sensitivity=.0034){
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x0d1d2d);
 scene.fog=new THREE.FogExp2(0x0d1d2d,.020);
-const camera=new THREE.PerspectiveCamera(75,1,.1,130);
+const camera=new THREE.PerspectiveCamera(73,1,.1,130);
 camera.rotation.order='YXZ';
 camera.position.set(0,15,19);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -187,7 +187,7 @@ function showMenu(message=''){
  state='menu';keys.clear();touchLooks.clear();shutdown(false);
  $('screen').style.display='flex';$('finish').style.display='none';$('top').classList.remove('show');
  $('mobileControls').classList.remove('show');$('controlsHelp').classList.remove('show');
- $('leaveButton').style.display='none';$('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
+ $('leaveButton').style.display='none';$('lookHelp').classList.remove('show');$('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
  $('backHome').style.display='block';updateRoomStatus();
  if(message)uiNotice(message,true);
 }
@@ -301,6 +301,8 @@ function beginMatch(){
  $('screen').style.display='none';$('finish').style.display='none';
  $('top').classList.add('show');$('controlsHelp').classList.add('show');
  $('mobileControls').classList.add('show');$('leaveButton').style.display='block';
+ $('lookHelp').classList.add('show');
+ window.setTimeout(()=>$('lookHelp').classList.remove('show'),4400);
  $('crosshair').classList.add('show');
  $('weaponHud').classList.add('show');
  $('weaponName').textContent=CLASSES[myClass].name+' / '+(JOBS[myClass]?.kind==='dual'?'双剣':JOBS[myClass]?.kind==='bow'?'弓':JOBS[myClass]?.kind==='staff'?'魔法の杖':JOBS[myClass]?.kind==='shield'?'盾':'剣');
@@ -360,7 +362,7 @@ function endByHealth(){
 function finishMatch(outcome,decidedLocally){
  if(state!=='playing')return;
  if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
- $('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
+ $('lookHelp').classList.remove('show');$('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
  state='ended';
  if(decidedLocally&&role==='host'&&connection?.open){
   connection.send({t:'end',winner:outcome==='win'?'host':outcome==='lose'?'guest':'draw'});
@@ -394,6 +396,7 @@ function requestAttack(){
  const kind=JOBS[myClass]?.kind;
  firstPersonHand.swing(1,kind==='spear'?'thrust':'swing');
  attackVisualAt=now;
+ if(role==='host'&&connection?.open)connection.send({t:'swing'});
  if(role==='host'||role==='cpu')resolveAttack(true);
  else {
   me.lastAttack=now;
