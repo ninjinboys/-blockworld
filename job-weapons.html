@@ -128,7 +128,7 @@ function select(key){
     const pair=new THREE.Group();
     const left=makeJobWeaponModel(THREE,data.weapon);
     const right=makeJobWeaponModel(THREE,data.weapon);
-    left.position.x=-.55;right.position.x=.55;
+    left.position.x=-.83;right.position.x=.83;
     right.rotation.y=Math.PI;
     pair.add(left,right);current=pair;
   }else current=makeJobWeaponModel(THREE,data.weapon);
