@@ -1,4 +1,4 @@
-import {makeReferenceWeapon} from './reference-weapon-models.js?v=20261022heldBladeStraight22';
+import {makeReferenceWeapon} from './reference-weapon-models.js?v=20261023bowShieldMercPose23';
 /* Genuine rotatable 3D geometry for NEXACRAFT class weapons.
  * Models consist of extruded bevelled polygon meshes, cylinders, ring meshes,
  * crystals, and fittings; they are NOT 2D billboards or image planes.
