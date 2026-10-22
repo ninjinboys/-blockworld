@@ -60,6 +60,19 @@ export function jobHeldWeaponScale(id,view='third'){
   return profile ? (view==='first'?profile.first:profile.third) : 1;
 }
 
+/**
+ * Orient the EDGE (thin thickness) of the forged blade toward the avatar's
+ * forward direction. The geometry is made in XY with its wide face at +Z;
+ * a 90-degree local Y yaw turns its width into depth in the held pose.
+ * Important: only the equipped view transforms this. The weapon workshop
+ * and inventory geometry must keep their original unrotated orientation.
+ */
+export function jobHeldBladeYaw(id){
+  const kind=jobWeapon(id)?.kind;
+  return kind==='sword'||kind==='greatsword'||kind==='dual'||
+    kind==='axe'||kind==='spear' ? Math.PI/2 : 0;
+}
+
 export function jobCanUse(activeJob,id){
   const item=jobWeapon(id);
   return !item||activeJob==='all'||activeJob===item.key||
