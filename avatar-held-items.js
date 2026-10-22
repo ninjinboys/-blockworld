@@ -3,7 +3,7 @@
  * This file affects rendering only, never inventories, saves or combat.
  */
 import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
-import {makeJobWeaponModel,jobWeapon,jobHeldWeaponScale} from './job-system.js?v=20261022heldWeaponSize20';
+import {makeJobWeaponModel,jobWeapon,jobHeldWeaponScale,jobHeldBladeYaw} from './job-system.js?v=20261022heldBladeEdgeForward21';
 
 export function makeAvatarHeldItems(THREE,drawItemIcon){
   const swords=new Set([111,115,119,123]);
@@ -236,7 +236,8 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
         }else if(jobWeapon(main)){
           // Natural avatar-hand scale, independent of full-size workshop geometry.
           item.scale.setScalar(jobHeldWeaponScale(main,'third'));
-          item.rotation.set(-.14,.1,-.12);
+          // Blade edge faces forward; shield/bow/staff retain their display angle.
+          item.rotation.set(-.14,.1+jobHeldBladeYaw(main),-.12);
           item.position.set(0,-.06,-.05);
         }else if(main>=168&&main<=188){
           const longItem=[168,170,171,172,179,186].includes(main);
@@ -264,7 +265,7 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
         const item=build(offhand);
         if(jobWeapon(offhand)?.kind==='dual'){
           item.position.set(-.04,-.06,-.05);
-          item.rotation.set(-.10,-.19,.17);
+          item.rotation.set(-.10,-.19-jobHeldBladeYaw(offhand),.17);
           item.scale.setScalar(jobHeldWeaponScale(offhand,'third'));
         }else if(offhand===156){
           // The heater shield covers the forearm, with its point downward
