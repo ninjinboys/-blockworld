@@ -3,7 +3,7 @@
  * No external textures. Hotbar art uses the game's existing drawItemIcon().
  */
 import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
-import {makeJobWeaponModel,jobWeapon} from './job-system.js?v=20261022berserkerDualReference19';
+import {makeJobWeaponModel,jobWeapon,jobHeldWeaponScale} from './job-system.js?v=20261022heldWeaponSize20';
 
 export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isGuarding=()=>false,isVisible,getMovement,isMining,isHurt=()=>false}){
   const basic=(color)=>new THREE.MeshBasicMaterial({
@@ -63,7 +63,7 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     const model=makeJobWeaponModel(THREE,id);
     model.position.set(.025,.60,-.16);
     model.rotation.set(-.13,-.32,.20);
-    model.scale.setScalar(.89);
+    model.scale.setScalar(jobHeldWeaponScale(id,'first'));
     model.visible=false;
     leftRoot.add(model);
     jobDualBlades.set(id,model);
@@ -334,7 +334,8 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     if(jobWeapon(id)){
       object=makeJobWeaponModel(THREE,id);
       object.rotation.set(-.16,.20,jobWeapon(id).kind==='bow'?-.70:-.39);
-      object.scale.setScalar(jobWeapon(id).kind==='shield'?.80:jobWeapon(id).kind==='greatsword'?.70:.88);
+      // Reduce only hand-attached job weapons; the 3D gallery models stay full size.
+      object.scale.setScalar(jobHeldWeaponScale(id,'first'));
     }else if(id>=168&&id<=188){
       object=makeNewHeldItemModel(THREE,id);
       object.rotation.set(-.18,.28,-.58);
