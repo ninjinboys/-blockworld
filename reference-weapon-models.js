@@ -194,82 +194,64 @@ export function makeReferenceWeapon(T,d){
       .052,'bronze',f*.160,.007);
   }
 
-  // One true closed three-dimensional blade shell.
-  // The edge stays broad and almost parallel until the large spear-shaped
-  // terminal plate. No rounded/heptagonal cap.
-  const silhouette=[
-    [-.52,.58],[-.60,.93],[-.49,1.09],[-.61,1.28],
-    [-.70,1.50],[-.70,3.31],[-.81,3.47],
-    [-.98,3.63],[-.87,3.96],[-.69,4.20],[0,4.68],
-    [.69,4.20],[.87,3.96],[.98,3.63],
-    [.81,3.47],[.70,3.31],[.70,1.50],
-    [.61,1.28],[.49,1.09],[.60,.93],[.52,.58]];
-  P(silhouette,.244,'silver',0,.010);
 
-  for(const f of [-1,1]){
-    const steelZ=f*.143,darkZ=f*.191,trenchZ=f*.230,glow=f*.278;
-    // Dark steel body; a broad silver border is visible around its edges.
-    P([[-.45,.69],[-.48,.99],[-.42,1.10],[-.54,1.33],
-      [-.59,1.57],[-.59,3.32],[-.71,3.51],
-      [-.83,3.67],[-.75,3.94],[-.59,4.16],[0,4.55],
-      [.59,4.16],[.75,3.94],[.83,3.67],
-      [.71,3.51],[.59,3.32],[.59,1.57],
-      [.54,1.33],[.42,1.10],[.48,.99],[.45,.69]],
-      .057,'iron',steelZ,.007);
-    P([[-.38,.78],[-.43,1.43],[-.46,3.35],
-      [-.55,3.57],[-.63,3.76],[-.49,4.05],
-      [0,4.42],[.49,4.05],[.63,3.76],
-      [.55,3.57],[.46,3.35],[.43,1.43],[.38,.78]],
-      .044,'graphite',darkZ,.006);
-    // Recessed CENTRAL TRENCH across about one third of the width.
-    P([[-.235,.83],[-.292,1.46],[-.30,3.32],
-      [-.33,3.61],[0,4.16],[.33,3.61],
-      [.30,3.32],[.292,1.46],[.235,.83]],
-      .031,'inset',trenchZ,.005);
-    for(const s of [-1,1]){
-      // Slim stepped cutting edge, raised steel bevel, and distal facets.
-      P(F([[.50,.83],[.65,1.52],[.65,3.30],
-        [.76,3.47],[.93,3.67],[.82,3.95],
-        [.65,4.17],[.31,4.47],
-        [.50,4.04],[.69,3.78],[.80,3.67],
-        [.62,3.46],[.54,3.29],[.535,1.54]],s),
-        .039,'edge',f*.211,.005);
-      P(F([[.64,3.49],[.92,3.66],[.82,3.94],
-        [.66,4.17],[.49,4.33],[.60,3.95],
-        [.75,3.70]],s),.047,'silver',f*.249,.007);
-      P(F([[.54,3.53],[.70,3.71],[.59,4.01],
-        [.42,4.23],[.34,4.06]],s),
-        .031,'iron',f*.286,.004);
-      P(F([[.44,.91],[.62,1.10],[.51,1.23],[.40,1.16]],s),
-        .052,'graphite',f*.218,.006);
-      line([s*.54,1.59],[s*.55,3.27],f*.228,'silver',.011);
-      line([s*.33,1.42],[s*.34,3.37],f*.272,'bronze',.010);
-      for(let i=0;i<8;i++){
-        const y=1.63+i*.203;
-        line([s*.567,y],[s*.54,y+.055],f*.239,'edge',.003);
+  // Genuine forged wedge: steel thickest at inner shoulders, razor-thin
+  // at BOTH lateral edges and tapering to zero through the diamond point.
+  // Each material band is a 3D triangular surface with its own normals.
+  const stations=[
+    [.58,.52,.90],[.93,.60,1],[1.09,.49,1],[1.28,.61,1],
+    [1.50,.70,1],[3.31,.70,1],[3.47,.81,.95],
+    [3.63,.98,.90],[3.96,.87,.72],[4.20,.69,.52],
+    [4.68,0,0]
+  ];
+  const ribs=[0,.27,.36,.66,.83,1];
+  const elevations=[.13,.145,.26,.19,.07,.003];
+  const materials=['inset','bronze','graphite','iron','edge'];
+  for(const face of [-1,1])for(const side of [-1,1])
+    for(let band=0;band<5;band++){
+      const points=[];
+      const pushTriangle=(a,b,c)=>{
+        const tri=(face*side>0)?[a,b,c]:[a,c,b];
+        for(const v of tri)points.push(v[0],v[1],v[2]);
+      };
+      const sample=(row,k)=>{
+        const st=stations[row];
+        return [side*st[1]*ribs[k],st[0],face*elevations[k]*st[2]];
+      };
+      for(let row=0;row<stations.length-1;row++){
+        const a=sample(row,band),b=sample(row,band+1);
+        const c=sample(row+1,band+1),d=sample(row+1,band);
+        pushTriangle(a,b,c);pushTriangle(a,c,d);
       }
+      const geometry=new T.BufferGeometry();
+      geometry.setAttribute('position',new T.Float32BufferAttribute(points,3));
+      geometry.computeVertexNormals();
+      const m=new T.Mesh(geometry,M[materials[band]]);
+      m.castShadow=true;m.receiveShadow=true;g.add(m);
     }
-    // One unbroken long cyan stem, diamond rune and two smaller glyphs.
-    curve([[0,.92,glow],[0,1.46,glow],
-      [0,2.16,glow],[0,2.94,glow],[0,3.42,glow]],
-      .017,'light');
-    jewel(0,2.25,f*.312,.114,.172);
-    for(const [y,w] of [[1.25,.063],[1.55,.045],[3.03,.058]]){
-      diamond(0,y,f*.302,w,w*1.57,'gild',.030);
-      diamond(0,y,f*.324,w*.56,w*.95,'light',.018);
+  // Sharp enclosed distal steel point, not a flat octagonal cap.
+  P([[-.07,4.43],[0,4.73],[.07,4.43],[0,4.54]],
+    .014,'silver',0,.001);
+  for(const face of [-1,1]){
+    const z=face*.163;
+    for(const side of [-1,1]){
+      line([side*.197,1.13],[side*.190,3.25],
+        face*.178,'bronze',.012);
+      line([side*.190,3.25],[side*.083,3.70],
+        face*.164,'bronze',.009);
     }
-    for(const y of [1.83,2.78]){
-      for(const side of [-1,1]){
-        line([0,y],[side*.106,y+.13],glow,'light',.009);
-        line([side*.106,y+.13],[0,y+.25],glow,'light',.009);
-      }
-    }
-    if(f===-1)for(let i=0;i<9;i++){
-      const y=1.42+i*.22,side=i%2?1:-1;
-      line([side*.36,y],[side*.405,y+.058],-.278,'iron',.006);
+    curve([[0,.93,z],[0,1.48,z],[0,2.21,z],
+      [0,2.98,z],[0,3.41,z]],.015,'light');
+    diamond(0,2.25,face*.191,.122,.181,'bronze',.041);
+    diamond(0,2.25,face*.221,.089,.132,'gild',.030);
+    gem(0,2.25,face*.256,.065,.096,.040);
+    for(const yy of [1.24,1.54,3.04]){
+      diamond(0,yy,face*.185,.052,.089,'gild',.023);
+      diamond(0,yy,face*.205,.030,.053,'light',.015);
     }
   }
-
+  g.userData.sharpEdgeGeometry=true;
+  g.userData.bladeCrossSection='double beveled forged wedge with razor thin edges';
   // Sweeping, VERY WIDE bronze gothic crossguard (not a small generic T).
   const gy=.42;
   const horns=[[-1.24,gy+.07],[-1.20,gy+.32],
