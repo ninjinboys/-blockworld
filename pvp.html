@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0c1520">
+<title>NEXACRAFT PvP | Arena</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080e17;color:#edf5ff;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}#stage{position:fixed;inset:0}#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#top{position:fixed;z-index:3;top:0;left:0;right:0;display:none;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 22px;background:linear-gradient(#08111cdd,#08111c00);pointer-events:none}#top.show{display:flex}
+.fighter{width:44%;max-width:450px}.fighter.right{text-align:right}.fighter .line{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.09em;font-weight:800;margin-bottom:6px}.fighter.right .line{flex-direction:row-reverse}.hp{height:16px;border:2px solid #c5d7e6;border-radius:20px;background:#16202c;overflow:hidden;box-shadow:0 2px 14px #0007}.hp span{height:100%;width:100%;display:block;background:linear-gradient(90deg,#d93446,#ff935b);transition:width .16s}.right .hp span{margin-left:auto;background:linear-gradient(90deg,#40c8d5,#618aff)}
+#clock{position:absolute;left:50%;top:20px;transform:translateX(-50%);font-size:25px;font-weight:900;text-shadow:0 2px 5px #000}#status{position:fixed;top:94px;left:50%;transform:translateX(-50%);z-index:3;background:#102338b8;border:1px solid #416079a9;color:#def3ff;padding:7px 16px;border-radius:24px;font-size:12px;white-space:nowrap;display:none}
+#screen{position:fixed;z-index:5;inset:0;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at 50% 18%,#274867f0 0,#0b1726f5 45%,#05090efd 100%)}
+.panel{width:min(850px,100%);background:#101f2eef;border:1px solid #476a80;border-radius:23px;box-shadow:0 22px 80px #000b;padding:clamp(22px,4vw,42px)}.eyebrow{font-size:12px;color:#5ce3d5;letter-spacing:.28em;font-weight:900}.panel h1{margin:7px 0 0;font-size:clamp(32px,6.5vw,60px);letter-spacing:.11em;line-height:1.15}.panel h1 span{color:#72d8f8}.lead{font-size:14px;color:#adc3d2;line-height:1.85;margin:11px 0 24px}.panel h2{font-size:17px;margin:10px 0 14px}.jobs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.job{background:#172e42;border:1px solid #486079;border-radius:12px;padding:13px 5px;color:#edf7fb;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}.job span{font-size:25px}.job strong{font-size:12px}.job.selected{border:2px solid #7cf2dd;background:#214b59;box-shadow:0 0 0 1px #67f2df5c inset}.lobby{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.column{background:#122638;border:1px solid #344f65;border-radius:13px;padding:16px;min-width:0}.column p{font-size:12px;color:#a8c2d1;margin:0 0 13px}.primary,.secondary{border:0;border-radius:10px;font-weight:800;min-height:43px;padding:10px 16px}.primary{color:#051d25;background:linear-gradient(110deg,#77e8d3,#6fc9fa)}.secondary{color:#e3f4ff;background:#28506b}.wide{width:100%}input{background:#071726;color:#fff;border:1px solid #53748b;border-radius:9px;padding:12px;min-width:0;width:100%;font-size:16px;letter-spacing:.16em;text-transform:uppercase}.joinrow{display:flex;gap:7px}.joinrow input{flex:1}.roomline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;color:#bdccd6;font-size:12px}.roomline strong{font-size:22px;color:#88e4f9;letter-spacing:.14em}.roomline .secondary{min-height:36px}.bottomline{display:flex;align-items:center;justify-content:space-between;margin-top:19px;gap:12px}.small{font-size:12px;color:#9eb5c5;line-height:1.5}.error{color:#ff9e9e!important}#startMatch{min-width:165px}#backHome{display:none;text-align:center;margin-top:16px}.link{color:#9ddefa}#notice{min-height:18px;font-size:12px;margin:12px 0 0;color:#a8dfeb}
+#finish{position:fixed;inset:0;z-index:6;background:#06101bc9;display:none;align-items:center;justify-content:center;padding:20px}#finish .panel{text-align:center;max-width:440px}#finish h2{font-size:45px;color:#9df2e9;margin:4px 0 8px}#finish p{color:#c7d7e0}
+#controlsHelp{position:fixed;bottom:24px;left:20px;z-index:3;background:#071725b8;padding:10px 13px;border-radius:10px;font-size:12px;color:#d8ecf7;pointer-events:none;display:none}#controlsHelp.show{display:block}#mobileControls{position:fixed;inset:auto 0 15px;z-index:4;display:none;justify-content:space-between;padding:0 16px;pointer-events:none}.pad{display:grid;grid-template-columns:repeat(3,55px);grid-template-rows:repeat(3,55px);gap:4px}.pad button,.combat button{pointer-events:auto;background:#162f47bf;color:white;border:2px solid #91cadd9e;border-radius:15px;font-size:21px;font-weight:800;touch-action:none;user-select:none}.pad .up{grid-column:2;grid-row:1}.pad .left{grid-column:1;grid-row:2}.pad .down{grid-column:2;grid-row:3}.pad .right{grid-column:3;grid-row:2}.combat{display:flex;align-items:flex-end;gap:10px}.combat button{height:77px;width:77px;background:#406d7bda;font-size:15px}.combat button.attack{background:#a75555d9;border-color:#ffc99d}#leaveButton{position:fixed;right:20px;bottom:20px;z-index:4;display:none;min-height:32px;font-size:11px;opacity:.75}
+@media(hover:none),(pointer:coarse){#mobileControls.show{display:flex}#controlsHelp{display:none!important}#leaveButton{bottom:210px}}@media(max-width:650px){#screen{padding:8px;align-items:flex-start}.panel{padding:20px 16px;margin:auto 0}.jobs{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.job{min-height:75px}.job strong{font-size:10px}.lobby{grid-template-columns:1fr}.column{padding:12px}.lead{margin-bottom:14px}#top{padding:12px 10px}#clock{font-size:16px;top:17px}.fighter{width:43%}.fighter .line{font-size:10px}.hp{height:12px}}
+</style>
+</head>
+<body>
+<main id="stage"></main>
+<header id="top"><div class="fighter"><div class="line"><span id="myName">YOU</span><span id="myHealth">100/100</span></div><div class="hp"><span id="myBar"></span></div></div><div id="clock">01:30</div><div class="fighter right"><div class="line"><span id="enemyName">RIVAL</span><span id="enemyHealth">100/100</span></div><div class="hp"><span id="enemyBar"></span></div></div></header>
+<div id="status" role="status"></div>
+<section id="screen"><div class="panel">
+<div class="eyebrow">NEXACRAFT // BATTLE MODE</div><h1>NEXACRAFT <span>PvP</span></h1>
+<p class="lead">本編から独立した3D対戦アリーナ。ジョブを選び、友達とコードでオンライン1対1。CPU練習にも対応。</p>
+<h2>CLASS SELECT</h2>
+<div class="jobs" id="jobs">
+<button type="button" class="job selected" data-job="sword"><span>⚔️</span><strong>剣士</strong></button>
+<button type="button" class="job" data-job="merc"><span>🗡️</span><strong>傭兵</strong></button>
+<button type="button" class="job" data-job="shield"><span>🛡️</span><strong>盾兵</strong></button>
+<button type="button" class="job" data-job="archer"><span>🏹</span><strong>弓兵</strong></button>
+<button type="button" class="job" data-job="mage"><span>🔮</span><strong>魔術師</strong></button>
+</div>
+<div class="lobby"><div class="column"><h2>⚡ 友達と対戦</h2><p>対戦ルームを作成して6文字のコードを送る</p><button id="hostBtn" class="primary wide">ルームを作成</button></div><div class="column"><h2>🔑 コードで参加</h2><p>友達の6文字のコードを入力</p><form id="joinForm" class="joinrow"><input id="joinCode" maxlength="6" minlength="6" pattern="[A-Za-z0-9]{6}" required placeholder="ABC123" aria-label="参加コード"><button type="submit" class="secondary">参加</button></form></div></div>
+<div class="roomline"><span>ROOM <strong id="roomCode">------</strong></span><span id="roomState">ルーム未接続</span></div>
+<div class="bottomline"><button id="practiceBtn" class="secondary">🤖 CPU練習</button><button id="startMatch" class="primary" disabled>2人そろったら対戦開始</button></div>
+<p id="notice" role="status">クラス選択は入室前に決めてください。</p>
+<div id="backHome"><a class="link" href="./index.html">本編 NEXACRAFT に戻る</a></div>
+</div></section>
+<div id="finish"><div class="panel"><div class="eyebrow">BATTLE RESULT</div><h2 id="resultTitle">VICTORY</h2><p id="resultText"></p><button id="againBtn" class="primary wide">もう一度対戦</button><button id="menuBtn" class="secondary wide" style="margin-top:10px">メニューに戻る</button></div></div>
+<div id="controlsHelp">WASD：移動　Shift：ダッシュ　左クリック／Space：攻撃　G：ガード　マウス：方向指定</div>
+<div id="mobileControls"><div class="pad"><button class="up" data-key="KeyW">▲</button><button class="left" data-key="KeyA">◀</button><button class="down" data-key="KeyS">▼</button><button class="right" data-key="KeyD">▶</button></div><div class="combat"><button data-key="KeyG">ガード</button><button class="attack" data-action="attack">攻撃</button></div></div>
+<button id="leaveButton" class="secondary">退出</button>
+<script type="module" src="./pvp.js?v=20261022pvp01"></script>
+</body>
+</html>
