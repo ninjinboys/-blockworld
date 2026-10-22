@@ -160,171 +160,153 @@ export function makeReferenceWeapon(T,d){
   guard(.32,great?.79:.64,great?.32:.25);
  }
  function greatsword(){
-  // Warrior GREAT SWORD: independent hand-forged volumetric mesh.
-  // Ref: broad iron/silver slab, huge angular diamond nose, dark fuller
-  // with turquoise vertical glyph, wide curved bronze crossguard.
-  // Geometry is upright (+Y is the tip) for the NEXACRAFT workshop.
-  const P=(p,t,mat,z=0,bevel=.009)=>prism(p,t,mat,z,bevel);
-  const trace=(a,b,z,mat='gild',r=.011)=>trim(a,b,z,mat,r);
-  const strike=(pts,mat,z,depth=.028)=>P(pts,depth,mat,z,.004);
-  const symmetry=(pts,s)=>pts.map(([x,y])=>[x*s,y]);
-  const stud=(x,y,z,r=.022)=>add(new T.SphereGeometry(r,9,7),'bronze',x,y,z);
-  // Long two-handed leather grip and oversized bronze jewel pommel.
-  grip(-1.10,.17,.155,15);
-  pommel(-1.25,1.24);
-  for(const y of [-1.04,-.72,-.22,.15]){
-    add(new T.CylinderGeometry(.181,.181,.052,14),'bronze',0,y,0);
-    add(new T.CylinderGeometry(.165,.165,.013,14),'gild',0,y+.032,0);
+  // Warrior Greatsword from the supplied 4-view sheet.
+  // Single WIDE black-steel blade, thin silver outer cutting bevels,
+  // long strongly angular DIAMOND-POINT tip and sweeping jeweled guard.
+  const P=(pts,th,mat,z=0,b=.007)=>prism(pts,th,mat,z,b);
+  const F=(points,s)=>points.map(([x,y])=>[s*x,y]);
+  const line=(a,b,z,mat='gild',r=.010)=>trim(a,b,z,mat,r);
+  const riv=(x,y,z)=>add(new T.SphereGeometry(.024,8,6),'bronze',x,y,z);
+  const jewel=(x,y,z,w,h)=>{
+    diamond(x,y,z,w*1.3,h*1.26,'bronze',.058);
+    diamond(x,y,z+.035,w,h,'gild',.032);
+    gem(x,y,z+.079,w*.73,h*.78,.044);
+  };
+
+  // Long leather two-handed handle and the compact faceted pommel.
+  grip(-1.35,.16,.151,15);
+  for(const y of [-1.28,-.80,-.33,.11]){
+    add(new T.CylinderGeometry(.177,.177,.057,14),'bronze',0,y,0);
+    add(new T.CylinderGeometry(.159,.159,.014,14),'gild',0,y+.031,0);
   }
-  // Elongated upper brass collar with forged twin ridge bars.
-  P([[-.16,-.04],[-.14,.23],[-.205,.36],
-    [0,.52],[.205,.36],[.14,.23],[.16,-.04]],
-    .275,'graphite',0,.016);
-  for(const face of [-1,1]){
-    P([[-.135,.12],[0,.40],[.135,.12],
-      [.105,-.02],[-.105,-.02]],.052,'bronze',face*.159,.009);
+  P([[-.16,-1.34],[0,-1.22],[.16,-1.34],
+    [.225,-1.56],[0,-1.80],[-.225,-1.56]],.235,'bronze',0,.013);
+  for(const f of [-1,1]){
+    diamond(0,-1.52,f*.145,.164,.205,'graphite',.057);
+    diamond(0,-1.52,f*.182,.120,.156,'gild',.039);
+    gem(0,-1.52,f*.228,.082,.114,.043);
+  }
+  // Reinforced steel ricasso / hilt socket.
+  P([[-.23,.09],[-.29,.44],[0,.70],[.29,.44],[.23,.09]],
+    .240,'graphite',0,.013);
+  for(const f of [-1,1]){
+    P([[-.17,.14],[-.20,.44],[0,.59],[.20,.44],[.17,.14]],
+      .052,'bronze',f*.160,.007);
   }
 
-  // Main forged wide slab: 2.2x wider at its distal widening than
-  // the generic swordsman blade. Shoulder nicks and broad FANGED
-  // diamond-tip "cleaver" reproduce the 4-view silhouette.
+  // One true closed three-dimensional blade shell.
+  // The edge stays broad and almost parallel until the large spear-shaped
+  // terminal plate. No rounded/heptagonal cap.
   const silhouette=[
-    [-.44,.48],[-.49,.71],[-.56,.80],[-.48,.91],
-    [-.565,1.07],[-.60,1.20],[-.61,2.91],
-    [-.68,3.19],[-.89,3.36],[-.83,3.70],
-    [-.53,3.99],[0,4.24],
-    [.53,3.99],[.83,3.70],[.89,3.36],
-    [.68,3.19],[.61,2.91],[.60,1.20],
-    [.565,1.07],[.48,.91],[.56,.80],[.49,.71],[.44,.48]
-  ];
-  // ONE structural 3D blade slab, not superimposed separate swords.
-  P(silhouette,.245,'silver',0,.012);
-  // Twin integrated thick steel bevels, one on each side of sword.
+    [-.52,.58],[-.60,.93],[-.49,1.09],[-.61,1.28],
+    [-.70,1.50],[-.70,3.31],[-.81,3.47],
+    [-.98,3.63],[-.87,3.96],[-.69,4.20],[0,4.68],
+    [.69,4.20],[.87,3.96],[.98,3.63],
+    [.81,3.47],[.70,3.31],[.70,1.50],
+    [.61,1.28],[.49,1.09],[.60,.93],[.52,.58]];
+  P(silhouette,.244,'silver',0,.010);
+
   for(const f of [-1,1]){
-    const outer=f*.145,raised=f*.178,fullerZ=f*.218;
-    P([[-.45,.54],[-.52,.83],[-.485,.93],[-.56,1.20],
-      [-.56,2.90],[-.63,3.22],[-.82,3.43],[-.77,3.67],
-      [-.48,3.92],[0,4.14],
-      [.48,3.92],[.77,3.67],[.82,3.43],[.63,3.22],
-      [.56,2.90],[.56,1.20],[.485,.93],[.52,.83],
-      [.45,.54]],.064,'iron',outer,.006);
-    // Dark central channel fills most blade width. Distinct broad
-    // BLACK central groove; two bright broad vertical forged edges.
-    P([[-.35,.60],[-.39,.83],[-.34,.97],[-.40,1.27],
-      [-.395,2.85],[-.45,3.20],[0,3.83],
-      [.45,3.20],[.395,2.85],[.40,1.27],
-      [.34,.97],[.39,.83],[.35,.60]],
-      .041,'graphite',raised,.006);
-    P([[-.19,.64],[-.22,1.14],[-.20,2.83],
-      [-.235,3.19],[0,3.64],
-      [.235,3.19],[.20,2.83],[.22,1.14],
-      [.19,.64]],.031,'inset',fullerZ,.005);
-    // This bright forged border is visibly broad on both sides,
-    // unlike the previous long thin-white-rails sword.
-    for(const side of [-1,1]){
-      const sh=symmetry([
-        [.41,.73],[.55,1.19],[.548,2.88],
-        [.655,3.19],[.83,3.39],
-        [.76,3.70],[.48,3.93],
-        [.56,3.66],[.69,3.45],
-        [.52,3.26],[.45,2.87],[.457,1.23]
-      ],side);
-      P(sh,.044,'edge',raised,.005);
-      trace([side*.467,1.14],[side*.468,2.92],f*.206,'silver',.012);
-      // A layered pointed steel relief at the flared distal tip.
-      strike(symmetry([[.53,3.22],[.83,3.43],[.75,3.64],
-        [.46,3.88],[.51,3.58],[.63,3.44]],side),
-        'silver',f*.235,.048);
-      strike(symmetry([[.47,3.27],[.59,3.43],
-        [.43,3.72],[.345,3.52]],side),'iron',f*.267,.025);
-      // Angular notch accents near the shoulder.
-      strike(symmetry([[.42,.84],[.59,.91],
-        [.48,1.03],[.38,.986]],side),'bronze',f*.208,.040);
-      // Scratched steel edges: short physical microgrooves.
-      for(let k=0;k<7;k++){
-        const y=1.22+k*.259;
-        trace([side*.505,y],[side*.479,y+.045],
-          f*.230,'edge',.003);
-      }
-    }
-    // Central turquoise rune: mostly uninterrupted slim glowing spine
-    // with a large middle diamond and descending twin-chevron runes.
-    const glow=f*.263;
-    curve([[0,.76,glow],[0,1.28,glow],
-      [0,1.85,glow],[0,2.53,glow],
-      [0,3.14,glow]],.016,'light');
-    diamond(0,1.99,f*.292,.128,.183,'gild',.049);
-    diamond(0,1.99,f*.329,.092,.137,'graphite',.033);
-    gem(0,1.99,f*.370,.069,.103,.045);
-    for(const [y,w,h] of [[1.21,.055,.090],[2.60,.060,.092],
-      [2.94,.043,.066]]){
-      diamond(0,y,f*.292,w,h,'bronze',.027);
-      diamond(0,y,f*.315,w*.60,h*.62,'light',.017);
-    }
-    for(const y of [1.37,2.45]){
-      for(const s of [-1,1]){
-        trace([0,y],[s*.090,y+.105],glow,'light',.009);
-        trace([s*.090,y+.105],[0,y+.195],glow,'light',.009);
-      }
-    }
-    // Two straight inner bronze lines frame the fuller base, on each
-    // face; those are the long forked dark steel runnels in the art.
+    const steelZ=f*.143,darkZ=f*.191,trenchZ=f*.230,glow=f*.278;
+    // Dark steel body; a broad silver border is visible around its edges.
+    P([[-.45,.69],[-.48,.99],[-.42,1.10],[-.54,1.33],
+      [-.59,1.57],[-.59,3.32],[-.71,3.51],
+      [-.83,3.67],[-.75,3.94],[-.59,4.16],[0,4.55],
+      [.59,4.16],[.75,3.94],[.83,3.67],
+      [.71,3.51],[.59,3.32],[.59,1.57],
+      [.54,1.33],[.42,1.10],[.48,.99],[.45,.69]],
+      .057,'iron',steelZ,.007);
+    P([[-.38,.78],[-.43,1.43],[-.46,3.35],
+      [-.55,3.57],[-.63,3.76],[-.49,4.05],
+      [0,4.42],[.49,4.05],[.63,3.76],
+      [.55,3.57],[.46,3.35],[.43,1.43],[.38,.78]],
+      .044,'graphite',darkZ,.006);
+    // Recessed CENTRAL TRENCH across about one third of the width.
+    P([[-.235,.83],[-.292,1.46],[-.30,3.32],
+      [-.33,3.61],[0,4.16],[.33,3.61],
+      [.30,3.32],[.292,1.46],[.235,.83]],
+      .031,'inset',trenchZ,.005);
     for(const s of [-1,1]){
-      trace([s*.254,.79],[s*.245,2.92],
-        f*.249,'bronze',.013);
-      trace([s*.245,2.92],[s*.10,3.40],
-        f*.246,'bronze',.010);
+      // Slim stepped cutting edge, raised steel bevel, and distal facets.
+      P(F([[.50,.83],[.65,1.52],[.65,3.30],
+        [.76,3.47],[.93,3.67],[.82,3.95],
+        [.65,4.17],[.31,4.47],
+        [.50,4.04],[.69,3.78],[.80,3.67],
+        [.62,3.46],[.54,3.29],[.535,1.54]],s),
+        .039,'edge',f*.211,.005);
+      P(F([[.64,3.49],[.92,3.66],[.82,3.94],
+        [.66,4.17],[.49,4.33],[.60,3.95],
+        [.75,3.70]],s),.047,'silver',f*.249,.007);
+      P(F([[.54,3.53],[.70,3.71],[.59,4.01],
+        [.42,4.23],[.34,4.06]],s),
+        .031,'iron',f*.286,.004);
+      P(F([[.44,.91],[.62,1.10],[.51,1.23],[.40,1.16]],s),
+        .052,'graphite',f*.218,.006);
+      line([s*.54,1.59],[s*.55,3.27],f*.228,'silver',.011);
+      line([s*.33,1.42],[s*.34,3.37],f*.272,'bronze',.010);
+      for(let i=0;i<8;i++){
+        const y=1.63+i*.203;
+        line([s*.567,y],[s*.54,y+.055],f*.239,'edge',.003);
+      }
+    }
+    // One unbroken long cyan stem, diamond rune and two smaller glyphs.
+    curve([[0,.92,glow],[0,1.46,glow],
+      [0,2.16,glow],[0,2.94,glow],[0,3.42,glow]],
+      .017,'light');
+    jewel(0,2.25,f*.312,.114,.172);
+    for(const [y,w] of [[1.25,.063],[1.55,.045],[3.03,.058]]){
+      diamond(0,y,f*.302,w,w*1.57,'gild',.030);
+      diamond(0,y,f*.324,w*.56,w*.95,'light',.018);
+    }
+    for(const y of [1.83,2.78]){
+      for(const side of [-1,1]){
+        line([0,y],[side*.106,y+.13],glow,'light',.009);
+        line([side*.106,y+.13],[0,y+.25],glow,'light',.009);
+      }
+    }
+    if(f===-1)for(let i=0;i<9;i++){
+      const y=1.42+i*.22,side=i%2?1:-1;
+      line([side*.36,y],[side*.405,y+.058],-.278,'iron',.006);
     }
   }
 
-  // Broad heavy crossguard sweeps far beyond the blade shoulders.
-  // It has upturned horn tips and a centered layered jewel shrine.
-  const gy=.39;
-  const cross=[
-    [-1.00,gy+.040],[-.93,gy+.27],
-    [-.77,gy+.19],[-.58,gy+.135],
-    [-.28,gy+.18],[0,gy+.42],
-    [.28,gy+.18],[.58,gy+.135],
-    [.77,gy+.19],[.93,gy+.27],
-    [1.00,gy+.040],[.89,gy-.12],
-    [.70,gy-.095],[.29,gy-.040],
-    [0,gy-.34],[-.29,gy-.040],
-    [-.70,gy-.095],[-.89,gy-.12]
-  ];
-  P(cross,.310,'bronze',0,.025);
+  // Sweeping, VERY WIDE bronze gothic crossguard (not a small generic T).
+  const gy=.42;
+  const horns=[[-1.24,gy+.07],[-1.20,gy+.32],
+    [-.95,gy+.23],[-.73,gy+.14],
+    [-.33,gy+.19],[0,gy+.43],
+    [.33,gy+.19],[.73,gy+.14],
+    [.95,gy+.23],[1.20,gy+.32],
+    [1.24,gy+.07],[1.06,gy-.15],
+    [.76,gy-.10],[.27,gy-.055],
+    [0,gy-.33],[-.27,gy-.055],
+    [-.76,gy-.10],[-1.06,gy-.15]];
+  P(horns,.329,'bronze',0,.021);
   for(const f of [-1,1]){
-    // Separately extruded bronze arms to create real face relief.
     for(const s of [-1,1]){
-      strike(symmetry([[.12,gy+.14],[.55,gy+.12],
-        [.89,gy+.205],[.91,gy+.085],
-        [.74,gy-.012],[.32,gy+.015]],s),
-        'gild',f*.185,.070);
-      strike(symmetry([[.25,gy+.068],[.56,gy+.071],
-        [.80,gy+.150],[.77,gy+.055],
-        [.52,gy+.005]],s),
-        'graphite',f*.226,.040);
-      trace([s*.35,gy+.10],[s*.87,gy+.13],
-        f*.260,'bronze',.017);
-      stud(s*.83,gy+.107,f*.283,.022);
+      P(F([[.21,gy+.19],[.74,gy+.18],
+        [1.19,gy+.31],[1.13,gy+.10],
+        [.85,gy-.001],[.35,gy+.035]],s),
+        .072,'gild',f*.204,.009);
+      P(F([[.34,gy+.14],[.74,gy+.12],
+        [1.08,gy+.25],[1.01,gy+.125],
+        [.74,gy+.065]],s),.044,'graphite',f*.253,.006);
+      line([s*.38,gy+.145],[s*1.10,gy+.231],f*.285,'bronze',.015);
+      riv(s*1.04,gy+.215,f*.290);
     }
-    P([[-.29,gy+.180],[0,gy+.485],[.29,gy+.18],
-       [.21,gy-.02],[0,gy-.340],[-.21,gy-.02]],
-      .124,'bronze',f*.240,.014);
-    P([[-.205,gy+.174],[0,gy+.387],[.205,gy+.174],
-       [.15,gy-.037],[0,gy-.240],[-.15,gy-.037]],
-       .057,'gild',f*.331,.007);
-    diamond(0,gy+.095,f*.370,.201,.261,'graphite',.058);
-    diamond(0,gy+.095,f*.410,.157,.202,'gild',.039);
-    gem(0,gy+.095,f*.447,.122,.158,.060);
-    for(const s of [-1,1]){
-      trace([s*.21,gy+.14],[s*.61,gy+.128],
-        f*.358,'gild',.018);
-    }
+    P([[-.34,gy+.21],[0,gy+.51],[.34,gy+.21],
+      [.235,gy-.018],[0,gy-.35],[-.235,gy-.018]],
+      .126,'bronze',f*.263,.014);
+    P([[-.23,gy+.19],[0,gy+.403],[.23,gy+.19],
+      [.15,gy-.043],[0,gy-.245],[-.15,gy-.043]],
+      .062,'gild',f*.352,.007);
+    diamond(0,gy+.10,f*.395,.221,.284,'graphite',.060);
+    diamond(0,gy+.10,f*.435,.17,.222,'gild',.041);
+    gem(0,gy+.10,f*.480,.125,.159,.059);
   }
-  // Blade base and overhanging guard now match the wide distal nose;
-  // model proportions are deliberately more massive than swordsman.
-  g.userData.referenceSheet='Warrior greatsword four-view: cleaver diamond nose, wide guard, cyan runes';
+  g.userData.referenceSheet='Warrior Greatsword: reference four-view broad dark slab, angular spearpoint and sweeping bronze crossguard';
   g.userData.warriorRebuilt=true;
+  g.userData.warriorBladeStyle='parallel broad dark steel with sharply tapered diamond end';
  }
  function axe(){
   // 2026-10-22 BATTLE AXE / WAR AXE: hand-sculpted four-view reference.
