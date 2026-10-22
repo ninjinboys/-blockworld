@@ -22,7 +22,8 @@ const touchLooks=new Map();
 const clampPitch=v=>THREE.MathUtils.clamp(v,-1.28,1.28);
 function rotateView(dx,dy,sensitivity=.0034){
  if(state!=='playing'||!me)return;
- me.face=(me.face+dx*sensitivity+Math.PI*4)%(Math.PI*2);
+ // Camera faces sin(face),cos(face); moving the pointer right decreases face.
+ me.face=(me.face-dx*sensitivity+Math.PI*4)%(Math.PI*2);
  lookPitch=clampPitch(lookPitch-dy*sensitivity);
 }
 
@@ -134,6 +135,7 @@ function replaceAvatars(){
  // In first person the user's own body must not obstruct the view.
  // The exact NEXACRAFT right-hand viewmodel is attached directly to camera.
  enemyAvatar=createAvatar('enemy',enemyClass);
+ scene.add(enemyAvatar); // Previously missing: the rival model was never rendered.
  syncAvatars();
 }
 function makeFighter(job,x,z){
@@ -451,15 +453,16 @@ function moveLocal(dt){
  const speed=c.speed*(keys.has('ShiftLeft')||keys.has('ShiftRight')?1.4:1);
  const forward=-z/len,strafe=x/len;
  const yaw=me.face;
- const dx=(Math.sin(yaw)*forward+Math.cos(yaw)*strafe)*speed*dt;
- const dz=(Math.cos(yaw)*forward-Math.sin(yaw)*strafe)*speed*dt;
+ // Right strafe must align with the camera's local +X direction.
+ const dx=(Math.sin(yaw)*forward-Math.cos(yaw)*strafe)*speed*dt;
+ const dz=(Math.cos(yaw)*forward+Math.sin(yaw)*strafe)*speed*dt;
  me.x=THREE.MathUtils.clamp(me.x+dx,-14.7,14.7);
  me.z=THREE.MathUtils.clamp(me.z+dz,-10.5,10.5);
  walkMotion=Math.hypot(dx,dz)/Math.max(dt,.001);
  me.guard=keys.has('KeyG');
  // Optional keyboard turning is useful without a pointer-lock-compatible mouse.
- if(keys.has('KeyQ'))rotateView(-dt*135,0);
- if(keys.has('KeyE'))rotateView(dt*135,0);
+ if(keys.has('KeyQ'))rotateView(dt*135,0);
+ if(keys.has('KeyE'))rotateView(-dt*135,0);
 }
 function stepCPU(dt){
  const c=CLASSES[enemyClass],dx=me.x-rival.x,dz=me.z-rival.z,d=Math.hypot(dx,dz)||1;
