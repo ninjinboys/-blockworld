@@ -3,7 +3,7 @@
  * No external textures. Hotbar art uses the game's existing drawItemIcon().
  */
 import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
-import {makeJobWeaponModel,jobWeapon,jobHeldWeaponScale} from './job-system.js?v=20261022heldWeaponSize20';
+import {makeJobWeaponModel,jobWeapon,jobHeldWeaponScale,jobHeldBladeYaw} from './job-system.js?v=20261022heldBladeEdgeForward21';
 
 export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,getOffhand=()=>null,isGuarding=()=>false,isVisible,getMovement,isMining,isHurt=()=>false}){
   const basic=(color)=>new THREE.MeshBasicMaterial({
@@ -62,7 +62,8 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   for(const id of [191,200]){
     const model=makeJobWeaponModel(THREE,id);
     model.position.set(.025,.60,-.16);
-    model.rotation.set(-.13,-.32,.20);
+    // Opposite-hand blades mirror the yaw: present the thin cutting edge.
+    model.rotation.set(-.13,-.32-jobHeldBladeYaw(id),.20);
     model.scale.setScalar(jobHeldWeaponScale(id,'first'));
     model.visible=false;
     leftRoot.add(model);
@@ -333,7 +334,9 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     const placeBlock=Object.hasOwn(blockColors,id)&&id!==5;
     if(jobWeapon(id)){
       object=makeJobWeaponModel(THREE,id);
-      object.rotation.set(-.16,.20,jobWeapon(id).kind==='bow'?-.70:-.39);
+      // A blade's wide XY face must NOT look back at the wielder.
+      // Only rotate the hand-attached model; the gallery is unchanged.
+      object.rotation.set(-.16,.20+jobHeldBladeYaw(id),jobWeapon(id).kind==='bow'?-.70:-.39);
       // Reduce only hand-attached job weapons; the 3D gallery models stay full size.
       object.scale.setScalar(jobHeldWeaponScale(id,'first'));
     }else if(id>=168&&id<=188){
