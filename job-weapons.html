@@ -137,8 +137,11 @@ function select(key){
   const box=new THREE.Box3().setFromObject(current),v=new THREE.Vector3();
   box.getCenter(center);box.getSize(v);
   dist=Math.max(2.5,v.length()*1.33+1);
+  // Broad Warrior blade: show its sharp tip and silver faceted surfaces
+  // completely on the first preview; 3/4 view remains selectable by drag.
+  if(key==='warrior')dist*=1.15;
   controls.maxDistance=Math.max(12,dist*4);
-  cameraAt('threeQuarter');
+  cameraAt(key==='warrior'?'front':'threeQuarter');
   title.textContent=data.name+' — '+(data.level>1?'進化専用武器':'初期ジョブ武器');
   info.textContent='解放 LV '+data.level+'　·　'+data.desc+'　·　武器ID '+data.weapon;
   for(const el of list.querySelectorAll('button'))el.classList.toggle('active',el.dataset.job===key);
