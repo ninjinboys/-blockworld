@@ -221,6 +221,11 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
     const main=validId(mainId),offhand=
       offhandId===147||offhandId===156?offhandId:
       jobWeapon(main)?.kind==='dual'?main:null;
+    // Once the blade is yawed edge-forward, the old hand anchor roll
+    // looks like a slanted weapon. Re-level only equipped blades.
+    // Other tools, shields, staves, and bows retain their original pose.
+    state.right.rotation.z=jobHeldBladeYaw(main)!==0?-.04:-.22;
+    state.left.rotation.z=jobHeldBladeYaw(offhand)!==0?.04:.08;
     if(main!==state.mainId){
       removeParts(state.right);
       if(main!=null){
