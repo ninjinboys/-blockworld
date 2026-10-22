@@ -28,6 +28,38 @@ export const JOB_WEAPON_IDS=Object.values(JOBS).map(j=>j.weapon).filter(Number.i
 const byWeapon=new Map(Object.entries(JOBS).filter(([,j])=>Number.isInteger(j.weapon))
   .map(([key,j])=>[j.weapon,{...j,key}]));
 export const jobWeapon=id=>byWeapon.get(id)||null;
+
+/**
+ * Visual size of the 17 job weapons while EQUIPPED.
+ * Full-scale 3D geometry used in the job-weapons gallery, animations,
+ * collision checks, stats and item crafting is intentionally unchanged.
+ * Both first-person and front/third-person avatars use this one lookup;
+ * dual-wielding uses the same value on both hands.
+ */
+export const JOB_HELD_WEAPON_SCALES=Object.freeze({
+  190:{first:.43,third:.38}, // swordsman standard sword
+  191:{first:.42,third:.39}, // mercenary paired swords
+  192:{first:.48,third:.41}, // shield starter
+  193:{first:.48,third:.43}, // archer bow
+  194:{first:.43,third:.39}, // mage staff
+  196:{first:.34,third:.29}, // warrior enormous greatsword
+  197:{first:.43,third:.38}, // swordmaster
+  198:{first:.36,third:.31}, // large battle axe
+  199:{first:.37,third:.31}, // very long spear
+  200:{first:.33,third:.30}, // berserker long dual blades
+  201:{first:.39,third:.34}, // heavy soldier tower shield
+  202:{first:.44,third:.40}, // elite shield soldier
+  203:{first:.42,third:.38}, // tank
+  204:{first:.42,third:.38}, // power bow
+  205:{first:.47,third:.43}, // swift bow
+  206:{first:.38,third:.34}, // battle mage staff
+  207:{first:.40,third:.36}  // support mage staff
+});
+export function jobHeldWeaponScale(id,view='third'){
+  const profile=JOB_HELD_WEAPON_SCALES[id];
+  return profile ? (view==='first'?profile.first:profile.third) : 1;
+}
+
 export function jobCanUse(activeJob,id){
   const item=jobWeapon(id);
   return !item||activeJob==='all'||activeJob===item.key||
