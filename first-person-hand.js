@@ -59,14 +59,20 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
   // Mercenary and Berserker each visibly hold their second blade in the
   // left fist instead of displaying two parallel swords in one hand.
   const jobDualBlades=new Map();
+  // Cancel the left arm's -0.43 roll at the weapon grip (not at the
+  // player's shoulder), keeping the 90-degree edge-forward yaw intact.
+  const leftBladeStraightener=new THREE.Group();
+  leftBladeStraightener.position.set(.025,.60,-.16);
+  leftBladeStraightener.rotation.z=.50;
+  leftRoot.add(leftBladeStraightener);
   for(const id of [191,200]){
     const model=makeJobWeaponModel(THREE,id);
-    model.position.set(.025,.60,-.16);
+    model.position.set(0,0,0);
     // Opposite-hand blades mirror the yaw: present the thin cutting edge.
     model.rotation.set(-.13,-.32-jobHeldBladeYaw(id),.20);
     model.scale.setScalar(jobHeldWeaponScale(id,'first'));
     model.visible=false;
-    leftRoot.add(model);
+    leftBladeStraightener.add(model);
     jobDualBlades.set(id,model);
   }
   const torchBrown=basic(0x825025),torchLightWood=basic(0xb77a39),torchBand=basic(0x4b3528);
@@ -407,6 +413,10 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       const shieldEquipped=leftItem?.id===156&&Number(leftItem.qty)>0;
       const st=getHeld();
       const id=(st && Number(st.qty)>0)?st.id:null;
+      // The 90-degree model yaw exposed the arm's original roll as a
+      // 20-degree lean. Counter-rotate the held weapon ONLY, leaving the
+      // square forearm's Minecraft pose and all non-blade gear untouched.
+      const straightenHeldBlade=jobHeldBladeYaw(id)!==0;
       const dualActive=jobWeapon(id)?.kind==='dual'&&!torchEquipped&&!shieldEquipped;
       leftRoot.visible=visible&&(torchEquipped||shieldEquipped||dualActive);
       leftTorch.visible=torchEquipped;
@@ -443,7 +453,8 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       pivot.rotation.y=-.09;
       pivot.rotation.z=swing*.19;
       held.rotation.set(swingStyle==='thrust'?-swing*.80:swing*.08,0,
-        swingStyle==='thrust'?swing*.05:-swing*.15);
+        (straightenHeldBlade?-.40:0)+
+        (swingStyle==='thrust'?swing*.05:-swing*.15));
     }
   };
 }
