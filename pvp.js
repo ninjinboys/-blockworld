@@ -228,8 +228,8 @@ function receive(data){
   if(!Number.isFinite(data.hostHp)||!Number.isFinite(data.guestHp))return;
   rival.hp=THREE.MathUtils.clamp(data.hostHp,0,rival.max);
   me.hp=THREE.MathUtils.clamp(data.guestHp,0,me.max);
-  if(data.attackFromHost)flash('攻撃を受けた！');
-  if(data.attackFromHost)effectLine(rival,me,enemyClass);
+  if(data.attackFromHost){flash('攻撃を受けた！');effectLine(rival,me,enemyClass)}
+  else {flash('HIT!');effectLine(me,rival,myClass)}
   updateHud();return;
  }
  if(data.t==='time'&&role==='guest'&&state==='playing'&&Number.isFinite(data.remaining)){
@@ -386,7 +386,7 @@ function moveLocal(dt){
  const speed=c.speed*(keys.has('ShiftLeft')||keys.has('ShiftRight')?1.4:1);
  me.x=THREE.MathUtils.clamp(me.x+x/len*speed*dt,-14.7,14.7);
  me.z=THREE.MathUtils.clamp(me.z+z/len*speed*dt,-10.5,10.5);
- me.guard=keys.has('KeyG')&&myClass==='shield';
+ me.guard=keys.has('KeyG');
  if(mouseHasAim&&!matchMedia('(pointer: coarse)').matches){
   const dx=mouseWorld.x-me.x,dz=mouseWorld.z-me.z;
   if(Math.hypot(dx,dz)>.35)me.face=Math.atan2(dx,dz);
