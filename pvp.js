@@ -1,5 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
-import {makeJobWeaponModel,jobHeldBladeYaw,JOBS} from './job-system.js?v=20261022heldBladeEdgeForward21';
+import {makeJobWeaponModel,jobHeldBladeYaw,jobHeldWeaponScale,JOBS} from './job-system.js?v=20261022heldBladeEdgeForward21';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261022pvpFirst01';
 
 const $=id=>document.getElementById(id);
 const CLASSES={
@@ -14,11 +15,21 @@ const PEER_PREFIX='nexacraft-pvp-arena-v1-';
 const roundLength=90;
 let myClass='sword',enemyClass='sword',role='',state='menu',roomCode='',peer=null,connection=null,peerLoader=null;
 let me=null,rival=null,myAvatar=null,enemyAvatar=null,roundEnd=0,remaining=roundLength,lastSync=0,lastClock=0;
-let keys=new Set(),mouseHasAim=false,mouseWorld={x:0,z:0},clock=new THREE.Clock(),effects=[],noticeTimeout=0;
+let keys=new Set(),clock=new THREE.Clock(),effects=[],noticeTimeout=0;
+let lookPitch=0,walkMotion=0,walkPhase=0,lastHurtUntil=0,attackVisualAt=0;
+const touchLooks=new Map();
+const clampPitch=v=>THREE.MathUtils.clamp(v,-1.28,1.28);
+function rotateView(dx,dy,sensitivity=.0034){
+ if(state!=='playing'||!me)return;
+ me.face=(me.face+dx*sensitivity+Math.PI*4)%(Math.PI*2);
+ lookPitch=clampPitch(lookPitch-dy*sensitivity);
+}
+
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x0d1d2d);
 scene.fog=new THREE.FogExp2(0x0d1d2d,.020);
-const camera=new THREE.PerspectiveCamera(58,1,.1,130);
+const camera=new THREE.PerspectiveCamera(75,1,.1,130);
+camera.rotation.order='YXZ';
 camera.position.set(0,15,19);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.7));
@@ -26,6 +37,17 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 $('stage').append(renderer.domElement);
+const firstPersonHand=makeFirstPersonHand(THREE,{
+ scene,camera,drawItemIcon:()=>{},
+ getHeld:()=>state==='playing'?{id:JOBS[myClass]?.weapon,qty:1}:null,
+ getOffhand:()=>null,
+ isGuarding:()=>state==='playing'&&!!me?.guard,
+ isVisible:()=>state==='playing',
+ getMovement:()=>walkMotion,
+ isMining:()=>false,
+ isHurt:()=>performance.now()<lastHurtUntil
+});
+
 const ambient=new THREE.HemisphereLight(0xaad8ff,0x233a2b,2.1);scene.add(ambient);
 const sun=new THREE.DirectionalLight(0xffe9c9,2.3);sun.position.set(-10,24,17);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;scene.add(sun);
 const mat=(color,metalness=0,roughness=.7)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
@@ -47,7 +69,6 @@ for(const z of [-8,8]){block(6,.15,.12,0x4d8487,0,.09,z)}
 const spawning=[new THREE.Vector3(-6,0,0),new THREE.Vector3(6,0,0)];
 
 function createAvatar(team,job){
- const profile=CLASSES[job]||CLASSES.sword;
  const group=new THREE.Group(),skin=mat(team==='me'?0xcbb79c:0xbbaaa0),cloth=mat(team==='me'?0x2684a5:0xb14554),metal=mat(team==='me'?0x77d6ef:0xf2a18c,.43,.39);
  const addPart=(w,h,d,m,x,y,z,parent=group)=>{
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
@@ -62,20 +83,26 @@ function createAvatar(team,job){
   addPart(.34,.23,.44,metal,s*.21,.14,.09);
  }
  const weaponPivot=new THREE.Group();
- weaponPivot.position.set(.72,1.42,.18);group.add(weaponPivot);
+ weaponPivot.position.set(.72,1.40,.18);group.add(weaponPivot);
  let weapon=null;
  const weaponID=JOBS[job]?.weapon;
  if(weaponID){
   try{
    weapon=makeJobWeaponModel(THREE,weaponID);
    if(weapon&&weapon.isObject3D){
-    const box=new THREE.Box3().setFromObject(weapon),size=new THREE.Vector3();
-    box.getSize(size);
-    const height=Math.max(size.y,.5);
-    const scale=Math.min(.53,1.22/height);
-    weapon.scale.setScalar(scale);
-    weapon.rotation.y=jobHeldBladeYaw(weaponID);
+    weapon.scale.setScalar(jobHeldWeaponScale(weaponID,'third'));
+    weapon.rotation.set(-.14,.1+jobHeldBladeYaw(weaponID),-.12);
+    weapon.position.set(0,-.06,-.05);
     weaponPivot.add(weapon);
+    if(JOBS[job].kind==='dual'){
+     const otherPivot=new THREE.Group();
+     otherPivot.position.set(-.72,1.40,.18);
+     const second=makeJobWeaponModel(THREE,weaponID);
+     second.scale.setScalar(jobHeldWeaponScale(weaponID,'third'));
+     second.rotation.set(-.10,-.19-jobHeldBladeYaw(weaponID),.17);
+     otherPivot.add(second);group.add(otherPivot);
+     group.userData.leftWeaponPivot=otherPivot;
+    }
    }
   }catch(e){console.warn('weapon model',e)}
  }
@@ -90,9 +117,10 @@ function createAvatar(team,job){
  return group;
 }
 function replaceAvatars(){
- if(myAvatar)scene.remove(myAvatar);
+ if(myAvatar){scene.remove(myAvatar);myAvatar=null;}
  if(enemyAvatar)scene.remove(enemyAvatar);
- myAvatar=createAvatar('me',myClass);
+ // In first person the user's own body must not obstruct the view.
+ // The exact NEXACRAFT right-hand viewmodel is attached directly to camera.
  enemyAvatar=createAvatar('enemy',enemyClass);
  syncAvatars();
 }
@@ -101,7 +129,6 @@ function makeFighter(job,x,z){
  return {x,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,guard:false,lastAttack:-100000};
 }
 function syncAvatars(){
- if(me&&myAvatar){myAvatar.position.set(me.x,0,me.z);myAvatar.rotation.y=me.face;}
  if(rival&&enemyAvatar){enemyAvatar.position.set(rival.x,0,rival.z);enemyAvatar.rotation.y=rival.face;}
 }
 function resize(){
@@ -144,10 +171,12 @@ function shutdown(sendLeave=true){
  connection=null;peer=null;roomCode='';role='';
 }
 function showMenu(message=''){
- state='menu';keys.clear();shutdown(false);
+ if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
+ state='menu';keys.clear();touchLooks.clear();shutdown(false);
  $('screen').style.display='flex';$('finish').style.display='none';$('top').classList.remove('show');
  $('mobileControls').classList.remove('show');$('controlsHelp').classList.remove('show');
- $('leaveButton').style.display='none';$('backHome').style.display='block';updateRoomStatus();
+ $('leaveButton').style.display='none';$('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
+ $('backHome').style.display='block';updateRoomStatus();
  if(message)uiNotice(message,true);
 }
 function connectWire(conn,isHost){
@@ -228,7 +257,7 @@ function receive(data){
   if(!Number.isFinite(data.hostHp)||!Number.isFinite(data.guestHp))return;
   rival.hp=THREE.MathUtils.clamp(data.hostHp,0,rival.max);
   me.hp=THREE.MathUtils.clamp(data.guestHp,0,me.max);
-  if(data.attackFromHost){flash('攻撃を受けた！');effectLine(rival,me,enemyClass)}
+  if(data.attackFromHost){flash('攻撃を受けた！');lastHurtUntil=performance.now()+280;effectLine(rival,me,enemyClass)}
   else {flash('HIT!');effectLine(me,rival,myClass)}
   updateHud();return;
  }
@@ -250,7 +279,7 @@ $('practiceBtn').addEventListener('click',()=>{
  beginMatch();
 });
 function beginMatch(){
- state='playing';keys.clear();
+ state='playing';keys.clear();touchLooks.clear();lookPitch=0;walkMotion=0;walkPhase=0;
  const onLeft=role!=='guest';
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
  me=makeFighter(myClass,a.x,a.z);rival=makeFighter(enemyClass,b.x,b.z);
@@ -260,7 +289,10 @@ function beginMatch(){
  $('screen').style.display='none';$('finish').style.display='none';
  $('top').classList.add('show');$('controlsHelp').classList.add('show');
  $('mobileControls').classList.add('show');$('leaveButton').style.display='block';
- mouseHasAim=false;updateHud();flash('FIGHT!');
+ $('crosshair').classList.add('show');
+ $('weaponHud').classList.add('show');
+ $('weaponName').textContent=CLASSES[myClass].name+' / '+(JOBS[myClass]?.kind==='dual'?'双剣':JOBS[myClass]?.kind==='bow'?'弓':JOBS[myClass]?.kind==='staff'?'魔法の杖':JOBS[myClass]?.kind==='shield'?'盾':'剣');
+ updateHud();flash('FIGHT!');
 }
 function updateHud(){
  if(!me||!rival)return;
@@ -302,7 +334,7 @@ function resolveAttack(attackerIsHost){
  const dealt=Math.max(1,Math.round(c.damage*(1-block)));
  target.hp=Math.max(0,target.hp-dealt);
  effectLine(attacker,target,job);
- if(!attackerIsHost)flash('攻撃を受けた！');
+ if(!attackerIsHost){flash('攻撃を受けた！');lastHurtUntil=now+280;}
  else flash('HIT! -'+dealt);
  updateHud();
  if(role==='host'&&connection?.open)connection.send({t:'hit',hostHp:me.hp,guestHp:rival.hp,attackFromHost:attackerIsHost});
@@ -314,6 +346,8 @@ function endByHealth(){
 }
 function finishMatch(outcome,decidedLocally){
  if(state!=='playing')return;
+ if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
+ $('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
  state='ended';
  if(decidedLocally&&role==='host'&&connection?.open){
   connection.send({t:'end',winner:outcome==='win'?'host':outcome==='lose'?'guest':'draw'});
@@ -343,11 +377,10 @@ function requestAttack(){
  const now=performance.now();
  if(now-me.lastAttack<CLASSES[myClass].cooldown)return;
  if(keys.has('KeyG'))return;
- // Auto-aim on touch devices. Mouse users can steer attacks using the cursor.
- if(matchMedia('(pointer: coarse)').matches||!mouseHasAim){
-  me.face=Math.atan2(rival.x-me.x,rival.z-me.z);
- }
- animateSwing(myAvatar);
+ // Unlike the top-down prototype, attacks follow actual first-person aim.
+ const kind=JOBS[myClass]?.kind;
+ firstPersonHand.swing(1,kind==='spear'?'thrust':'swing');
+ attackVisualAt=now;
  if(role==='host'||role==='cpu')resolveAttack(true);
  else {
   me.lastAttack=now;
@@ -363,15 +396,31 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>keys.delete(e.code));
 window.addEventListener('blur',()=>keys.clear());
 const hitUi=e=>!!e.target.closest('button, input, .panel, #top, #mobileControls');
-renderer.domElement.addEventListener('pointerdown',e=>{if(state==='playing'&&e.button===0)requestAttack()});
-renderer.domElement.addEventListener('pointermove',e=>{
- if(state!=='playing'||e.pointerType==='touch')return;
- const pt=new THREE.Vector2(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);
- const ray=new THREE.Raycaster();ray.setFromCamera(pt,camera);
- const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
- const v=new THREE.Vector3();
- if(ray.ray.intersectPlane(groundPlane,v)){mouseWorld={x:v.x,z:v.z};mouseHasAim=true}
+renderer.domElement.addEventListener('pointerdown',e=>{
+ if(state!=='playing')return;
+ if(e.pointerType==='touch'){
+  touchLooks.set(e.pointerId,{x:e.clientX,y:e.clientY});renderer.domElement.setPointerCapture(e.pointerId);return;
+ }
+ if(e.button!==0)return;
+ if(document.pointerLockElement!==renderer.domElement&&renderer.domElement.requestPointerLock){
+  // First click captures the mouse; subsequent clicks swing the weapon.
+  renderer.domElement.requestPointerLock().catch(()=>{});
+  return;
+ }
+ requestAttack();
 });
+renderer.domElement.addEventListener('pointermove',e=>{
+ if(state!=='playing')return;
+ if(e.pointerType==='touch'){
+  const prev=touchLooks.get(e.pointerId);if(!prev)return;
+  rotateView(e.clientX-prev.x,e.clientY-prev.y,.006);
+  prev.x=e.clientX;prev.y=e.clientY;
+ }else if(document.pointerLockElement===renderer.domElement||(e.buttons&1)){
+  rotateView(e.movementX,e.movementY,.0031);
+ }
+});
+renderer.domElement.addEventListener('pointerup',e=>touchLooks.delete(e.pointerId));
+renderer.domElement.addEventListener('pointercancel',e=>touchLooks.delete(e.pointerId));
 for(const b of document.querySelectorAll('#mobileControls button')){
  const key=b.dataset.key;
  const release=e=>{e.preventDefault();if(key)keys.delete(key)};
@@ -384,13 +433,17 @@ function moveLocal(dt){
  const len=Math.hypot(x,z)||1;
  const c=CLASSES[myClass];
  const speed=c.speed*(keys.has('ShiftLeft')||keys.has('ShiftRight')?1.4:1);
- me.x=THREE.MathUtils.clamp(me.x+x/len*speed*dt,-14.7,14.7);
- me.z=THREE.MathUtils.clamp(me.z+z/len*speed*dt,-10.5,10.5);
+ const forward=-z/len,strafe=x/len;
+ const yaw=me.face;
+ const dx=(Math.sin(yaw)*forward+Math.cos(yaw)*strafe)*speed*dt;
+ const dz=(Math.cos(yaw)*forward-Math.sin(yaw)*strafe)*speed*dt;
+ me.x=THREE.MathUtils.clamp(me.x+dx,-14.7,14.7);
+ me.z=THREE.MathUtils.clamp(me.z+dz,-10.5,10.5);
+ walkMotion=Math.hypot(dx,dz)/Math.max(dt,.001);
  me.guard=keys.has('KeyG');
- if(mouseHasAim&&!matchMedia('(pointer: coarse)').matches){
-  const dx=mouseWorld.x-me.x,dz=mouseWorld.z-me.z;
-  if(Math.hypot(dx,dz)>.35)me.face=Math.atan2(dx,dz);
- }else me.face=Math.atan2(rival.x-me.x,rival.z-me.z);
+ // Optional keyboard turning is useful without a pointer-lock-compatible mouse.
+ if(keys.has('KeyQ'))rotateView(-dt*135,0);
+ if(keys.has('KeyE'))rotateView(dt*135,0);
 }
 function stepCPU(dt){
  const c=CLASSES[enemyClass],dx=me.x-rival.x,dz=me.z-rival.z,d=Math.hypot(dx,dz)||1;
@@ -431,15 +484,22 @@ function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(clock.getDelta(),.04),t=performance.now();
  update(dt,t);
- if(myAvatar&&enemyAvatar&&me){
-  for(const g of [myAvatar,enemyAvatar]){
-   g.userData.swing=Math.max(0,g.userData.swing-dt*3.8);
-   g.userData.weaponPivot.rotation.z=-.35-Math.sin(g.userData.swing*Math.PI)*.9;
-  }
-  const goal=new THREE.Vector3(me.x,15,me.z+19);
-  camera.position.lerp(goal,Math.min(1,dt*3.5));
-  camera.lookAt(me.x,0,me.z);
- }else camera.lookAt(0,0,0);
+ if(state==='playing'&&me){
+  // Actual player eye height, view direction controlled by mouse / swipe.
+  walkPhase+=dt*(walkMotion>0.1?9:0);
+  camera.position.set(me.x,2.12+Math.sin(walkPhase)*.018*Math.min(walkMotion/6,1),me.z);
+  camera.rotation.set(lookPitch,me.face+Math.PI,0,'YXZ');
+ }else{
+  camera.position.lerp(new THREE.Vector3(0,15,19),Math.min(1,dt*3));
+  camera.lookAt(0,0,0);
+ }
+ if(enemyAvatar){
+  enemyAvatar.userData.swing=Math.max(0,enemyAvatar.userData.swing-dt*3.8);
+  enemyAvatar.userData.weaponPivot.rotation.z=-.35-Math.sin(enemyAvatar.userData.swing*Math.PI)*.85;
+  if(enemyAvatar.userData.leftWeaponPivot)
+   enemyAvatar.userData.leftWeaponPivot.rotation.z=Math.sin(enemyAvatar.userData.swing*Math.PI)*.7;
+ }
+ firstPersonHand.update(dt,t);
  for(let i=effects.length-1;i>=0;i--){
   const e=effects[i];e.life-=dt;e.mesh.material.opacity=Math.max(0,e.life/.23)*.85;
   if(e.life<=0){scene.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose();effects.splice(i,1)}
