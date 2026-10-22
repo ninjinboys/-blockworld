@@ -342,8 +342,22 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
       object=makeJobWeaponModel(THREE,id);
       // A blade's wide XY face must NOT look back at the wielder.
       // Only rotate the hand-attached model; the gallery is unchanged.
-      object.rotation.set(-.16,.20+jobHeldBladeYaw(id),jobWeapon(id).kind==='bow'?-.70:-.39);
-      // Reduce only hand-attached job weapons; the 3D gallery models stay full size.
+      const kind=jobWeapon(id).kind;
+      if(kind==='bow'){
+        // Hold the bow upright in the viewing plane, with its string and
+        // full recurved limbs clearly visible, rather than edge-on and
+        // leaning over the right half of the screen.
+        object.rotation.set(-.06,.08,-.12);
+        object.position.set(-.12,-.04,-.20);
+      }else if(kind==='shield'){
+        // Front of the shield faces the viewer; the shield rests lower,
+        // farther from the camera and to the right of the crosshair.
+        object.rotation.set(-.05,-.16,-.18);
+        object.position.set(.12,-.19,-.32);
+      }else{
+        object.rotation.set(-.16,.20+jobHeldBladeYaw(id),-.39);
+      }
+      // Only hand-attached instances shrink; workshop models stay full size.
       object.scale.setScalar(jobHeldWeaponScale(id,'first'));
     }else if(id>=168&&id<=188){
       object=makeNewHeldItemModel(THREE,id);
