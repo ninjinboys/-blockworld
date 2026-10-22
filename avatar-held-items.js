@@ -3,7 +3,7 @@
  * This file affects rendering only, never inventories, saves or combat.
  */
 import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
-import {makeJobWeaponModel,jobWeapon} from './job-system.js?v=20261022swordsmanSwordReference18';
+import {makeJobWeaponModel,jobWeapon} from './job-system.js?v=20261022berserkerDualReference19';
 
 export function makeAvatarHeldItems(THREE,drawItemIcon){
   const swords=new Set([111,115,119,123]);
