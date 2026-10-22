@@ -15,12 +15,29 @@
 #finish{position:fixed;inset:0;z-index:6;background:#06101bc9;display:none;align-items:center;justify-content:center;padding:20px}#finish .panel{text-align:center;max-width:440px}#finish h2{font-size:45px;color:#9df2e9;margin:4px 0 8px}#finish p{color:#c7d7e0}
 #controlsHelp{position:fixed;bottom:24px;left:20px;z-index:3;background:#071725b8;padding:10px 13px;border-radius:10px;font-size:12px;color:#d8ecf7;pointer-events:none;display:none}#controlsHelp.show{display:block}#mobileControls{position:fixed;inset:auto 0 15px;z-index:4;display:none;justify-content:space-between;padding:0 16px;pointer-events:none}.pad{display:grid;grid-template-columns:repeat(3,55px);grid-template-rows:repeat(3,55px);gap:4px}.pad button,.combat button{pointer-events:auto;background:#162f47bf;color:white;border:2px solid #91cadd9e;border-radius:15px;font-size:21px;font-weight:800;touch-action:none;user-select:none}.pad .up{grid-column:2;grid-row:1}.pad .left{grid-column:1;grid-row:2}.pad .down{grid-column:2;grid-row:3}.pad .right{grid-column:3;grid-row:2}.combat{display:flex;align-items:flex-end;gap:10px}.combat button{height:77px;width:77px;background:#406d7bda;font-size:15px}.combat button.attack{background:#a75555d9;border-color:#ffc99d}#leaveButton{position:fixed;right:20px;bottom:20px;z-index:4;display:none;min-height:32px;font-size:11px;opacity:.75}
 @media(hover:none),(pointer:coarse){#mobileControls.show{display:flex}#controlsHelp{display:none!important}#leaveButton{bottom:210px}}@media(max-width:650px){#screen{padding:8px;align-items:flex-start}.panel{padding:20px 16px;margin:auto 0}.jobs{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.job{min-height:75px}.job strong{font-size:10px}.lobby{grid-template-columns:1fr}.column{padding:12px}.lead{margin-bottom:14px}#top{padding:12px 10px}#clock{font-size:16px;top:17px}.fighter{width:43%}.fighter .line{font-size:10px}.hp{height:12px}}
+
+/* Original NEXACRAFT first-person crosshair dimensions and treatment. */
+#crosshair{position:fixed;left:50%;top:50%;width:20px;height:20px;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 1px 1px #000);z-index:2;display:none}
+#crosshair.show{display:block}
+#crosshair:before,#crosshair:after{content:"";position:absolute;background:#fff}
+#crosshair:before{left:9px;top:2px;width:2px;height:16px}
+#crosshair:after{left:2px;top:9px;width:16px;height:2px}
+#weaponHud{position:fixed;left:50%;bottom:15px;z-index:3;transform:translateX(-50%);border-radius:7px;border:2px solid #f6f7f7;background:#111c27d9;padding:9px 18px;text-align:center;color:#f3fbff;display:none;pointer-events:none;min-width:160px;box-shadow:0 5px 15px #000a}
+#weaponHud.show{display:block}
+#weaponHud small{font-size:10px;letter-spacing:.14em;display:block;opacity:.65}
+#weaponName{font-weight:800;font-size:13px}
+#lookHelp{position:fixed;left:50%;top:54px;transform:translateX(-50%);z-index:3;pointer-events:none;display:none;color:#eafaff;background:#081c31ab;border-radius:8px;padding:4px 9px;font-size:11px}
+#lookHelp.show{display:block}
+@media(hover:none),(pointer:coarse){#weaponHud{bottom:108px;padding:5px 11px;min-width:100px}#weaponName{font-size:11px}#lookHelp{top:76px;font-size:10px}#leaveButton{bottom:210px}}
 </style>
 </head>
 <body>
 <main id="stage"></main>
 <header id="top"><div class="fighter"><div class="line"><span id="myName">YOU</span><span id="myHealth">100/100</span></div><div class="hp"><span id="myBar"></span></div></div><div id="clock">01:30</div><div class="fighter right"><div class="line"><span id="enemyName">RIVAL</span><span id="enemyHealth">100/100</span></div><div class="hp"><span id="enemyBar"></span></div></div></header>
 <div id="status" role="status"></div>
+<div id="crosshair" aria-hidden="true"></div>
+<div id="weaponHud"><small>MAIN HAND</small><span id="weaponName">剣士 / 剣</span></div>
+<div id="lookHelp">視点：マウスで操作 / スマホは画面をスワイプ</div>
 <section id="screen"><div class="panel">
 <div class="eyebrow">NEXACRAFT // BATTLE MODE</div><h1>NEXACRAFT <span>PvP</span></h1>
 <p class="lead">本編から独立した3D対戦アリーナ。ジョブを選び、友達とコードでオンライン1対1。CPU練習にも対応。</p>
@@ -39,9 +56,9 @@
 <div id="backHome"><a class="link" href="./index.html">本編 NEXACRAFT に戻る</a></div>
 </div></section>
 <div id="finish"><div class="panel"><div class="eyebrow">BATTLE RESULT</div><h2 id="resultTitle">VICTORY</h2><p id="resultText"></p><button id="againBtn" class="primary wide">もう一度対戦</button><button id="menuBtn" class="secondary wide" style="margin-top:10px">メニューに戻る</button></div></div>
-<div id="controlsHelp">WASD：移動　Shift：ダッシュ　左クリック／Space：攻撃　G：ガード　マウス：方向指定</div>
+<div id="controlsHelp">WASD：移動　マウス：視点変更（クリックで固定）　左クリック／Space：攻撃　Shift：ダッシュ　G：ガード　Q / E：回転</div>
 <div id="mobileControls"><div class="pad"><button class="up" data-key="KeyW">▲</button><button class="left" data-key="KeyA">◀</button><button class="down" data-key="KeyS">▼</button><button class="right" data-key="KeyD">▶</button></div><div class="combat"><button data-key="KeyG">ガード</button><button class="attack" data-action="attack">攻撃</button></div></div>
 <button id="leaveButton" class="secondary">退出</button>
-<script type="module" src="./pvp.js?v=20261022pvp01"></script>
+<script type="module" src="./pvp.js?v=20261022pvpFirst01"></script>
 </body>
 </html>
