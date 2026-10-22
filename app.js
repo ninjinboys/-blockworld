@@ -1,8 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {JOBS,STARTING_JOBS,JOB_WEAPON_IDS,jobWeapon,jobCanUse,jobNextOptions,jobCanChange,
-  drawJobWeaponIcon} from './job-system.js?v=20261022warriorSilverDiamond16';
-import {makeFirstPersonHand} from './first-person-hand.js?v=20261022warriorSilverDiamond16';
-import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261022warriorSilverDiamond16';
+  drawJobWeaponIcon} from './job-system.js?v=20261022warriorWedgeRestored17';
+import {makeFirstPersonHand} from './first-person-hand.js?v=20261022warriorWedgeRestored17';
+import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261022warriorWedgeRestored17';
 import {createBlockworldNetwork} from './multiplayer-network.js?v=20261009multi1';
 import {buildChimera,animateChimera} from './chimera-sculpt-v4.js?v=20261017chimeraBoss01';
 import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
