@@ -668,50 +668,154 @@ export function makeReferenceWeapon(T,d){
   for(const f of [-1,1])gem(0,-.91,f*.11,.066,.093,.034);
  }
  function dual(){
-  // One of TWO separately held Berserker blades; serrations are mesh geometry.
-  grip(-.54,.18,.113,9);pommel(-.69,.88);
-  const base=.38,top=2.13;
-  const bladeMeshStart=g.children.length;
-  const outline=[[-.24,base],[-.40,base+.22],[-.35,base+.40],
-    [-.49,base+.57],[-.39,base+.76],[-.53,base+.93],
-    [-.42,base+1.12],[-.56,base+1.34],[-.41,top-.26],
-    [-.12,top],[.18,top-.14],[.42,top-.36],
-    [.36,base+.89],[.30,base+.42],[.22,base]];
-  prism(outline,.24,'silver',0,.014);
-  for(const f of [-1,1]){
-   prism([[-.19,base+.13],[-.33,base+.46],
-    [-.29,base+.90],[-.42,base+1.32],
-    [-.13,top-.16],[.22,top-.37],[.16,base+.12]],
-    .043,'graphite',f*.144,.009);
-   prism([[-.08,base+.13],[-.18,base+.51],
-    [-.21,base+1.04],[-.15,top-.23],
-    [.04,top-.44],[.04,base+.14]],.023,'inset',f*.18,.003);
-   curve([[0,base+.07,f*.224],[-.08,base+.61,f*.224],
-    [-.20,base+1.21,f*.224],[-.12,top-.35,f*.224]],.020,'light');
-   for(const y of [base+.47,base+.86,base+1.30]){
-    diamond(-.105,y,f*.239,.065,.09,'bronze',.024);
-    gem(-.105,y,f*.263,.039,.052,.026);
-   }
+  // Berserker — identical twin weapons, true 3D forged broad curved
+  // serrated demonic longswords, NOT short blocky dual daggers.
+  // Matches four-view user reference: full-length outer sweeping silver
+  // blade, deep saw notches on one edge, raised black fuller, crimson
+  // rune, horned bronze guard, large red diamonds, leather grip.
+  const P=(pts,depth,mat,z=0,bevel=.007)=>prism(pts,depth,mat,z,bevel);
+  const lip=(a,b,z,mat='gild',r=.012)=>trim(a,b,z,mat,r);
+  const stud=(x,y,z,r=.023)=>add(new T.SphereGeometry(r,9,6),'bronze',x,y,z);
+  const cross=(pts,side)=>pts.map(([x,y])=>[x*side,y]);
+  // Reference-hilt proportions: a usable leather-wrapped long grip.
+  grip(-1.12,.20,.116,12);
+  for(const y of [-1.12,-.76,.13]){
+    add(new T.CylinderGeometry(.147,.147,.060,14),'bronze',0,y,0);
+    add(new T.CylinderGeometry(.127,.127,.013,14),'gild',0,y+.035,0);
   }
-  for(const y of [base+.39,base+.71,base+1.04,base+1.38]){
-   prism([[-.35,y-.12],[-.62,y+.045],[-.42,y+.16]],
-    .16,'iron',0,.012);
+  // Distinct sharply-pointed red jewel pommel with dimensional shoulders.
+  P([[-.15,-1.09],[0,-.98],[.15,-1.09],
+    [.225,-1.28],[.11,-1.45],[0,-1.57],
+    [-.11,-1.45],[-.225,-1.28]],.205,'bronze',0,.015);
+  for(const face of [-1,1]){
+    diamond(0,-1.28,face*.134,.151,.197,'graphite',.050);
+    diamond(0,-1.28,face*.168,.114,.151,'gild',.036);
+    gem(0,-1.28,face*.213,.073,.106,.049);
   }
-  // Berserker twin swords: thinner 3D blade with intact serrated silhouette.
-  flattenBladeSince(bladeMeshStart,.48);
-  const gy=.30;
-  prism([[-.66,gy+.13],[-.54,gy+.35],[-.29,gy+.17],
-    [0,gy+.38],[.27,gy+.21],[.60,gy+.37],
-    [.69,gy+.12],[.48,gy-.09],[0,gy-.19],[-.45,gy-.09]],
-    .31,'bronze',0,.022);
-  for(const f of [-1,1]){
-   diamond(0,gy+.075,f*.195,.205,.266,'graphite',.054);
-   gem(0,gy+.075,f*.238,.133,.172,.055);
-   for(const s of [-1,1]){
-    prism([[s*.26,gy+.16],[s*.59,gy+.31],
-     [s*.47,gy+.04]],.061,'graphite',f*.19,.007);
-   }
+
+  // One continuous concave, LONG fighting blade: large silver swoop to
+  // the left, an uninterrupted dagger point, and five deep RIGHT teeth.
+  // The cutouts are real geometric negative spaces in the silhouette.
+  const blade=[
+    [-.18,.61],[-.32,.82],[-.45,1.06],
+    [-.57,1.34],[-.72,1.70],[-.86,2.13],
+    [-.86,2.43],[-.78,2.70],[-.62,3.07],
+    [-.45,3.41],[-.24,3.69],[-.05,3.91],
+    [.035,3.80],[.12,3.50],[.26,3.16],
+    [.38,2.88],[.33,2.74],[.08,2.61],
+    [.39,2.50],[.47,2.29],[.26,2.17],
+    [.05,2.08],[.43,1.97],[.51,1.78],
+    [.31,1.64],[.10,1.55],[.42,1.43],
+    [.49,1.23],[.30,1.12],[.15,1.01],
+    [.29,.85],[.16,.63]
+  ];
+  P(blade,.128,'silver',0,.010);
+  // Actual forged steel panels raised above the blade's underlying
+  // silver cutting edges, with separate illuminated narrow rune groove.
+  for(const face of [-1,1]){
+    const f=face;
+    P([[-.145,.70],[-.30,.95],[-.44,1.26],
+      [-.58,1.64],[-.70,2.10],[-.70,2.39],
+      [-.64,2.66],[-.50,2.99],[-.32,3.37],
+      [-.065,3.78],[.04,3.40],[.18,3.06],
+      [.28,2.82],[.22,2.72],[-.04,2.60],
+      [.26,2.48],[.36,2.31],[.16,2.18],
+      [-.055,2.10],[.31,1.96],[.37,1.80],
+      [.18,1.65],[-.06,1.54],[.30,1.41],
+      [.33,1.25],[.12,1.11],[.04,.78]],
+      .062,'graphite',f*.096,.007);
+    // A second metal strip creates a pale faceted bevel on the convex
+    // cutting edge. It runs nearly the entire blade length.
+    P([[-.34,.97],[-.49,1.27],[-.63,1.67],
+      [-.79,2.13],[-.79,2.42],[-.71,2.70],
+      [-.56,3.06],[-.34,3.43],[-.055,3.84],
+      [-.22,3.48],[-.43,3.05],[-.61,2.64],
+      [-.65,2.37],[-.65,2.17],[-.49,1.68],
+      [-.36,1.30]],.035,'edge',f*.144,.004);
+    // Saw-tooth facets sit INSIDE the already serrated blade outline;
+    // unlike added triangles, they cannot turn it into a blunt club.
+    for(const [high,low] of [[1.23,1.47],[1.75,2.01],[2.25,2.48]]){
+      P([[.10,high],[.34,high+.12],[.25,low],[-.02,low-.08]],
+        .035,'iron',f*.143,.004);
+    }
+    // Long crimson engraved fuller: broad dark channel, raised red
+    // inlay with one dominant diamond and smaller branching glyphs.
+    P([[-.14,.77],[-.23,1.14],[-.33,1.73],
+      [-.39,2.30],[-.27,2.91],[-.065,3.64],
+      [.02,3.44],[-.08,2.84],[-.17,2.29],
+      [-.08,1.69],[.10,1.14],[.09,.78]],
+      .040,'inset',f*.146,.004);
+    curve([[0,.76,f*.195],[-.075,1.25,f*.195],
+      [-.20,1.82,f*.195],[-.27,2.31,f*.195],
+      [-.19,2.86,f*.195],[-.052,3.49,f*.195]],
+      .023,'light');
+    diamond(-.18,2.21,f*.217,.128,.209,'bronze',.043);
+    diamond(-.18,2.21,f*.244,.088,.145,'graphite',.032);
+    gem(-.18,2.21,f*.279,.063,.107,.046);
+    for(const [x,y,r] of [[-.078,1.31,.073],[-.245,2.77,.065],
+      [-.10,3.19,.049]]){
+      diamond(x,y,f*.225,r,r*1.42,'bronze',.023);
+      diamond(x,y,f*.245,r*.58,r*.91,'light',.018);
+    }
+    for(const [x,y] of [[-.12,1.57],[-.245,2.48],[-.15,3.05]]){
+      lip([x,y],[x+.095,y+.116],f*.209,'light',.012);
+      lip([x+.095,y+.116],[x+.028,y+.19],f*.209,'light',.009);
+    }
+    // Engraving alongside the luminous central seam.
+    curve([[-.30,1.13,f*.185],[-.48,1.78,f*.185],
+      [-.55,2.34,f*.185],[-.39,2.96,f*.185]],
+      .014,'bronze');
+    for(let j=0;j<8;j++){
+      const yy=1.27+j*.245;
+      lip([-.66+yy*.022,yy],[-.635+yy*.022,yy+.057],
+        f*.173,'silver',.004);
+    }
   }
+
+  // A very broad bat-winged demon crossguard. Upward horns and layered
+  // red "dragon heart" armour link to the long serrated steel blade.
+  const gy=.43;
+  const wings=[
+    [-1.03,gy+.12],[-.97,gy+.39],[-.68,gy+.21],
+    [-.39,gy+.14],[0,gy+.35],
+    [.39,gy+.14],[.68,gy+.21],
+    [.97,gy+.39],[1.03,gy+.12],
+    [.84,gy-.17],[.62,gy-.055],[.22,gy-.09],
+    [0,gy-.35],[-.22,gy-.09],[-.62,gy-.055],
+    [-.84,gy-.17]
+  ];
+  P(wings,.29,'bronze',0,.021);
+  for(const face of [-1,1]){
+    const f=face;
+    for(const side of [-1,1]){
+      P(cross([[.23,gy+.17],[.63,gy+.20],
+        [.94,gy+.37],[.82,gy+.095],
+        [.58,gy-.015],[.26,gy+.025]],side),
+        .065,'graphite',f*.176,.009);
+      P(cross([[.37,gy+.18],[.70,gy+.215],
+        [.85,gy+.30],[.75,gy+.095],
+        [.46,gy+.11]],side),.040,'gild',f*.228,.006);
+      P(cross([[.58,gy+.25],[.95,gy+.48],
+        [.83,gy+.16],[.66,gy+.125]],side),
+        .085,'bronze',f*.203,.009);
+      lip([side*.48,gy+.18],[side*.92,gy+.34],
+        f*.262,'gild',.015);
+      stud(side*.77,gy+.21,f*.27,.024);
+    }
+    P([[-.39,gy+.20],[0,gy+.65],[.39,gy+.20],
+      [.27,gy-.11],[0,gy-.51],[-.27,gy-.11]],
+      .115,'bronze',f*.242,.015);
+    P([[-.272,gy+.15],[0,gy+.48],[.272,gy+.15],
+      [.19,gy-.105],[0,gy-.34],[-.19,gy-.105]],
+      .059,'graphite',f*.318,.008);
+    diamond(0,gy+.07,f*.357,.251,.322,'bronze',.057);
+    diamond(0,gy+.07,f*.398,.187,.251,'gild',.038);
+    gem(0,gy+.07,f*.444,.132,.191,.059);
+    gem(0,gy-.28,f*.356,.057,.086,.027);
+  }
+  g.userData.berserkerReferenceV2=true;
+  g.userData.referenceSheet='Berserker Dual Blades 4-view: long serrated sickle-saber silver steel, red energy, horned bat-wing guard';
+  g.userData.bladeLengthRatio='long demonic blade, ~3x grip length';
  }
  function shield(){
   // 2026-10-21 orthographic Heavy Soldier TOWER SHIELD.
