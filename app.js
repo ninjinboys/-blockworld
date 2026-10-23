@@ -9,7 +9,7 @@ import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
-import {createBossArenaModel} from './boss-arena-model.js?v=20261023bossAltarCraft01';
+import {createBossArenaModel} from './boss-arena-model.js?v=20261023bossAltarCraft02';
 import {createBossWarpDeviceModel} from './boss-warp-device-model.js?v=20261023bossWarp01';
 import {createBuildingBlockModels} from './building-block-models.js?v=20261020twoBlockBedrollFence04';
 import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261020waterBucket02';
@@ -7628,7 +7628,7 @@ function renderCrafting(){
   const count=$('craftCount');
   if(count)count.textContent=craftMode==='arena'?'祭壇':(search?list.filter(r=>(r.name+' '+(names[r.out]||'')).toLocaleLowerCase('ja').includes(search)).length:list.length)+' 種類';
   const toolbar=document.querySelector('.craft-toolbar');
-  if(toolbar)toolbar.hidden=craftMode==='arena';
+  if(toolbar)toolbar.style.display=craftMode==='arena'?'none':'';
   if(craftMode==='arena'){
     const info=document.createElement('div');
     info.className='recipe';info.style.padding='18px';
