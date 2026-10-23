@@ -217,6 +217,49 @@ loft([
  [-7.23,.33,.05,.15],[-6.58,.49,.10,.32],[-5.77,.68,.15,.44],
  [-4.55,.96,.20,.62],[-3.13,1.39,.24,.85],[-1.94,1.91,.14,.81]
 ],'royal');
+// Angled overlapping 3D facial scales follow the skull's anatomy. The old
+// smooth beak is deliberately replaced by layered lapis / turquoise armor.
+const facialInstances=new Map();
+function facialTile(kind,x,y,z,sx,sy,sz,ax=0,ay=0,az=0){
+ if(!facialInstances.has(kind))facialInstances.set(kind,[]);
+ const dummy=new THREE.Object3D();
+ dummy.position.set(x,y,z);dummy.rotation.set(ax,ay,az);
+ dummy.scale.set(sx,sy,sz);dummy.updateMatrix();
+ facialInstances.get(kind).push(dummy.matrix.clone());
+}
+// Dorsal rows fan outwards from a dark indigo median skull ridge.
+for(let col=0;col<29;col++){
+ const x=-6.75+col*.205;
+ const u=Math.max(0,Math.min(1,(x+6.75)/6.5));
+ const spread=.20+u*1.21;
+ const topY=.47+(x+6.75)*.30;
+ for(let j=-3;j<=3;j++){
+  const z=j/3*spread*.92;
+  const y=topY-.14*Math.abs(j/3)**1.8+Math.sin(col*.36+j*.71)*.06;
+  const k=(col+Math.abs(j)*2)%11;
+  const color=j===0?(k%3===0?'turquoise':'royal'):
+   k===0?'ice':k<4?'sea':k<7?'royal':k===9?'turquoise':'blue';
+  facialTile(color,x,y+.12,z,.39+.13*u,.40+.07*u,1.20,
+    -Math.PI/2+(j/3)*.21,0,-.12);
+ }
+}
+// Two cheek curtains overlap in the direction of the whisker roots.
+// No scales are placed over the inset eye at y=1.17, x≈-2.2.
+for(const s of [-1,1])for(let row=0;row<5;row++)for(let col=0;col<20;col++){
+ const x=-5.30+col*.247, u=Math.max(0,Math.min(1,(x+5.3)/5));
+ const y=-.04+row*.235 + .10*u;
+ if(x>-2.95&&y>.86)continue;
+ const edge=.65+u*1.07+(row/5)*.11;
+ const z=s*(edge+.055);
+ const phase=Math.sin(col*.9+row*2.3);
+ const kind=phase>.64?'ice':phase>.20?'sea':phase>-.25?'turquoise':phase>-.73?'royal':'blue';
+ facialTile(kind,x,y,z,.41+.13*u,.40,.94,0,0,-.12);
+}
+for(const [name,mats] of facialInstances){
+ const im=new THREE.InstancedMesh(tile,mat[name],mats.length);
+ for(let i=0;i<mats.length;i++)im.setMatrixAt(i,mats[i]);
+ im.instanceMatrix.needsUpdate=true;im.frustumCulled=false;H.add(im);
+}
 // 2 side jowls carry the thick armor, rather than plane of loose tiles.
 for(const s of [-1,1]){
  poly(-1.08,.50,s*1.05,1.31,.94,.83,'blue',H,1);
@@ -334,7 +377,7 @@ grid.position.y=-3.48;scene.add(grid);
 dragon.updateMatrixWorld(true);
 const bounds=new THREE.Box3().setFromObject(dragon);
 const whole=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());
-let yaw=-.56,pitch=.08,distance=27.5,focus=head.position.clone().add(V(-3.25,.55,0)),spin=false,mode='head';
+let yaw=-.50,pitch=.08,distance=29.5,focus=head.position.clone().add(V(-4.3,.55,0)),spin=false,mode='head';
 function fit(){
  const aspect=Math.max(.45,camera.aspect),t=Math.tan(camera.fov*Math.PI/360);
  return Math.min(115,Math.max(size.x*.52/(t*aspect),size.y*.60/t)*1.14+size.z*.36);
@@ -345,8 +388,8 @@ function setView(which){
  if(which==='side'){yaw=0;pitch=.045;focus.copy(whole);distance=fit()}
  if(which==='back'){yaw=Math.PI+.15;pitch=.14;focus.copy(whole);distance=fit()}
  if(which==='head'){
-  yaw=-.56;pitch=.08;focus.copy(head.position).add(V(-3.25,.55,0));
-  distance=(innerWidth/Math.max(1,innerHeight)<1.1?27.5:25.5);
+  yaw=-.50;pitch=.08;focus.copy(head.position).add(V(-4.3,.55,0));
+  distance=(innerWidth/Math.max(1,innerHeight)<1.1?29.5:26.5);
  }
 }
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
@@ -376,7 +419,7 @@ function draw(){
  camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
  camera.lookAt(focus);renderer.render(scene,camera);
 }draw();
-window.seiryuModelRevision='sculpture-32-hero';
+window.seiryuModelRevision='sculpture-33-scales';
 
 </script>
 </body>
