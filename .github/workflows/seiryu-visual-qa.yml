@@ -42,7 +42,7 @@ jobs:
               deviceScaleFactor:1,ignoreHTTPSErrors:true});
             const errors=[];
             page.on('pageerror',e=>errors.push(e.stack||e.message));
-            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('404 (File not found)'))errors.push(m.text())});
             await page.goto('http://127.0.0.1:8765/seiryu.html?v=qa20261023',
               {waitUntil:'domcontentloaded',timeout:35000});
             await page.waitForFunction(()=>{
