@@ -191,7 +191,10 @@ for(let i=3;i<ringSegments-6;i+=4){
 }
 // Face anatomy lives in its own group, facing left. Large majestic skull,
 // narrowing snout, broad jowls and an independently OPEN lower jaw.
-const head=new THREE.Group();head.position.set(-10.6,9.55,1.1);head.scale.setScalar(1.67);dragon.add(head);
+const head=new THREE.Group();head.position.set(-10.6,9.55,1.1);
+// Nonuniform proportions remove the elongated crocodile-like muzzle:
+// taller/wider guardian skull and shorter frontal projection.
+head.scale.set(1.31,1.72,1.72);dragon.add(head);
 const H=head;
 function loft(points,m,parent=H,sides=20){
  const coords=[],inds=[];
@@ -421,7 +424,7 @@ function draw(){
  camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
  camera.lookAt(focus);renderer.render(scene,camera);
 }draw();
-window.seiryuModelRevision='sculpture-34-polish';
+window.seiryuModelRevision='sculpture-35-proportions';
 
 </script>
 </body>
