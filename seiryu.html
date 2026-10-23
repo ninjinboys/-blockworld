@@ -259,12 +259,15 @@ for(const s of [-1,1]){
  // circular eyes looked like a cartoon animal rather than a guardian dragon.
  const sock=headMass(-1.37,1.24,s*2.00,.80,.29,.20,'black',1);
  sock.rotation.z=-.18;
- const eye=headMass(-1.47,1.24,s*2.235,.51,.10,.11,'eye',1);
+ const eye=headMass(-1.47,1.22,s*2.58,.69,.13,.11,'eye',1);
+ eye.rotation.z=-.19;
+ // A narrow luminous core floats just outside the dark, deeply-set socket.
+ const iris=headMass(-1.52,1.23,s*2.71,.26,.075,.05,'water',1);
  eye.rotation.z=-.19;
  // Narrow vertical pupil sits on the illuminated slit instead of popping out.
- headMass(-1.57,1.25,s*2.34,.023,.09,.026,'black',1);
+ headMass(-1.57,1.24,s*2.72,.022,.078,.024,'black',1);
  rod([-1.94,1.37,s*2.27],[-1.38,1.43,s*2.25],.038,.018,'water',head,5);
- rod([-2.20,1.56,s*2.13],[-.51,1.73,s*1.88],.28,.11,'deep',head,6);
+ rod([-2.20,1.54,s*2.20],[-.51,1.73,s*1.98],.22,.10,'deep',head,6);
  rod([-2.16,1.64,s*2.16],[-1.15,1.71,s*2.06],.12,.025,'sky',head,5);
  rod([-2.02,.995,s*2.09],[-.95,1.018,s*2.01],.10,.028,'royal',head,5);
  // Bone ridges running from eye to broad cheek flares.
@@ -409,7 +412,7 @@ for(let row=0;row<4;row++)for(let i=0;i<38;i++){
  const end=[x+.42,y+.55+(i%5)*.16,z+s*(.45+Math.floor(row/2)*.21)];
  rod([x,y,z],end,.18,.020,(i+row)%3===0?'mint':i%2===0?'teal':'sky',head,4);
 }
-window.seiryuFaceVersion='v15-layered-dragon'; 
+window.seiryuFaceVersion='v16-dragon-iris'; 
 // Muscular, articulated legs with three ivory hooks per claw.
 function legAt(t,sgn){
  const p=bodyPath.getPoint(t),frame=ringFrame(t),side=frame.side;
