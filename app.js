@@ -7632,7 +7632,7 @@ function renderCrafting(){
   if(craftMode==='arena'){
     const info=document.createElement('div');
     info.className='recipe';info.style.padding='18px';
-    info.textContent='中央の台座の祭壇画面です。現在はキメラの魂を地面に向けて「設置・使用」でキメラを召喚できます。青龍・朱雀・白虎・玄武・天帝の召喚機能はまだ実装されていません。';
+    info.textContent='ボス召喚機能は現在準備中です。';
     recipeList.appendChild(info);
     return;
   }
