@@ -247,9 +247,10 @@ for(const s of [-1,1]){
  rod([-1.76,.05,s*.92],[-1.95,-1.23,s*1.08],.20,.015,'tooth',head,6);
  // Eye sockets: black recessed angular wedges, cyan light deep inside,
  // sharp overlapping eyebrows sweeping BACK (positive x).
- const sock=headMass(-1.25,1.17,s*2.01,.82,.43,.28,'black',1);
+ const sock=headMass(-1.25,1.17,s*2.02,.55,.30,.19,'black',1);
  sock.rotation.z=-.19;
- const eye=headMass(-1.42,1.15,s*2.25,.52,.26,.20,'eye',1);
+ const eye=headMass(-1.42,1.15,s*2.24,.36,.17,.14,'eye',1);
+ headMass(-1.51,1.16,s*2.37,.055,.14,.045,'deep',1);
  const brow=rod([-2.06,1.52,s*2.10],[-.35,1.81,s*1.90],.31,.13,'deep',head,5);
  rod([-2.25,1.58,s*2.16],[-1.39,1.80,s*2.14],.14,.035,'sky',head,5);
  // Bone ridges running from eye to broad cheek flares.
@@ -374,14 +375,14 @@ function fitWholeDragon(){
   dragonSize.y*.5/tan
  )*1.10+dragonSize.z*.32);
 }
-let yaw=-.35,pitch=.045,distance=19.7,autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-3.6,.6,0));
+let yaw=-.31,pitch=.055,distance=28.8,autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-4.8,1.0,0));
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
  const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
  if(view==='front'){yaw=.10;pitch=.07;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='side'){yaw=0;pitch=.02;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='back'){yaw=Math.PI;pitch=.08;distance=fitWholeDragon();center.copy(heroCenter)}
- if(view==='head'){yaw=-.35;pitch=.045;distance=19.7;center.copy(head.position).add(new THREE.Vector3(-3.6,.6,0))}
+ if(view==='head'){yaw=-.31;pitch=.055;distance=28.8;center.copy(head.position).add(new THREE.Vector3(-4.8,1.0,0))}
 }));
 document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
 document.getElementById('zoomout').onclick=()=>distance=Math.min(85,distance*1.25);
