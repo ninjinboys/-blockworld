@@ -13,7 +13,55 @@
 #screen{position:fixed;z-index:5;inset:0;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at 50% 18%,#274867f0 0,#0b1726f5 45%,#05090efd 100%)}
 .panel{width:min(850px,100%);background:#101f2eef;border:1px solid #476a80;border-radius:23px;box-shadow:0 22px 80px #000b;padding:clamp(22px,4vw,42px)}.eyebrow{font-size:12px;color:#5ce3d5;letter-spacing:.28em;font-weight:900}.panel h1{margin:7px 0 0;font-size:clamp(32px,6.5vw,60px);letter-spacing:.11em;line-height:1.15}.panel h1 span{color:#72d8f8}.lead{font-size:14px;color:#adc3d2;line-height:1.85;margin:11px 0 24px}.panel h2{font-size:17px;margin:10px 0 14px}.jobs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.job{background:#172e42;border:1px solid #486079;border-radius:12px;padding:13px 5px;color:#edf7fb;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}.job span{font-size:25px}.job strong{font-size:12px}.job.selected{border:2px solid #7cf2dd;background:#214b59;box-shadow:0 0 0 1px #67f2df5c inset}.lobby{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.column{background:#122638;border:1px solid #344f65;border-radius:13px;padding:16px;min-width:0}.column p{font-size:12px;color:#a8c2d1;margin:0 0 13px}.primary,.secondary{border:0;border-radius:10px;font-weight:800;min-height:43px;padding:10px 16px}.primary{color:#051d25;background:linear-gradient(110deg,#77e8d3,#6fc9fa)}.secondary{color:#e3f4ff;background:#28506b}.wide{width:100%}input{background:#071726;color:#fff;border:1px solid #53748b;border-radius:9px;padding:12px;min-width:0;width:100%;font-size:16px;letter-spacing:.16em;text-transform:uppercase}.joinrow{display:flex;gap:7px}.joinrow input{flex:1}.roomline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;color:#bdccd6;font-size:12px}.roomline strong{font-size:22px;color:#88e4f9;letter-spacing:.14em}.roomline .secondary{min-height:36px}.bottomline{display:flex;align-items:center;justify-content:space-between;margin-top:19px;gap:12px}.small{font-size:12px;color:#9eb5c5;line-height:1.5}.error{color:#ff9e9e!important}#startMatch{min-width:165px}#backHome{display:none;text-align:center;margin-top:16px}.link{color:#9ddefa}#notice{min-height:18px;font-size:12px;margin:12px 0 0;color:#a8dfeb}
 #finish{position:fixed;inset:0;z-index:6;background:#06101bc9;display:none;align-items:center;justify-content:center;padding:20px}#finish .panel{text-align:center;max-width:440px}#finish h2{font-size:45px;color:#9df2e9;margin:4px 0 8px}#finish p{color:#c7d7e0}
-#controlsHelp{position:fixed;bottom:24px;left:20px;z-index:3;background:#071725b8;padding:10px 13px;border-radius:10px;font-size:12px;color:#d8ecf7;pointer-events:none;display:none}#controlsHelp.show{display:block}#mobileControls{position:fixed;inset:auto 0 15px;z-index:4;display:none;justify-content:space-between;padding:0 16px;pointer-events:none}.pad{display:grid;grid-template-columns:repeat(3,55px);grid-template-rows:repeat(3,55px);gap:4px}.pad button,.combat button{pointer-events:auto;background:#162f47bf;color:white;border:2px solid #91cadd9e;border-radius:15px;font-size:21px;font-weight:800;touch-action:none;user-select:none}.pad .up{grid-column:2;grid-row:1}.pad .left{grid-column:1;grid-row:2}.pad .down{grid-column:2;grid-row:3}.pad .right{grid-column:3;grid-row:2}.combat{display:flex;align-items:flex-end;gap:10px}.combat button{height:77px;width:77px;background:#406d7bda;font-size:15px}.combat button.attack{background:#a75555d9;border-color:#ffc99d}#leaveButton{position:fixed;right:20px;bottom:20px;z-index:4;display:none;min-height:32px;font-size:11px;opacity:.75}
+#controlsHelp{position:fixed;bottom:24px;left:20px;z-index:3;background:#071725b8;padding:10px 13px;border-radius:10px;font-size:12px;color:#d8ecf7;pointer-events:none;display:none}#controlsHelp.show{display:block}#mobileControls{position:fixed;inset:auto 0 15px;z-index:4;display:none;justify-content:space-between;padding:0 16px;pointer-events:none}/* Dedicated touchscreen movement stick; matches the matte NEXACRAFT HUD. */
+.move-stick{
+ width:138px;height:138px;border-radius:50%;position:relative;
+ flex:0 0 auto;align-self:flex-end;touch-action:none;user-select:none;
+ pointer-events:auto;border:2px solid #80bdcbb0;
+ background:radial-gradient(circle at center,#2a495b98 0%,#162e42b5 67%,#132838da 100%);
+ box-shadow:inset 0 0 0 10px #253f5359,0 7px 24px #0007;
+ -webkit-user-select:none;-webkit-touch-callout:none;
+}
+.move-stick:after{
+ content:"";position:absolute;inset:18px;border:1px solid #a6cadb33;
+ border-radius:50%;pointer-events:none;
+}
+.move-stick .stick-track{
+ position:absolute;inset:0;border-radius:50%;pointer-events:none;
+}
+.move-stick .stick-thumb{
+ position:absolute;left:50%;top:50%;width:58px;height:58px;border-radius:50%;
+ transform:translate(-50%,-50%);
+ background:linear-gradient(140deg,#6c9eaf,#34586e);
+ border:3px solid #b5e6f2df;box-shadow:0 4px 10px #0009,inset 0 2px 5px #e7ffff1d;
+ pointer-events:none;display:grid;place-items:center;
+}
+.stick-thumb:after{
+ content:"";width:14px;height:14px;border-radius:50%;
+ background:#d9f7ffb5;box-shadow:0 0 0 5px #b7efff24;
+}
+.move-stick.active .stick-thumb{background:linear-gradient(140deg,#7cbdcb,#397b8e)}
+.combat{
+ display:grid;grid-template-columns:70px 84px;grid-template-rows:68px 74px;
+ align-items:end;gap:8px;pointer-events:none;
+}
+.combat button{
+ pointer-events:auto;background:#28445cd9;color:#fff;
+ border:2px solid #93cad9c9;border-radius:16px;
+ touch-action:none;user-select:none;-webkit-user-select:none;
+ font-size:14px;font-weight:800;height:100%;width:100%;
+}
+.combat .jump{grid-column:1;grid-row:1;background:#3d7083de;border-color:#9de7ed;font-size:15px}
+.combat .guard{grid-column:1;grid-row:2}
+.combat .attack{grid-column:2;grid-row:1/3;align-self:end;height:90px;background:#a75555e2;border-color:#ffc99d;font-size:16px}
+.combat button:active{filter:brightness(1.2)}
+@media(max-width:380px){
+ .move-stick{width:120px;height:120px}
+ .move-stick .stick-thumb{width:54px;height:54px}
+ .combat{grid-template-columns:65px 76px;grid-template-rows:60px 68px;gap:6px}
+ .combat .attack{height:84px}
+}
+#leaveButton{position:fixed;right:20px;bottom:20px;z-index:4;display:none;min-height:32px;font-size:11px;opacity:.75}
 @media(hover:none),(pointer:coarse){#mobileControls.show{display:flex}#controlsHelp{display:none!important}#leaveButton{bottom:210px}}@media(max-width:650px){#screen{padding:8px;align-items:flex-start}.panel{padding:20px 16px;margin:auto 0}.jobs{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.job{min-height:75px}.job strong{font-size:10px}.lobby{grid-template-columns:1fr}.column{padding:12px}.lead{margin-bottom:14px}#top{padding:12px 10px}#clock{font-size:16px;top:17px}.fighter{width:43%}.fighter .line{font-size:10px}.hp{height:12px}}
 
 /* Original NEXACRAFT first-person crosshair dimensions and treatment. */
@@ -56,9 +104,19 @@
 <div id="backHome"><a class="link" href="./index.html">本編 NEXACRAFT に戻る</a></div>
 </div></section>
 <div id="finish"><div class="panel"><div class="eyebrow">BATTLE RESULT</div><h2 id="resultTitle">VICTORY</h2><p id="resultText"></p><button id="againBtn" class="primary wide">もう一度対戦</button><button id="menuBtn" class="secondary wide" style="margin-top:10px">メニューに戻る</button></div></div>
-<div id="controlsHelp">WASD：移動　マウス：視点変更（クリックで固定）　左クリック／Space：攻撃　Shift：ダッシュ　G：ガード　Q / E：回転</div>
-<div id="mobileControls"><div class="pad"><button class="up" data-key="KeyW">▲</button><button class="left" data-key="KeyA">◀</button><button class="down" data-key="KeyS">▼</button><button class="right" data-key="KeyD">▶</button></div><div class="combat"><button data-key="KeyG">ガード</button><button class="attack" data-action="attack">攻撃</button></div></div>
+<div id="controlsHelp">WASD：移動　マウス：視点変更（クリックで固定）　Space：ジャンプ　左クリック／F：攻撃　Shift：ダッシュ　G：ガード　Q / E：回転</div>
+<div id="mobileControls">
+  <div id="moveStick" class="move-stick" role="group" aria-label="移動スティック。倒す方向に移動します。">
+    <div class="stick-track" aria-hidden="true"></div>
+    <div id="stickThumb" class="stick-thumb" aria-hidden="true"></div>
+  </div>
+  <div class="combat">
+    <button class="jump" type="button" data-action="jump" aria-label="ジャンプ">ジャンプ</button>
+    <button class="guard" type="button" data-key="KeyG">ガード</button>
+    <button class="attack" type="button" data-action="attack">攻撃</button>
+  </div>
+</div>
 <button id="leaveButton" class="secondary">退出</button>
-<script type="module" src="./pvp.js?v=20261023cpuRangedProjectiles01"></script>
+<script type="module" src="./pvp.js?v=20261023joystickJump01"></script>
 </body>
 </html>
