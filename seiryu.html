@@ -152,12 +152,12 @@ for(let i=0;i<segmentCount;i++){
   scalePart(mat,v,rot,length,width,belly?.105:.15);
  }
  // A stepped, layered crest with individual turquoise spines.
- if(i%2===0&&i<segmentCount-2){
+ if(i%4===0&&i<segmentCount-2){
   const a=p.clone().addScaledVector(u,r-.04);
   const tip=a.clone().addScaledVector(u,.54+(1-t)*.54).addScaledVector(tg,-.44);
   rod(a.toArray(),tip.toArray(),.25,.095,i%4===0?'sky':i%3===0?'mint':'teal',dragon,4);
  }
- if(i%3===0&&i<segmentCount-4){
+ if(i%5===0&&i<segmentCount-4){
   // Two swept-over fin rows, rather than a thin single mohawk.
   for(const sign of [-1,1]){
    const n=u.clone().multiplyScalar(.72).addScaledVector(s,sign*.70).normalize();
@@ -190,16 +190,33 @@ function headScale(x,y,z,sx,sy,sz,material,ry=0){
  const m=cube(x,y,z,sx,sy,sz,material,head);
  m.rotation.z=ry;return m;
 }
-// Arched skull built from tapered, interlocking wedges instead of a box.
+// Irregular voxel shell forms a dimensional tapering skull. Hundreds of
+// distinct material plates overlay the core polygon rather than a flat face.
+const shellStep=.26;
+for(let xi=0;xi<=21;xi++)for(let yi=0;yi<=13;yi++)for(let zi=0;zi<=17;zi++){
+ const x=-2.65+xi*shellStep,y=-.64+yi*shellStep,z=-2.14+zi*shellStep;
+ const d=((x+.25)/2.68)**2+((y-.73)/1.83)**2+(z/1.80)**2;
+ if(d>.99||d<.72)continue;
+ // Open underside at the mouth, preserve recognisable jaws and eye sockets.
+ if(x<-1.55&&y<.10)continue;
+ const noise=Math.sin(xi*12.7+yi*3.19+zi*8.34);
+ let color=noise>.48?'sky':noise>.12?'teal':noise>-.3?'royal':'blue';
+ if(y>1.5&&noise>.0)color='mint';
+ const v=new THREE.Vector3(x,y,z).multiplyScalar(HEAD_SCALE)
+   .applyAxisAngle(yAxis,head.rotation.y).add(head.position);
+ scalePart(color,v,new THREE.Quaternion(),
+  shellStep*1.03*HEAD_SCALE,shellStep*1.03*HEAD_SCALE,shellStep*1.03*HEAD_SCALE);
+}
+// Arched skull built from tapered, interlocking wedges underneath the shell.
 sculptWedge([[-2.45,.65],[-1.93,1.47],[-.65,2.20],[.7,2.0],[1.65,1.05],
  [1.77,.15],[.95,-.42],[-.50,-.42],[-1.61,-.02]],2.72,'royal');
 sculptWedge([[-4.42,.08],[-4.20,.47],[-3.78,.73],[-2.5,.90],[-1.73,.70],
  [-1.55,.12],[-2.45,-.22],[-3.89,-.23]],2.04,'blue');
-sculptWedge([[-4.30,-1.60],[-4.02,-1.91],[-2.70,-2.16],[-1.48,-1.89],
+sculptWedge([[-3.22,-1.67],[-3.07,-2.03],[-2.36,-2.16],[-1.48,-1.89],
  [-.46,-.97],[-.40,-.46],[-1.35,-1.13],[-3.47,-1.35]],1.95,'royal');
-sculptWedge([[-3.92,-.33],[-2.6,-.25],[-1.3,-.42],[-1.18,-1.25],
+sculptWedge([[-3.94,-.33],[-2.6,-.25],[-1.3,-.42],[-1.18,-1.25],
  [-2.78,-1.40],[-3.98,-1.22]],1.72,'black');
-sculptWedge([[-3.90,-1.37],[-2.8,-1.29],[-1.5,-1.06],[-1.22,-1.29],
+sculptWedge([[-3.23,-1.37],[-2.8,-1.29],[-1.5,-1.06],[-1.22,-1.29],
  [-2.94,-1.64]],1.36,'teal');
 // Each jawline has independently visible teeth. Large curved ivory fangs.
 for(const s of [-1,1]){
@@ -211,9 +228,9 @@ for(const s of [-1,1]){
  rod([-3.45,.09,s*.87],[-3.65,-1.30,s*.98],.23,.07,'tooth',head,6);
  rod([-3.65,-1.30,s*.98],[-3.50,-1.68,s*.95],.08,.005,'tooth',head,6);
  // Angular brows and deep inset glowing eyes, no blank square faces.
- headScale(-1.45,1.12,s*1.43,1.06,.30,.28,'deep',.19);
- headScale(-1.44,.91,s*1.55,.59,.23,.18,'eye',.15);
- headScale(-1.27,1.37,s*1.49,1.15,.24,.27,'sky',-.12);
+ headScale(-1.45,1.12,s*2.03,1.06,.30,.28,'deep',.19);
+ headScale(-1.44,.91,s*2.16,.59,.23,.18,'eye',.15);
+ headScale(-1.27,1.37,s*2.06,1.15,.24,.27,'sky',-.12);
  // Whisker and jaw fringes attached to proper cheek structure.
  for(let j=0;j<13;j++){
   const x=.02+j*.23;
@@ -259,7 +276,7 @@ for(const s of [-1,1]){
    const x=-1.62+col*.205-row*.042;
    const y=-.28+row*.294;
    const edge=1.30-.10*Math.abs(row-3)/3;
-   const z=s*(edge+.19+(col%3)*.018);
+   const z=s*(edge+.61+(col%3)*.018);
    if(x>1.42-y*.20||x<-1.90+y*.14)continue;
    const shade=Math.sin(col*1.63+row*2.14);
    const mat=shade>.61?'mint':shade>.18?'sky':shade>-.23?'teal':shade>-.62?'royal':'deep';
@@ -269,7 +286,7 @@ for(const s of [-1,1]){
  // Distinctive snout side plated in stepped turquoise shingles.
  for(let row=0;row<3;row++)for(let col=0;col<12;col++){
   const x=-4.24+col*.22,y=.16+row*.185;
-  const z=s*(.95+row*.055);
+  const z=s*(1.05+row*.075);
   cheekPlate(x,y,z,(col+row)%4===0?'mint':col%3===0?'sky':'blue',.25,-.12);
  }
  // Serrated jawline reads as interlocking cheek scales, not a rectangle.
