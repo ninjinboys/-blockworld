@@ -249,7 +249,9 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
             item.rotation.set(-.05,Math.PI-.10,.03);
             item.position.set(.01,-.01,-.20);
           }else if(kind==='bow'){
-            item.rotation.set(-.04,Math.PI-.08,-.03);
+            // The archer's bowstring is drawn toward the body in Z,
+            // instead of sitting beside the limbs in the avatar's X.
+            item.rotation.set(-.04,Math.PI/2,-.03);
             item.position.set(.015,-.05,-.12);
           }else{
             item.rotation.set(-.14,.1+jobHeldBladeYaw(main),-.12);
@@ -266,6 +268,9 @@ export function makeAvatarHeldItems(THREE,drawItemIcon){
           item.scale.setScalar(1.35);
         }else if(main===149||main===CHIMERA_BOW){
           item.scale.setScalar(1.35);
+          // Use the same depth-oriented shooting grip as job bows.
+          item.rotation.set(-.04,Math.PI/2,-.03);
+          item.position.set(.015,-.05,-.12);
         }else if(Object.hasOwn(blockColors,main)){
           item.scale.setScalar(1.65);
         }else{
