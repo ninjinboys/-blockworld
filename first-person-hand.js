@@ -298,7 +298,8 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     part(bow,.16,.20,.16,itemMat(0x382639),-.3,0,0);
     part(bow,.085,.14,.08,hornEdge,.048,.625,0);
     part(bow,.085,.14,.08,hornEdge,.048,-.625,0);
-    bow.rotation.set(-.13,.24,-.62);
+    // Face the bow in the shooting direction, string in camera depth.
+    bow.rotation.set(-.08,Math.PI/2,-.12);
     bow.scale.set(.90,.92,.90);
     return bow;
   }
@@ -313,7 +314,8 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
     }
     part(bow,.022,1.02,.021,string,.012,0,-.025);
     part(bow,.13,.18,.12,wood,-.19,.0,0);
-    bow.rotation.set(-.15,.27,-.62);
+    // The wooden bow also needs the same edge-forward shooting pose.
+    bow.rotation.set(-.08,Math.PI/2,-.12);
     bow.scale.set(.86,.88,.86);
     return bow;
   }
@@ -347,7 +349,11 @@ export function makeFirstPersonHand(THREE,{scene,camera,drawItemIcon,getHeld,get
         // Hold the bow upright in the viewing plane, with its string and
         // full recurved limbs clearly visible, rather than edge-on and
         // leaning over the right half of the screen.
-        object.rotation.set(-.06,.08,-.12);
+        // Bowstring should be behind the riser in DEPTH (toward the
+        // archer), never displaced across the screen as a sideways bow.
+        // The mesh is constructed in XY; quarter-turn yaw converts its
+        // recurve/string separation from horizontal X to forward Z.
+        object.rotation.set(-.06,Math.PI/2,-.12);
         object.position.set(-.12,-.04,-.20);
       }else if(kind==='shield'){
         // Front of the shield faces the viewer; the shield rests lower,
