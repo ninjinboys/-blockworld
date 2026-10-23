@@ -9,6 +9,7 @@ import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
+import {createBossArenaModel} from './boss-arena-model.js?v=20261023bossArena01';
 import {createBuildingBlockModels} from './building-block-models.js?v=20261020twoBlockBedrollFence04';
 import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261020waterBucket02';
 import {drawDetailedItemIcon} from './item-art-icons.js?v=20261019pixelArt01';
@@ -59,7 +60,8 @@ Object.assign(B,{
   TRAPDOOR_OPEN_N:73,TRAPDOOR_OPEN_E:74,TRAPDOOR_OPEN_S:75,TRAPDOOR_OPEN_W:76,WOOD_SLAB_TOP:77,
   SLEEPING_BAG_WORLD:78,SLEEPING_BAG_HEAD:79,
   SLEEPING_BAG_E:80,SLEEPING_BAG_S:81,SLEEPING_BAG_W:82,
-  SLEEPING_BAG_HEAD_E:83,SLEEPING_BAG_HEAD_S:84,SLEEPING_BAG_HEAD_W:85
+  SLEEPING_BAG_HEAD_E:83,SLEEPING_BAG_HEAD_S:84,SLEEPING_BAG_HEAD_W:85,
+  BOSS_ARENA_CORE:86
 });
 const SHAPED_VARIANT_BASE=new Map([
   [B.WOOD_STAIRS_E,B.WOOD_STAIRS],[B.WOOD_STAIRS_S,B.WOOD_STAIRS],[B.WOOD_STAIRS_W,B.WOOD_STAIRS],
@@ -93,7 +95,7 @@ const I={
   COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157,CHIMERA_HIDE:158,
   CHIMERA_HELMET:159,CHIMERA_CHEST:160,CHIMERA_LEGS:161,CHIMERA_BOOTS:162,
   CHIMERA_FANG:163,CHIMERA_DAGGER:164,CHIMERA_HORN:165,CHIMERA_BOW:166,
-  WARP_WORKBENCH:167,
+  WARP_WORKBENCH:167,BOSS_ARENA_CORE:208,
   SPEAR:168,IRON_DAGGER:169,BATTLE_AXE:170,HAMMER:171,CROSSBOW:172,THROWING_KNIFE:173,MOLOTOV:174,HEAL_POTION:175,STAMINA_POTION:176,POISON_ARROW:177,BUCKET:178,FISHING_ROD:179,COMPASS:180,MAP:181,BINOCULARS:182,ROPE:183,NAME_TAG:184,BACKPACK:185,GLIDER:186,SLEEPING_BAG:187,FLINT_STEEL:188,WATER_BUCKET:189
 };
 const names={
@@ -111,9 +113,10 @@ const names={
   139:'羊毛',140:'生の豚肉',141:'生の牛肉',142:'革',143:'ベッド',
   144:'焼き豚肉',145:'ステーキ',146:'木のドア',147:'松明',31:'松明',148:'チェスト',32:'チェスト',149:'弓',150:'矢',151:'鞍',152:'ライオンの牙',153:'バッファローの角',155:'オオアナコンダの革',156:'盾',157:'キメラの魂',158:'キメラの革',
   159:'キメラのヘルメット',160:'キメラのチェストプレート',161:'キメラのレギンス',162:'キメラのブーツ',163:'キメラの牙',164:'キメラのダガー',
-  165:'キメラの角',166:'キメラの弓',167:'転送作業台',
+  165:'キメラの角',166:'キメラの弓',167:'転送作業台',208:'ボスアリーナの核',
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
+names[B.BOSS_ARENA_CORE]='ボスアリーナの祭壇';
 names[B.STONE_BRICKS]='石レンガ';
 names[B.MOSSY_STONE_BRICKS]='苔むした石レンガ';
 names[B.CRACKED_STONE_BRICKS]='ひび割れた石レンガ';
@@ -183,7 +186,7 @@ const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.G
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH,[I.CHEST]:B.CHEST};
 const WARP_WORKBENCH_BLOCKS=new Set([B.WARP_WORKBENCH_X,B.WARP_WORKBENCH_X_END,B.WARP_WORKBENCH_Z,B.WARP_WORKBENCH_Z_END]);
 const isWarpWorkbench=id=>WARP_WORKBENCH_BLOCKS.has(id);
-const specialBlockDrops={[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST,[B.WARP_WORKBENCH_X]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_X_END]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z_END]:I.WARP_WORKBENCH,[B.SLEEPING_BAG_WORLD]:I.SLEEPING_BAG};
+const specialBlockDrops={[B.BOSS_ARENA_CORE]:I.BOSS_ARENA_CORE,[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST,[B.WARP_WORKBENCH_X]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_X_END]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z_END]:I.WARP_WORKBENCH,[B.SLEEPING_BAG_WORLD]:I.SLEEPING_BAG};
 for(const id of SLEEPING_BAG_BLOCKS)specialBlockDrops[id]=I.SLEEPING_BAG;
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
@@ -200,7 +203,7 @@ const inventory={
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.CHIMERA_HIDE]:0,
   [I.CHIMERA_FANG]:0,[I.CHIMERA_DAGGER]:0,[I.CHIMERA_HORN]:0,[I.CHIMERA_BOW]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0,[I.WARP_WORKBENCH]:0,
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0,[I.WARP_WORKBENCH]:0,[I.BOSS_ARENA_CORE]:0,
   ...Object.fromEntries(NEW_BUILD_BLOCKS.map(id=>[id,0])),...Object.fromEntries(NEW_ITEM_IDS.map(id=>[id,0])),
   ...Object.fromEntries(JOB_WEAPON_IDS.map(id=>[id,0]))
 };
@@ -237,7 +240,7 @@ const itemGlyphs={
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.ANACONDA_HIDE]:'蛇革',[I.CHIMERA_SOUL]:'魂',[I.CHIMERA_HIDE]:'キ革',[I.CHIMERA_FANG]:'キ牙',[I.CHIMERA_DAGGER]:'短剣',
   [I.CHIMERA_HORN]:'キ角',[I.CHIMERA_BOW]:'キ弓',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.WARP_WORKBENCH]:'転送台',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.WARP_WORKBENCH]:'転送台',[I.BOSS_ARENA_CORE]:'闘技場',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
 };
 
 const ICON_MAT={
@@ -447,6 +450,13 @@ function drawItemIcon(g,id){
   if(id===B.GLASS)return blockIcon(g,'#d9f7fb','#9ddce6','#72b9c8','glass');
   if(id===B.BEDROCK)return blockIcon(g,'#6e7174','#505356','#37393b','bedrock');
   if(id===B.CRAFTING_TABLE||id===I.CRAFTING_TABLE)return blockIcon(g,'#d7a05e','#9d6234','#774523','table');
+  if(id===I.BOSS_ARENA_CORE||id===B.BOSS_ARENA_CORE){
+    ir(g,1,11,14,4,'#0d191e');ir(g,2,9,12,3,'#354249');
+    poly(g,[[2,10],[4,3],[7,7],[7,11]],'#202f38');
+    poly(g,[[14,10],[12,3],[9,7],[9,11]],'#202f38');
+    ir(g,4,6,1,5,'#24c7b4');ir(g,11,6,1,5,'#24c7b4');
+    ir(g,7,3,2,9,'#54f9df');ir(g,5,6,6,2,'#9ffff1');return;
+  }
   if(id===I.WARP_WORKBENCH||isWarpWorkbench(id)){
     ir(g,1,10,14,4,'#0b1418');ir(g,2,8,12,3,'#333f43');
     poly(g,[[2,11],[3,4],[6,7],[6,11]],'#344247');
@@ -651,7 +661,11 @@ workbenchRecipes.push(...Object.values(JOBS).filter(j=>Number.isInteger(j.weapon
   name:names[j.weapon],out:j.weapon,qty:1,
   needs:jobWeaponIngredients(j.kind),unlockLevel:j.level
 })));
-const warpWorkbenchRecipes=[]; // Warp-device ingredients will be specified separately.
+const warpWorkbenchRecipes=[
+  {name:'ボス専用アリーナの核',out:I.BOSS_ARENA_CORE,qty:1,
+    needs:[[B.STONE_BRICKS,32],[B.OBSIDIAN,16],[I.IRON_INGOT,8],[I.DIAMOND,2]],
+    unlockLevel:8}
+];
 const furnaceRecipes=[
   {name:'鉄インゴット',out:I.IRON_INGOT,qty:1,needs:[[I.RAW_IRON,1],[B.COAL,1]],unlockLevel:7,xp:4},
   {name:'金インゴット',out:I.GOLD_INGOT,qty:1,needs:[[I.RAW_GOLD,1],[B.COAL,1]],unlockLevel:7,xp:6},
@@ -2391,7 +2405,7 @@ const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
 // Replace flat plain colors with dedicated pixel materials and true 3D shapes.
 const detailedBlockModels=createBuildingBlockModels(THREE,B);
 const newBlockMaterials=detailedBlockModels.materials;
-const M={...newBlockMaterials,[B.WARP_WORKBENCH_X]:stone,[B.WARP_WORKBENCH_X_END]:stone,[B.WARP_WORKBENCH_Z]:stone,[B.WARP_WORKBENCH_Z_END]:stone,[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
+const M={...newBlockMaterials,[B.WARP_WORKBENCH_X]:stone,[B.WARP_WORKBENCH_X_END]:stone,[B.WARP_WORKBENCH_Z]:stone,[B.WARP_WORKBENCH_Z_END]:stone,[B.BOSS_ARENA_CORE]:stone,[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
 const doorBox=new THREE.BoxGeometry(.92,.998,.14);
 function doorTexture(top){
@@ -2515,6 +2529,7 @@ function updateTorchLights(now){
   }
 }
 const warpWorkbenchVisual=createWarpWorkbenchModel(THREE);
+const bossArenaVisual=createBossArenaModel(THREE);
 let meshes=[],lookup=new Map();
 const neighborVectors=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 function removeChunkMeshes(c){
@@ -2537,7 +2552,7 @@ function rebuildChunkMesh(c){
     // Previous terrain face-culling hid the bottom half when enclosed, so
     // it looked like the door was floating. Opening the door accidentally
     // made both halves render because the open IDs were treated as air.
-    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST||isWarpWorkbench(id)||detailedBlockModels.custom.has(id);
+    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST||isWarpWorkbench(id)||id===B.BOSS_ARENA_CORE||detailedBlockModels.custom.has(id);
     if(!visible)for(const [dx,dy,dz] of neighborVectors){
       const nx=lx+dx,ny=y+dy,nz=lz+dz;
       const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
@@ -2545,7 +2560,7 @@ function rebuildChunkMesh(c){
       // Doors leave visible space beside their thin panel: render the
       // neighbouring wall, floor and ceiling faces too.
       if(id===B.WATER?b!==B.WATER:
-         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST||isWarpWorkbench(b)||detailedBlockModels.custom.has(b)){visible=true;break}
+         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST||isWarpWorkbench(b)||b===B.BOSS_ARENA_CORE||detailedBlockModels.custom.has(b)){visible=true;break}
     }
     if(visible)groups[id].push({x,y,z});
   }
@@ -2558,6 +2573,10 @@ function rebuildChunkMesh(c){
       continue;
     }
     if(id===B.WARP_WORKBENCH_X_END||id===B.WARP_WORKBENCH_Z_END)continue;
+    if(id===B.BOSS_ARENA_CORE){
+      bossArenaVisual.build(p,scene,meshes,lookup,built,id);
+      continue;
+    }
     if(detailedBlockModels.custom.has(id)){
       detailedBlockModels.build(id,p,scene,meshes,lookup,built,getLoaded);
       continue;
@@ -6260,7 +6279,7 @@ function finishMine(x,y,z,id){
 
   // Stone can be broken by hand, but only a wooden pickaxe or better yields cobblestone.
   const canDrop=id!==B.STONE||pickTier()>=1;
-  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH||drop===I.CHEST||drop===I.WARP_WORKBENCH||drop===I.SLEEPING_BAG)){
+  if(canDrop&&(buildable.includes(drop)||drop===B.COAL||drop===I.RAW_IRON||drop===I.RAW_GOLD||drop===I.DIAMOND||drop===I.CRAFTING_TABLE||drop===I.FURNACE||drop===I.BED||drop===I.DOOR||drop===I.TORCH||drop===I.CHEST||drop===I.WARP_WORKBENCH||drop===I.BOSS_ARENA_CORE||drop===I.SLEEPING_BAG)){
     const spawnAt=minedDropPosition(x,y,z);
     spawnWorldDrop(drop,1,spawnAt.x,spawnAt.y,spawnAt.z,{pickupDelay:.45});
   }
@@ -6377,6 +6396,9 @@ function place(){
   if(aimed&&get(aimed.x,aimed.y,aimed.z)===B.CHEST){
     setChestOpen(true,{x:aimed.x,y:aimed.y,z:aimed.z});return;
   }
+  if(aimed&&get(aimed.x,aimed.y,aimed.z)===B.BOSS_ARENA_CORE){
+    flash('ボスアリーナ：祭壇が起動中。キメラの魂は中央の戦闘床で使用できます');return;
+  }
   if(aimed&&isWarpWorkbench(get(aimed.x,aimed.y,aimed.z))){
     setCraftOpen(true);return;
   }
@@ -6439,6 +6461,49 @@ function place(){
   const n=h.face.normal,x=p.x+Math.round(n.x),y=p.y+Math.round(n.y),z=p.z+Math.round(n.z);
   if(!inside(x,y,z)||get(x,y,z)!==B.AIR)return;
 
+  if(selected===I.BOSS_ARENA_CORE){
+    // A REAL 13x13 walkable voxel floor; all edits are saved and networked.
+    // Require a clear, level surface: never overwrite existing homes, doors
+    // or the player's position with a one-click prefabricated building.
+    if(y>WORLD_TOP-12||!h.face||h.face.normal.y<.5){
+      flash('ボスアリーナは上空12マス空いた地面に設置してください');return;
+    }
+    const floor=[];
+    for(let dz=-6;dz<=6;dz++)for(let dx=-6;dx<=6;dx++){
+      if(dx*dx+dz*dz>72)continue;
+      const xx=x+dx,zz=z+dz;
+      if(!inside(xx,y-1,zz)||!inside(xx,y+9,zz)||
+        !solid(get(xx,y-1,zz))||
+        isWarpWorkbench(get(xx,y-1,zz))||
+        [B.CHEST,B.BED,B.BED_HEAD,B.BOSS_ARENA_CORE].includes(get(xx,y-1,zz))||
+        isDoor(get(xx,y-1,zz))||get(xx,y,zz)!==B.AIR){
+        flash('アリーナには13×13マスの平らな空き地が必要です');return;
+      }
+      floor.push({x:xx,y:y-1,z:zz,dx,dz});
+    }
+    if(mobs.some(m=>Math.abs(m.position.x-x)<6&&
+      Math.abs(m.position.z-z)<6&&Math.abs(m.position.y-y)<3)){
+      flash('アリーナ内にモブがいます');return;
+    }
+    if(Math.hypot(player.pos.x-x,player.pos.z-z)<.9){
+      flash('祭壇の真上では設置できません');return;
+    }
+    const positions=[];
+    for(const cell of floor){
+      const {dx,dz}=cell,outer=Math.max(Math.abs(dx),Math.abs(dz));
+      const core=dx*dx+dz*dz<=10;
+      const rim=outer>=5;
+      const block=core||rim?B.OBSIDIAN:
+        (dx+dz)%5===0?B.POLISHED_STONE:B.STONE_BRICKS;
+      if(get(cell.x,cell.y,cell.z)!==block){
+        set(cell.x,cell.y,cell.z,block);positions.push(cell);
+      }
+    }
+    set(x,y,z,B.BOSS_ARENA_CORE);positions.push({x,z});
+    consumeSelected(1);rebuildEdited(...positions);renderHotbar();
+    flash('ボス専用アリーナが完成！黒石の神殿と戦闘床を設置しました');
+    return;
+  }
   if(selected===I.WARP_WORKBENCH){
     // Two cells across the player's view. Both must be empty and supported.
     const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);
@@ -7525,7 +7590,7 @@ function renderCrafting(){
   const title=document.querySelector('.craft-title'),sub=document.querySelector('.craft-sub');
   if(craftMode==='workbench'){title.textContent='WORKBENCH';sub.textContent='作業台専用：ツール・防具・設備'}
   else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭1個 または 木材3個を燃料に精錬・調理（砂→ガラスも可）'}
-  else if(craftMode==='warp'){title.textContent='WARP WORKBENCH';sub.textContent='ボス転送装置を作るための専用作業台'}
+  else if(craftMode==='warp'){title.textContent='WARP WORKBENCH';sub.textContent='ボス専用アリーナの核を製作して設置できます'}
   else {title.textContent='CRAFTING';sub.textContent='インベントリで作れる基本アイテム'}
   const ids=Object.keys(inventory).map(Number);
   const owned=ids.filter(id=>(inventory[id]||0)>0);
@@ -8759,7 +8824,7 @@ function showRemoteArrow(p){
 }
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
-  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.SLEEPING_BAG_HEAD_W||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.BOSS_ARENA_CORE||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
   if(get(b.x,b.y,b.z)===b.v)return;
   multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
   finally{multiApplying=false}
