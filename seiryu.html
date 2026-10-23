@@ -42,8 +42,8 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.15;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x09131d);
-scene.fog=new THREE.Fog(0x09131d,40,100);
-const camera=new THREE.PerspectiveCamera(39,innerWidth/innerHeight,.1,170);
+scene.fog=new THREE.Fog(0x09131d,66,145);
+const camera=new THREE.PerspectiveCamera(47,innerWidth/innerHeight,.1,170);
 scene.add(new THREE.HemisphereLight(0xa4e9ff,0x253344,1.7));
 const key=new THREE.DirectionalLight(0xd8f5ff,3.4);key.position.set(-11,22,20);scene.add(key);
 const rim=new THREE.DirectionalLight(0x2aaaff,3.8);rim.position.set(9,13,-14);scene.add(rim);
@@ -80,16 +80,16 @@ function rod(a,b,r1,r2,mat,group=dragon,sides=6){
 const qId=new THREE.Quaternion(),yAxis=new THREE.Vector3(0,1,0);
 // Side-view S-curve: head forward at LEFT, long raised body and tail to RIGHT.
 const bodyPath=new THREE.CatmullRomCurve3([
- new THREE.Vector3(-11.1,5.3,3.8),new THREE.Vector3(-9.4,4.45,4.15),
- new THREE.Vector3(-7.1,2.65,4.0),new THREE.Vector3(-4.8,2.0,3.10),
- new THREE.Vector3(-2.0,2.35,1.0),new THREE.Vector3(1.7,4.0,-1.35),
- new THREE.Vector3(5.6,4.55,-2.7),new THREE.Vector3(8.0,3.3,-2.15),
- new THREE.Vector3(9.5,2.1,-.15),new THREE.Vector3(9.1,2.10,2.2),
- new THREE.Vector3(11.5,3.9,2.6),new THREE.Vector3(14.1,6.35,1.0),
- new THREE.Vector3(16.1,8.1,-.9)
+ new THREE.Vector3(-14.6,6.3,3.4),new THREE.Vector3(-11.7,5.0,3.7),
+ new THREE.Vector3(-9.0,2.8,3.4),new THREE.Vector3(-5.3,2.2,2.1),
+ new THREE.Vector3(-1.3,4.0,-.8),new THREE.Vector3(2.4,6.6,-2.8),
+ new THREE.Vector3(5.5,6.0,-3.6),new THREE.Vector3(7.7,3.0,-2.1),
+ new THREE.Vector3(7.6,1.9,.9),new THREE.Vector3(10.0,2.2,3.0),
+ new THREE.Vector3(13.0,4.4,2.5),new THREE.Vector3(15.9,7.3,.5),
+ new THREE.Vector3(17.5,9.4,-1.8)
 ],false,'catmullrom',.48);
-const bodyRadius=t=>t<.22?2.2+Math.sin(t/.22*Math.PI)*.17:
- t<.64?2.35-.25*((t-.22)/.42):Math.max(.45,2.15*(1-(t-.64)/.36));
+const bodyRadius=t=>t<.17?1.64+.48*Math.sin(t/.17*Math.PI/2):
+ t<.57?2.12-.36*((t-.17)/.40):Math.max(.32,1.76*(1-(t-.57)/.43));
 const bodyScales=new Map();
 const boxGeo=new THREE.BoxGeometry(1,1,1);
 function scalePart(material,position,orientation,sx,sy,sz){
@@ -120,7 +120,7 @@ function ringFrame(t){
  upV.crossVectors(sideV,forward).normalize();
  return {forward:forward.clone(),side:sideV.clone(),up:upV.clone()};
 }
-const segmentCount=172,aroundCount=28;
+const segmentCount=156,aroundCount=32;
 for(let i=0;i<segmentCount;i++){
  const t=i/(segmentCount-1),p=bodyPath.getPoint(t),r=bodyRadius(t);
  const frame=ringFrame(t),tg=frame.forward,s=frame.side,u=frame.up;
@@ -140,7 +140,7 @@ for(let i=0;i<segmentCount;i++){
   rot.setFromRotationMatrix(basis);
   const v=p.clone().addScaledVector(radial,r*.99);
   // Continuous sand-colored ventral armor, indigo side scales and cyan crest.
-  const belly=c<-.61;
+  const belly=c<-.64;
   let mat;
   if(belly)mat=(i%5===0?'bellyShadow':'belly');
   else if(c>.57&&j%4===0)mat='mint';
@@ -148,16 +148,16 @@ for(let i=0;i<segmentCount;i++){
   else if(c>.04&&Math.sin(i*.52+j*2.18)>.46)mat='teal';
   else mat=(i+j)%3===0?'royal':j%4===0?'blue':'deep';
   const length=Math.max(.22,bodyPath.getLength()/segmentCount*1.40);
-  const width=2*Math.PI*r/aroundCount*1.12;
+  const width=2*Math.PI*r/aroundCount*1.23;
   scalePart(mat,v,rot,length,width,belly?.105:.15);
  }
  // A stepped, layered crest with individual turquoise spines.
- if(i%2===0&&i<segmentCount-5){
+ if(i%2===0&&i<segmentCount-2){
   const a=p.clone().addScaledVector(u,r-.04);
   const tip=a.clone().addScaledVector(u,.76+(1-t)*.83).addScaledVector(tg,-.38);
   rod(a.toArray(),tip.toArray(),.21,.027,i%4===0?'sky':i%3===0?'mint':'teal',dragon,4);
  }
- if(i%4===0&&i<85){
+ if(i%3===0&&i<segmentCount-4){
   // Two swept-over fin rows, rather than a thin single mohawk.
   for(const sign of [-1,1]){
    const n=u.clone().multiplyScalar(.72).addScaledVector(s,sign*.70).normalize();
@@ -228,7 +228,8 @@ for(const s of [-1,1]){
  [[1.68,4.30,s*1.53],[1.56,5.29,s*2.29],.14,.013],
  [[2.25,4.84,s*1.65],[3.15,6.01,s*1.36],.11,.010]
  ];
- branch.forEach(([a,b,r1,r2])=>rod(a,b,r1,r2,'horn',head,5));
+ const lean=a=>[a[0]+Math.max(0,a[1]-2)*.22,2+Math.max(0,a[1]-2)*.71+Math.min(0,a[1]-2),a[2]];
+ branch.forEach(([a,b,r1,r2])=>rod(lean(a),lean(b),r1,r2,'horn',head,5));
  // Long curved separately 3D modeled whiskers, three-dimensional blue cords.
  for(let n=0;n<2;n++){
   const whisker=new THREE.CatmullRomCurve3([
@@ -239,6 +240,40 @@ for(const s of [-1,1]){
    new THREE.Vector3(-8.05,.53-n*.6,s*4.25)
   ]);
   mesh(new THREE.TubeGeometry(whisker,36,.045-n*.009,5,false),'water',head);
+ }
+}
+// Hundreds of overlapping 3D cheek plates break up the flat side walls.
+// Geometry is batched into instanced meshes for tablet performance.
+function cheekPlate(x,y,z,material,size=.29,angle=0){
+ const local=new THREE.Vector3(x,y,z);
+ local.applyAxisAngle(yAxis,head.rotation.y).add(head.position);
+ const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),angle);
+ scalePart(material,local,q,size*1.25,size,.12);
+}
+for(const s of [-1,1]){
+ // Sculpted forehead/back-of-jaw layers follow the silhouette.
+ for(let row=0;row<7;row++){
+  for(let col=0;col<17;col++){
+   const x=-1.62+col*.205-row*.042;
+   const y=-.28+row*.294;
+   const edge=1.30-.10*Math.abs(row-3)/3;
+   const z=s*(edge+.19+(col%3)*.018);
+   if(x>1.42-y*.20||x<-1.90+y*.14)continue;
+   const shade=Math.sin(col*1.63+row*2.14);
+   const mat=shade>.61?'mint':shade>.18?'sky':shade>-.23?'teal':shade>-.62?'royal':'deep';
+   cheekPlate(x,y,z,mat,.24+row*.006,-.15);
+  }
+ }
+ // Distinctive snout side plated in stepped turquoise shingles.
+ for(let row=0;row<3;row++)for(let col=0;col<12;col++){
+  const x=-4.24+col*.22,y=.16+row*.185;
+  const z=s*(.95+row*.055);
+  cheekPlate(x,y,z,(col+row)%4===0?'mint':col%3===0?'sky':'blue',.25,-.12);
+ }
+ // Serrated jawline reads as interlocking cheek scales, not a rectangle.
+ for(let j=0;j<22;j++){
+  const x=-3.89+j*.18,y=-1.78+(j%4)*.14;
+  cheekPlate(x,y,s*(.99+(j%3)*.02),j%4===0?'sky':j%2?'blue':'teal',.24,-.08);
  }
 }
 // Curved forehead streamlines, nostrils, layered face armor.
@@ -286,7 +321,7 @@ function legAt(t,sgn){
  }
 }
 // Seiryu has exactly two forelegs (left and right), and no hindlegs.
-for(const sign of [-1,1])legAt(.16,sign);
+for(const sign of [-1,1])legAt(.13,sign);
 // Fan-shaped streaming tail, with a large upturned ice-blue brush.
 const tip=bodyPath.getPoint(1),last=ringFrame(.995);
 for(let j=0;j<26;j++){
@@ -313,14 +348,14 @@ finalizeInstances();
 const ground=mesh(new THREE.PlaneGeometry(190,190),new THREE.MeshStandardMaterial({color:0x0b1822,roughness:.88}),scene);
 ground.rotation.x=-Math.PI/2;ground.position.y=-6.3;
 const grid=new THREE.GridHelper(80,40,0x16435a,0x173147);grid.position.y=-6.28;scene.add(grid);
-let yaw=-.11,pitch=.16,distance=58,autoSpin=false,center=new THREE.Vector3(.5,4.6,0);
+let yaw=.10,pitch=.06,distance=43,autoSpin=false,center=new THREE.Vector3(-.1,4.7,0);
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
  const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
- if(view==='front'){yaw=-.11;pitch=.16;distance=58;center.set(.5,4.6,0)}
- if(view==='side'){yaw=Math.PI*.48;pitch=.07;distance=64;center.set(.5,4.6,0)}
- if(view==='back'){yaw=Math.PI+.08;pitch=.14;distance=59;center.set(.5,4.6,0)}
- if(view==='head'){yaw=-.05;pitch=.04;distance=16;center.set(-12.95,6.0,3.9)}
+ if(view==='front'){yaw=.10;pitch=.06;distance=43;center.set(-.1,4.7,0)}
+ if(view==='side'){yaw=0;pitch=.02;distance=42;center.set(-.1,4.7,0)}
+ if(view==='back'){yaw=Math.PI;pitch=.08;distance=47;center.set(-.1,4.7,0)}
+ if(view==='head'){yaw=-.25;pitch=.01;distance=12.4;center.set(-16.5,6.6,3.4)}
 }));
 document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
 document.getElementById('zoomout').onclick=()=>distance=Math.min(85,distance*1.25);
@@ -339,7 +374,7 @@ canvas.addEventListener('pointermove',e=>{
 });
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(evt,e=>{pointers.delete(e.pointerId);lastDist=0});
 canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(6,Math.min(85,distance*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();distance=Math.max(distance,Math.min(100,37.5/(2*Math.tan(camera.fov*Math.PI/360)*camera.aspect)))}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(w/h<.75&&distance<47)distance=47}
 addEventListener('resize',resize);resize();
 function render(){
  requestAnimationFrame(render);
