@@ -361,6 +361,15 @@ for(const side of [-1,1]){
  [-4.0,-.74,side*.89],[-2.85,-.78,side*1.16]],
  .090,'mouth',H);
 }
+// One shared canvas texture for soft luminous eyes.
+const haloCanvas=document.createElement('canvas');haloCanvas.width=64;haloCanvas.height=64;
+const haloCtx=haloCanvas.getContext('2d');
+const haloGrad=haloCtx.createRadialGradient(32,32,2,32,32,31);
+haloGrad.addColorStop(0,'rgba(180,255,255,0.96)');
+haloGrad.addColorStop(.34,'rgba(76,238,255,0.64)');
+haloGrad.addColorStop(1,'rgba(26,139,230,0)');
+haloCtx.fillStyle=haloGrad;haloCtx.fillRect(0,0,64,64);
+const eyeHaloTexture=new THREE.CanvasTexture(haloCanvas);
 // Gape framed by ribs at hinged jaw, smaller details protected by geometry.
 for(const s of [-1,1]){
  rod([.05,-.13,s*.78],[-1.18,-1.25,s*.91],.34,.22,'deep',H);
@@ -374,12 +383,12 @@ for(const s of [-1,1]){
   rod([x,-.12,s*(.36+j*.13)],[x-.04,-.67-(j%3)*.12,s*(.36+j*.13)],.10,.012,'fang',H);
   rod([x+.16,-2.84,s*(.37+j*.13)],[x+.15,-1.65,s*(.36+j*.13)],.10,.008,'fang',H);
  }
- // A subtle additive glow makes the guardian eye read as luminous.
- const haloMaterial=new THREE.SpriteMaterial({color:0x51f9ff,transparent:true,opacity:.27,
-  blending:THREE.AdditiveBlending,depthWrite:false});
+ // Procedural transparent radial texture prevents box-shaped light artifacts.
+ const haloMaterial=new THREE.SpriteMaterial({map:eyeHaloTexture,color:0x51f9ff,
+  transparent:true,opacity:.58,blending:THREE.AdditiveBlending,depthWrite:false});
  const eyeHalo=new THREE.Sprite(haloMaterial);
  eyeHalo.position.set(-2.31,1.23,s*2.19);
- eyeHalo.scale.set(1.16,.40,1);H.add(eyeHalo);
+ eyeHalo.scale.set(1.18,.43,1);H.add(eyeHalo);
  // deep-set neon eye, shielded by a sharply sloped layered upper brow
  poly(-2.30,1.19,s*1.82,.69,.23,.19,'mouth',H,1);
  const eye=poly(-2.36,1.19,s*2.035,.43,.088,.11,'glow',H,1);eye.rotation.z=-.22;
