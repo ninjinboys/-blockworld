@@ -83,6 +83,23 @@ function rod(a,b,r0,r1,m,parent=dragon,sides=7){
 }
 function tube(arr,r,m,parent=dragon){return mesh(new THREE.TubeGeometry(
  new THREE.CatmullRomCurve3(arr.map(v=>Array.isArray(v)?new THREE.Vector3(...v):v)),52,r,6,false),m,parent)}
+// Broad feather-shaped voxel fins, not thin cylinders. Reusable on body,
+// cheek, crown and tail. Each leaf is fully 3D with bevelled thickness.
+function leaf(a,b,width,m,parent=dragon){
+ a=Array.isArray(a)?V(...a):a;b=Array.isArray(b)?V(...b):b;
+ const delta=b.clone().sub(a),length=delta.length();
+ const s=new THREE.Shape();
+ s.moveTo(-width*.33,0);s.lineTo(-width*.52,length*.25);
+ s.lineTo(-width*.38,length*.67);s.lineTo(.03,length);
+ s.lineTo(width*.50,length*.73);s.lineTo(width*.56,length*.24);
+ s.lineTo(width*.29,0);s.closePath();
+ const g=new THREE.ExtrudeGeometry(s,{depth:.12,steps:1,bevelEnabled:true,
+ bevelThickness:.04,bevelSize:.04,bevelSegments:1});
+ g.translate(0,0,-.06);
+ const o=mesh(g,m,parent);o.position.copy(a);
+ o.quaternion.setFromUnitVectors(UP,delta.normalize());
+ return o;
+}
 function ribbon(a,b,c,d,material,parent=dragon){
  const g=new THREE.BufferGeometry();
  const v=[...a,...b,...c,...a,...c,...d];g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
@@ -92,13 +109,13 @@ function ribbon(a,b,c,d,material,parent=dragon){
 // Centerline of the independent, long coiling body; neck dips from head,
 // body arches over the back and the tail rises into a flowering ice fin.
 const spine=new THREE.CatmullRomCurve3([
- V(-9.4,9.0,1.1),V(-7.7,6.95,1.5),V(-5.6,4.12,1.75),
- V(-2.5,3.35,2.05),V(1.0,4.35,.50),V(4.1,6.6,-2.0),
- V(8.3,7.0,-3.15),V(11.9,5.08,-1.85),V(13.55,3.1,1.0),
- V(12.8,2.6,3.85),V(14.75,4.7,4.6),V(17.0,8.05,2.8),V(19.1,10.5,.25)
+ V(-9.4,9.7,1.1),V(-7.8,7.8,1.55),V(-5.5,4.55,1.9),
+ V(-2.1,3.15,1.95),V(1.4,4.5,.25),V(4.4,8.8,-2.65),
+ V(8.1,10.65,-3.5),V(11.3,8.15,-2.85),V(13.5,4.6,-.15),
+ V(12.6,2.8,3.5),V(13.45,5.1,5.35),V(16.5,10.4,3.4),V(19.0,13.8,.15)
 ],false,'catmullrom',.48);
-const rad=t=>Math.max(.31, t<.12?1.6+t*5.2:t<.45?2.22-(t-.12)*.3:
- t<.70?2.13-(t-.45)*3.4:1.28*(1-(t-.70)/.30));
+const rad=t=>Math.max(.31, t<.12?2.2+t*3.4:t<.45?2.61-(t-.12)*.42:
+ t<.70?2.47-(t-.45)*3.7:1.54*(1-(t-.70)/.30));
 const rings=[],ringSegments=154,ringSides=24;
 const bodyP=[],bodyC=[],bodyIx=[];
 const deepC=new THREE.Color(0x10295f),blueC=new THREE.Color(0x174b9d);
@@ -163,18 +180,18 @@ for(const [key,arr] of batches){
  im.instanceMatrix.needsUpdate=true;dragon.add(im);
 }
 // Along the back: swept leafy finlets at every few rings, with turquoise edges.
-for(let i=5;i<ringSegments-6;i+=5){
+for(let i=3;i<ringSegments-6;i+=4){
  const f=rings[i],t=i/ringSegments;
- for(const tilt of [-.36,0,.36]){
+ for(const tilt of [-.45,-.12,.22,.45]){
   const n=f.above.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(f.side,Math.sin(tilt)).normalize();
-  const start=f.p.clone().addScaledVector(n,f.r*.94);
-  const end=start.clone().addScaledVector(n,.63+(1-t)*.72).addScaledVector(f.tan,-.50);
-  rod(start,end,.19,.013,(i%3===0?'ice':'turquoise'));
+  const start=f.p.clone().addScaledVector(n,f.r*.92);
+  const end=start.clone().addScaledVector(n,.60+(1-t)*.85).addScaledVector(f.tan,-.74);
+  leaf(start,end,.38+(1-t)*.19,(i+Math.round(tilt*20))%4===0?'ice':'turquoise');
  }
 }
 // Face anatomy lives in its own group, facing left. Large majestic skull,
 // narrowing snout, broad jowls and an independently OPEN lower jaw.
-const head=new THREE.Group();head.position.set(-10.6,9.05,1.1);head.scale.setScalar(1.42);dragon.add(head);
+const head=new THREE.Group();head.position.set(-10.6,9.55,1.1);head.scale.setScalar(1.67);dragon.add(head);
 const H=head;
 function loft(points,m,parent=H,sides=20){
  const coords=[],inds=[];
@@ -193,8 +210,8 @@ function loft(points,m,parent=H,sides=20){
 loft([
  [-7.3,.06,.07,.15],[-6.93,.18,.31,.34],[-6.20,.29,.43,.52],
  [-5.2,.36,.56,.75],[-4.10,.56,.80,1.03],[-3.0,.83,1.03,1.31],
- [-1.97,1.01,1.34,1.58],[-.90,.94,1.49,1.73],
- [.30,.63,1.36,1.66],[1.35,.35,1.20,1.40],[2.10,.14,.96,1.15]
+ [-1.97,1.13,1.50,1.78],[-.90,1.05,1.62,1.92],
+ [.30,.63,1.50,1.83],[1.35,.35,1.22,1.55],[2.10,.14,.96,1.15]
 ],'deep');
 loft([
  [-7.23,.33,.05,.15],[-6.58,.49,.10,.32],[-5.77,.68,.15,.44],
@@ -206,17 +223,17 @@ for(const s of [-1,1]){
  poly(-2.19,.32,s*.84,1.06,.72,.67,'royal',H,1);
 }
 // Mouth cavity visible through fully separate UPPER and LOWER jaws.
-poly(-2.5,-.93,0,2.5,.40,.54,'mouth',H,2);
-poly(-3.37,-1.35,0,1.56,.17,.35,'tongue',H,1);
+poly(-2.5,-1.18,0,2.7,.57,.72,'mouth',H,2);
+poly(-3.70,-2.17,0,1.72,.19,.41,'tongue',H,1);
 loft([
- [-6.44,-2.12,.07,.34],[-5.98,-2.24,.27,.49],[-5.11,-2.27,.33,.66],
- [-4.04,-2.10,.37,.82],[-2.91,-1.91,.42,.94],[-1.86,-1.47,.46,.97],
- [-.92,-.98,.48,.92],[.12,-.43,.36,.70]
+ [-6.44,-2.96,.07,.34],[-5.98,-3.03,.27,.49],[-5.11,-3.07,.33,.66],
+ [-4.04,-2.92,.38,.82],[-2.91,-2.60,.43,.94],[-1.86,-1.91,.49,.97],
+ [-.92,-1.16,.48,.92],[.12,-.43,.36,.70]
 ],'blue');
 // Gape framed by ribs at hinged jaw, smaller details protected by geometry.
 for(const s of [-1,1]){
- rod([.05,-.13,s*.78],[-1.18,-1.17,s*.91],.34,.22,'deep',H);
- rod([-1.18,-1.17,s*.91],[-3.55,-2.05,s*.70],.25,.14,'royal',H);
+ rod([.05,-.13,s*.78],[-1.18,-1.25,s*.91],.34,.22,'deep',H);
+ rod([-1.18,-1.25,s*.91],[-3.85,-2.72,s*.70],.25,.14,'royal',H);
  // canine teeth and naturally varied secondary teeth
  rod([-4.73,-.02,s*.62],[-5.05,-1.42,s*.74],.24,.09,'fang',H);
  rod([-5.05,-1.42,s*.74],[-4.80,-1.89,s*.75],.09,.007,'fang',H);
@@ -224,7 +241,7 @@ for(const s of [-1,1]){
  for(let j=0;j<5;j++){
   const x=-5.93+j*.78;
   rod([x,-.12,s*(.36+j*.13)],[x-.04,-.67-(j%3)*.12,s*(.36+j*.13)],.10,.012,'fang',H);
-  rod([x+.16,-2.03,s*(.37+j*.13)],[x+.15,-1.44,s*(.36+j*.13)],.08,.008,'fang',H);
+  rod([x+.16,-2.84,s*(.37+j*.13)],[x+.15,-1.65,s*(.36+j*.13)],.10,.008,'fang',H);
  }
  // deep-set neon eye, shielded by a sharply sloped layered upper brow
  poly(-2.24,1.17,s*1.56,.75,.26,.21,'mouth',H,1);
@@ -272,11 +289,11 @@ for(const s of [-1,1]){
  }
 }
 // Overlapping armor tufts along top of head; sharp crown surrounded by leafy streamers.
-for(let j=0;j<33;j++){
- const x=-1.75+j*.14,z=Math.sin(j*.83)*.48;
- const y=2.07+.14*Math.sin(j*.42);
- rod([x,y,z],[x+.50,y+.44+(j%3)*.15,z+.18],.17,.014,
- j%3===0?'ice':j%2?'royal':'turquoise',H,5);
+for(let j=0;j<30;j++){
+ const x=-1.75+j*.17,z=Math.sin(j*.76)*.68;
+ const y=2.14+.14*Math.sin(j*.42);
+ leaf([x,y,z],[x+.86,y+.72+(j%3)*.15,z+.35],.34,
+ j%3===0?'ice':j%2?'royal':'turquoise',H);
 }
 // Exactly TWO forelegs: muscular bend and 3 visible hooked claws per foot.
 const chest=spine.getPoint(.13),fore=spine.getTangent(.13);
@@ -295,15 +312,14 @@ for(const s of [-1,1]){
 }
 // Spreading tailbrush made of long curved semi-luminous strands.
 const tail=spine.getPoint(1),last=rings[ringSegments-1];
-for(let k=0;k<22;k++){
- const a=k*2*Math.PI/22,n=last.above.clone().multiplyScalar(Math.cos(a)).addScaledVector(last.side,Math.sin(a));
- const from=tail.clone().addScaledVector(n,.17),mid=from.clone().addScaledVector(n,.89).addScaledVector(last.tan,.60);
- const to=mid.clone().addScaledVector(n,1.44).addScaledVector(last.tan,1.02);
- rod(from,mid,.16,.08,k%3===0?'ice':'turquoise',dragon,5);
- rod(mid,to,.08,.013,k%4===0?'sea':'ice',dragon,5);
+for(let k=0;k<18;k++){
+ const a=k*2*Math.PI/18,n=last.above.clone().multiplyScalar(Math.cos(a)).addScaledVector(last.side,Math.sin(a));
+ const from=tail.clone().addScaledVector(n,.13);
+ const to=from.clone().addScaledVector(n,2.7+(k%4)*.22).addScaledVector(last.tan,1.55);
+ leaf(from,to,.46,k%4===0?'sea':k%3===0?'ice':'turquoise');
 }
 // Floating translucent water-cloud geometry, small environment elements only.
-const cloudCenters=[[0,1.3,-3.7],[6.7,2.5,3.7],[12.1,6.9,-5.5],[17.3,7.1,4.5]];
+const cloudCenters=[[0,1.3,-3.7],[6.7,2.5,3.7],[12.1,6.9,-5.5],[17.3,10.1,4.5]];
 for(const [x,y,z] of cloudCenters)for(let k=0;k<31;k++){
  const a=k*2.39996,r=.25+(k%6)*.20;
  cub(x+Math.cos(a)*r,y+Math.sin(a*.7)*r*.56,z+Math.sin(a)*r,
@@ -360,7 +376,7 @@ function draw(){
  camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
  camera.lookAt(focus);renderer.render(scene,camera);
 }draw();
-window.seiryuModelRevision='sculpture-30';
+window.seiryuModelRevision='sculpture-31';
 
 </script>
 </body>
