@@ -128,9 +128,9 @@ function armor(mat,x,y,z,sx,sy,sz,angle=0,parent=root){
 function eyeShape(x,y,z,side,parent){
  // Black eye socket is a recessed almond, the cyan iris is a tight light slit.
  ellipsoid([x,y,side*z],[.72,.22,.15],'black',1,parent);
- const m=ellipsoid([x-.08,y+.045,side*(z+.14)],[.49,.081,.085],'eye',1,parent);
+ const m=ellipsoid([x-.08,y+.045,side*(z+.19)],[.55,.11,.095],'eye',1,parent);
  m.rotation.z=-.17;
- const brow=bone([x-.86,y+.26,side*(z+.06)],[x+.63,y+.31,side*(z+.04)],.17,.055,'deep',parent);
+ const brow=bone([x-.86,y+.30,side*(z+.065)],[x+.63,y+.37,side*(z+.03)],.18,.055,'deep',parent);
  bone([x-.86,y+.33,side*(z+.13)],[x+.32,y+.37,side*(z+.16)],.075,.025,'sky',parent);
 }
 // Custom hollow elliptical anatomy. Keyed cross-sections are 3D volume,
@@ -152,12 +152,12 @@ function loft(sections,mat,parent=root,radial=20){
 // Majestic giant head: long narrow bridge, broad triangular cheekbones,
 // projecting upper jaws and separated mandibular bone.
 const head=new THREE.Group();head.position.set(-10.15,7.9,3.0);
-head.rotation.y=-.13;head.scale.setScalar(1.42);root.add(head);
+head.rotation.y=-.13;head.scale.setScalar(1.48);root.add(head);
 const SKULL=[
  [-7.7,.14,.08,.24],[-7.15,.19,.31,.39],[-6.32,.29,.43,.59],
  [-5.32,.40,.55,.76],[-4.12,.60,.75,1.03],
- [-3.20,.84,.99,1.32],[-2.2,1.02,1.33,1.69],
- [-1.03,1.04,1.45,1.80],[.18,.84,1.41,1.74],
+ [-3.20,.84,.99,1.32],[-2.2,1.07,1.50,1.79],
+ [-1.03,1.12,1.63,1.94],[.18,.86,1.55,1.81],
  [1.22,.51,1.23,1.57],[2.22,.18,.94,1.24]
 ];
 loft(SKULL,'blue',head,24);
@@ -169,20 +169,20 @@ loft([[-7.47,.19,.05,.11],[-6.53,.38,.16,.26],[-5.5,.65,.16,.39],
  [-4.16,.89,.17,.53],[-2.9,1.26,.21,.70],[-1.48,1.55,.12,.60]],'royal',head,14);
 // Crucial: LOWER JAW is a completely separate long VOLUME, hanging beneath the open mouth.
 const jaw=[
- [-6.57,-2.08,.09,.29],[-5.93,-2.14,.31,.48],
- [-4.90,-2.16,.38,.67],[-3.70,-1.99,.40,.86],
- [-2.68,-1.77,.45,1.02],[-1.61,-1.47,.50,1.05],
+ [-6.57,-2.08,.09,.29],[-5.93,-2.42,.33,.48],
+ [-4.90,-2.52,.38,.67],[-3.70,-2.36,.44,.86],
+ [-2.68,-2.09,.47,1.02],[-1.61,-1.68,.54,1.05],
  [-.72,-1.05,.54,.91],[.04,-.48,.52,.76]
 ];
 loft(jaw,'blue',head,20);
-ellipsoid([-2.75,-.94,0],[2.10,.48,.52],'black',2,head);
-ellipsoid([-3.76,-1.42,0],[1.45,.19,.33],'teal',1,head);
+ellipsoid([-2.86,-1.13,0],[2.32,.59,.58],'black',2,head);
+ellipsoid([-3.80,-1.64,0],[1.49,.24,.42],'teal',1,head);
 for(const side of [-1,1]){
  // Underjaw joint attached to cheek: no disconnected floating chin.
  bone([.12,-.20,side*.91],[-1.30,-1.18,side*.95],.43,.27,'deep',head);
- bone([-1.35,-1.20,side*.94],[-3.20,-1.83,side*.81],.30,.15,'royal',head);
+ bone([-1.35,-1.32,side*.94],[-3.20,-2.23,side*.81],.30,.15,'royal',head);
  // Recessed eyes are at the FRONT of the cheek, looking toward the snout.
- eyeShape(-2.98,1.26,1.39,side,head);
+ eyeShape(-2.95,1.32,2.03,side,head);
  // Oversized lower canines, each bent forward like genuine ivory hooks.
  bone([-5.13,-.19,side*.52],[-5.43,-1.62,side*.69],.23,.095,'tooth',head);
  bone([-5.43,-1.62,side*.69],[-5.13,-2.12,side*.66],.092,.008,'tooth',head);
@@ -190,7 +190,7 @@ for(const side of [-1,1]){
  for(let k=0;k<5;k++){
   const x=-6.20+k*.84,z=side*(.33+.06*k);
   bone([x,-.20,z],[x-.11,-.69-(k%3)*.19,z],.12,.013,'tooth',head);
-  bone([x+.31,-1.94,side*(.32+.09*k)],[x+.34,-1.28,side*(.31+.09*k)],.09,.008,'tooth',head);
+  bone([x+.31,-2.21,side*(.32+.09*k)],[x+.34,-1.40,side*(.31+.09*k)],.11,.008,'tooth',head);
  }
  ellipsoid([-6.55,.38,side*.36],[.14,.09,.065],'black',1,head);
  // Heavy antler trunks branch BACKWARDS as shown in the user's turnarounds.
@@ -212,6 +212,25 @@ for(const side of [-1,1]){
  curveWire([[-5.52,-.34,side*.64],[-6.37,-.69,side*1.25],
  [-7.54,-1.19,side*2.29],[-8.48,-.73,side*2.64],
  [-9.07,.03,side*2.27]],.027,'sky',head);
+ // Full flowing beard, sweeping back from the corner of the jaw.
+ // Broad tapered fin shapes are behind the eyes and read as a royal mane.
+ for(let i=0;i<14;i++){
+  const k=i/13;
+  const xx=-1.46+i*.21;
+  const yy=.57-.10*k;
+  const zz=side*(1.91+.09*Math.sin(k*Math.PI));
+  const fin=armor(i%4===0?'mint':i%2===0?'teal':'sky',xx,yy,zz,
+    .78,1.08,1,.28,head);
+  fin.rotation.y=side*.32;
+  bone([xx,yy,zz],[xx+.56,yy+.68+(i%3)*.13,zz+side*(.49+k*.20)],
+    .21,.025,i%3===0?'mint':'sky',head);
+ }
+ // Beneath the jaw, cyan gill streamers frame the gaping mouth.
+ for(let i=0;i<8;i++){
+  const x=-1.7+i*.29,z=side*(.93+i*.08);
+  bone([x,-1.17,z],[x+.31,-1.91-(i%3)*.18,z+side*.24],
+    .19,.02,i%2===0?'sky':'teal',head);
+ }
  // Beveled layered scales over the cheek's REAL volume, not random floating noise.
  for(let row=0;row<5;row++)for(let k=0;k<16;k++){
   const x=-5.50+k*.29+(row%2)*.14,y=.50+row*.23;
@@ -329,7 +348,7 @@ for(let k=0;k<14;k++){
   .addScaledVector(n,1.7).toArray(),.18,.015,k%3===0?'mint':'sky');
 }
 // Subtle block-spray clouds separate from anatomy (not covering the face).
-const cloudPositions=[[-2,1,-4],[5,1,5],[10,7,1],[14,4,-4],[17,11,1]];
+const cloudPositions=[[-8.6,5.0,-2.6],[-2,1,-4],[5,1,5],[10,7,1],[14,4,-4],[17,11,1]];
 for(const [cx,cy,cz] of cloudPositions)for(let k=0;k<26;k++){
  const a=k*2.399963,r=.3+.15*(k%5);
  const p=new THREE.Vector3(cx+Math.cos(a)*r,cy+Math.sin(a*2)*r*.55,cz+Math.sin(a)*r);
