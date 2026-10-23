@@ -18,6 +18,9 @@ let myClass='sword',enemyClass='sword',role='',state='menu',roomCode='',peer=nul
 let me=null,rival=null,myAvatar=null,enemyAvatar=null,roundEnd=0,remaining=roundLength,lastSync=0,lastClock=0;
 let keys=new Set(),clock=new THREE.Clock(),effects=[],noticeTimeout=0;
 let lookPitch=0,walkMotion=0,walkPhase=0,lastHurtUntil=0,attackVisualAt=0,enemyAttackAt=-Infinity;
+// CPU-only projectiles. PvP between human players keeps its existing rules.
+let cpuProjectiles=[];
+let cpuAim={x:0,z:0,nextUpdate:0};
 const touchLooks=new Map();
 const clampPitch=v=>THREE.MathUtils.clamp(v,-1.28,1.28);
 function rotateView(dx,dy,sensitivity=.0034){
@@ -185,6 +188,7 @@ function shutdown(sendLeave=true){
  connection=null;peer=null;roomCode='';role='';
 }
 function showMenu(message=''){
+ clearCpuProjectiles();
  if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
  state='menu';keys.clear();touchLooks.clear();shutdown(false);
  $('screen').style.display='flex';$('finish').style.display='none';$('top').classList.remove('show');
@@ -293,11 +297,17 @@ $('practiceBtn').addEventListener('click',()=>{
  beginMatch();
 });
 function beginMatch(){
+ clearCpuProjectiles();
  state='playing';keys.clear();touchLooks.clear();lookPitch=0;walkMotion=0;walkPhase=0;
  const onLeft=role!=='guest';
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
  me=makeFighter(myClass,a.x,a.z);rival=makeFighter(enemyClass,b.x,b.z);
- if(role==='cpu')rival=makeFighter(enemyClass,6,0);
+ if(role==='cpu'){
+  rival=makeFighter(enemyClass,6,0);
+  // The ranged CPU must spend time drawing its bow or preparing a spell.
+  if(enemyClass==='archer'||enemyClass==='mage')rival.lastAttack=performance.now();
+ }
+ cpuAim={x:me.x,z:me.z,nextUpdate:0};
  roundEnd=performance.now()+roundLength*1000;remaining=roundLength;lastSync=0;
  replaceAvatars();
  $('screen').style.display='none';$('finish').style.display='none';
@@ -363,6 +373,7 @@ function endByHealth(){
 }
 function finishMatch(outcome,decidedLocally){
  if(state!=='playing')return;
+ clearCpuProjectiles();
  if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
  $('lookHelp').classList.remove('show');$('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
  state='ended';
@@ -464,23 +475,115 @@ function moveLocal(dt){
  if(keys.has('KeyQ'))rotateView(dt*135,0);
  if(keys.has('KeyE'))rotateView(-dt*135,0);
 }
+// Ranged CPU: imperfect tracking, actual moving arrows/orbs and dodgeable hits.
+function clearCpuProjectiles(){
+ for(const shot of cpuProjectiles){
+  scene.remove(shot.mesh);
+  shot.mesh.geometry.dispose();
+  shot.mesh.material.dispose();
+ }
+ cpuProjectiles.length=0;
+}
+function fireCpuRanged(now){
+ if(role!=='cpu'||state!=='playing'||!rival||!me)return;
+ const archer=enemyClass==='archer';
+ rival.lastAttack=now;
+ animateSwing(enemyAvatar);
+ // Spread is independent per shot, so standing still is easier to hit than
+ // a moving player. The aim direction is already based on a delayed snapshot.
+ const spread=(Math.random()-.5)*(archer?.26:.32);
+ const angle=rival.face+spread;
+ const speed=archer?12.5:9;
+ const mesh=archer
+  ?new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.75,7),
+    new THREE.MeshStandardMaterial({color:0xf5d19a,emissive:0x392508,metalness:.14}))
+  :new THREE.Mesh(new THREE.SphereGeometry(.19,12,8),
+    new THREE.MeshBasicMaterial({color:0xc88cff}));
+ const vx=Math.sin(angle),vz=Math.cos(angle);
+ const startX=rival.x+vx*.65,startZ=rival.z+vz*.65;
+ mesh.position.set(startX,1.42,startZ);
+ if(archer)mesh.quaternion.setFromUnitVectors(
+  new THREE.Vector3(0,1,0),new THREE.Vector3(vx,0,vz));
+ scene.add(mesh);
+ cpuProjectiles.push({
+  mesh,x:startX,z:startZ,vx,vz,speed,travelled:0,
+  range:CLASSES[enemyClass].range,damage:archer?12:15,
+  radius:archer?.56:.79
+ });
+}
+function updateCpuProjectiles(dt){
+ if(role!=='cpu'||state!=='playing')return;
+ for(let i=cpuProjectiles.length-1;i>=0;i--){
+  const shot=cpuProjectiles[i],px=shot.x,pz=shot.z;
+  const sx=shot.vx*shot.speed*dt,sz=shot.vz*shot.speed*dt;
+  shot.x+=sx;shot.z+=sz;shot.travelled+=Math.hypot(sx,sz);
+  shot.mesh.position.set(shot.x,1.42,shot.z);
+  // Segment collision avoids arrows passing through the player at low FPS.
+  const segmentLengthSq=sx*sx+sz*sz;
+  const t=segmentLengthSq
+    ?THREE.MathUtils.clamp(((me.x-px)*sx+(me.z-pz)*sz)/segmentLengthSq,0,1)
+    :0;
+  const hx=px+t*sx,hz=pz+t*sz;
+  const hit=(me.x-hx)**2+(me.z-hz)**2<shot.radius**2;
+  const expired=shot.travelled>=shot.range||
+    Math.abs(shot.x)>16.5||Math.abs(shot.z)>12.2;
+  if(hit){
+   const blocking=me.guard?(CLASSES[myClass].block||.42):0;
+   const damage=Math.max(1,Math.round(shot.damage*(1-blocking)));
+   me.hp=Math.max(0,me.hp-damage);
+   lastHurtUntil=performance.now()+280;
+   flash('攻撃を受けた！ -'+damage);
+   updateHud();
+  }
+  if(hit||expired){
+   scene.remove(shot.mesh);
+   shot.mesh.geometry.dispose();
+   shot.mesh.material.dispose();
+   cpuProjectiles.splice(i,1);
+  }
+  if(hit&&me.hp<=0){endByHealth();return}
+ }
+}
 function stepCPU(dt){
  const c=CLASSES[enemyClass],dx=me.x-rival.x,dz=me.z-rival.z,d=Math.hypot(dx,dz)||1;
- rival.face=Math.atan2(dx,dz);
+ const now=performance.now();
+ const ranged=enemyClass==='archer'||enemyClass==='mage';
+ if(ranged){
+  if(now>=cpuAim.nextUpdate){
+   // Updates are deliberately infrequent; the aim won't follow dodges instantly.
+   const jitter=(enemyClass==='archer'?1.10:1.30)*(.65+.45*Math.min(d/c.range,1));
+   cpuAim.x=me.x+(Math.random()*2-1)*jitter;
+   cpuAim.z=me.z+(Math.random()*2-1)*jitter;
+   cpuAim.nextUpdate=now+470+Math.random()*360;
+  }
+  const wanted=Math.atan2(cpuAim.x-rival.x,cpuAim.z-rival.z);
+  const delta=Math.atan2(Math.sin(wanted-rival.face),Math.cos(wanted-rival.face));
+  rival.face+=THREE.MathUtils.clamp(delta,-dt*2.3,dt*2.3);
+ }else rival.face=Math.atan2(dx,dz);
  const safeRange=Math.max(2.2,c.range*.67);
  if(d>safeRange){
   rival.x=THREE.MathUtils.clamp(rival.x+dx/d*c.speed*.66*dt,-14.7,14.7);
   rival.z=THREE.MathUtils.clamp(rival.z+dz/d*c.speed*.66*dt,-10.5,10.5);
  }else if(d<c.range*.42){
-  rival.x-=dx/d*c.speed*.3*dt;rival.z-=dz/d*c.speed*.3*dt;
+  rival.x=THREE.MathUtils.clamp(rival.x-dx/d*c.speed*.3*dt,-14.7,14.7);
+  rival.z=THREE.MathUtils.clamp(rival.z-dz/d*c.speed*.3*dt,-10.5,10.5);
  }
- rival.guard=enemyClass==='shield'&&d<3.4&&Math.sin(performance.now()/700)>0.15;
- if(d<c.range&&performance.now()-rival.lastAttack>c.cooldown+200)resolveAttack(false);
+ rival.guard=enemyClass==='shield'&&d<3.4&&Math.sin(now/700)>0.15;
+ if(ranged){
+  // Longer intervals + real projectile flight instead of unavoidable instant hits.
+  const interval=c.cooldown*(enemyClass==='archer'?1.45:1.5);
+  if(d<c.range&&now-rival.lastAttack>=interval)fireCpuRanged(now);
+ }else if(d<c.range&&now-rival.lastAttack>c.cooldown+200){
+  resolveAttack(false);
+ }
 }
 function update(dt,t){
  if(state!=='playing'||!me||!rival)return;
  moveLocal(dt);
- if(role==='cpu')stepCPU(dt);
+ if(role==='cpu'){
+  stepCPU(dt);
+  updateCpuProjectiles(dt);
+ }
  if(role==='host'||role==='cpu'){
   remaining=Math.max(0,(roundEnd-t)/1000);
   if(remaining===0){
