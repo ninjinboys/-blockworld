@@ -39,13 +39,13 @@ const canvas=document.getElementById('stage');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
 renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090e17);
 scene.fog=new THREE.Fog(0x090e17,68,125);
 const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,180);
-const hemi=new THREE.HemisphereLight(0xb8edff,0x1b2331,2.05);scene.add(hemi);
+const hemi=new THREE.HemisphereLight(0xb8edff,0x16202e,1.48);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xe1f6ff,3.6);sun.position.set(-16,24,24);scene.add(sun);
-const fill=new THREE.DirectionalLight(0x159ed5,3.15);fill.position.set(14,12,-19);scene.add(fill);
+const fill=new THREE.DirectionalLight(0x159ed5,2.30);fill.position.set(14,12,-19);scene.add(fill);
 const light=new THREE.PointLight(0x2df7f8,32,41);light.position.set(-17,9,12);scene.add(light);
 const mat={
 navy:new THREE.MeshStandardMaterial({color:0x07183d,roughness:.72}),
@@ -194,7 +194,7 @@ for(let i=3;i<ringSegments-6;i+=4){
 const head=new THREE.Group();head.position.set(-10.6,9.55,1.1);
 // Nonuniform proportions remove the elongated crocodile-like muzzle:
 // taller/wider guardian skull and shorter frontal projection.
-head.scale.set(1.31,1.72,1.72);dragon.add(head);
+head.scale.set(1.25,1.83,1.82);dragon.add(head);
 const H=head;
 function loft(points,m,parent=H,sides=20){
  const coords=[],inds=[];
@@ -310,6 +310,57 @@ for(const s of [-1,1]){
   edge.rotation.z=.15;
  }
 }
+// Volumetric under-jaw armor. Curved plates follow the mandibular
+// cross-section; this replaces the previously bare, boat-like lower jaw.
+const jawCross=[
+ [-6.44,-2.96,.07,.34],[-5.98,-3.03,.27,.49],[-5.11,-3.07,.33,.66],
+ [-4.04,-2.92,.38,.82],[-2.91,-2.60,.43,.94],[-1.86,-1.91,.49,.97],
+ [-.92,-1.16,.48,.92],[.12,-.43,.36,.70]
+];
+function sampleCross(arr,x){
+ for(let i=0;i<arr.length-1;i++){
+  const a=arr[i],b=arr[i+1];
+  if(x>=a[0]&&x<=b[0]){
+   let t=(x-a[0])/(b[0]-a[0]);
+   return [1,2,3].map(j=>a[j]+(b[j]-a[j])*t);
+  }
+ }
+ return arr[x<arr[0][0]?0:arr.length-1].slice(1);
+}
+const jawTiles=new Map(),jDummy=new THREE.Object3D();
+for(let k=0;k<27;k++){
+ const x=-6.13+k*.215;
+ const [cy,ry,rz]=sampleCross(jawCross,x);
+ for(let r=0;r<8;r++){
+  for(const side of [-1,1]){
+   const theta=(r/7)*1.45+.77;
+   const nTheta=side*theta,ct=Math.cos(nTheta),st=Math.sin(nTheta);
+   const y=cy+(ry+.04)*ct,z=(rz+.07)*st;
+   const normal=V(0,ct/Math.max(.1,ry),st/Math.max(.1,rz)).normalize();
+   const quaternion=new THREE.Quaternion().setFromUnitVectors(V(0,0,1),normal);
+   const band=Math.sin(k*.25+r*.36);
+   const color=theta>1.75?(band>.35?'cream':'creamShade'):
+    band>.67?'sea':band>.05?'royal':band>-.62?'blue':'deep';
+   jDummy.position.set(x,y,z);jDummy.quaternion.copy(quaternion);
+   jDummy.scale.set(.36,.25,1);
+   jDummy.updateMatrix();
+   if(!jawTiles.has(color))jawTiles.set(color,[]);
+   jawTiles.get(color).push(jDummy.matrix.clone());
+  }
+ }
+}
+for(const [color,matrices] of jawTiles){
+ const im=new THREE.InstancedMesh(tile,mat[color],matrices.length);
+ im.frustumCulled=false;
+ for(let i=0;i<matrices.length;i++)im.setMatrixAt(i,matrices[i]);
+ im.instanceMatrix.needsUpdate=true;H.add(im);
+}
+// A dark, articulated gum line gives the large front canines a visible root.
+for(const side of [-1,1]){
+ tube([[-6.23,-.51,side*.25],[-5.19,-.60,side*.57],
+ [-4.0,-.74,side*.89],[-2.85,-.78,side*1.16]],
+ .090,'mouth',H);
+}
 // Gape framed by ribs at hinged jaw, smaller details protected by geometry.
 for(const s of [-1,1]){
  rod([.05,-.13,s*.78],[-1.18,-1.25,s*.91],.34,.22,'deep',H);
@@ -323,6 +374,12 @@ for(const s of [-1,1]){
   rod([x,-.12,s*(.36+j*.13)],[x-.04,-.67-(j%3)*.12,s*(.36+j*.13)],.10,.012,'fang',H);
   rod([x+.16,-2.84,s*(.37+j*.13)],[x+.15,-1.65,s*(.36+j*.13)],.10,.008,'fang',H);
  }
+ // A subtle additive glow makes the guardian eye read as luminous.
+ const haloMaterial=new THREE.SpriteMaterial({color:0x51f9ff,transparent:true,opacity:.27,
+  blending:THREE.AdditiveBlending,depthWrite:false});
+ const eyeHalo=new THREE.Sprite(haloMaterial);
+ eyeHalo.position.set(-2.31,1.23,s*2.19);
+ eyeHalo.scale.set(1.16,.40,1);H.add(eyeHalo);
  // deep-set neon eye, shielded by a sharply sloped layered upper brow
  poly(-2.30,1.19,s*1.82,.69,.23,.19,'mouth',H,1);
  const eye=poly(-2.36,1.19,s*2.035,.43,.088,.11,'glow',H,1);eye.rotation.z=-.22;
@@ -459,7 +516,7 @@ function draw(){
  camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
  camera.lookAt(focus);renderer.render(scene,camera);
 }draw();
-window.seiryuModelRevision='sculpture37-contrast-anatomy';
+window.seiryuModelRevision='sculpture38-jaw-and-light';
 
 </script>
 </body>
