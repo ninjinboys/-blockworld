@@ -57,7 +57,7 @@ sea:new THREE.MeshStandardMaterial({color:0x2badc5,roughness:.49}),
 ice:new THREE.MeshStandardMaterial({color:0x72dae4,roughness:.43}),
 cream:new THREE.MeshStandardMaterial({color:0xd5c3a8,roughness:.81}),
 creamShade:new THREE.MeshStandardMaterial({color:0xa99e8e,roughness:.86}),
-antler:new THREE.MeshStandardMaterial({color:0xbfb09d,roughness:.82}),
+antler:new THREE.MeshStandardMaterial({color:0xae967b,roughness:.87}),
 fang:new THREE.MeshStandardMaterial({color:0xece7d9,roughness:.48}),
 mouth:new THREE.MeshStandardMaterial({color:0x092635,roughness:.91,side:THREE.DoubleSide}),
 tongue:new THREE.MeshStandardMaterial({color:0x0f8194,roughness:.72}),
@@ -163,10 +163,10 @@ for(let i=2;i<ringSegments-1;i+=2){
   orientMatrix.makeBasis(f.tan,bin,n);q.setFromRotationMatrix(orientMatrix);
   const point=f.p.clone().addScaledVector(n,f.r+.042);
   const w=Math.sin(i*.16+j*.62)+.3*Math.cos(i*.09-j*.53);
-  const m=cc<-.34?(i%7===0?'creamShade':'cream'):
-    cc>.72?(w>.35?'ice':'turquoise'):
-    cc>.22?(w>.69?'sea':w>-.28?'turquoise':'royal'):
-    w>.79?'sea':w>.13?'royal':w>-.48?'blue':'deep';
+  const m=cc<-.60?(i%8===0?'creamShade':'cream'):
+    cc>.73?(w>.78?'ice':w>.10?'turquoise':'royal'):
+    cc>.22?(w>.89?'sea':w>.48?'turquoise':w>-.33?'royal':'blue'):
+    w>.88?'sea':w>.32?'royal':w>-.55?'blue':'deep';
   collect(m,point,q,.70*(1-t*.27),.69*f.r/2.0,1);
  }
 }
@@ -294,15 +294,21 @@ loft([
  [-4.04,-2.92,.38,.82],[-2.91,-2.60,.43,.94],[-1.86,-1.91,.49,.97],
  [-.92,-1.16,.48,.92],[.12,-.43,.36,.70]
 ],'blue');
-// Pale lip ridges separate upper jaw from dark open mouth and connect
-// the jaws visually; the reference uses ivory framing around its roar.
+// Jaw-edge armor is segmented rather than a straight white rail across
+// the open mouth. Each pale plate sits where a tooth is anchored.
 for(const s of [-1,1]){
- tube([[-6.38,-.32,s*.25],[-5.46,-.39,s*.55],[-4.36,-.55,s*.78],
- [-3.16,-.64,s*1.01],[-2.15,-.61,s*1.16],[-1.10,-.54,s*1.12]],
- .085,'cream',H);
- tube([[-5.85,-2.75,s*.40],[-4.78,-2.87,s*.70],[-3.54,-2.64,s*.85],
- [-2.47,-2.26,s*1.0],[-1.27,-1.54,s*1.08]],
- .074,'creamShade',H);
+ for(let i=0;i<8;i++){
+  const x=-6.05+i*.59;
+  const z=s*(.42+i*.12);
+  const lip=cub(x,-.29,z,.34,.12,.18,i%4===0?'cream':'royal',H);
+  lip.rotation.z=-.07;
+ }
+ for(let i=0;i<7;i++){
+  const x=-5.79+i*.66;
+  const z=s*(.46+i*.115);
+  const edge=cub(x,-2.78+i*.20,z,.34,.13,.16,i%3===0?'creamShade':'royal',H);
+  edge.rotation.z=.15;
+ }
 }
 // Gape framed by ribs at hinged jaw, smaller details protected by geometry.
 for(const s of [-1,1]){
@@ -377,9 +383,11 @@ for(const s of [-1,1]){
  const shoulder=chest.clone().addScaledVector(lateral,s*1.49);
  const elbow=shoulder.clone().add(V(-.53,-1.77,s*1.36));
  const wrist=elbow.clone().add(V(-1.30,-1.51,s*.67));
- rod(shoulder,elbow,.75,.53,'deep');
- rod(elbow,wrist,.56,.38,'royal');
- poly(wrist.x,wrist.y,wrist.z,.86,.47,.67,'blue',dragon,1);
+ poly(shoulder.x,shoulder.y,shoulder.z,.89,.78,.83,'deep',dragon,1);
+ rod(shoulder,elbow,.79,.55,'deep');
+ poly(elbow.x,elbow.y,elbow.z,.68,.60,.63,'royal',dragon,1);
+ rod(elbow,wrist,.59,.41,'royal');
+ poly(wrist.x,wrist.y,wrist.z,1.01,.45,.75,'blue',dragon,1);
  for(let k=-1;k<=1;k++){
   const start=wrist.clone().add(V(-.43,-.13,k*.40));
   rod(start,start.clone().add(V(-1.05,-.41,k*.10)),.24,.02,'fang');
@@ -442,7 +450,7 @@ for(const event of ['pointerup','pointercancel','lostpointercapture'])
 canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(7,Math.min(115,distance*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
  if(mode==='full')distance=fit()}
-addEventListener('resize',resize);resize();setView('head');
+addEventListener('resize',resize);resize();setView(innerWidth/innerHeight>1.32?'front':'head');
 document.getElementById('spin').classList.remove('active');document.getElementById('spin').textContent='自動回転 OFF';
 document.getElementById('status').style.display='none';
 function draw(){
@@ -451,7 +459,7 @@ function draw(){
  camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
  camera.lookAt(focus);renderer.render(scene,camera);
 }draw();
-window.seiryuModelRevision='skull-surface36';
+window.seiryuModelRevision='sculpture37-contrast-anatomy';
 
 </script>
 </body>
