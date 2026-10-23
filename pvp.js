@@ -17,6 +17,9 @@ const roundLength=90;
 let myClass='sword',enemyClass='sword',role='',state='menu',roomCode='',peer=null,connection=null,peerLoader=null;
 let me=null,rival=null,myAvatar=null,enemyAvatar=null,roundEnd=0,remaining=roundLength,lastSync=0,lastClock=0;
 let keys=new Set(),clock=new THREE.Clock(),effects=[],noticeTimeout=0;
+// Analog mobile joystick: x = strafe (+right), y = backward (+down).
+const joystick={x:0,y:0,pointerId:null};
+const JUMP_SPEED=7.4,GRAVITY=19.5;
 let lookPitch=0,walkMotion=0,walkPhase=0,lastHurtUntil=0,attackVisualAt=0,enemyAttackAt=-Infinity;
 // CPU-only projectiles. PvP between human players keeps its existing rules.
 let cpuProjectiles=[];
@@ -143,10 +146,10 @@ function replaceAvatars(){
 }
 function makeFighter(job,x,z){
  const c=CLASSES[job]||CLASSES.sword;
- return {x,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,guard:false,lastAttack:-100000};
+ return {x,y:0,vy:0,grounded:true,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,guard:false,lastAttack:-100000};
 }
 function syncAvatars(){
- if(rival&&enemyAvatar){enemyAvatar.position.set(rival.x,0,rival.z);enemyAvatar.rotation.y=rival.face+Math.PI;}
+ if(rival&&enemyAvatar){enemyAvatar.position.set(rival.x,rival.y||0,rival.z);enemyAvatar.rotation.y=rival.face+Math.PI;}
 }
 function resize(){
  const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
@@ -189,6 +192,7 @@ function shutdown(sendLeave=true){
 }
 function showMenu(message=''){
  clearCpuProjectiles();
+ resetJoystick();
  if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
  state='menu';keys.clear();touchLooks.clear();shutdown(false);
  $('screen').style.display='flex';$('finish').style.display='none';$('top').classList.remove('show');
@@ -261,6 +265,7 @@ function receive(data){
   rival.x=THREE.MathUtils.clamp(data.x,-maxX,maxX);
   rival.z=THREE.MathUtils.clamp(data.z,-maxZ,maxZ);
   rival.face=data.face;
+  rival.y=Number.isFinite(data.y)?THREE.MathUtils.clamp(data.y,0,2.6):0;
   rival.guard=!!data.guard;
   return;
  }
@@ -298,6 +303,7 @@ $('practiceBtn').addEventListener('click',()=>{
 });
 function beginMatch(){
  clearCpuProjectiles();
+ resetJoystick();
  state='playing';keys.clear();touchLooks.clear();lookPitch=0;walkMotion=0;walkPhase=0;
  const onLeft=role!=='guest';
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
@@ -374,6 +380,7 @@ function endByHealth(){
 function finishMatch(outcome,decidedLocally){
  if(state!=='playing')return;
  clearCpuProjectiles();
+ resetJoystick();
  if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
  $('lookHelp').classList.remove('show');$('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
  state='ended';
@@ -387,7 +394,7 @@ function finishMatch(outcome,decidedLocally){
  $('againBtn').disabled=role==='guest';
  $('againBtn').textContent=role==='guest'?'ホストの再戦を待つ':'もう一度対戦';
  $('finish').style.display='flex';$('controlsHelp').classList.remove('show');$('mobileControls').classList.remove('show');
- keys.clear();
+ keys.clear();resetJoystick();
 }
 $('againBtn').addEventListener('click',()=>{
  if(role==='guest')return;
@@ -420,10 +427,29 @@ window.addEventListener('keydown',e=>{
  if(state!=='playing')return;
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
  keys.add(e.code);
- if((e.code==='Space'||e.code==='KeyF')&&!e.repeat)requestAttack();
+ if(e.code==='Space'&&!e.repeat)requestJump();
+ if(e.code==='KeyF'&&!e.repeat)requestAttack();
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
-window.addEventListener('blur',()=>keys.clear());
+window.addEventListener('blur',()=>{keys.clear();resetJoystick();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();resetJoystick();}});
+function requestJump(){
+ if(state!=='playing'||!me||!me.grounded)return;
+ me.vy=JUMP_SPEED;
+ me.grounded=false;
+}
+function advanceJump(dt){
+ if(!me||me.grounded)return;
+ me.y+=me.vy*dt-.5*GRAVITY*dt*dt;
+ me.vy-=GRAVITY*dt;
+ if(me.y<=0){me.y=0;me.vy=0;me.grounded=true;}
+}
+function resetJoystick(){
+ joystick.x=0;joystick.y=0;joystick.pointerId=null;
+ const thumb=$('stickThumb'),base=$('moveStick');
+ if(thumb)thumb.style.transform='translate(-50%, -50%)';
+ if(base)base.classList.remove('active');
+}
 const hitUi=e=>!!e.target.closest('button, input, .panel, #top, #mobileControls');
 renderer.domElement.addEventListener('pointerdown',e=>{
  if(state!=='playing')return;
@@ -450,28 +476,74 @@ renderer.domElement.addEventListener('pointermove',e=>{
 });
 renderer.domElement.addEventListener('pointerup',e=>touchLooks.delete(e.pointerId));
 renderer.domElement.addEventListener('pointercancel',e=>touchLooks.delete(e.pointerId));
+// Stable, multi-touch analog joystick. Capture only its own pointer, so the
+// other thumb can aim and press attack/jump simultaneously.
+const moveStick=$('moveStick'),stickThumb=$('stickThumb');
+const JOYSTICK_DEADZONE=.10;
+function updateJoystickPointer(e){
+ const rect=moveStick.getBoundingClientRect();
+ const radius=Math.max(1,Math.min(rect.width,rect.height)*.5-stickThumb.offsetWidth*.5-5);
+ const dx=e.clientX-(rect.left+rect.width*.5);
+ const dy=e.clientY-(rect.top+rect.height*.5);
+ const length=Math.hypot(dx,dy);
+ const capped=Math.min(length,radius);
+ const activeMagnitude=length>0?Math.max(0,(capped/radius-JOYSTICK_DEADZONE)/(1-JOYSTICK_DEADZONE)):0;
+ joystick.x=length>0?dx/length*activeMagnitude:0;
+ joystick.y=length>0?dy/length*activeMagnitude:0;
+ const thumbX=length>0?dx/length*capped:0,thumbY=length>0?dy/length*capped:0;
+ stickThumb.style.transform='translate(-50%, -50%) translate('+thumbX+'px, '+thumbY+'px)';
+}
+moveStick.addEventListener('pointerdown',e=>{
+ if(state!=='playing'||joystick.pointerId!==null)return;
+ e.preventDefault();
+ joystick.pointerId=e.pointerId;
+ moveStick.classList.add('active');
+ moveStick.setPointerCapture(e.pointerId);
+ updateJoystickPointer(e);
+});
+moveStick.addEventListener('pointermove',e=>{
+ if(joystick.pointerId!==e.pointerId)return;
+ e.preventDefault();updateJoystickPointer(e);
+});
+function releaseJoystick(e){
+ if(joystick.pointerId!==e.pointerId)return;
+ e.preventDefault();resetJoystick();
+}
+for(const eventName of ['pointerup','pointercancel','lostpointercapture']){
+ moveStick.addEventListener(eventName,releaseJoystick);
+}
 for(const b of document.querySelectorAll('#mobileControls button')){
- const key=b.dataset.key;
+ const key=b.dataset.key,action=b.dataset.action;
  const release=e=>{e.preventDefault();if(key)keys.delete(key)};
- b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(key)keys.add(key);else requestAttack()});
- b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release);
+ b.addEventListener('pointerdown',e=>{
+  if(state!=='playing')return;
+  e.preventDefault();b.setPointerCapture(e.pointerId);
+  if(key)keys.add(key);
+  else if(action==='jump')requestJump();
+  else if(action==='attack')requestAttack();
+ });
+ b.addEventListener('pointerup',release);
+ b.addEventListener('pointercancel',release);
+ b.addEventListener('lostpointercapture',release);
 }
 function moveLocal(dt){
- let x=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
- let z=(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0);
- const len=Math.hypot(x,z)||1;
+ const keyX=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
+ const keyZ=(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0);
+ const x=keyX+joystick.x,z=keyZ+joystick.y;
+ const len=Math.hypot(x,z),scale=len>1?1/len:1;
  const c=CLASSES[myClass];
  const speed=c.speed*(keys.has('ShiftLeft')||keys.has('ShiftRight')?1.4:1);
- const forward=-z/len,strafe=x/len;
+ const forward=-z*scale,strafe=x*scale;
  const yaw=me.face;
- // Right strafe must align with the camera's local +X direction.
+ // Analog motion is proportional to joystick tilt, including diagonals.
  const dx=(Math.sin(yaw)*forward-Math.cos(yaw)*strafe)*speed*dt;
  const dz=(Math.cos(yaw)*forward+Math.sin(yaw)*strafe)*speed*dt;
  me.x=THREE.MathUtils.clamp(me.x+dx,-14.7,14.7);
  me.z=THREE.MathUtils.clamp(me.z+dz,-10.5,10.5);
  walkMotion=Math.hypot(dx,dz)/Math.max(dt,.001);
  me.guard=keys.has('KeyG');
- // Optional keyboard turning is useful without a pointer-lock-compatible mouse.
+ advanceJump(dt);
+ // Optional keyboard turning works without pointer lock.
  if(keys.has('KeyQ'))rotateView(dt*135,0);
  if(keys.has('KeyE'))rotateView(-dt*135,0);
 }
@@ -524,7 +596,8 @@ function updateCpuProjectiles(dt){
     ?THREE.MathUtils.clamp(((me.x-px)*sx+(me.z-pz)*sz)/segmentLengthSq,0,1)
     :0;
   const hx=px+t*sx,hz=pz+t*sz;
-  const hit=(me.x-hx)**2+(me.z-hz)**2<shot.radius**2;
+  const verticalGap=Math.abs(1.42-(me.y+1.2));
+  const hit=verticalGap<.78&&(me.x-hx)**2+(me.z-hz)**2<shot.radius**2;
   const expired=shot.travelled>=shot.range||
     Math.abs(shot.x)>16.5||Math.abs(shot.z)>12.2;
   if(hit){
@@ -592,7 +665,7 @@ function update(dt,t){
   }
  }
  if(role!=='cpu'&&connection?.open&&t-lastSync>70){
-  connection.send({t:'state',x:me.x,z:me.z,face:me.face,guard:me.guard});
+  connection.send({t:'state',x:me.x,y:me.y,z:me.z,face:me.face,guard:me.guard});
   if(role==='host'&&t-lastClock>350){
    lastClock=t;
    connection.send({t:'time',remaining});
@@ -609,7 +682,7 @@ function animate(){
  if(state==='playing'&&me){
   // Actual player eye height, view direction controlled by mouse / swipe.
   walkPhase+=dt*(walkMotion>0.1?9:0);
-  camera.position.set(me.x,1.62+Math.sin(walkPhase)*.018*Math.min(walkMotion/6,1),me.z);
+  camera.position.set(me.x,1.62+me.y+(me.grounded?Math.sin(walkPhase)*.018*Math.min(walkMotion/6,1):0),me.z);
   camera.rotation.set(lookPitch,me.face+Math.PI,0,'YXZ');
  }else{
   camera.position.lerp(new THREE.Vector3(0,15,19),Math.min(1,dt*3));
