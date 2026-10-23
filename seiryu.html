@@ -28,7 +28,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#09131d;col
 <body>
 <canvas id="stage" aria-label="青龍の360度回転可能な3Dモデル"></canvas>
 <div class="top"><div><div class="brand">NEXACRAFT · GUARDIAN BEAST</div><div class="name">青龍 <span style="font-size:.49em;color:#9fd5e1">SEIRYU</span></div><div class="sub">AZURE DRAGON / 3D VOXEL MODEL</div></div><div class="pill"><span class="dot"></span> REAL 3D</div></div>
-<div id="status">青龍の3Dモデルを読み込み中…</div>
+<div id="status">青龍の詳細3Dモデルを読み込み中…</div>
 <div class="note">ドラッグで回転 · ピンチ/スクロールで拡大縮小</div>
 <div class="tools"><button data-view="front">斜め</button><button data-view="side">側面</button><button data-view="back">背面</button><button data-view="head">顔アップ</button><button id="zoomout">－</button><button id="zoomin">＋</button><button id="spin" class="active">自動回転 ON</button></div>
 <script type="module">
@@ -74,158 +74,245 @@ function rod(a,b,r1,r2,mat,group=dragon,sides=6){
  m.position.copy(from).add(to).multiplyScalar(.5);
  m.quaternion.setFromUnitVectors(Y,dir.normalize());return m;
 }
-const curve=new THREE.CatmullRomCurve3([
- new THREE.Vector3(-9.2,3.9,-1.1),
- new THREE.Vector3(-6.2,2.25,0.5),
- new THREE.Vector3(-2.1,1.5,-1.9),
- new THREE.Vector3(2.3,4.0,-4.2),
- new THREE.Vector3(6.2,3.8,-1.0),
- new THREE.Vector3(6.9,1.7,3.1),
- new THREE.Vector3(9.9,2.75,4.6),
- new THREE.Vector3(12.9,5.0,1.2),
- new THREE.Vector3(15.3,5.3,-1.1)
+// Reference-based Seiryu rebuild: elevated S-curve, monumental head, open maw,
+// carved antlers, dense overlapping scale rows, whiskers and floating water clouds.
+// Everything below is a genuine Three.js mesh (not a background illustration).
+const qId=new THREE.Quaternion(),yAxis=new THREE.Vector3(0,1,0);
+const bodyPath=new THREE.CatmullRomCurve3([
+ new THREE.Vector3(-7.7,7.35,3.35),new THREE.Vector3(-5.8,6.2,3.8),
+ new THREE.Vector3(-4.3,3.8,3.95),new THREE.Vector3(-1.7,1.45,3.75),
+ new THREE.Vector3(1.8,1.3,3.05),new THREE.Vector3(4.8,2.95,.15),
+ new THREE.Vector3(6.7,5.75,-2.05),new THREE.Vector3(9.25,6.2,-2.2),
+ new THREE.Vector3(10.8,3.35,.1),new THREE.Vector3(9.9,1.8,3.15),
+ new THREE.Vector3(11.8,1.95,3.75),new THREE.Vector3(13.6,4.0,1.6),
+ new THREE.Vector3(15.8,6.9,-1.6)
 ],false,'catmullrom',.48);
-function radius(t){return 1.75*Math.pow(1-t,.62)+.35}
-const scaleSets=new Map();
-function register(mat,pos,quat,sx,sy,sz){
- if(!scaleSets.has(mat))scaleSets.set(mat,[]);
- scaleSets.get(mat).push({pos:pos.clone(),quat:quat.clone(),sx,sy,sz});
+const bodyRadius=t=>t<.22?2.2+Math.sin(t/.22*Math.PI)*.17:
+ t<.64?2.35-.25*((t-.22)/.42):Math.max(.45,2.15*(1-(t-.64)/.36));
+const bodyScales=new Map();
+const boxGeo=new THREE.BoxGeometry(1,1,1);
+function scalePart(material,position,orientation,sx,sy,sz){
+ if(!bodyScales.has(material))bodyScales.set(material,[]);
+ bodyScales.get(material).push({position:position.clone(),orientation:orientation.clone(),sx,sy,sz});
 }
-const tangent=new THREE.Vector3(),side=new THREE.Vector3(),top=new THREE.Vector3(),normal=new THREE.Vector3(),along=new THREE.Vector3(),circ=new THREE.Vector3(),basis=new THREE.Matrix4(),Q=new THREE.Quaternion();
-const steps=110;
-for(let i=0;i<steps;i++){
- const t=i/(steps-1),next=Math.min(1,t+1/(steps-1)),p=curve.getPoint(t),p2=curve.getPoint(next);
- const r=radius(t), rNext=radius(next);
- if(i<steps-1){
-  const seg=p2.clone().sub(p),cyl=mesh(new THREE.CylinderGeometry(rNext,r,seg.length()*1.23,12),i<12?'royal':'deep');
-  cyl.position.copy(p).add(p2).multiplyScalar(.5);
-  cyl.quaternion.setFromUnitVectors(Y,seg.normalize());
- }
- tangent.copy(curve.getTangent(t)).normalize();
- side.crossVectors(tangent,Y).normalize();
- if(side.length()<.1)side.set(0,0,1);
- top.crossVectors(side,tangent).normalize();
- for(let j=0;j<18;j++){
-  const ang=(j+(i%2)*.50)*Math.PI*2/18;
-  normal.copy(top).multiplyScalar(Math.cos(ang)).addScaledVector(side,Math.sin(ang)).normalize();
-  circ.crossVectors(normal,tangent).normalize();
-  basis.makeBasis(tangent,circ,normal);
-  Q.setFromRotationMatrix(basis);
-  const v=p.clone().addScaledVector(normal,r+.03);
-  const btm=Math.cos(ang)<-.54;
-  let mat=btm?(Math.sin(i*.6+j)>.1?'belly':'bellyShadow'):
-   (Math.sin(i*1.2+j*3.7)>.48?'sky':Math.cos(i*2.8-j*1.6)>.3?'teal':i%4===0?'mint':j%3===0?'royal':'blue');
-  register(mat,v,Q,.31+(1-t)*.13,2*Math.PI*r/18*.92,.15+(1-t)*.06);
- }
- if(i%3===0){
-  const crest=top.clone().multiplyScalar(r+.05).add(p);
-  rod(crest.toArray(),crest.clone().addScaledVector(top,.65+(1-t)*.75).addScaledVector(tangent,-.27).toArray(),.31,.04,i%2?'mint':'sky',dragon,4);
- }
- if(i%8===0&&i<96){
-  const fin=top.clone().multiplyScalar(r+.4).add(p);
-  cube(fin.x,fin.y,fin.z,.26,.28,.65,i%3?'sky':'mint');
+function blockInst(material,x,y,z,sx,sy,sz,angle=0){
+ const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),angle);
+ scalePart(material,new THREE.Vector3(x,y,z),q,sx,sy,sz);
+}
+function finalizeInstances(){
+ const dummy=new THREE.Object3D();
+ for(const [material,items] of bodyScales){
+  if(!items.length)continue;
+  const inst=new THREE.InstancedMesh(boxGeo,materials[material],items.length);
+  inst.castShadow=false;inst.frustumCulled=false;
+  items.forEach((it,i)=>{dummy.position.copy(it.position);dummy.quaternion.copy(it.orientation);
+   dummy.scale.set(it.sx,it.sy,it.sz);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix)});
+  inst.instanceMatrix.needsUpdate=true;dragon.add(inst);
  }
 }
-const scaleGeo=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D();
-for(const [mat,rows] of scaleSets){
- const im=new THREE.InstancedMesh(scaleGeo,materials[mat],rows.length);
- im.frustumCulled=false;im.castShadow=false;
- rows.forEach((d,i)=>{dummy.position.copy(d.pos);dummy.quaternion.copy(d.quat);dummy.scale.set(d.sx,d.sy,d.sz);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix)});
- im.instanceMatrix.needsUpdate=true;dragon.add(im);
+const forward=new THREE.Vector3(),sideV=new THREE.Vector3(),upV=new THREE.Vector3();
+const radial=new THREE.Vector3(),around=new THREE.Vector3(),basis=new THREE.Matrix4(),rot=new THREE.Quaternion();
+function ringFrame(t){
+ forward.copy(bodyPath.getTangent(t)).normalize();
+ sideV.crossVectors(forward,yAxis).normalize();
+ if(sideV.length()<.1)sideV.set(0,0,1);
+ upV.crossVectors(sideV,forward).normalize();
+ return {forward:forward.clone(),side:sideV.clone(),up:upV.clone()};
 }
-// Head is built in its own local coordinates. The muzzle faces left (-X).
-const head=new THREE.Group();head.position.copy(curve.getPoint(0));dragon.add(head);
-cube(-.30,.44,0,3.55,2.85,3.1,'blue',head);
-cube(-1.50,.45,0,2.65,1.65,2.40,'royal',head);
-cube(-2.48,.64,0,1.30,.91,2.0,'sky',head);
-cube(-1.75,-.76,0,2.72,.58,2.12,'bellyShadow',head);
-cube(-2.57,-1.08,0,1.65,.44,1.93,'blue',head);
-cube(-2.13,-.65,0,2.15,.2,1.67,'black',head);
-for(const s of [-1,1]){
- // Bright eyes, stepped eyebrows, cheek frills
- cube(-1.09,.85,s*1.57,.53,.45,.15,'eye',head);
- cube(-1.10,1.17,s*1.54,1.08,.25,.23,'deep',head);
- cube(-.09,1.2,s*1.54,1.2,.35,.30,'sky',head);
- for(let j=0;j<6;j++)cube(.16+j*.29,.72-j*.14,s*(1.68+j*.13),.38,.48,.29,j%2?'teal':'mint',head);
- // Teeth top and bottom
- for(let j=0;j<4;j++){
-  const x=-3.05+j*.55,z=s*.83;
-  rod([x,.02,z],[x-.10,-.58+(j%2)*.13,z],.17,.016,'tooth',head,5);
-  rod([x,-.91,z],[x-.09,-.38,z],.13,.01,'tooth',head,5);
+const segmentCount=123,aroundCount=21;
+for(let i=0;i<segmentCount;i++){
+ const t=i/(segmentCount-1),p=bodyPath.getPoint(t),r=bodyRadius(t);
+ const frame=ringFrame(t),tg=frame.forward,s=frame.side,u=frame.up;
+ const t2=Math.min(1,t+1/(segmentCount-1));
+ if(i<segmentCount-1){
+  const p2=bodyPath.getPoint(t2),dir=p2.clone().sub(p);
+  const core=mesh(new THREE.CylinderGeometry(bodyRadius(t2)*.92,r*.92,dir.length()*1.34,10),t<.25?'blue':'deep');
+  core.position.copy(p).add(p2).multiplyScalar(.5);
+  core.quaternion.setFromUnitVectors(yAxis,dir.normalize());
  }
- // Branching antlers
- let a=[.43,1.6,s*.83],b=[.65,3.22,s*1.28],c=[1.26,4.75,s*1.65];
- rod(a,b,.29,.22,'horn',head,5);rod(b,c,.22,.075,'horn',head,5);
- rod([.69,3.02,s*1.24],[1.75,4.01,s*2.08],.15,.043,'horn',head,5);
- rod([.91,3.62,s*1.42],[.45,4.38,s*2.23],.13,.03,'horn',head,5);
- // Curving luminous whiskers
- const whisker=new THREE.CatmullRomCurve3([
-  new THREE.Vector3(-2.77,.17,s*1.07),
-  new THREE.Vector3(-4.0,.03,s*2.35),
-  new THREE.Vector3(-5.4,-.46,s*2.75),
-  new THREE.Vector3(-6.0,.42,s*3.54),
-  new THREE.Vector3(-6.80,.62,s*4.08)
- ]);
- mesh(new THREE.TubeGeometry(whisker,36,.052,5,false),'water',head);
- cube(-2.88,1.06,s*.86,.71,.30,.65,'mint',head);
-}
-// Forehead scales and whisker fins
-for(let i=0;i<10;i++){
- const z=-1.3+i*.29;
- cube(-.96,1.86,z,.48,.23,.26,i%3===0?'mint':i%2?'sky':'royal',head);
-}
-for(let i=0;i<7;i++){
- const x=-.4+i*.36;
- const spike=cube(x,1.93,0,.41,.54,.49,i%2?'teal':'sky',head);
- spike.rotation.z=.25;
-}
-// Four legs: 2 pairs, bent knees and separate toes.
-for(const t of [.16,.26,.55,.70]){
- const p=curve.getPoint(t),tan=curve.getTangent(t).normalize(),lr=new THREE.Vector3().crossVectors(tan,Y).normalize(),r=radius(t);
- for(const s of [-1,1]){
-  const start=p.clone().addScaledVector(lr,s*r*.80);
-  const elbow=start.clone().addScaledVector(lr,s*1.28).add(new THREE.Vector3(.58,-1.43,0));
-  const paw=elbow.clone().add(new THREE.Vector3(-.62,-1.25,s*.24));
-  rod(start.toArray(),elbow.toArray(),.53,.37,'blue',dragon,7);
-  rod(elbow.toArray(),paw.toArray(),.42,.31,'royal',dragon,7);
-  cube(paw.x,paw.y,paw.z,1.18,.49,1.08,'deep');
-  for(const toe of [-1,0,1]){
-   const base=paw.clone().add(new THREE.Vector3(-.45,-.1,toe*.38));
-   const tip=base.clone().add(new THREE.Vector3(-.83,-.35,toe*.10));
-   rod(base.toArray(),tip.toArray(),.20,.024,'tooth',dragon,5);
+ for(let j=0;j<aroundCount;j++){
+  const angle=(j+(i%2)*.5)*2*Math.PI/aroundCount;
+  const c=Math.cos(angle),sin=Math.sin(angle);
+  radial.copy(u).multiplyScalar(c).addScaledVector(s,sin).normalize();
+  around.crossVectors(radial,tg).normalize();
+  basis.makeBasis(tg,around,radial);
+  rot.setFromRotationMatrix(basis);
+  const v=p.clone().addScaledVector(radial,r*.99);
+  // Continuous sand-colored ventral armor, indigo side scales and cyan crest.
+  const belly=c<-.56;
+  let mat;
+  if(belly)mat=(i%5===0?'bellyShadow':'belly');
+  else if(c>.57&&j%4===0)mat='mint';
+  else if(c>.48&&Math.sin(i*.77+j*.86)>.15)mat='sky';
+  else if(c>.04&&Math.sin(i*.52+j*2.18)>.46)mat='teal';
+  else mat=(i+j)%3===0?'royal':j%4===0?'blue':'deep';
+  const length=Math.max(.28,bodyPath.getLength()/segmentCount*.98);
+  const width=2*Math.PI*r/aroundCount*1.06;
+  scalePart(mat,v,rot,length,width,belly?.17:.26);
+ }
+ // A stepped, layered crest with individual turquoise spines.
+ if(i%2===0&&i<segmentCount-5){
+  const a=p.clone().addScaledVector(u,r-.04);
+  const tip=a.clone().addScaledVector(u,.76+(1-t)*.83).addScaledVector(tg,-.38);
+  rod(a.toArray(),tip.toArray(),.21,.027,i%4===0?'sky':i%3===0?'mint':'teal',dragon,4);
+ }
+ if(i%4===0&&i<85){
+  // Two swept-over fin rows, rather than a thin single mohawk.
+  for(const sign of [-1,1]){
+   const n=u.clone().multiplyScalar(.72).addScaledVector(s,sign*.70).normalize();
+   const a=p.clone().addScaledVector(n,r-.02);
+   const b=a.clone().addScaledVector(n,.58+(1-t)*.49).addScaledVector(tg,-.35);
+   rod(a.toArray(),b.toArray(),.19,.02,i%3===0?'sky':'mint',dragon,4);
   }
  }
 }
-// Tail flares
-const tail=curve.getPoint(.98);
-for(let j=0;j<10;j++){
- const ang=j*Math.PI*2/10;
- const from=tail.clone().add(new THREE.Vector3(0,Math.sin(ang)*.25,Math.cos(ang)*.25));
- const to=from.clone().add(new THREE.Vector3(1.15+Math.cos(ang)*.7,Math.sin(ang)*2.2,Math.cos(ang)*1.9));
- rod(from.toArray(),to.toArray(),.16,.025,j%2?'sky':'mint',dragon,4);
-}
-// Block-based floating water and mystical clouds around the coils
-const clouds=new THREE.Group();dragon.add(clouds);
-for(const p of [[-6,1,-6],[-2,6,-6],[3,1,6],[7,7,-4],[11,1,5],[15,6,-4]]){
- for(let i=0;i<24;i++){
-  const a=i*2.399963,b=i*1.17,rr=.25+(i%6)*.30;
-  const x=p[0]+Math.cos(a)*rr*1.7,y=p[1]+Math.sin(b)*rr*.72,z=p[2]+Math.sin(a)*rr;
-  const s=.25+(i%4)*.17;
-  cube(x,y,z,s*1.25,s,s*1.1,i%4===0?'water':'cloud',clouds);
+const head=new THREE.Group();head.position.copy(bodyPath.getPoint(0));head.rotation.y=-.10;dragon.add(head);
+// Surface voxel volume creates a tapered cranium, NOT one rectangular cube.
+function headVoxel(cx,cy,cz,rx,ry,rz,unit,kind,cut=null){
+ const minX=Math.floor((cx-rx)/unit),maxX=Math.ceil((cx+rx)/unit);
+ const minY=Math.floor((cy-ry)/unit),maxY=Math.ceil((cy+ry)/unit);
+ const minZ=Math.floor((cz-rz)/unit),maxZ=Math.ceil((cz+rz)/unit);
+ for(let xi=minX;xi<=maxX;xi++)for(let yi=minY;yi<=maxY;yi++)for(let zi=minZ;zi<=maxZ;zi++){
+  const x=xi*unit,y=yi*unit,z=zi*unit;
+  const n=((x-cx)/rx)**2+((y-cy)/ry)**2+((z-cz)/rz)**2;
+  if(n>1.05||n<.33||(cut&&cut(x,y,z)))continue;
+  const jitter=(Math.sin(xi*13.6+yi*4.9+zi*7.2)+1)*.5;
+  const mat=kind==='jaw'?jitter>.73?'sky':jitter>.35?'royal':'blue':
+   kind==='under'?'belly':
+   y>cy+.4*ry?(jitter>.70?'mint':jitter>.35?'sky':'royal'):
+   jitter>.80?'teal':jitter>.31?'royal':'deep';
+  const q=new THREE.Quaternion();
+  const pos=new THREE.Vector3(x+head.position.x,y+head.position.y,z+head.position.z);
+  // Since head group rotates, transform local parts into the world dragon.
+  pos.sub(head.position).applyAxisAngle(yAxis,head.rotation.y).add(head.position);
+  scalePart(mat,pos,q,unit*1.025,unit*1.025,unit*1.025);
  }
 }
+headVoxel(-.22,.15,0,2.30,1.67,1.76,.34,'head');
+headVoxel(-2.32,-.13,0,1.99,.84,1.38,.29,'jaw');
+headVoxel(-2.63,-1.76,0,1.80,.52,1.25,.29,'jaw');
+headVoxel(.78,-.82,0,1.38,.92,1.35,.31,'under');
+// Open, cavernous jaws: dark throat, turquoise interior and long saber fangs.
+cube(-2.15,-1.00,0,2.5,1.12,2.35,'black',head);
+cube(-2.43,-1.52,.04,1.73,.19,1.35,'teal',head);
+for(const sign of [-1,1]){
+ for(let k=0;k<6;k++){
+  const x=-3.74+k*.51,z=sign*(.65+(k%2)*.18);
+  rod([x,-.42,z],[x-.13,-1.30-(k%3)*.15,z],.16,.009,'tooth',head,5);
+  rod([x,-1.57,z],[x-.18,-1.13,z],.13,.012,'tooth',head,5);
+ }
+ // Prominent ivory canine tusk, curved at tip
+ rod([-3.15,-.31,sign*1.06],[-3.40,-1.50,sign*1.15],.28,.11,'tooth',head,7);
+ rod([-3.40,-1.50,sign*1.15],[-3.20,-1.94,sign*1.09],.11,.015,'tooth',head,7);
+ // Turquoise luminous eyes within sharp angled eyelids.
+ cube(-1.05,.84,sign*1.67,.83,.38,.29,'black',head);
+ cube(-1.14,.85,sign*1.84,.57,.26,.13,'eye',head);
+ const brow=cube(-1.02,1.16,sign*1.72,1.32,.31,.35,'sky',head);
+ brow.rotation.z=.18;
+ cube(-.13,1.11,sign*1.62,.88,.34,.30,'teal',head);
+ // Staggered scale layers around jaw hinge.
+ for(let k=0;k<10;k++){
+  const x=.4+k*.22,y=.94-(k%4)*.30;
+  cube(x,y,sign*(1.78+.09*(k%3)),.55,.42,.25,k%3===0?'mint':k%2?'royal':'sky',head);
+ }
+ // Pale branched horn antlers, extended rearward over the crest.
+ rod([.3,1.55,sign*.93],[.89,3.12,sign*1.32],.37,.27,'horn',head,6);
+ rod([.89,3.12,sign*1.32],[2.1,4.30,sign*1.47],.27,.13,'horn',head,6);
+ rod([2.1,4.30,sign*1.47],[2.82,5.12,sign*1.53],.13,.012,'tooth',head,5);
+ rod([.96,3.28,sign*1.34],[1.02,4.37,sign*2.02],.17,.018,'horn',head,5);
+ rod([1.53,3.88,sign*1.47],[2.59,4.49,sign*2.20],.15,.012,'horn',head,5);
+ rod([.83,2.73,sign*1.25],[.08,3.73,sign*1.85],.15,.012,'horn',head,5);
+ // Three free-flowing, jointed watery whiskers.
+ for(let branch=0;branch<2;branch++){
+  const whisker=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-3.50,-.18-branch*.32,sign*1.08),
+    new THREE.Vector3(-4.60,-.42-branch*.45,sign*2.55),
+    new THREE.Vector3(-6.25,-1.06-branch*.60,sign*3.22),
+    new THREE.Vector3(-7.10,.28-branch*.20,sign*4.42),
+    new THREE.Vector3(-8.0,-.04-branch*.4,sign*5.05)
+  ]);
+  mesh(new THREE.TubeGeometry(whisker,34,.050-branch*.011,5,false),'water',head);
+ }
+ // Stacked gill fins spreading outwards from the cheek.
+ for(let j=0;j<10;j++){
+  const x=.05+j*.30,y=.69-(j%4)*.25,z=sign*(1.70+j*.105);
+  rod([x,y,z],[x+.26,y+.62+(j%3)*.15,z+sign*.52],.24,.015,j%3===0?'mint':j%2?'teal':'sky',head,4);
+ }
+}
+// Nasal plates and serrated crown.
+for(let j=0;j<9;j++){
+ const x=-3.75+j*.33;
+ cube(x,.46+(j%3)*.14,0,.41,.24,.51,j%2?'sky':'mint',head);
+}
+for(let i=0;i<21;i++){
+ const x=-1.2+i*.22;
+ const z=Math.sin(i*.85)*.83;
+ const h=.5+(i%5)*.18;
+ rod([x,1.43,z],[x+.35,1.43+h,z+.12],.20,.017,i%4===0?'mint':i%2?'royal':'sky',head,4);
+}
+// Voluminous turquoise mane: four overlapping flared layers, densely nested.
+for(let k=0;k<67;k++){
+ const x=.65+(k%22)*.185;
+ const ring=Math.floor(k/22),sign=ring===0?-1:ring===1?1:0;
+ const a=[x,.67+(k%4)*.21,sign*(1.42+(k%5)*.14)];
+ const b=[x+.28+(k%6)*.14,1.45+(k%5)*.24,sign*(2.05+(k%4)*.18)];
+ rod(a,b,.25,.025,k%5===0?'mint':k%2?'sky':'teal',head,4);
+}
+// Muscular, articulated legs with three ivory hooks per claw.
+function legAt(t,sgn){
+ const p=bodyPath.getPoint(t),frame=ringFrame(t),side=frame.side;
+ const a=p.clone().addScaledVector(side,sgn*bodyRadius(t)*.62).add(new THREE.Vector3(0,-.50,0));
+ const elbow=a.clone().addScaledVector(side,sgn*1.40).add(new THREE.Vector3(.52,-1.13,.20));
+ const wrist=elbow.clone().addScaledVector(side,sgn*.46).add(new THREE.Vector3(-.50,-1.40,.22));
+ rod(a.toArray(),elbow.toArray(),.64,.43,'deep',dragon,7);
+ rod(elbow.toArray(),wrist.toArray(),.50,.37,'royal',dragon,7);
+ const paw=wrist.clone().add(new THREE.Vector3(-.18,-.13,.16));
+ cube(paw.x,paw.y,paw.z,1.22,.57,1.13,'blue');
+ for(const f of [-1,0,1]){
+  const start=paw.clone().add(new THREE.Vector3(-.47,-.12,f*.38));
+  const end=start.clone().add(new THREE.Vector3(-.83,-.40,f*.13));
+  rod(start.toArray(),end.toArray(),.215,.02,'tooth',dragon,5);
+ }
+ for(let j=0;j<6;j++){
+  const pt=a.clone().lerp(elbow,(j+.3)/7);
+  cube(pt.x,pt.y,pt.z,.25,.25,.28,j%3===0?'sky':'royal');
+ }
+}
+for(const t of [.12,.23,.54,.70])for(const sign of [-1,1])legAt(t,sign);
+// Fan-shaped streaming tail, with a large upturned ice-blue brush.
+const tip=bodyPath.getPoint(1),last=ringFrame(.995);
+for(let j=0;j<26;j++){
+ const angle=2*Math.PI*j/26;
+ const n=last.up.clone().multiplyScalar(Math.cos(angle)).addScaledVector(last.side,Math.sin(angle));
+ const root=tip.clone().addScaledVector(n,.19);
+ const outer=root.clone().addScaledVector(n,1.1+(j%4)*.23).addScaledVector(last.forward,1.5+(j%5)*.22);
+ rod(root.toArray(),outer.toArray(),.20,.012,j%3===0?'mint':j%2?'sky':'teal',dragon,4);
+}
+// Translucent voxel-water clouds, positioned around the dragon rather than
+// blocking its face: individual cubes remain independently three-dimensional.
+function blockCloud(cx,cy,cz,size,seed){
+ for(let k=0;k<46;k++){
+  const a=k*2.399963+seed,b=k*.79+seed;
+  const r=.16+Math.sqrt(k/46)*size;
+  const x=cx+Math.cos(a)*r*1.30,y=cy+Math.sin(b)*r*.49,z=cz+Math.sin(a)*r*.71;
+  const s=.17+(k%4)*.18;
+  blockInst(k%8===0?'water':'cloud',x,y,z,s*1.23,s,s*1.12);
+ }
+}
+for(const p of [[-3,1,-2,1.25],[.5,6.6,-1.5,1.65],[4.6,.4,5.0,1.25],[7.1,7.5,1.5,1.55],[10.8,2.5,-4.7,1.25],[13.0,4.7,4.3,1.55],[16.8,5.4,-3.4,1.20]])blockCloud(...p,.7);
+finalizeInstances();
 // Ground and soft scene lighting
 const ground=mesh(new THREE.PlaneGeometry(190,190),new THREE.MeshStandardMaterial({color:0x0b1822,roughness:.88}),scene);
 ground.rotation.x=-Math.PI/2;ground.position.y=-5.4;
 const grid=new THREE.GridHelper(80,40,0x16435a,0x173147);grid.position.y=-5.38;scene.add(grid);
-let yaw=.26,pitch=.28,distance=42,autoSpin=true,center=new THREE.Vector3(2,3,0);
+let yaw=.18,pitch=.12,distance=34,autoSpin=false,center=new THREE.Vector3(2,3.1,0);
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
  const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
- if(view==='front'){yaw=.26;pitch=.28;distance=42;center.set(2,3,0)}
- if(view==='side'){yaw=Math.PI*.52;pitch=.12;distance=47;center.set(2,3,0)}
- if(view==='back'){yaw=Math.PI+ .10;pitch=.20;distance=42;center.set(2,3,0)}
- if(view==='head'){yaw=.33;pitch=.1;distance=14;center.set(-10.7,4.4,0)}
+ if(view==='front'){yaw=.18;pitch=.12;distance=34;center.set(2,3.1,0)}
+ if(view==='side'){yaw=Math.PI*.48;pitch=.06;distance=39;center.set(2,3.1,0)}
+ if(view==='back'){yaw=Math.PI+.15;pitch=.14;distance=38;center.set(2,3.1,0)}
+ if(view==='head'){yaw=.25;pitch=.02;distance=12;center.set(-9.7,7.4,3.0)}
 }));
 document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
 document.getElementById('zoomout').onclick=()=>distance=Math.min(85,distance*1.25);
@@ -254,6 +341,7 @@ function render(){
  camera.lookAt(center);
  renderer.render(scene,camera);
 }
+document.getElementById('spin').textContent='自動回転 OFF';document.getElementById('spin').classList.remove('active');
 document.getElementById('status').style.display='none';
 render();
 </script>
