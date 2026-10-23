@@ -383,14 +383,15 @@ function fitWholeDragon(){
   dragonSize.y*.5/tan
  )*1.10+dragonSize.z*.32);
 }
-let yaw=-.31,pitch=.055,distance=28.8,autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-4.8,1.0,0));
+const faceViewDistance=()=>innerWidth/Math.max(innerHeight,1)<1.15?36.5:29.8;
+let yaw=-.31,pitch=.055,distance=faceViewDistance(),autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-4.8,1.0,0));
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
  const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
  if(view==='front'){yaw=.10;pitch=.07;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='side'){yaw=0;pitch=.02;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='back'){yaw=Math.PI;pitch=.08;distance=fitWholeDragon();center.copy(heroCenter)}
- if(view==='head'){yaw=-.31;pitch=.055;distance=28.8;center.copy(head.position).add(new THREE.Vector3(-4.8,1.0,0))}
+ if(view==='head'){yaw=-.31;pitch=.055;distance=faceViewDistance();center.copy(head.position).add(new THREE.Vector3(-4.8,1.0,0))}
 }));
 document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
 document.getElementById('zoomout').onclick=()=>distance=Math.min(85,distance*1.25);
