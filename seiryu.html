@@ -278,7 +278,8 @@ function legAt(t,sgn){
   cube(pt.x,pt.y,pt.z,.25,.25,.28,j%3===0?'sky':'royal');
  }
 }
-for(const t of [.12,.23,.54,.70])for(const sign of [-1,1])legAt(t,sign);
+// Seiryu has exactly two forelegs (left and right), and no hindlegs.
+for(const sign of [-1,1])legAt(.16,sign);
 // Fan-shaped streaming tail, with a large upturned ice-blue brush.
 const tip=bodyPath.getPoint(1),last=ringFrame(.995);
 for(let j=0;j<26;j++){
