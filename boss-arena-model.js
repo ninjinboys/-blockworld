@@ -18,8 +18,8 @@ export function createBossArenaModel(THREE){
   };
   const shapes={cube,oct,spire};
   const specs=[];
-  const put=(material,x,y,z,sx,sy,sz,rot=0,shape='cube')=>{
-    specs.push({material,x,y,z,sx,sy,sz,rot,shape});
+  const put=(material,x,y,z,sx,sy,sz,rot=0,shape='cube',altar=false)=>{
+    specs.push({material,x,y,z,sx,sy,sz,rot,shape,altar});
   };
   // Floor-etched circuit and concentric combat runes.
   // Anchor voxel occupies the altar centre at y=0; floor TOP is y=-.50.
@@ -112,24 +112,27 @@ export function createBossArenaModel(THREE){
       .10,.16,.12,n*.27,'oct');
   }
   // Short low altar in the middle of the circular battle ring.
-  put('black',0,-.24,0,1.50,.52,1.50);
-  put('stone',0,.02,0,1.22,.15,1.22);
-  put('metal',0,.18,0,.95,.20,.95);
-  put('cyan',0,.31,0,.63,.08,.63);
-  put('bright',0,.52,0,.42,.41,.42,0,'oct');
+  // Only these central dais meshes may open the boss-altar interface.
+  // Outer wings, portal, steps and glowing scenery must not trigger it.
+  put('black',0,-.24,0,1.50,.52,1.50,0,'cube',true);
+  put('stone',0,.02,0,1.22,.15,1.22,0,'cube',true);
+  put('metal',0,.18,0,.95,.20,.95,0,'cube',true);
+  put('cyan',0,.31,0,.63,.08,.63,0,'cube',true);
+  put('bright',0,.52,0,.42,.41,.42,0,'oct',true);
 
   const byGroup=new Map();
   for(const p of specs){
-    const key=p.material+'/'+p.shape;
-    if(!byGroup.has(key))byGroup.set(key,{material:mat[p.material],geometry:shapes[p.shape],parts:[]});
+    const key=p.material+'/'+p.shape+'/'+(p.altar?'altar':'scenery');
+    if(!byGroup.has(key))byGroup.set(key,{material:mat[p.material],geometry:shapes[p.shape],parts:[],altar:p.altar});
     byGroup.get(key).parts.push(p);
   }
   const dummy=new THREE.Object3D();
   function build(anchors,scene,meshes,lookup,built,id){
     if(!anchors.length)return;
-    for(const {material,geometry,parts} of byGroup.values()){
+    for(const {material,geometry,parts,altar} of byGroup.values()){
       const mesh=new THREE.InstancedMesh(geometry,material,anchors.length*parts.length);
-      mesh.userData.id=id;mesh.castShadow=false;mesh.receiveShadow=true;
+      mesh.userData.id=id;
+      mesh.userData.bossArenaAltar=!!altar;mesh.castShadow=false;mesh.receiveShadow=true;
       mesh.frustumCulled=false;
       const hitCells=[];
       let i=0;
