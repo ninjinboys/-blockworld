@@ -180,7 +180,7 @@ const head=new THREE.Group();
 const HEAD_SCALE=1.72;
 head.position.copy(bodyPath.getPoint(0));
 head.scale.setScalar(HEAD_SCALE);
-head.rotation.y=-.13;
+head.rotation.y=.48;
 dragon.add(head);
 const _hq=new THREE.Quaternion();
 function headVoxel(x,y,z,sx,sy,sz,mat,rotZ=0){
@@ -412,7 +412,7 @@ for(let row=0;row<4;row++)for(let i=0;i<38;i++){
  const end=[x+.42,y+.55+(i%5)*.16,z+s*(.45+Math.floor(row/2)*.21)];
  rod([x,y,z],end,.18,.020,(i+row)%3===0?'mint':i%2===0?'teal':'sky',head,4);
 }
-window.seiryuFaceVersion='v16-dragon-iris'; 
+window.seiryuFaceVersion='v17-facing-guardian'; 
 // Muscular, articulated legs with three ivory hooks per claw.
 function legAt(t,sgn){
  const p=bodyPath.getPoint(t),frame=ringFrame(t),side=frame.side;
