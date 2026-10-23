@@ -32,389 +32,336 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#09131d;col
 <div class="note">ドラッグで回転 · ピンチ/スクロールで拡大縮小</div>
 <div class="tools"><button data-view="front">斜め</button><button data-view="side">側面</button><button data-view="back">背面</button><button data-view="head">顔アップ</button><button id="zoomout">－</button><button id="zoomin">＋</button><button id="spin" class="active">自動回転 ON</button></div>
 <script type="module">
+
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
+// NEXACRAFT / SEIRYU – SCULPTURE REBUILD 30. All previous model geometry is removed.
 const canvas=document.getElementById('stage');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
-renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.15;
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x09131d);
-scene.fog=new THREE.Fog(0x09131d,66,145);
-const camera=new THREE.PerspectiveCamera(47,innerWidth/innerHeight,.1,170);
-scene.add(new THREE.HemisphereLight(0xa4e9ff,0x253344,1.7));
-const key=new THREE.DirectionalLight(0xd8f5ff,3.4);key.position.set(-11,22,20);scene.add(key);
-const rim=new THREE.DirectionalLight(0x2aaaff,3.8);rim.position.set(9,13,-14);scene.add(rim);
-const glow=new THREE.PointLight(0x1bdde7,42,40);glow.position.set(-10,6,9);scene.add(glow);
-const dragon=new THREE.Group();scene.add(dragon);
-const materials={
-deep:new THREE.MeshStandardMaterial({color:0x062661,roughness:.67,metalness:.10}),
-blue:new THREE.MeshStandardMaterial({color:0x1046a5,roughness:.48,metalness:.12}),
-royal:new THREE.MeshStandardMaterial({color:0x1765c3,roughness:.42,metalness:.12}),
-sky:new THREE.MeshStandardMaterial({color:0x4bb5dd,roughness:.38,metalness:.15}),
-mint:new THREE.MeshStandardMaterial({color:0x67d9cc,roughness:.43}),
-teal:new THREE.MeshStandardMaterial({color:0x1599a9,roughness:.42}),
-belly:new THREE.MeshStandardMaterial({color:0xd9c8aa,roughness:.82}),
-bellyShadow:new THREE.MeshStandardMaterial({color:0xa59c8e,roughness:.78}),
-horn:new THREE.MeshStandardMaterial({color:0xc6b69e,roughness:.92}),
-tooth:new THREE.MeshStandardMaterial({color:0xf1e5cf,roughness:.56}),
-eye:new THREE.MeshBasicMaterial({color:0x58ffff}),
-black:new THREE.MeshStandardMaterial({color:0x071c2d,roughness:.88}),
-water:new THREE.MeshStandardMaterial({color:0x7ff5ff,emissive:0x0ba1b1,emissiveIntensity:.66,transparent:true,opacity:.80,roughness:.28}),
-cloud:new THREE.MeshStandardMaterial({color:0xa6dfff,transparent:true,opacity:.46,roughness:.3,depthWrite:false})
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
+renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x090e17);
+scene.fog=new THREE.Fog(0x090e17,68,125);
+const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,180);
+const hemi=new THREE.HemisphereLight(0xb8edff,0x1b2331,2.05);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xe1f6ff,3.6);sun.position.set(-16,24,24);scene.add(sun);
+const fill=new THREE.DirectionalLight(0x159ed5,3.15);fill.position.set(14,12,-19);scene.add(fill);
+const light=new THREE.PointLight(0x2df7f8,32,41);light.position.set(-17,9,12);scene.add(light);
+const mat={
+navy:new THREE.MeshStandardMaterial({color:0x07183d,roughness:.72}),
+deep:new THREE.MeshStandardMaterial({color:0x102c75,roughness:.64,metalness:.03}),
+blue:new THREE.MeshStandardMaterial({color:0x124fa6,roughness:.56,metalness:.04}),
+royal:new THREE.MeshStandardMaterial({color:0x246fc5,roughness:.49,metalness:.09}),
+turquoise:new THREE.MeshStandardMaterial({color:0x138f9e,roughness:.49}),
+sea:new THREE.MeshStandardMaterial({color:0x2badc5,roughness:.49}),
+ice:new THREE.MeshStandardMaterial({color:0x72dae4,roughness:.43}),
+cream:new THREE.MeshStandardMaterial({color:0xd5c3a8,roughness:.81}),
+creamShade:new THREE.MeshStandardMaterial({color:0xa99e8e,roughness:.86}),
+antler:new THREE.MeshStandardMaterial({color:0xbfb09d,roughness:.82}),
+fang:new THREE.MeshStandardMaterial({color:0xece7d9,roughness:.48}),
+mouth:new THREE.MeshStandardMaterial({color:0x092635,roughness:.91,side:THREE.DoubleSide}),
+tongue:new THREE.MeshStandardMaterial({color:0x0f8194,roughness:.72}),
+glow:new THREE.MeshBasicMaterial({color:0x76ffff}),
+whisker:new THREE.MeshStandardMaterial({color:0x9dfbff,emissive:0x117eaa,emissiveIntensity:.64,roughness:.29}),
+cloud:new THREE.MeshStandardMaterial({color:0x8dd3fa,roughness:.3,transparent:true,opacity:.68,depthWrite:false}),
+cloudEdge:new THREE.MeshStandardMaterial({color:0x4dbbea,transparent:true,opacity:.70,depthWrite:false}),
 };
-function mesh(geo,mat,group=dragon){const m=new THREE.Mesh(geo,materials[mat]||mat);group.add(m);return m;}
-function cube(x,y,z,sx,sy,sz,mat,group=dragon){const m=mesh(new THREE.BoxGeometry(sx,sy,sz),mat,group);m.position.set(x,y,z);return m;}
-const Y=new THREE.Vector3(0,1,0);
-function rod(a,b,r1,r2,mat,group=dragon,sides=6){
- const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b),dir=to.clone().sub(from);
- const m=mesh(new THREE.CylinderGeometry(r2,r1,dir.length(),sides),mat,group);
- m.position.copy(from).add(to).multiplyScalar(.5);
- m.quaternion.setFromUnitVectors(Y,dir.normalize());return m;
+const dragon=new THREE.Group();scene.add(dragon);
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const UP=V(0,1,0);
+function mesh(g,m,parent=dragon){const o=new THREE.Mesh(g,mat[m]||m);parent.add(o);return o}
+function cub(x,y,z,w,h,d,m,parent=dragon){const o=mesh(new THREE.BoxGeometry(w,h,d),m,parent);o.position.set(x,y,z);return o}
+function poly(x,y,z,sx,sy,sz,m,parent=dragon,detail=0){
+ const o=mesh(new THREE.IcosahedronGeometry(1,detail),m,parent);
+ o.position.set(x,y,z);o.scale.set(sx,sy,sz);return o;
 }
-// SEIRYU V20 — COMPLETE NEW 3D MODEL. No previous head, body or skin geometry.
-// The core anatomy comes FIRST; scales and visual effects sit on its surfaces.
-const yAxis=Y;
-const root=new THREE.Group();dragon.add(root);
-const M=materials;
-const FRAME=new THREE.Matrix4(), DUMMY=new THREE.Object3D(), EQ=new THREE.Quaternion();
-const palette=['deep','blue','royal','teal','sky','mint'];
-const inst=new Map();
-function instance(mat,g,pos,quat,scale){
- const id=mat+'|'+g;
- if(!inst.has(id))inst.set(id,{g,mat,items:[]});
- inst.get(id).items.push([pos.clone(),quat.clone(),scale.clone()]);
+function rod(a,b,r0,r1,m,parent=dragon,sides=7){
+ a=Array.isArray(a)?new THREE.Vector3(...a):a;b=Array.isArray(b)?new THREE.Vector3(...b):b;
+ const d=b.clone().sub(a),o=mesh(new THREE.CylinderGeometry(r1,r0,d.length(),sides),m,parent);
+ o.position.copy(a).add(b).multiplyScalar(.5);
+ o.quaternion.setFromUnitVectors(UP,d.normalize());return o;
 }
-function commitInstances(){
- for(const {g,mat,items} of inst.values()){
-  const x=new THREE.InstancedMesh(g,M[mat],items.length);x.frustumCulled=false;
-  for(let i=0;i<items.length;i++){
-   DUMMY.position.copy(items[i][0]);DUMMY.quaternion.copy(items[i][1]);
-   DUMMY.scale.copy(items[i][2]);DUMMY.updateMatrix();x.setMatrixAt(i,DUMMY.matrix);
-  }
-  x.instanceMatrix.needsUpdate=true;root.add(x);
+function tube(arr,r,m,parent=dragon){return mesh(new THREE.TubeGeometry(
+ new THREE.CatmullRomCurve3(arr.map(v=>Array.isArray(v)?new THREE.Vector3(...v):v)),52,r,6,false),m,parent)}
+function ribbon(a,b,c,d,material,parent=dragon){
+ const g=new THREE.BufferGeometry();
+ const v=[...a,...b,...c,...a,...c,...d];g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+ g.computeVertexNormals();
+ const m=mat[material].clone();m.side=THREE.DoubleSide;return mesh(g,m,parent);
+}
+// Centerline of the independent, long coiling body; neck dips from head,
+// body arches over the back and the tail rises into a flowering ice fin.
+const spine=new THREE.CatmullRomCurve3([
+ V(-9.4,9.0,1.1),V(-7.7,6.95,1.5),V(-5.6,4.12,1.75),
+ V(-2.5,3.35,2.05),V(1.0,4.35,.50),V(4.1,6.6,-2.0),
+ V(8.3,7.0,-3.15),V(11.9,5.08,-1.85),V(13.55,3.1,1.0),
+ V(12.8,2.6,3.85),V(14.75,4.7,4.6),V(17.0,8.05,2.8),V(19.1,10.5,.25)
+],false,'catmullrom',.48);
+const rad=t=>Math.max(.31, t<.12?1.6+t*5.2:t<.45?2.22-(t-.12)*.3:
+ t<.70?2.13-(t-.45)*3.4:1.28*(1-(t-.70)/.30));
+const rings=[],ringSegments=154,ringSides=24;
+const bodyP=[],bodyC=[],bodyIx=[];
+const deepC=new THREE.Color(0x10295f),blueC=new THREE.Color(0x174b9d);
+for(let i=0;i<=ringSegments;i++){
+ const t=i/ringSegments,p=spine.getPoint(t),tan=spine.getTangent(t).normalize();
+ const side=new THREE.Vector3().crossVectors(tan,UP).normalize();
+ if(side.lengthSq()<.01)side.set(0,0,1);
+ const above=new THREE.Vector3().crossVectors(side,tan).normalize(),r=rad(t);
+ rings.push({p,tan,side,above,r});
+ for(let j=0;j<ringSides;j++){
+  const angle=2*Math.PI*j/ringSides,n=above.clone().multiplyScalar(Math.cos(angle)).addScaledVector(side,Math.sin(angle));
+  const a=p.clone().addScaledVector(n,r*.985);
+  bodyP.push(a.x,a.y,a.z);
+  const c=deepC.clone().lerp(blueC,Math.max(0,Math.sin(t*22+angle*.61)*.35+.36));
+  bodyC.push(c.r,c.g,c.b);
  }
 }
-function part(geometry,material,parent=root){
- return mesh(geometry,material,parent);
+for(let i=0;i<ringSegments;i++)for(let j=0;j<ringSides;j++){
+ const a=i*ringSides+j,b=i*ringSides+(j+1)%ringSides,c=(i+1)*ringSides+j,d=(i+1)*ringSides+(j+1)%ringSides;
+ bodyIx.push(a,c,b,b,c,d);
 }
-function ellipsoid(pos,radii,mat,detail=1,parent=root){
- const m=part(new THREE.IcosahedronGeometry(1,detail),mat,parent);
- m.position.set(...pos);m.scale.set(...radii);return m;
+const bodyGeo=new THREE.BufferGeometry();
+bodyGeo.setAttribute('position',new THREE.Float32BufferAttribute(bodyP,3));
+bodyGeo.setAttribute('color',new THREE.Float32BufferAttribute(bodyC,3));
+bodyGeo.setIndex(bodyIx);bodyGeo.computeVertexNormals();
+mesh(bodyGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.70,side:THREE.DoubleSide}));
+// Each surface scale is a tapered, beveled, overlapping "shingle", not a cube.
+const tileShape=new THREE.Shape();
+tileShape.moveTo(-.55,-.37);tileShape.lineTo(-.46,.24);
+tileShape.lineTo(.07,.43);tileShape.lineTo(.49,.19);tileShape.lineTo(.65,-.17);tileShape.lineTo(-.10,-.38);tileShape.closePath();
+const tile=new THREE.ExtrudeGeometry(tileShape,{depth:.12,bevelEnabled:true,bevelThickness:.026,bevelSize:.028,bevelSegments:1});
+tile.translate(0,0,-.06);
+const batches=new Map(),tmp=new THREE.Object3D();
+function collect(k,p,orient,sx,sy,sz){
+ if(!batches.has(k))batches.set(k,[]);
+ batches.get(k).push([p.clone(),orient.clone(),V(sx,sy,sz)]);
 }
-function bone(a,b,r0,r1,mat='horn',parent=root){
- return rod(a,b,r0,r1,mat,parent,7);
-}
-function curveWire(coords,r,mat='water',parent=root){
- const curve=new THREE.CatmullRomCurve3(coords.map(p=>new THREE.Vector3(...p)));
- return part(new THREE.TubeGeometry(curve,64,r,6,false),mat,parent);
-}
-const TILE=(()=>{
- const s=new THREE.Shape();
- s.moveTo(-.56,-.33);s.lineTo(-.15,.30);s.lineTo(.31,.37);
- s.lineTo(.60,.08);s.lineTo(.33,-.33);s.closePath();
- const g=new THREE.ExtrudeGeometry(s,{depth:.145,steps:1,bevelEnabled:true,
-   bevelThickness:.022,bevelSize:.035,bevelSegments:1});
- g.translate(0,0,-.0725);
- return g;
-})();
-const CUT=new THREE.BoxGeometry(1,1,1);
-function armor(mat,x,y,z,sx,sy,sz,angle=0,parent=root){
- const o=part(TILE,mat,parent);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.rotation.z=angle;
- return o;
-}
-function eyeShape(x,y,z,side,parent){
- // Black eye socket is a recessed almond, the cyan iris is a tight light slit.
- ellipsoid([x,y,side*z],[.72,.22,.15],'black',1,parent);
- const m=ellipsoid([x-.08,y+.045,side*(z+.22)],[.46,.075,.072],'eye',1,parent);
- m.rotation.z=-.17;
- const brow=bone([x-.86,y+.34,side*(z+.095)],[x+.63,y+.39,side*(z+.07)],.19,.055,'deep',parent);
- bone([x-.86,y+.33,side*(z+.13)],[x+.32,y+.37,side*(z+.16)],.075,.025,'sky',parent);
-}
-// Custom hollow elliptical anatomy. Keyed cross-sections are 3D volume,
-// NOT several overlapping boxes; vertex normals form a single organic skull.
-function loft(sections,mat,parent=root,radial=20){
- const coords=[],indices=[];
- for(const s of sections)for(let j=0;j<radial;j++){
-  const a=j*Math.PI*2/radial;
-  coords.push(s[0],s[1]+Math.cos(a)*s[2],Math.sin(a)*s[3]);
+const orientMatrix=new THREE.Matrix4(),q=new THREE.Quaternion();
+for(let i=2;i<ringSegments-1;i+=2){
+ const f=rings[i],t=i/ringSegments;
+ for(let j=0;j<ringSides;j++){
+  const a=2*Math.PI*(j+(i%4===0?.35:0))/ringSides,cc=Math.cos(a);
+  const n=f.above.clone().multiplyScalar(cc).addScaledVector(f.side,Math.sin(a)).normalize();
+  const bin=new THREE.Vector3().crossVectors(n,f.tan).normalize();
+  orientMatrix.makeBasis(f.tan,bin,n);q.setFromRotationMatrix(orientMatrix);
+  const point=f.p.clone().addScaledVector(n,f.r+.042);
+  const w=Math.sin(i*.16+j*.62)+.3*Math.cos(i*.09-j*.53);
+  const m=cc<-.34?(i%7===0?'creamShade':'cream'):
+    cc>.72?(w>.35?'ice':'turquoise'):
+    cc>.22?(w>.69?'sea':w>-.28?'turquoise':'royal'):
+    w>.79?'sea':w>.13?'royal':w>-.48?'blue':'deep';
+  collect(m,point,q,.70*(1-t*.27),.69*f.r/2.0,1);
  }
- for(let i=0;i<sections.length-1;i++)for(let j=0;j<radial;j++){
-  const nj=(j+1)%radial,a=i*radial+j,b=i*radial+nj,c=(i+1)*radial+j,d=(i+1)*radial+nj;
-  indices.push(a,c,b,b,c,d);
- }
- const geo=new THREE.BufferGeometry();
- geo.setAttribute('position',new THREE.Float32BufferAttribute(coords,3));geo.setIndex(indices);
- geo.computeVertexNormals();return part(geo,mat,parent);
 }
-// Majestic giant head: long narrow bridge, broad triangular cheekbones,
-// projecting upper jaws and separated mandibular bone.
-const head=new THREE.Group();head.position.set(-10.15,7.9,3.0);
-head.rotation.y=-.13;head.scale.setScalar(1.48);root.add(head);
-const SKULL=[
- [-7.7,.14,.08,.24],[-7.15,.19,.31,.39],[-6.32,.29,.43,.59],
- [-5.32,.40,.55,.76],[-4.12,.60,.75,1.03],
- [-3.20,.84,.99,1.32],[-2.2,1.07,1.50,1.79],
- [-1.03,1.12,1.63,1.94],[.18,.86,1.55,1.81],
- [1.22,.51,1.23,1.57],[2.22,.18,.94,1.24]
-];
-loft(SKULL,'blue',head,24);
-// Broad, darker bony cheeks give the guardian a fierce silhouette
-ellipsoid([-1.40,.42,-1.1],[1.10,.90,.73],'deep',1,head);
-ellipsoid([-1.40,.42,1.1],[1.10,.90,.73],'deep',1,head);
-// Golden-brown nasal bridge and crest set the muzzle depth
-loft([[-7.47,.19,.05,.11],[-6.53,.38,.16,.26],[-5.5,.65,.16,.39],
- [-4.16,.89,.17,.53],[-2.9,1.26,.21,.70],[-1.48,1.55,.12,.60]],'royal',head,14);
-// Crucial: LOWER JAW is a completely separate long VOLUME, hanging beneath the open mouth.
-const jaw=[
- [-6.57,-2.08,.09,.29],[-5.93,-2.42,.33,.48],
- [-4.90,-2.52,.38,.67],[-3.70,-2.36,.44,.86],
- [-2.68,-2.09,.47,1.02],[-1.61,-1.68,.54,1.05],
- [-.72,-1.05,.54,.91],[.04,-.48,.52,.76]
-];
-loft(jaw,'blue',head,20);
-ellipsoid([-2.86,-1.13,0],[2.32,.59,.58],'black',2,head);
-ellipsoid([-3.80,-1.64,0],[1.49,.24,.42],'teal',1,head);
-for(const side of [-1,1]){
- // Underjaw joint attached to cheek: no disconnected floating chin.
- bone([.12,-.20,side*.91],[-1.30,-1.18,side*.95],.43,.27,'deep',head);
- bone([-1.35,-1.32,side*.94],[-3.20,-2.23,side*.81],.30,.15,'royal',head);
- // Recessed eyes are at the FRONT of the cheek, looking toward the snout.
- eyeShape(-2.95,1.32,2.03,side,head);
- // Oversized lower canines, each bent forward like genuine ivory hooks.
- bone([-5.13,-.19,side*.52],[-5.43,-1.62,side*.69],.23,.095,'tooth',head);
- bone([-5.43,-1.62,side*.69],[-5.13,-2.12,side*.66],.092,.008,'tooth',head);
- bone([-2.79,-.14,side*1.02],[-3.08,-1.28,side*1.08],.16,.013,'tooth',head);
- for(let k=0;k<5;k++){
-  const x=-6.20+k*.84,z=side*(.33+.06*k);
-  bone([x,-.20,z],[x-.11,-.69-(k%3)*.19,z],.12,.013,'tooth',head);
-  bone([x+.31,-2.21,side*(.32+.09*k)],[x+.34,-1.40,side*(.31+.09*k)],.11,.008,'tooth',head);
+// Draw calls are batched per palette; hundreds of tiny 3D scales are stable on iPad.
+for(const [key,arr] of batches){
+ const im=new THREE.InstancedMesh(tile,mat[key],arr.length);im.frustumCulled=false;
+ for(let i=0;i<arr.length;i++){
+  tmp.position.copy(arr[i][0]);tmp.quaternion.copy(arr[i][1]);tmp.scale.copy(arr[i][2]);tmp.updateMatrix();
+  im.setMatrixAt(i,tmp.matrix);
  }
- ellipsoid([-6.55,.38,side*.36],[.14,.09,.065],'black',1,head);
- // Heavy antler trunks branch BACKWARDS as shown in the user's turnarounds.
- const branches=[
- [[-1.06,2.08,side*.91],[-.52,3.27,side*1.30],.34,.25],
- [[-.52,3.27,side*1.30],[.36,4.36,side*1.55],.26,.19],
- [[.36,4.36,side*1.55],[1.98,5.27,side*1.63],.19,.015],
- [[-.34,3.52,side*1.41],[-.85,4.62,side*2.06],.17,.02],
- [[.49,4.44,side*1.54],[.42,5.58,side*2.08],.14,.02],
- [[1.01,4.95,side*1.56],[1.93,6.09,side*1.96],.12,.013],
- [[1.45,5.12,side*1.69],[2.97,5.68,side*2.10],.10,.01],
- [[-.60,3.09,side*1.40],[-1.43,4.07,side*1.92],.15,.019]
+ im.instanceMatrix.needsUpdate=true;dragon.add(im);
+}
+// Along the back: swept leafy finlets at every few rings, with turquoise edges.
+for(let i=5;i<ringSegments-6;i+=5){
+ const f=rings[i],t=i/ringSegments;
+ for(const tilt of [-.36,0,.36]){
+  const n=f.above.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(f.side,Math.sin(tilt)).normalize();
+  const start=f.p.clone().addScaledVector(n,f.r*.94);
+  const end=start.clone().addScaledVector(n,.63+(1-t)*.72).addScaledVector(f.tan,-.50);
+  rod(start,end,.19,.013,(i%3===0?'ice':'turquoise'));
+ }
+}
+// Face anatomy lives in its own group, facing left. Large majestic skull,
+// narrowing snout, broad jowls and an independently OPEN lower jaw.
+const head=new THREE.Group();head.position.set(-10.6,9.05,1.1);head.scale.setScalar(1.42);dragon.add(head);
+const H=head;
+function loft(points,m,parent=H,sides=20){
+ const coords=[],inds=[];
+ for(const ring of points){const [x,y,yr,zr]=ring;
+  for(let j=0;j<sides;j++){const a=2*Math.PI*j/sides;coords.push(x,y+Math.cos(a)*yr,Math.sin(a)*zr);}
+ }
+ for(let i=0;i<points.length-1;i++)for(let j=0;j<sides;j++){
+  const b=(j+1)%sides,a=i*sides+j,c=(i+1)*sides+j,d=(i+1)*sides+b;
+  inds.push(a,c,b,b,c,d);
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(coords,3));
+ geo.setIndex(inds);geo.computeVertexNormals();
+ const material=mat[m].clone();material.side=THREE.DoubleSide;
+ return mesh(geo,material,parent);
+}
+loft([
+ [-7.3,.06,.07,.15],[-6.93,.18,.31,.34],[-6.20,.29,.43,.52],
+ [-5.2,.36,.56,.75],[-4.10,.56,.80,1.03],[-3.0,.83,1.03,1.31],
+ [-1.97,1.01,1.34,1.58],[-.90,.94,1.49,1.73],
+ [.30,.63,1.36,1.66],[1.35,.35,1.20,1.40],[2.10,.14,.96,1.15]
+],'deep');
+loft([
+ [-7.23,.33,.05,.15],[-6.58,.49,.10,.32],[-5.77,.68,.15,.44],
+ [-4.55,.96,.20,.62],[-3.13,1.39,.24,.85],[-1.94,1.91,.14,.81]
+],'royal');
+// 2 side jowls carry the thick armor, rather than plane of loose tiles.
+for(const s of [-1,1]){
+ poly(-1.08,.50,s*1.05,1.31,.94,.83,'blue',H,1);
+ poly(-2.19,.32,s*.84,1.06,.72,.67,'royal',H,1);
+}
+// Mouth cavity visible through fully separate UPPER and LOWER jaws.
+poly(-2.5,-.93,0,2.5,.40,.54,'mouth',H,2);
+poly(-3.37,-1.35,0,1.56,.17,.35,'tongue',H,1);
+loft([
+ [-6.44,-2.12,.07,.34],[-5.98,-2.24,.27,.49],[-5.11,-2.27,.33,.66],
+ [-4.04,-2.10,.37,.82],[-2.91,-1.91,.42,.94],[-1.86,-1.47,.46,.97],
+ [-.92,-.98,.48,.92],[.12,-.43,.36,.70]
+],'blue');
+// Gape framed by ribs at hinged jaw, smaller details protected by geometry.
+for(const s of [-1,1]){
+ rod([.05,-.13,s*.78],[-1.18,-1.17,s*.91],.34,.22,'deep',H);
+ rod([-1.18,-1.17,s*.91],[-3.55,-2.05,s*.70],.25,.14,'royal',H);
+ // canine teeth and naturally varied secondary teeth
+ rod([-4.73,-.02,s*.62],[-5.05,-1.42,s*.74],.24,.09,'fang',H);
+ rod([-5.05,-1.42,s*.74],[-4.80,-1.89,s*.75],.09,.007,'fang',H);
+ rod([-2.10,-.06,s*.98],[-2.34,-1.33,s*1.05],.18,.010,'fang',H);
+ for(let j=0;j<5;j++){
+  const x=-5.93+j*.78;
+  rod([x,-.12,s*(.36+j*.13)],[x-.04,-.67-(j%3)*.12,s*(.36+j*.13)],.10,.012,'fang',H);
+  rod([x+.16,-2.03,s*(.37+j*.13)],[x+.15,-1.44,s*(.36+j*.13)],.08,.008,'fang',H);
+ }
+ // deep-set neon eye, shielded by a sharply sloped layered upper brow
+ poly(-2.24,1.17,s*1.56,.75,.26,.21,'mouth',H,1);
+ const eye=poly(-2.31,1.18,s*1.76,.43,.088,.08,'glow',H,1);eye.rotation.z=-.23;
+ rod([-2.93,1.46,s*1.75],[-1.68,1.55,s*1.67],.18,.06,'deep',H);
+ rod([-2.91,1.54,s*1.75],[-2.04,1.67,s*1.74],.075,.022,'ice',H);
+ poly(-6.48,.33,s*.42,.15,.09,.07,'mouth',H,1);
+ // Crown antlers: thick bony trunk, six asymmetric forks, rearward sweep.
+ const horns=[
+ [[-.84,2.10,s*1.02],[-.13,3.41,s*1.29],.36,.27],
+ [[-.13,3.41,s*1.29],[.91,4.38,s*1.55],.27,.17],
+ [[.91,4.38,s*1.55],[2.39,5.02,s*1.79],.17,.014],
+ [[-.12,3.45,s*1.30],[-.65,4.82,s*2.00],.17,.01],
+ [[.49,4.05,s*1.51],[.50,5.21,s*2.14],.15,.01],
+ [[1.17,4.55,s*1.66],[2.05,5.70,s*1.36],.13,.01],
+ [[1.61,4.82,s*1.78],[3.04,5.25,s*2.18],.12,.01],
+ [[-.46,2.99,s*1.25],[-1.25,3.76,s*1.92],.13,.01]
  ];
- branches.forEach(x=>bone(x[0],x[1],x[2],x[3],'horn',head));
- // Wavy whisker tubes originate from cheeks — primary + smaller secondary.
- curveWire([[-6.25,-.03,side*.52],[-7.18,-.48,side*1.40],
- [-8.23,-1.16,side*2.66],[-9.31,-.44,side*3.69],
- [-10.12,.68,side*3.94],[-11.03,.96,side*3.28]],.047,'water',head);
- curveWire([[-5.52,-.34,side*.64],[-6.37,-.69,side*1.25],
- [-7.54,-1.19,side*2.29],[-8.48,-.73,side*2.64],
- [-9.07,.03,side*2.27]],.027,'sky',head);
- // Full flowing beard, sweeping back from the corner of the jaw.
- // Broad tapered fin shapes are behind the eyes and read as a royal mane.
- for(let i=0;i<14;i++){
-  const k=i/13;
-  const xx=-1.46+i*.21;
-  const yy=.57-.10*k;
-  const zz=side*(1.91+.09*Math.sin(k*Math.PI));
-  const fin=armor(i%4===0?'mint':i%2===0?'teal':'sky',xx,yy,zz,
-    .78,1.08,1,.28,head);
-  fin.rotation.y=side*.32;
-  bone([xx,yy,zz],[xx+.56,yy+.68+(i%3)*.13,zz+side*(.49+k*.20)],
-    .21,.025,i%3===0?'mint':'sky',head);
+ horns.forEach(([a,b,r,rt])=>rod(a,b,r,rt,'antler',H));
+ // Long curling illuminated whiskers, root emerges beside the face.
+ tube([[-6.30,-.05,s*.60],[-7.50,-.45,s*1.60],
+ [-8.75,-1.10,s*2.75],[-9.70,-.53,s*3.83],
+ [-10.58,.68,s*4.0],[-11.38,.93,s*3.08]],.053,'whisker',H);
+ tube([[-5.36,-.32,s*.64],[-6.40,-.85,s*1.44],
+ [-7.25,-1.13,s*2.46],[-8.44,-.38,s*2.91],
+ [-9.30,.50,s*2.20]],.028,'sea',H);
+ // Sculpted scale patches wrap around broad cheekbone; hierarchy is visible.
+ for(let row=0;row<5;row++)for(let k=0;k<15;k++){
+  const x=-4.5+k*.295+(row%2)*.14,y=.52+row*.205;
+  const z=s*(x<-3.30?.68:x<-2.1?1.09:1.56) +s*(row*.085);
+  const a=cub(x,y,z,.42,.23,.20,k%7===0?'ice':k%3===0?'turquoise':k%2===0?'royal':'blue',H);
+  a.rotation.z=-.13;
  }
- // Beneath the jaw, cyan gill streamers frame the gaping mouth.
- for(let i=0;i<8;i++){
-  const x=-1.7+i*.29,z=side*(.93+i*.08);
-  bone([x,-1.17,z],[x+.31,-1.91-(i%3)*.18,z+side*.24],
-    .19,.02,i%2===0?'sky':'teal',head);
+ // Three broad flowing cheek fins, subdivided into recognizable voxel leaves.
+ for(let row=0;row<3;row++)for(let j=0;j<13;j++){
+  const x=-.56+j*.23,y=.45+row*.33,z=s*(1.6+row*.20);
+  const a=[x,y,z],b=[x+.70,y+.51+(j%3)*.17,z+s*.59];
+  rod(a,b,.19,.026,j%3===0?'ice':j%2===0?'sea':'turquoise',H,5);
+  if(j%3===0)cub(x+.22,y+.24,z+s*.28,.32,.35,.22,'royal',H);
  }
- // Beveled layered scales over the cheek's REAL volume, not random floating noise.
- for(let row=0;row<5;row++)for(let k=0;k<16;k++){
-  const x=-5.50+k*.29+(row%2)*.14,y=.50+row*.23;
-  if(x>-2.2&&row<2)continue;
-  const sideRad=x<-4.5?.76:x<-3.4?1.08:x<-2.6?1.43:1.67;
-  const z=side*(sideRad+.09+row*.045);
-  const m=armor(k%7===0?'mint':k%4===0?'sky':k%3===0?'teal':'royal',
-     x,y,z,.48,.46,1,-.14,head);
-  m.rotation.y=side*.18;
- }
- // Thick cheek frills branch into separate leafy plates, NOT needle hair.
- for(let k=0;k<15;k++){
-  const x=-1.2+k*.205,sy=.36+(k%4)*.15,z=side*(1.71+.09*(k%3));
-  armor(k%4===0?'mint':k%2===0?'sky':'teal',x,sy,z,.92,.92,1,.44,head);
-  bone([x+.05,sy,z],[x+.52,sy+.49,side*(2.11+.03*k)],.18,.025,'sky',head);
- }
- // Fin-like cream chin scales taper downward
- for(let k=0;k<10;k++){
-  const x=-5.35+k*.37;
-  armor(k%3===0?'belly':'royal',x,-1.98,side*(.46+.04*k),.60,.35,1,-.15,head);
+ // Trailing pale-blue lower cheek beard.
+ for(let j=0;j<9;j++){
+  const x=-1.80+j*.30;
+  rod([x,-.87,s*1.02],[x+.28,-1.63-(j%3)*.19,s*1.26],.17,.013,j%2?'sea':'ice',H);
  }
 }
-for(let i=0;i<20;i++){
- const x=-2.10+i*.20,z=Math.sin(i*1.19)*.50;
- armor(i%5===0?'mint':i%2===0?'sky':'teal',x,2.08+.21*Math.sin(i*.39),z,.54,.85,1,.58,head);
+// Overlapping armor tufts along top of head; sharp crown surrounded by leafy streamers.
+for(let j=0;j<33;j++){
+ const x=-1.75+j*.14,z=Math.sin(j*.83)*.48;
+ const y=2.07+.14*Math.sin(j*.42);
+ rod([x,y,z],[x+.50,y+.44+(j%3)*.15,z+.18],.17,.014,
+ j%3===0?'ice':j%2?'royal':'turquoise',H,5);
 }
-// Body volume forms a SINGLE continuous sculpted tube with distinct S-bends.
-const path=new THREE.CatmullRomCurve3([
- new THREE.Vector3(-8.1,7.25,3.0),new THREE.Vector3(-6.2,4.74,3.3),
- new THREE.Vector3(-3.7,2.76,2.8),new THREE.Vector3(-.3,2.5,.7),
- new THREE.Vector3(3.05,4.30,-1.55),new THREE.Vector3(5.90,6.65,-2.80),
- new THREE.Vector3(8.15,6.90,-2.85),new THREE.Vector3(10.1,4.85,-1.30),
- new THREE.Vector3(11.60,2.93,1.15),new THREE.Vector3(12.15,3.80,3.05),
- new THREE.Vector3(13.1,6.22,2.42),new THREE.Vector3(14.90,8.85,.50),
- new THREE.Vector3(17.00,10.20,-2.10)
-],false,'catmullrom',.5);
-const bodyR=t=>t<.12?1.59+.53*t/.12:t<.61?2.12-.16*(t-.12)/.49:
- Math.max(.29,1.96*(1-(t-.61)/.39));
-const bodyN=112,bodySides=20;
-const positions=[],normals=[],colors=[],faces=[],rings=[];
-const bodyColor=new THREE.Color();
-const colorRGB={deep:0x09265b,blue:0x1046a5,royal:0x1765c3,
- teal:0x1599a9,sky:0x4bb5dd,mint:0x67d9cc,belly:0xd9c8aa};
-for(let i=0;i<=bodyN;i++){
- const t=i/bodyN,p=path.getPoint(t),tan=path.getTangent(t).normalize();
- const right=new THREE.Vector3().crossVectors(tan,Y).normalize();
- if(right.lengthSq()<.1)right.set(0,0,1);
- const up=new THREE.Vector3().crossVectors(right,tan).normalize();
- rings.push({p,tan,right,up,r:bodyR(t)});
- for(let j=0;j<bodySides;j++){
-  const angle=j*Math.PI*2/bodySides;
-  const n=up.clone().multiplyScalar(Math.cos(angle)).addScaledVector(right,Math.sin(angle));
-  const r=bodyR(t),v=p.clone().addScaledVector(n,r);
-  positions.push(v.x,v.y,v.z);normals.push(n.x,n.y,n.z);
-  const under=Math.cos(angle)<-.37;
-  const highlight=.5*Math.sin(i*.26+angle*1.15)+Math.cos(i*.09-angle*2);
-  bodyColor.setHex(under?colorRGB.belly:highlight>.65?colorRGB.royal:
-    highlight>-.27?colorRGB.blue:colorRGB.deep);
-  colors.push(bodyColor.r,bodyColor.g,bodyColor.b);
+// Exactly TWO forelegs: muscular bend and 3 visible hooked claws per foot.
+const chest=spine.getPoint(.13),fore=spine.getTangent(.13);
+const lateral=new THREE.Vector3().crossVectors(fore,UP).normalize();
+for(const s of [-1,1]){
+ const shoulder=chest.clone().addScaledVector(lateral,s*1.49);
+ const elbow=shoulder.clone().add(V(-.35,-1.40,s*1.50));
+ const wrist=elbow.clone().add(V(-.95,-1.42,s*.46));
+ rod(shoulder,elbow,.61,.43,'deep');
+ rod(elbow,wrist,.45,.30,'royal');
+ poly(wrist.x,wrist.y,wrist.z,.66,.38,.51,'blue',dragon,1);
+ for(let k=-1;k<=1;k++){
+  const start=wrist.clone().add(V(-.24,-.12,k*.28));
+  rod(start,start.clone().add(V(-.85,-.35,k*.08)),.20,.01,'fang');
  }
 }
-for(let i=0;i<bodyN;i++)for(let j=0;j<bodySides;j++){
- const a=i*bodySides+j,b=i*bodySides+(j+1)%bodySides;
- const c=(i+1)*bodySides+j,d=(i+1)*bodySides+(j+1)%bodySides;
- faces.push(a,c,b,b,c,d);
+// Spreading tailbrush made of long curved semi-luminous strands.
+const tail=spine.getPoint(1),last=rings[ringSegments-1];
+for(let k=0;k<22;k++){
+ const a=k*2*Math.PI/22,n=last.above.clone().multiplyScalar(Math.cos(a)).addScaledVector(last.side,Math.sin(a));
+ const from=tail.clone().addScaledVector(n,.17),mid=from.clone().addScaledVector(n,.89).addScaledVector(last.tan,.60);
+ const to=mid.clone().addScaledVector(n,1.44).addScaledVector(last.tan,1.02);
+ rod(from,mid,.16,.08,k%3===0?'ice':'turquoise',dragon,5);
+ rod(mid,to,.08,.013,k%4===0?'sea':'ice',dragon,5);
 }
-const tg=new THREE.BufferGeometry();
-tg.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-tg.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
-tg.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));tg.setIndex(faces);
-part(tg,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.58,metalness:.12,side:THREE.DoubleSide}));
-const MAT=new THREE.Matrix4(),QUAT=new THREE.Quaternion();
-for(let i=2;i<bodyN-2;i+=2){
- const t=i/bodyN,f=rings[i];
- for(let j=0;j<bodySides;j++){
-  const ang=(j+(i%4===0?.43:0))*Math.PI*2/bodySides;
-  const n=f.up.clone().multiplyScalar(Math.cos(ang)).addScaledVector(f.right,Math.sin(ang));
-  const along=f.tan;
-  const lateral=new THREE.Vector3().crossVectors(n,along).normalize();
-  MAT.makeBasis(along,lateral,n);QUAT.setFromRotationMatrix(MAT);
-  const p=f.p.clone().addScaledVector(n,f.r+.05);
-  const under=Math.cos(ang)<-.35;
-  const wave=Math.sin(i*.16+j*.61)+Math.cos(i*.29-j*.33)*.30;
-  const mat=under?'belly':wave>.83?'mint':wave>.17?'teal':wave>-.52?'royal':'blue';
-  instance(mat,'scale',p,QUAT,new THREE.Vector3(.64+.09*(1-t),.72*(f.r/1.9),.89));
- }
- // Wide swept-up flowing mane along the top of the body, as coherent fins.
- if(i%4===0&&t<.97){
-  const a=f.p.clone().addScaledVector(f.up,f.r-.08);
-  const b=a.clone().addScaledVector(f.up,.78+.35*(1-t)).addScaledVector(f.tan,-.40);
-  bone(a.toArray(),b.toArray(),.27,.015,i%8===0?'mint':'sky',root);
- }
+// Floating translucent water-cloud geometry, small environment elements only.
+const cloudCenters=[[0,1.3,-3.7],[6.7,2.5,3.7],[12.1,6.9,-5.5],[17.3,7.1,4.5]];
+for(const [x,y,z] of cloudCenters)for(let k=0;k<31;k++){
+ const a=k*2.39996,r=.25+(k%6)*.20;
+ cub(x+Math.cos(a)*r,y+Math.sin(a*.7)*r*.56,z+Math.sin(a)*r,
+ .23+(k%3)*.20,.24+(k%4)*.13,.28+(k%5)*.13,
+ k%7===0?'cloudEdge':'cloud');
 }
-// Two and ONLY two forelegs; no hindlegs.
-const front=path.getPoint(.165),sideFrame=rings[18].right;
-for(const sign of [-1,1]){
- const hip=front.clone().addScaledVector(sideFrame,sign*1.43);
- const elbow=hip.clone().add(new THREE.Vector3(-.53,-1.31,sign*1.17));
- const wrist=elbow.clone().add(new THREE.Vector3(-1.01,-1.50,sign*.65));
- bone(hip.toArray(),elbow.toArray(),.63,.39,'deep');
- bone(elbow.toArray(),wrist.toArray(),.46,.27,'blue');
- ellipsoid(wrist.toArray(),[.58,.31,.52],'royal',1);
- for(let j=-1;j<=1;j++){
-  const tip=wrist.clone().add(new THREE.Vector3(-1.11,-.42,j*.38));
-  const digit=wrist.clone().add(new THREE.Vector3(-.29,-.15,j*.31));
-  bone(digit.toArray(),tip.toArray(),.17,.015,'tooth');
- }
-}
-// Broad translucent ocean-silk tail fronds instead of a spiky hedgehog.
-const tip=path.getPoint(1),f=rings[bodyN-1];
-for(let k=0;k<14;k++){
- const ang=k*2*Math.PI/14;
- const n=f.up.clone().multiplyScalar(Math.cos(ang)).addScaledVector(f.right,Math.sin(ang));
- bone(tip.toArray(),tip.clone().addScaledVector(f.tan,1.2)
-  .addScaledVector(n,1.7).toArray(),.18,.015,k%3===0?'mint':'sky');
-}
-// Subtle block-spray clouds separate from anatomy (not covering the face).
-const cloudPositions=[[-8.6,5.0,-2.6],[-2,1,-4],[5,1,5],[10,7,1],[14,4,-4],[17,11,1]];
-for(const [cx,cy,cz] of cloudPositions)for(let k=0;k<26;k++){
- const a=k*2.399963,r=.3+.15*(k%5);
- const p=new THREE.Vector3(cx+Math.cos(a)*r,cy+Math.sin(a*2)*r*.55,cz+Math.sin(a)*r);
- instance(k%6===0?'water':'cloud','cloud',p,new THREE.Quaternion(),
-  new THREE.Vector3(.27+(k%3)*.16,.22+(k%3)*.13,.30+(k%4)*.14));
-}
-for(const v of inst.values())v.g=v.g==='scale'?TILE:CUT;
-commitInstances();
-// Ground and soft scene lighting
-const ground=mesh(new THREE.PlaneGeometry(190,190),new THREE.MeshStandardMaterial({color:0x0b1822,roughness:.88}),scene);
-ground.rotation.x=-Math.PI/2;ground.position.y=-6.3;
-const grid=new THREE.GridHelper(80,40,0x16435a,0x173147);grid.position.y=-6.28;scene.add(grid);
-// Set initial camera from the TRUE three-dimensional mesh bounds, so neither
-// muzzle nor streaming tail is cropped on narrow iPads.
+const floor=mesh(new THREE.PlaneGeometry(130,130),new THREE.MeshStandardMaterial({color:0x0b131d,roughness:1}),scene);
+floor.rotation.x=-Math.PI/2;floor.position.y=-3.5;
+const grid=new THREE.GridHelper(80,40,0x1a3a51,0x142938);
+grid.position.y=-3.48;scene.add(grid);
+// Stable camera presets, with full sculpture initially framed at heroic 3/4.
 dragon.updateMatrixWorld(true);
-const dragonBounds=new THREE.Box3().setFromObject(dragon);
-const dragonSize=dragonBounds.getSize(new THREE.Vector3());
-const heroCenter=dragonBounds.getCenter(new THREE.Vector3());
-function fitWholeDragon(){
- const tan=Math.tan(camera.fov*Math.PI/360);
- const aspect=Math.max(.4,camera.aspect);
- return Math.min(110,Math.max(
-  dragonSize.x*.5/(tan*aspect),
-  dragonSize.y*.5/tan
- )*1.10+dragonSize.z*.32);
+const bounds=new THREE.Box3().setFromObject(dragon);
+const whole=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());
+let yaw=-.42,pitch=.13,distance=45,focus=whole.clone(),spin=false,mode='full';
+function fit(){
+ const aspect=Math.max(.45,camera.aspect),t=Math.tan(camera.fov*Math.PI/360);
+ return Math.min(115,Math.max(size.x*.52/(t*aspect),size.y*.60/t)*1.14+size.z*.36);
 }
-const faceViewDistance=()=>innerWidth/Math.max(innerHeight,1)<1.15?37.0:30.5;
-let yaw=-.64,pitch=.075,distance=faceViewDistance(),autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-4.25,0.8,0));
-const btns=[...document.querySelectorAll('[data-view]')];
-btns.forEach(button=>button.addEventListener('click',()=>{
- const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
- if(view==='front'){yaw=.10;pitch=.07;distance=fitWholeDragon();center.copy(heroCenter)}
- if(view==='side'){yaw=0;pitch=.02;distance=fitWholeDragon();center.copy(heroCenter)}
- if(view==='back'){yaw=Math.PI;pitch=.08;distance=fitWholeDragon();center.copy(heroCenter)}
- if(view==='head'){yaw=-.64;pitch=.075;distance=faceViewDistance();center.copy(head.position).add(new THREE.Vector3(-4.25,0.8,0))}
-}));
-document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
-document.getElementById('zoomout').onclick=()=>distance=Math.min(85,distance*1.25);
-document.getElementById('spin').onclick=e=>{autoSpin=!autoSpin;e.currentTarget.classList.toggle('active',autoSpin);e.currentTarget.textContent=autoSpin?'自動回転 ON':'自動回転 OFF'};
-const pointers=new Map();let lastDist=0;
+function setView(which){
+ mode=which;spin=false;document.getElementById('spin').classList.remove('active');
+ if(which==='front'){yaw=-.42;pitch=.13;focus.copy(whole);distance=fit()}
+ if(which==='side'){yaw=0;pitch=.045;focus.copy(whole);distance=fit()}
+ if(which==='back'){yaw=Math.PI+.15;pitch=.14;focus.copy(whole);distance=fit()}
+ if(which==='head'){
+  yaw=-.58;pitch=.06;focus.copy(head.position).add(V(-3.50,.6,0));
+  distance=(innerWidth/Math.max(1,innerHeight)<1.1?31:25);
+ }
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+document.getElementById('zoomin').onclick=()=>distance=Math.max(7,distance*.8);
+document.getElementById('zoomout').onclick=()=>distance=Math.min(120,distance*1.25);
+document.getElementById('spin').onclick=e=>{spin=!spin;e.currentTarget.classList.toggle('active',spin);e.currentTarget.textContent=spin?'自動回転 ON':'自動回転 OFF'};
+const pointers=new Map();let pinch=0;
 canvas.addEventListener('pointerdown',e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId)});
 canvas.addEventListener('pointermove',e=>{
  if(!pointers.has(e.pointerId))return;
  const old=pointers.get(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(pointers.size===1){yaw-=(e.clientX-old.x)*.0065;pitch=Math.max(-1.10,Math.min(1.22,pitch+(e.clientY-old.y)*.005));autoSpin=false;document.getElementById('spin').classList.remove('active')}
- else if(pointers.size===2){
-  const a=[...pointers.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
-  if(lastDist)distance=Math.max(6,Math.min(85,distance*lastDist/dist));
-  lastDist=dist;
- }
+ if(pointers.size===1){yaw-=(e.clientX-old.x)*.006;pitch=Math.max(-1.0,Math.min(1.2,pitch+(e.clientY-old.y)*.005));spin=false}
+ if(pointers.size===2){const pts=[...pointers.values()],p=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+  if(pinch)distance=Math.max(7,Math.min(115,distance*pinch/p));pinch=p}
 });
-for(const evt of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(evt,e=>{pointers.delete(e.pointerId);lastDist=0});
-canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(6,Math.min(85,distance*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(center.distanceTo(heroCenter)<.15)distance=fitWholeDragon()}
-addEventListener('resize',resize);resize();
-function render(){
- requestAnimationFrame(render);
- if(autoSpin)yaw+=.0016;
- const cp=Math.cos(pitch);
- camera.position.set(center.x+distance*Math.sin(yaw)*cp,center.y+distance*Math.sin(pitch),center.z+distance*Math.cos(yaw)*cp);
- camera.lookAt(center);
- renderer.render(scene,camera);
-}
-document.getElementById('spin').textContent='自動回転 OFF';document.getElementById('spin').classList.remove('active');
+for(const event of ['pointerup','pointercancel','lostpointercapture'])
+ canvas.addEventListener(event,e=>{pointers.delete(e.pointerId);pinch=0});
+canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(7,Math.min(115,distance*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+ if(mode==='full')distance=fit()}
+addEventListener('resize',resize);resize();setView('front');
+document.getElementById('spin').classList.remove('active');document.getElementById('spin').textContent='自動回転 OFF';
 document.getElementById('status').style.display='none';
-render();
+function draw(){
+ requestAnimationFrame(draw);if(spin)yaw+=.0016;
+ const cp=Math.cos(pitch);
+ camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
+ camera.lookAt(focus);renderer.render(scene,camera);
+}draw();
+window.seiryuModelRevision='sculpture-30';
+
 </script>
 </body>
 </html>
