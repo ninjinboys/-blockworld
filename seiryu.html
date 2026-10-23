@@ -39,15 +39,15 @@ renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
 renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.52;
+renderer.toneMappingExposure=1.15;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x09131d);
 scene.fog=new THREE.Fog(0x09131d,40,100);
 const camera=new THREE.PerspectiveCamera(39,innerWidth/innerHeight,.1,170);
-scene.add(new THREE.HemisphereLight(0xa4e9ff,0x253344,2.4));
-const key=new THREE.DirectionalLight(0xd8f5ff,4.7);key.position.set(-11,22,20);scene.add(key);
-const rim=new THREE.DirectionalLight(0x2aaaff,5);rim.position.set(9,13,-14);scene.add(rim);
-const glow=new THREE.PointLight(0x1bdde7,70,40);glow.position.set(-10,6,9);scene.add(glow);
+scene.add(new THREE.HemisphereLight(0xa4e9ff,0x253344,1.7));
+const key=new THREE.DirectionalLight(0xd8f5ff,3.4);key.position.set(-11,22,20);scene.add(key);
+const rim=new THREE.DirectionalLight(0x2aaaff,3.8);rim.position.set(9,13,-14);scene.add(rim);
+const glow=new THREE.PointLight(0x1bdde7,42,40);glow.position.set(-10,6,9);scene.add(glow);
 const dragon=new THREE.Group();scene.add(dragon);
 const materials={
 deep:new THREE.MeshStandardMaterial({color:0x062661,roughness:.67,metalness:.10}),
@@ -78,14 +78,15 @@ function rod(a,b,r1,r2,mat,group=dragon,sides=6){
 // carved antlers, dense overlapping scale rows, whiskers and floating water clouds.
 // Everything below is a genuine Three.js mesh (not a background illustration).
 const qId=new THREE.Quaternion(),yAxis=new THREE.Vector3(0,1,0);
+// Side-view S-curve: head forward at LEFT, long raised body and tail to RIGHT.
 const bodyPath=new THREE.CatmullRomCurve3([
- new THREE.Vector3(-7.7,7.35,3.35),new THREE.Vector3(-5.8,6.2,3.8),
- new THREE.Vector3(-4.3,3.8,3.95),new THREE.Vector3(-1.7,1.45,3.75),
- new THREE.Vector3(1.8,1.3,3.05),new THREE.Vector3(4.8,2.95,.15),
- new THREE.Vector3(6.7,5.75,-2.05),new THREE.Vector3(9.25,6.2,-2.2),
- new THREE.Vector3(10.8,3.35,.1),new THREE.Vector3(9.9,1.8,3.15),
- new THREE.Vector3(11.8,1.95,3.75),new THREE.Vector3(13.6,4.0,1.6),
- new THREE.Vector3(15.8,6.9,-1.6)
+ new THREE.Vector3(-11.1,5.3,3.8),new THREE.Vector3(-9.4,4.45,4.15),
+ new THREE.Vector3(-7.1,2.65,4.0),new THREE.Vector3(-4.8,2.0,3.10),
+ new THREE.Vector3(-2.0,2.35,1.0),new THREE.Vector3(1.7,4.0,-1.35),
+ new THREE.Vector3(5.6,4.55,-2.7),new THREE.Vector3(8.0,3.3,-2.15),
+ new THREE.Vector3(9.5,2.1,-.15),new THREE.Vector3(9.1,2.10,2.2),
+ new THREE.Vector3(11.5,3.9,2.6),new THREE.Vector3(14.1,6.35,1.0),
+ new THREE.Vector3(16.1,8.1,-.9)
 ],false,'catmullrom',.48);
 const bodyRadius=t=>t<.22?2.2+Math.sin(t/.22*Math.PI)*.17:
  t<.64?2.35-.25*((t-.22)/.42):Math.max(.45,2.15*(1-(t-.64)/.36));
@@ -119,7 +120,7 @@ function ringFrame(t){
  upV.crossVectors(sideV,forward).normalize();
  return {forward:forward.clone(),side:sideV.clone(),up:upV.clone()};
 }
-const segmentCount=123,aroundCount=21;
+const segmentCount=172,aroundCount=28;
 for(let i=0;i<segmentCount;i++){
  const t=i/(segmentCount-1),p=bodyPath.getPoint(t),r=bodyRadius(t);
  const frame=ringFrame(t),tg=frame.forward,s=frame.side,u=frame.up;
@@ -139,16 +140,16 @@ for(let i=0;i<segmentCount;i++){
   rot.setFromRotationMatrix(basis);
   const v=p.clone().addScaledVector(radial,r*.99);
   // Continuous sand-colored ventral armor, indigo side scales and cyan crest.
-  const belly=c<-.56;
+  const belly=c<-.61;
   let mat;
   if(belly)mat=(i%5===0?'bellyShadow':'belly');
   else if(c>.57&&j%4===0)mat='mint';
   else if(c>.48&&Math.sin(i*.77+j*.86)>.15)mat='sky';
   else if(c>.04&&Math.sin(i*.52+j*2.18)>.46)mat='teal';
   else mat=(i+j)%3===0?'royal':j%4===0?'blue':'deep';
-  const length=Math.max(.28,bodyPath.getLength()/segmentCount*.98);
-  const width=2*Math.PI*r/aroundCount*1.06;
-  scalePart(mat,v,rot,length,width,belly?.17:.26);
+  const length=Math.max(.22,bodyPath.getLength()/segmentCount*1.40);
+  const width=2*Math.PI*r/aroundCount*1.12;
+  scalePart(mat,v,rot,length,width,belly?.105:.15);
  }
  // A stepped, layered crest with individual turquoise spines.
  if(i%2===0&&i<segmentCount-5){
@@ -166,97 +167,103 @@ for(let i=0;i<segmentCount;i++){
   }
  }
 }
-const head=new THREE.Group();head.position.copy(bodyPath.getPoint(0));head.rotation.y=-.10;dragon.add(head);
-// Surface voxel volume creates a tapered cranium, NOT one rectangular cube.
-function headVoxel(cx,cy,cz,rx,ry,rz,unit,kind,cut=null){
- const minX=Math.floor((cx-rx)/unit),maxX=Math.ceil((cx+rx)/unit);
- const minY=Math.floor((cy-ry)/unit),maxY=Math.ceil((cy+ry)/unit);
- const minZ=Math.floor((cz-rz)/unit),maxZ=Math.ceil((cz+rz)/unit);
- for(let xi=minX;xi<=maxX;xi++)for(let yi=minY;yi<=maxY;yi++)for(let zi=minZ;zi<=maxZ;zi++){
-  const x=xi*unit,y=yi*unit,z=zi*unit;
-  const n=((x-cx)/rx)**2+((y-cy)/ry)**2+((z-cz)/rz)**2;
-  if(n>1.05||n<.33||(cut&&cut(x,y,z)))continue;
-  const jitter=(Math.sin(xi*13.6+yi*4.9+zi*7.2)+1)*.5;
-  const mat=kind==='jaw'?jitter>.73?'sky':jitter>.35?'royal':'blue':
-   kind==='under'?'belly':
-   y>cy+.4*ry?(jitter>.70?'mint':jitter>.35?'sky':'royal'):
-   jitter>.80?'teal':jitter>.31?'royal':'deep';
-  const q=new THREE.Quaternion();
-  const pos=new THREE.Vector3(x+head.position.x,y+head.position.y,z+head.position.z);
-  // Since head group rotates, transform local parts into the world dragon.
-  pos.sub(head.position).applyAxisAngle(yAxis,head.rotation.y).add(head.position);
-  scalePart(mat,pos,q,unit*1.025,unit*1.025,unit*1.025);
- }
+// Hand-sculpted cranium, 3D beveled wedge jaws, cheek scale frills and
+// long water whiskers. This is purposely NOT the old cubic cartoon head.
+const head=new THREE.Group();
+head.position.copy(bodyPath.getPoint(0));
+head.rotation.y=.04;
+dragon.add(head);
+function sculptWedge(outline,thickness,material){
+ const shape=new THREE.Shape();shape.moveTo(outline[0][0],outline[0][1]);
+ for(let i=1;i<outline.length;i++)shape.lineTo(outline[i][0],outline[i][1]);
+ shape.closePath();
+ const geo=new THREE.ExtrudeGeometry(shape,{
+  depth:thickness,steps:1,bevelEnabled:true,bevelSegments:1,
+  bevelThickness:.14,bevelSize:.12,curveSegments:2
+ });
+ geo.translate(0,0,-thickness/2);
+ return mesh(geo,material,head);
 }
-headVoxel(-.22,.15,0,2.30,1.67,1.76,.34,'head');
-headVoxel(-2.32,-.13,0,1.99,.84,1.38,.29,'jaw');
-headVoxel(-2.63,-1.76,0,1.80,.52,1.25,.29,'jaw');
-headVoxel(.78,-.82,0,1.38,.92,1.35,.31,'under');
-// Open, cavernous jaws: dark throat, turquoise interior and long saber fangs.
-cube(-2.15,-1.00,0,2.5,1.12,2.35,'black',head);
-cube(-2.43,-1.52,.04,1.73,.19,1.35,'teal',head);
-for(const sign of [-1,1]){
- for(let k=0;k<6;k++){
-  const x=-3.74+k*.51,z=sign*(.65+(k%2)*.18);
-  rod([x,-.42,z],[x-.13,-1.30-(k%3)*.15,z],.16,.009,'tooth',head,5);
-  rod([x,-1.57,z],[x-.18,-1.13,z],.13,.012,'tooth',head,5);
+function headScale(x,y,z,sx,sy,sz,material,ry=0){
+ const m=cube(x,y,z,sx,sy,sz,material,head);
+ m.rotation.z=ry;return m;
+}
+// Arched skull built from tapered, interlocking wedges instead of a box.
+sculptWedge([[-2.45,.65],[-1.93,1.47],[-.65,2.20],[.7,2.0],[1.65,1.05],
+ [1.77,.15],[.95,-.42],[-.50,-.42],[-1.61,-.02]],2.72,'royal');
+sculptWedge([[-4.42,.08],[-4.20,.47],[-3.78,.73],[-2.5,.90],[-1.73,.70],
+ [-1.55,.12],[-2.45,-.22],[-3.89,-.23]],2.04,'blue');
+sculptWedge([[-4.30,-1.60],[-4.02,-1.91],[-2.70,-2.16],[-1.48,-1.89],
+ [-.46,-.97],[-.40,-.46],[-1.35,-1.13],[-3.47,-1.35]],1.95,'royal');
+sculptWedge([[-3.92,-.33],[-2.6,-.25],[-1.3,-.42],[-1.18,-1.25],
+ [-2.78,-1.40],[-3.98,-1.22]],1.72,'black');
+sculptWedge([[-3.90,-1.37],[-2.8,-1.29],[-1.5,-1.06],[-1.22,-1.29],
+ [-2.94,-1.64]],1.36,'teal');
+// Each jawline has independently visible teeth. Large curved ivory fangs.
+for(const s of [-1,1]){
+ for(let k=0;k<7;k++){
+  const x=-4.02+k*.39,z=s*(.80+(k%3)*.05);
+  rod([x,-.23,z],[x-.05,-.96-(k%2)*.12,z],.115,.008,'tooth',head,5);
+  rod([x,-1.63,z],[x+.10,-1.08,z],.097,.009,'tooth',head,5);
  }
- // Prominent ivory canine tusk, curved at tip
- rod([-3.15,-.31,sign*1.06],[-3.40,-1.50,sign*1.15],.28,.11,'tooth',head,7);
- rod([-3.40,-1.50,sign*1.15],[-3.20,-1.94,sign*1.09],.11,.015,'tooth',head,7);
- // Turquoise luminous eyes within sharp angled eyelids.
- cube(-1.05,.84,sign*1.67,.83,.38,.29,'black',head);
- cube(-1.14,.85,sign*1.84,.57,.26,.13,'eye',head);
- const brow=cube(-1.02,1.16,sign*1.72,1.32,.31,.35,'sky',head);
- brow.rotation.z=.18;
- cube(-.13,1.11,sign*1.62,.88,.34,.30,'teal',head);
- // Staggered scale layers around jaw hinge.
- for(let k=0;k<10;k++){
-  const x=.4+k*.22,y=.94-(k%4)*.30;
-  cube(x,y,sign*(1.78+.09*(k%3)),.55,.42,.25,k%3===0?'mint':k%2?'royal':'sky',head);
+ rod([-3.45,.09,s*.87],[-3.65,-1.30,s*.98],.23,.07,'tooth',head,6);
+ rod([-3.65,-1.30,s*.98],[-3.50,-1.68,s*.95],.08,.005,'tooth',head,6);
+ // Angular brows and deep inset glowing eyes, no blank square faces.
+ headScale(-1.45,1.12,s*1.43,1.06,.30,.28,'deep',.19);
+ headScale(-1.44,.91,s*1.55,.59,.23,.18,'eye',.15);
+ headScale(-1.27,1.37,s*1.49,1.15,.24,.27,'sky',-.12);
+ // Whisker and jaw fringes attached to proper cheek structure.
+ for(let j=0;j<13;j++){
+  const x=.02+j*.23;
+  const a=[x,.62-(j%5)*.15,s*(1.43+(j%3)*.09)];
+  const b=[x+.35,.90+(j%4)*.31,s*(2.10+(j%5)*.16)];
+  rod(a,b,.18,.016,j%3===0?'mint':j%2?'sky':'teal',head,4);
  }
- // Pale branched horn antlers, extended rearward over the crest.
- rod([.3,1.55,sign*.93],[.89,3.12,sign*1.32],.37,.27,'horn',head,6);
- rod([.89,3.12,sign*1.32],[2.1,4.30,sign*1.47],.27,.13,'horn',head,6);
- rod([2.1,4.30,sign*1.47],[2.82,5.12,sign*1.53],.13,.012,'tooth',head,5);
- rod([.96,3.28,sign*1.34],[1.02,4.37,sign*2.02],.17,.018,'horn',head,5);
- rod([1.53,3.88,sign*1.47],[2.59,4.49,sign*2.20],.15,.012,'horn',head,5);
- rod([.83,2.73,sign*1.25],[.08,3.73,sign*1.85],.15,.012,'horn',head,5);
- // Three free-flowing, jointed watery whiskers.
- for(let branch=0;branch<2;branch++){
+ // Branching antlers sweep back and up, organic irregular silhouette.
+ const branch=[
+ [[.28,1.76,s*.85],[.87,3.25,s*1.1],.25,.18],
+ [[.87,3.25,s*1.1],[1.90,4.72,s*1.54],.18,.095],
+ [[1.90,4.72,s*1.54],[3.24,5.22,s*1.81],.095,.016],
+ [[.85,3.23,s*1.1],[.21,4.58,s*1.42],.14,.015],
+ [[1.68,4.30,s*1.53],[1.56,5.29,s*2.29],.14,.013],
+ [[2.25,4.84,s*1.65],[3.15,6.01,s*1.36],.11,.010]
+ ];
+ branch.forEach(([a,b,r1,r2])=>rod(a,b,r1,r2,'horn',head,5));
+ // Long curved separately 3D modeled whiskers, three-dimensional blue cords.
+ for(let n=0;n<2;n++){
   const whisker=new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-3.50,-.18-branch*.32,sign*1.08),
-    new THREE.Vector3(-4.60,-.42-branch*.45,sign*2.55),
-    new THREE.Vector3(-6.25,-1.06-branch*.60,sign*3.22),
-    new THREE.Vector3(-7.10,.28-branch*.20,sign*4.42),
-    new THREE.Vector3(-8.0,-.04-branch*.4,sign*5.05)
+   new THREE.Vector3(-3.42,.12-n*.19,s*.97),
+   new THREE.Vector3(-4.35,-.20-n*.17,s*2.15),
+   new THREE.Vector3(-5.45,-.78-n*.27,s*3.12),
+   new THREE.Vector3(-7.10,-.15-n*.35,s*3.67),
+   new THREE.Vector3(-8.05,.53-n*.6,s*4.25)
   ]);
-  mesh(new THREE.TubeGeometry(whisker,34,.050-branch*.011,5,false),'water',head);
- }
- // Stacked gill fins spreading outwards from the cheek.
- for(let j=0;j<10;j++){
-  const x=.05+j*.30,y=.69-(j%4)*.25,z=sign*(1.70+j*.105);
-  rod([x,y,z],[x+.26,y+.62+(j%3)*.15,z+sign*.52],.24,.015,j%3===0?'mint':j%2?'teal':'sky',head,4);
+  mesh(new THREE.TubeGeometry(whisker,36,.045-n*.009,5,false),'water',head);
  }
 }
-// Nasal plates and serrated crown.
-for(let j=0;j<9;j++){
- const x=-3.75+j*.33;
- cube(x,.46+(j%3)*.14,0,.41,.24,.51,j%2?'sky':'mint',head);
+// Curved forehead streamlines, nostrils, layered face armor.
+for(const s of [-1,1]){
+ headScale(-3.83,.35,s*.68,.43,.13,.28,'mint');
+ headScale(-3.88,.42,s*.67,.14,.11,.17,'black');
+ for(let j=0;j<9;j++){
+  const x=-3.75+j*.31,side=s*(.92+j*.043);
+  headScale(x,.68+j*.055,side,.34,.14,.21,j%3===0?'mint':j%2?'royal':'sky',-.10);
+ }
 }
-for(let i=0;i<21;i++){
- const x=-1.2+i*.22;
- const z=Math.sin(i*.85)*.83;
- const h=.5+(i%5)*.18;
- rod([x,1.43,z],[x+.35,1.43+h,z+.12],.20,.017,i%4===0?'mint':i%2?'royal':'sky',head,4);
+for(let j=0;j<35;j++){
+ const x=-1.12+j*.14,peak=2.07+.20*Math.sin(j*.8);
+ const z=(j%5-2)*.22;
+ rod([x,peak-.18,z],[x+.23,peak+.29+(j%3)*.10,z+.10],.16,.014,
+ j%4===0?'mint':j%2?'sky':'teal',head,4);
 }
-// Voluminous turquoise mane: four overlapping flared layers, densely nested.
-for(let k=0;k<67;k++){
- const x=.65+(k%22)*.185;
- const ring=Math.floor(k/22),sign=ring===0?-1:ring===1?1:0;
- const a=[x,.67+(k%4)*.21,sign*(1.42+(k%5)*.14)];
- const b=[x+.28+(k%6)*.14,1.45+(k%5)*.24,sign*(2.05+(k%4)*.18)];
- rod(a,b,.25,.025,k%5===0?'mint':k%2?'sky':'teal',head,4);
+// Thicker wave of long comb-like crest plates behind the skull.
+for(let j=0;j<78;j++){
+ const row=Math.floor(j/26),index=j%26;
+ const x=.30+index*.17;
+ const s=row===0?-1:row===1?1:0;
+ const a=[x,1.45-(index%4)*.13,s*(.86+(index%4)*.15)];
+ const b=[x+.43,2.35+(index%5)*.18,s*(1.52+(index%5)*.18)];
+ rod(a,b,.18,.014,j%4===0?'mint':j%2?'sky':'teal',head,4);
 }
 // Muscular, articulated legs with three ivory hooks per claw.
 function legAt(t,sgn){
@@ -304,16 +311,16 @@ for(const p of [[-3,1,-2,1.25],[.5,6.6,-1.5,1.65],[4.6,.4,5.0,1.25],[7.1,7.5,1.5
 finalizeInstances();
 // Ground and soft scene lighting
 const ground=mesh(new THREE.PlaneGeometry(190,190),new THREE.MeshStandardMaterial({color:0x0b1822,roughness:.88}),scene);
-ground.rotation.x=-Math.PI/2;ground.position.y=-5.4;
-const grid=new THREE.GridHelper(80,40,0x16435a,0x173147);grid.position.y=-5.38;scene.add(grid);
-let yaw=.18,pitch=.12,distance=34,autoSpin=false,center=new THREE.Vector3(2,3.1,0);
+ground.rotation.x=-Math.PI/2;ground.position.y=-6.3;
+const grid=new THREE.GridHelper(80,40,0x16435a,0x173147);grid.position.y=-6.28;scene.add(grid);
+let yaw=-.11,pitch=.16,distance=58,autoSpin=false,center=new THREE.Vector3(.5,4.6,0);
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
  const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
- if(view==='front'){yaw=.18;pitch=.12;distance=34;center.set(2,3.1,0)}
- if(view==='side'){yaw=Math.PI*.48;pitch=.06;distance=39;center.set(2,3.1,0)}
- if(view==='back'){yaw=Math.PI+.15;pitch=.14;distance=38;center.set(2,3.1,0)}
- if(view==='head'){yaw=.25;pitch=.02;distance=12;center.set(-9.7,7.4,3.0)}
+ if(view==='front'){yaw=-.11;pitch=.16;distance=58;center.set(.5,4.6,0)}
+ if(view==='side'){yaw=Math.PI*.48;pitch=.07;distance=64;center.set(.5,4.6,0)}
+ if(view==='back'){yaw=Math.PI+.08;pitch=.14;distance=59;center.set(.5,4.6,0)}
+ if(view==='head'){yaw=-.05;pitch=.04;distance=16;center.set(-12.95,6.0,3.9)}
 }));
 document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
 document.getElementById('zoomout').onclick=()=>distance=Math.min(85,distance*1.25);
@@ -332,8 +339,8 @@ canvas.addEventListener('pointermove',e=>{
 });
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(evt,e=>{pointers.delete(e.pointerId);lastDist=0});
 canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(6,Math.min(85,distance*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix()}
-addEventListener('resize',resize);
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();distance=Math.max(distance,Math.min(100,37.5/(2*Math.tan(camera.fov*Math.PI/360)*camera.aspect)))}
+addEventListener('resize',resize);resize();
 function render(){
  requestAnimationFrame(render);
  if(autoSpin)yaw+=.0016;
