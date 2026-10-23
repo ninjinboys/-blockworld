@@ -169,7 +169,7 @@ for(let i=0;i<segmentCount;i++){
 }
 // Hand-sculpted cranium, 3D beveled wedge jaws, cheek scale frills and
 // long water whiskers. This is purposely NOT the old cubic cartoon head.
-// SEIRYU HEAD SCULPT v8: one enormous three-dimensional dragon face, not a box.
+// SEIRYU HEAD SCULPT v13: one enormous three-dimensional dragon face, not a box.
 // Constructed as separate tapered skull, muzzle, hinged lower jaw, fangs, brows,
 // glowing recessed eyes, curling whiskers and antler branches.
 const head=new THREE.Group();
@@ -212,42 +212,42 @@ function shell(cx,cy,cz,rx,ry,rz,step,kind){
 // muzzle flows into a broad high cheek and tapering antlered cranium.
 headMass(-.28,.69,0,2.05,1.67,1.65,'deep',2);
 headMass(-1.38,.54,0,1.30,1.14,1.53,'royal',2);
-headMass(-3.10,.20,0,2.23,.71,1.04,'blue',2);
-headMass(-4.72,.08,0,.86,.40,.71,'royal',1);
+headMass(-3.64,.26,0,2.57,.67,1.00,'blue',2);
+headMass(-5.70,.21,0,1.12,.40,.70,'royal',2);
 shell(-.28,.69,0,2.11,1.72,1.72,.27,'crown');
 shell(-1.40,.52,0,1.30,1.12,1.56,.25,'crown');
-shell(-3.10,.20,0,2.18,.79,1.09,.235,'muzzle');
-shell(-4.74,.09,0,.87,.43,.72,.18,'muzzle');
+shell(-3.68,.25,0,2.50,.73,1.01,.21,'muzzle');
+shell(-5.72,.20,0,1.10,.43,.70,.17,'muzzle');
 // Slender separate lower jaw slopes down from hinge to curled chin.
 // The substantial black cavity BETWEEN them remains unobstructed.
 headMass(-1.05,-1.17,0,.90,.69,.84,'deep',1);
-headMass(-2.49,-1.87,0,1.86,.32,.87,'blue',2);
-headMass(-3.81,-2.06,0,.66,.29,.77,'royal',1);
-shell(-2.50,-1.88,0,1.84,.34,.90,.20,'jaw');
-shell(-3.82,-2.06,0,.69,.33,.78,.18,'jaw');
+headMass(-2.86,-1.95,0,2.17,.34,.86,'blue',2);
+headMass(-4.65,-2.08,0,1.08,.26,.62,'royal',2);
+shell(-2.85,-1.95,0,2.18,.35,.87,.19,'jaw');
+shell(-4.65,-2.08,0,1.06,.27,.64,.17,'jaw');
 headMass(-1.85,-.95,0,1.15,.48,.59,'black',1);
-headMass(-3.02,-1.56,0,1.38,.14,.52,'teal',1);
+headMass(-3.68,-1.61,0,1.80,.17,.53,'teal',1);
 // Delicate tongue projects out of the deep throat.
-const tongue=rod([-2.70,-1.65,0],[-4.04,-1.54,0],.21,.05,'teal',head,7);
+const tongue=rod([-2.90,-1.59,0],[-4.72,-1.77,0],.21,.04,'teal',head,7);
 for(const s of [-1,1]){
  // Rows of triangular ivory teeth form a snarling opening.
- for(let j=0;j<7;j++){
-  const x=-4.65+j*.51,z=s*(.58+.17*(j%3)/2);
+ for(let j=0;j<6;j++){
+  const x=-5.98+j*.72,z=s*(.55+.14*(j%3)/2);
   const top=.08+.06*Math.sin(j*.7);
   const tipY=-.78-((j+1)%3)*.12;
   rod([x,top,z],[x-.08,tipY,z],.115,.014,'tooth',head,5);
  }
  for(let j=0;j<5;j++){
-  const x=-3.95+j*.58,z=s*.67;
+  const x=-5.07+j*.80,z=s*.61;
   rod([x,-1.79,z],[x+.08,-1.20+(j%2)*.08,z],.10,.014,'tooth',head,5);
  }
  // Four dominant swept ivory fangs define the attack silhouette.
- rod([-3.62,.23,s*.90],[-3.91,-1.48,s*1.03],.27,.085,'tooth',head,7);
- rod([-3.91,-1.48,s*1.03],[-3.66,-1.95,s*1.10],.085,.006,'tooth',head,7);
+ rod([-4.72,.14,s*.77],[-5.02,-1.55,s*.91],.31,.084,'tooth',head,7);
+ rod([-5.02,-1.55,s*.91],[-4.77,-2.17,s*.92],.088,.006,'tooth',head,7);
  rod([-1.66,.08,s*.94],[-1.89,-1.28,s*1.08],.20,.015,'tooth',head,6);
  // Hinge-to-chin support makes the open jaw read as connected anatomy.
  rod([-.82,-.96,s*.84],[-1.75,-1.67,s*.91],.35,.23,'deep',head,6);
- rod([-1.75,-1.67,s*.91],[-3.25,-1.98,s*.75],.23,.12,'royal',head,6);
+ rod([-1.75,-1.67,s*.91],[-4.29,-2.08,s*.69],.23,.12,'royal',head,6);
  // Recessed predatory slit-shaped azure eyes. The earlier bulging
  // circular eyes looked like a cartoon animal rather than a guardian dragon.
  const sock=headMass(-1.37,1.24,s*1.96,.74,.26,.15,'deep',1);
@@ -266,8 +266,8 @@ for(const s of [-1,1]){
    headVoxel(x,y,z,.34,.25,.22,j%4===0?'mint':j%2===0?'sky':'teal',-.13);
  }
  // Nostril apertures inset in tapering nose sides.
- headMass(-4.88,.36,s*.69,.20,.10,.095,'black',1);
- rod([-4.91,.49,s*.77],[-4.60,.62,s*.85],.09,.03,'sky',head,4);
+ headMass(-6.04,.38,s*.47,.17,.095,.095,'black',1);
+ rod([-6.07,.49,s*.53],[-5.68,.63,s*.62],.10,.025,'sky',head,4);
  // Cheek ruff: densely packed swept plates, not a single row of spikes.
  for(let j=0;j<54;j++){
   const row=Math.floor(j/18),i=j%18;
@@ -295,15 +295,42 @@ for(const s of [-1,1]){
  // Deliberately curve away from the jaw before curling back, not straight wires.
  for(let branch=0;branch<2;branch++){
   const whisker=new THREE.CatmullRomCurve3([
-   new THREE.Vector3(-4.05,-.14-branch*.17,s*.94),
-   new THREE.Vector3(-5.03,-.44-branch*.22,s*1.71),
-   new THREE.Vector3(-6.12,-.79-branch*.24,s*2.82),
-   new THREE.Vector3(-7.45,-.64-branch*.27,s*3.71),
-   new THREE.Vector3(-8.33,.06-branch*.25,s*4.20),
-   new THREE.Vector3(-9.35,.74-branch*.15,s*3.66),
-   new THREE.Vector3(-9.78,1.04-branch*.15,s*2.85)
+   new THREE.Vector3(-5.66,-.16-branch*.16,s*.73),
+   new THREE.Vector3(-6.63,-.41-branch*.20,s*1.47),
+   new THREE.Vector3(-7.51,-.72-branch*.21,s*2.39),
+   new THREE.Vector3(-8.38,-.47-branch*.22,s*3.21),
+   new THREE.Vector3(-9.12,.21-branch*.25,s*3.66),
+   new THREE.Vector3(-9.94,.63-branch*.14,s*2.93),
+   new THREE.Vector3(-10.59,.42-branch*.17,s*2.09)
   ],false,'catmullrom',.5);
   mesh(new THREE.TubeGeometry(whisker,64,.043-branch*.008,5,false),'water',head);
+ }
+}
+// High-relief staggered facial plates. Ancient-dragon scales spiral back
+// from the muzzle and form a naturally stepped brow, cheek and jaw.
+for(const side of [-1,1]){
+ for(let row=0;row<6;row++)for(let col=0;col<26;col++){
+   const x=-6.05+col*.22+(row%2)*.10;
+   const y=.34+row*.145;
+   const taper=Math.max(.55, .55+(x+6.05)*.090);
+   const z=side*(.43+row*.10+taper*.10);
+   if(x>-.55)continue;
+   const wave=Math.sin(col*1.57+row*2.19);
+   const color=wave>.38?'sky':wave>-.19?'teal':wave>-.59?'royal':'deep';
+   headVoxel(x,y,z,.28,.17,.16,color,-.095);
+ }
+ // Segmented cream cheek ridges mark the strong rearward sweep of the jaw.
+ for(let j=0;j<16;j++){
+   let t=j/15,x=-3.96+j*.21,y=-.39-.38*Math.sin(t*Math.PI);
+   const z=side*(1.04+Math.sin(t*Math.PI)*.45);
+   headVoxel(x,y,z,.29,.17,.15,j%3===0?'belly':'sky',.16);
+ }
+ // Multi-scale horn roots create a bone crown before the antlers branch.
+ for(let j=0;j<8;j++){
+   const t=j/7;
+   rod([-.13+t*.51,1.85+t*.98,side*(.90+t*.25)],
+       [.05+t*.70,2.02+t*1.02,side*(1.05+t*.30)],
+       .17-.08*t,.07-.05*t,'horn',head,5);
  }
 }
 // Forehead and mane flow rearwards in layered ultramarine, turquoise and cyan.
@@ -320,7 +347,7 @@ for(let row=0;row<4;row++)for(let i=0;i<38;i++){
  const end=[x+.42,y+.55+(i%5)*.16,z+s*(.45+Math.floor(row/2)*.21)];
  rod([x,y,z],end,.18,.020,(i+row)%3===0?'mint':i%2===0?'teal':'sky',head,4);
 }
-window.seiryuFaceVersion='v11-dragon-face'; 
+window.seiryuFaceVersion='v13-dragon-face'; 
 // Muscular, articulated legs with three ivory hooks per claw.
 function legAt(t,sgn){
  const p=bodyPath.getPoint(t),frame=ringFrame(t),side=frame.side;
@@ -383,7 +410,7 @@ function fitWholeDragon(){
   dragonSize.y*.5/tan
  )*1.10+dragonSize.z*.32);
 }
-const faceViewDistance=()=>innerWidth/Math.max(innerHeight,1)<1.15?36.5:29.8;
+const faceViewDistance=()=>innerWidth/Math.max(innerHeight,1)<1.15?40.5:33.2;
 let yaw=-.31,pitch=.055,distance=faceViewDistance(),autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-4.8,1.0,0));
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
