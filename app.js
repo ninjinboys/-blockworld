@@ -9,7 +9,7 @@ import {createNewMobModels} from './new-mob-models.js?v=20261018neutralGolem01';
 import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillageHomes01';
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
-import {createBossArenaModel} from './boss-arena-model.js?v=20261023bossArena01';
+import {createBossArenaModel} from './boss-arena-model.js?v=20261023bossAltarCraft01';
 import {createBossWarpDeviceModel} from './boss-warp-device-model.js?v=20261023bossWarp01';
 import {createBuildingBlockModels} from './building-block-models.js?v=20261020twoBlockBedrollFence04';
 import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261020waterBucket02';
@@ -6406,7 +6406,8 @@ function place(){
     setChestOpen(true,{x:aimed.x,y:aimed.y,z:aimed.z});return;
   }
   if(aimed&&get(aimed.x,aimed.y,aimed.z)===B.BOSS_ARENA_CORE){
-    flash('ボスアリーナ：祭壇が起動中。キメラの魂は中央の戦闘床で使用できます');return;
+    if(h.object.userData.bossArenaAltar===true){setCraftOpen(true);return;}
+    flash('中央の台座に照準を合わせて CRAFT で祭壇を開けます');return;
   }
   if(aimed&&isWarpWorkbench(get(aimed.x,aimed.y,aimed.z))){
     setCraftOpen(true);return;
@@ -7577,6 +7578,9 @@ function stationInReach(){
   const p=lookup.get(h.object.uuid)?.[h.instanceId];
   if(!p)return null;
   const id=get(p.x,p.y,p.z);
+  // The decorated arena shares a single stored core block. Only the
+  // explicitly tagged CENTRAL dais meshes count as the altar station.
+  if(id===B.BOSS_ARENA_CORE&&h.object.userData.bossArenaAltar===true)return 'arena';
   return (id===B.CRAFTING_TABLE||id===B.FURNACE||isWarpWorkbench(id))?id:null;
 }
 function chooseCraftMode(){
@@ -7584,10 +7588,12 @@ function chooseCraftMode(){
   if(station===B.CRAFTING_TABLE)return 'workbench';
   if(station===B.FURNACE)return 'furnace';
   if(isWarpWorkbench(station))return 'warp';
+  if(station==='arena')return 'arena';
   return 'inventory';
 }
 function currentRecipeList(){
-  const list=craftMode==='workbench'?workbenchRecipes:
+  const list=craftMode==='arena'?[]:
+    craftMode==='workbench'?workbenchRecipes:
     craftMode==='furnace'?[...furnaceRecipes,...furnaceWoodRecipes]:
     craftMode==='warp'?warpWorkbenchRecipes:recipes;
   // Always display recipes from the lowest unlock level to the highest,
@@ -7599,7 +7605,8 @@ function renderCrafting(){
   const title=document.querySelector('.craft-title'),sub=document.querySelector('.craft-sub');
   if(craftMode==='workbench'){title.textContent='WORKBENCH';sub.textContent='作業台専用：ツール・防具・設備'}
   else if(craftMode==='furnace'){title.textContent='FURNACE';sub.textContent='石炭1個 または 木材3個を燃料に精錬・調理（砂→ガラスも可）'}
-  else if(craftMode==='warp'){title.textContent='WARP WORKBENCH';sub.textContent='ボス専用アリーナの核を製作して設置できます'}
+  else if(craftMode==='warp'){title.textContent='WARP WORKBENCH';sub.textContent='ボス用設備を製作して設置できます'}
+  else if(craftMode==='arena'){title.textContent='BOSS ALTAR';sub.textContent='ボスアリーナ中央の台座'}
   else {title.textContent='CRAFTING';sub.textContent='インベントリで作れる基本アイテム'}
   const ids=Object.keys(inventory).map(Number);
   const owned=ids.filter(id=>(inventory[id]||0)>0);
@@ -7619,7 +7626,16 @@ function renderCrafting(){
   const list=currentRecipeList();
   const search=($('craftSearch')?.value||'').trim().toLocaleLowerCase('ja');
   const count=$('craftCount');
-  if(count)count.textContent=(search?list.filter(r=>(r.name+' '+(names[r.out]||'')).toLocaleLowerCase('ja').includes(search)).length:list.length)+' 種類';
+  if(count)count.textContent=craftMode==='arena'?'祭壇':(search?list.filter(r=>(r.name+' '+(names[r.out]||'')).toLocaleLowerCase('ja').includes(search)).length:list.length)+' 種類';
+  const toolbar=document.querySelector('.craft-toolbar');
+  if(toolbar)toolbar.hidden=craftMode==='arena';
+  if(craftMode==='arena'){
+    const info=document.createElement('div');
+    info.className='recipe';info.style.padding='18px';
+    info.textContent='中央の台座の祭壇画面です。現在はキメラの魂を地面に向けて「設置・使用」でキメラを召喚できます。青龍・朱雀・白虎・玄武・天帝の召喚機能はまだ実装されていません。';
+    recipeList.appendChild(info);
+    return;
+  }
   if(craftMode==='warp'&&!list.length){
     const info=document.createElement('div');
     info.className='recipe';info.style.padding='18px';
@@ -7670,7 +7686,7 @@ function setCraftOpen(v){
     if(jobOpen)setJobOpen(false);
     craftMode=chooseCraftMode();
     primaryActionStop();document.exitPointerLock?.();$('craftSearch').value='';renderCrafting();
-    if(craftMode==='inventory')flash('作業台・かまど・転送作業台に照準を合わせると専用メニューが開きます');
+    if(craftMode==='inventory')flash('作業台・かまど・転送作業台・アリーナ中央の台座に照準を合わせると専用メニューが開きます');
   } else if(started&&!matchMedia('(pointer:coarse)').matches){renderer.domElement.requestPointerLock?.()}
 }
 
