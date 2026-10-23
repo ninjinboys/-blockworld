@@ -1,0 +1,80 @@
+name: Seiryu 3D visual QA
+on:
+  push:
+    paths:
+      - '.github/workflows/seiryu-visual-qa.yml'
+      - 'seiryu.html'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Playwright runtime
+        run: npm install --no-save playwright-core@1.55.0
+      - name: Capture true Three.js WebGL on desktop and tablet
+        run: |
+          python3 -m http.server 8765 >/tmp/seiryu-qa-server.log 2>&1 &
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright-core';
+          import fs from 'node:fs';
+          const executablePath=fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':
+            fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':'google-chrome';
+          const browser=await chromium.launch({
+            headless:true, executablePath,
+            args:['--no-sandbox','--disable-dev-shm-usage',
+              '--ignore-certificate-errors','--enable-webgl',
+              '--use-gl=angle','--use-angle=swiftshader',
+              '--enable-unsafe-swiftshader']
+          });
+          const shots=[
+            {name:'seiryu-desktop',w:1440,h:900},
+            {name:'seiryu-ipad',w:725,h:730},
+          ];
+          let failures=0;
+          for(const item of shots){
+            const page=await browser.newPage({viewport:{width:item.w,height:item.h},
+              deviceScaleFactor:1,ignoreHTTPSErrors:true});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.stack||e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8765/seiryu.html?v=qa20261023',
+              {waitUntil:'domcontentloaded',timeout:35000});
+            await page.waitForFunction(()=>{
+              const s=document.getElementById('status');
+              return s&&s.style.display==='none';
+            },null,{timeout:75000});
+            await page.waitForTimeout(1700);
+            const snapshot=await page.evaluate(()=>{
+              const canvas=document.getElementById('stage');
+              const frame=canvas.getBoundingClientRect();
+              const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');
+              return {title:document.title,rect:{width:frame.width,height:frame.height},
+                webgl:!!gl,status:document.getElementById('status').style.display};
+            });
+            await page.screenshot({path:item.name+'.png',animations:'disabled'});
+            const bytes=fs.statSync(item.name+'.png').size;
+            console.log('SEIRYU_QA '+JSON.stringify({...item,...snapshot,bytes,errors}));
+            if(errors.length||!snapshot.webgl||bytes<18000||snapshot.status!=='none')failures++;
+            if(item.name==='seiryu-ipad'){
+              await page.locator('button[data-view="side"]').click();
+              await page.waitForTimeout(500);
+              await page.screenshot({path:'seiryu-ipad-side.png',animations:'disabled'});
+            }
+            await page.close();
+          }
+          await browser.close();
+          if(failures)process.exit(1);
+          NODE
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seiryu-actual-webgl
+          path: seiryu-*.png
+          if-no-files-found: warn
