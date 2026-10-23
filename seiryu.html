@@ -173,7 +173,7 @@ for(let i=0;i<segmentCount;i++){
 // Constructed as separate tapered skull, muzzle, hinged lower jaw, fangs, brows,
 // glowing recessed eyes, curling whiskers and antler branches.
 const head=new THREE.Group();
-const HEAD_SCALE=1.54;
+const HEAD_SCALE=1.72;
 head.position.copy(bodyPath.getPoint(0));
 head.scale.setScalar(HEAD_SCALE);
 head.rotation.y=-.13;
@@ -247,11 +247,11 @@ for(const s of [-1,1]){
  rod([-1.76,.05,s*.92],[-1.95,-1.23,s*1.08],.20,.015,'tooth',head,6);
  // Eye sockets: black recessed angular wedges, cyan light deep inside,
  // sharp overlapping eyebrows sweeping BACK (positive x).
- const sock=headMass(-1.25,1.17,s*1.50,.76,.36,.24,'black',1);
+ const sock=headMass(-1.25,1.17,s*2.01,.82,.43,.28,'black',1);
  sock.rotation.z=-.19;
- const eye=headMass(-1.42,1.15,s*1.70,.45,.22,.17,'eye',1);
- const brow=rod([-2.06,1.52,s*1.56],[-.35,1.81,s*1.64],.28,.14,'royal',head,5);
- rod([-2.25,1.54,s*1.65],[-1.39,1.73,s*1.75],.14,.045,'sky',head,5);
+ const eye=headMass(-1.42,1.15,s*2.25,.52,.26,.20,'eye',1);
+ const brow=rod([-2.06,1.52,s*2.10],[-.35,1.81,s*1.90],.31,.13,'deep',head,5);
+ rod([-2.25,1.58,s*2.16],[-1.39,1.80,s*2.14],.14,.035,'sky',head,5);
  // Bone ridges running from eye to broad cheek flares.
  for(let j=0;j<15;j++){
    const x=-1.68+j*.23,y=.55+.22*(j%3);
@@ -374,14 +374,14 @@ function fitWholeDragon(){
   dragonSize.y*.5/tan
  )*1.10+dragonSize.z*.32);
 }
-let yaw=.10,pitch=.07,distance=fitWholeDragon(),autoSpin=false,center=heroCenter.clone();
+let yaw=-.35,pitch=.045,distance=19.7,autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-3.6,.6,0));
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
  const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
  if(view==='front'){yaw=.10;pitch=.07;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='side'){yaw=0;pitch=.02;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='back'){yaw=Math.PI;pitch=.08;distance=fitWholeDragon();center.copy(heroCenter)}
- if(view==='head'){yaw=-.27;pitch=.03;distance=20.0;center.copy(head.position).add(new THREE.Vector3(-3.5,0.7,0))}
+ if(view==='head'){yaw=-.35;pitch=.045;distance=19.7;center.copy(head.position).add(new THREE.Vector3(-3.6,.6,0))}
 }));
 document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
 document.getElementById('zoomout').onclick=()=>distance=Math.min(85,distance*1.25);
@@ -400,7 +400,7 @@ canvas.addEventListener('pointermove',e=>{
 });
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(evt,e=>{pointers.delete(e.pointerId);lastDist=0});
 canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(6,Math.min(85,distance*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();distance=fitWholeDragon()}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(center.distanceTo(heroCenter)<.15)distance=fitWholeDragon()}
 addEventListener('resize',resize);resize();
 function render(){
  requestAnimationFrame(render);
