@@ -213,46 +213,52 @@ function shell(cx,cy,cz,rx,ry,rz,step,kind){
 headMass(-.28,.69,0,2.05,1.67,1.65,'deep',2);
 headMass(-1.38,.54,0,1.30,1.14,1.53,'royal',2);
 headMass(-3.10,.20,0,2.23,.71,1.04,'blue',2);
-headMass(-4.72,.08,0,.77,.53,.79,'royal',1);
+headMass(-4.72,.08,0,.86,.40,.71,'royal',1);
 shell(-.28,.69,0,2.11,1.72,1.72,.27,'crown');
 shell(-1.40,.52,0,1.30,1.12,1.56,.25,'crown');
 shell(-3.10,.20,0,2.18,.79,1.09,.235,'muzzle');
-shell(-4.74,.09,0,.83,.50,.78,.21,'muzzle');
+shell(-4.74,.09,0,.87,.43,.72,.18,'muzzle');
 // Slender separate lower jaw slopes down from hinge to curled chin.
 // The substantial black cavity BETWEEN them remains unobstructed.
 headMass(-1.05,-1.17,0,.90,.69,.84,'deep',1);
-headMass(-2.49,-1.93,0,1.92,.38,.99,'blue',2);
-headMass(-3.88,-2.08,0,.78,.44,.86,'royal',1);
-shell(-2.50,-1.94,0,1.92,.43,1.04,.22,'jaw');
-shell(-3.90,-2.07,0,.80,.44,.88,.21,'jaw');
+headMass(-2.49,-1.87,0,1.86,.32,.87,'blue',2);
+headMass(-3.81,-2.06,0,.66,.29,.77,'royal',1);
+shell(-2.50,-1.88,0,1.84,.34,.90,.20,'jaw');
+shell(-3.82,-2.06,0,.69,.33,.78,.18,'jaw');
 headMass(-1.85,-.95,0,1.15,.48,.59,'black',1);
 headMass(-3.02,-1.56,0,1.38,.14,.52,'teal',1);
 // Delicate tongue projects out of the deep throat.
 const tongue=rod([-2.70,-1.65,0],[-4.04,-1.54,0],.21,.05,'teal',head,7);
 for(const s of [-1,1]){
  // Rows of triangular ivory teeth form a snarling opening.
- for(let j=0;j<9;j++){
-  const x=-4.76+j*.40,z=s*(.58+.17*(j%3)/2);
+ for(let j=0;j<7;j++){
+  const x=-4.65+j*.51,z=s*(.58+.17*(j%3)/2);
   const top=.08+.06*Math.sin(j*.7);
   const tipY=-.78-((j+1)%3)*.12;
   rod([x,top,z],[x-.08,tipY,z],.115,.014,'tooth',head,5);
  }
- for(let j=0;j<7;j++){
-  const x=-4.12+j*.44,z=s*.67;
+ for(let j=0;j<5;j++){
+  const x=-3.95+j*.58,z=s*.67;
   rod([x,-1.79,z],[x+.08,-1.20+(j%2)*.08,z],.10,.014,'tooth',head,5);
  }
- // Huge curved canine drops well below the gumline.
- rod([-3.62,.23,s*.90],[-3.91,-1.48,s*1.03],.245,.095,'tooth',head,6);
- rod([-3.91,-1.48,s*1.03],[-3.70,-1.92,s*1.09],.097,.008,'tooth',head,6);
- rod([-1.76,.05,s*.92],[-1.95,-1.23,s*1.08],.20,.015,'tooth',head,6);
- // Eye sockets: black recessed angular wedges, cyan light deep inside,
- // sharp overlapping eyebrows sweeping BACK (positive x).
- const sock=headMass(-1.25,1.17,s*2.02,.55,.30,.19,'black',1);
- sock.rotation.z=-.19;
- const eye=headMass(-1.42,1.15,s*2.24,.36,.17,.14,'eye',1);
- headMass(-1.51,1.16,s*2.37,.055,.14,.045,'deep',1);
- const brow=rod([-2.06,1.52,s*2.10],[-.35,1.81,s*1.90],.31,.13,'deep',head,5);
- rod([-2.25,1.58,s*2.16],[-1.39,1.80,s*2.14],.14,.035,'sky',head,5);
+ // Four dominant swept ivory fangs define the attack silhouette.
+ rod([-3.62,.23,s*.90],[-3.91,-1.48,s*1.03],.27,.085,'tooth',head,7);
+ rod([-3.91,-1.48,s*1.03],[-3.66,-1.95,s*1.10],.085,.006,'tooth',head,7);
+ rod([-1.66,.08,s*.94],[-1.89,-1.28,s*1.08],.20,.015,'tooth',head,6);
+ // Hinge-to-chin support makes the open jaw read as connected anatomy.
+ rod([-.82,-.96,s*.84],[-1.75,-1.67,s*.91],.35,.23,'deep',head,6);
+ rod([-1.75,-1.67,s*.91],[-3.25,-1.98,s*.75],.23,.12,'royal',head,6);
+ // Recessed predatory slit-shaped azure eyes. The earlier bulging
+ // circular eyes looked like a cartoon animal rather than a guardian dragon.
+ const sock=headMass(-1.37,1.24,s*1.96,.74,.26,.15,'deep',1);
+ sock.rotation.z=-.18;
+ const eye=headMass(-1.47,1.25,s*2.125,.53,.090,.073,'eye',1);
+ eye.rotation.z=-.19;
+ // Narrow vertical pupil sits on the illuminated slit instead of popping out.
+ headMass(-1.57,1.25,s*2.20,.050,.10,.023,'black',1);
+ rod([-2.20,1.56,s*2.13],[-.51,1.73,s*1.88],.28,.11,'deep',head,6);
+ rod([-2.16,1.64,s*2.16],[-1.15,1.71,s*2.06],.12,.025,'sky',head,5);
+ rod([-2.02,.995,s*2.09],[-.95,1.018,s*2.01],.10,.028,'royal',head,5);
  // Bone ridges running from eye to broad cheek flares.
  for(let j=0;j<15;j++){
    const x=-1.68+j*.23,y=.55+.22*(j%3);
@@ -285,17 +291,19 @@ for(const s of [-1,1]){
  [[1.80,4.32,s*1.65],[2.67,5.18,s*1.45],.11,.01]
  ];
  for(const [a,b,r1,r2] of antlers)rod(a,b,r1,r2,'horn',head,5);
- // Long curling cyan-white mystic whiskers originate at muzzle corners.
+ // Arc-shaped glowing whiskers: two natural strands from each muzzle corner.
+ // Deliberately curve away from the jaw before curling back, not straight wires.
  for(let branch=0;branch<2;branch++){
   const whisker=new THREE.CatmullRomCurve3([
-   new THREE.Vector3(-4.05,-.16-branch*.20,s*.94),
-   new THREE.Vector3(-5.40,-.45-branch*.30,s*1.89),
-   new THREE.Vector3(-6.8,-.91-branch*.38,s*3.26),
-   new THREE.Vector3(-8.3,-.18-branch*.49,s*3.74),
-   new THREE.Vector3(-9.65,.40-branch*.58,s*4.82),
-   new THREE.Vector3(-10.80,.11-branch*.63,s*4.48)
-  ]);
-  mesh(new THREE.TubeGeometry(whisker,48,.052-branch*.012,5,false),'water',head);
+   new THREE.Vector3(-4.05,-.14-branch*.17,s*.94),
+   new THREE.Vector3(-5.03,-.44-branch*.22,s*1.71),
+   new THREE.Vector3(-6.12,-.79-branch*.24,s*2.82),
+   new THREE.Vector3(-7.45,-.64-branch*.27,s*3.71),
+   new THREE.Vector3(-8.33,.06-branch*.25,s*4.20),
+   new THREE.Vector3(-9.35,.74-branch*.15,s*3.66),
+   new THREE.Vector3(-9.78,1.04-branch*.15,s*2.85)
+  ],false,'catmullrom',.5);
+  mesh(new THREE.TubeGeometry(whisker,64,.043-branch*.008,5,false),'water',head);
  }
 }
 // Forehead and mane flow rearwards in layered ultramarine, turquoise and cyan.
@@ -312,7 +320,7 @@ for(let row=0;row<4;row++)for(let i=0;i<38;i++){
  const end=[x+.42,y+.55+(i%5)*.16,z+s*(.45+Math.floor(row/2)*.21)];
  rod([x,y,z],end,.18,.020,(i+row)%3===0?'mint':i%2===0?'teal':'sky',head,4);
 }
-window.seiryuFaceVersion='v8-fang-cranium'; 
+window.seiryuFaceVersion='v11-dragon-face'; 
 // Muscular, articulated legs with three ivory hooks per claw.
 function legAt(t,sgn){
  const p=bodyPath.getPoint(t),frame=ringFrame(t),side=frame.side;
