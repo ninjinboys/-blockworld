@@ -51,10 +51,10 @@ const glow=new THREE.PointLight(0x1bdde7,42,40);glow.position.set(-10,6,9);scene
 const dragon=new THREE.Group();scene.add(dragon);
 const materials={
 deep:new THREE.MeshStandardMaterial({color:0x062661,roughness:.67,metalness:.10}),
-blue:new THREE.MeshStandardMaterial({color:0x1156bb,roughness:.48,metalness:.12}),
-royal:new THREE.MeshStandardMaterial({color:0x237bdc,roughness:.42,metalness:.12}),
-sky:new THREE.MeshStandardMaterial({color:0x56c6e8,roughness:.38,metalness:.15}),
-mint:new THREE.MeshStandardMaterial({color:0x5eeadf,roughness:.43}),
+blue:new THREE.MeshStandardMaterial({color:0x1046a5,roughness:.48,metalness:.12}),
+royal:new THREE.MeshStandardMaterial({color:0x1765c3,roughness:.42,metalness:.12}),
+sky:new THREE.MeshStandardMaterial({color:0x4bb5dd,roughness:.38,metalness:.15}),
+mint:new THREE.MeshStandardMaterial({color:0x67d9cc,roughness:.43}),
 teal:new THREE.MeshStandardMaterial({color:0x1599a9,roughness:.42}),
 belly:new THREE.MeshStandardMaterial({color:0xd9c8aa,roughness:.82}),
 bellyShadow:new THREE.MeshStandardMaterial({color:0xa59c8e,roughness:.78}),
@@ -140,7 +140,7 @@ for(let i=0;i<segmentCount;i++){
   rot.setFromRotationMatrix(basis);
   const v=p.clone().addScaledVector(radial,r*.99);
   // Continuous sand-colored ventral armor, indigo side scales and cyan crest.
-  const belly=c<-.64;
+  const belly=c<-.29;
   let mat;
   if(belly)mat=(i%5===0?'bellyShadow':'belly');
   else if(c>.57&&j%4===0)mat='mint';
@@ -154,23 +154,25 @@ for(let i=0;i<segmentCount;i++){
  // A stepped, layered crest with individual turquoise spines.
  if(i%2===0&&i<segmentCount-2){
   const a=p.clone().addScaledVector(u,r-.04);
-  const tip=a.clone().addScaledVector(u,.76+(1-t)*.83).addScaledVector(tg,-.38);
-  rod(a.toArray(),tip.toArray(),.21,.027,i%4===0?'sky':i%3===0?'mint':'teal',dragon,4);
+  const tip=a.clone().addScaledVector(u,.54+(1-t)*.54).addScaledVector(tg,-.44);
+  rod(a.toArray(),tip.toArray(),.25,.095,i%4===0?'sky':i%3===0?'mint':'teal',dragon,4);
  }
  if(i%3===0&&i<segmentCount-4){
   // Two swept-over fin rows, rather than a thin single mohawk.
   for(const sign of [-1,1]){
    const n=u.clone().multiplyScalar(.72).addScaledVector(s,sign*.70).normalize();
    const a=p.clone().addScaledVector(n,r-.02);
-   const b=a.clone().addScaledVector(n,.58+(1-t)*.49).addScaledVector(tg,-.35);
-   rod(a.toArray(),b.toArray(),.19,.02,i%3===0?'sky':'mint',dragon,4);
+   const b=a.clone().addScaledVector(n,.37+(1-t)*.45).addScaledVector(tg,-.35);
+   rod(a.toArray(),b.toArray(),.20,.06,i%3===0?'sky':'mint',dragon,4);
   }
  }
 }
 // Hand-sculpted cranium, 3D beveled wedge jaws, cheek scale frills and
 // long water whiskers. This is purposely NOT the old cubic cartoon head.
 const head=new THREE.Group();
+const HEAD_SCALE=1.31;
 head.position.copy(bodyPath.getPoint(0));
+head.scale.setScalar(HEAD_SCALE);
 head.rotation.y=.04;
 dragon.add(head);
 function sculptWedge(outline,thickness,material){
@@ -246,9 +248,9 @@ for(const s of [-1,1]){
 // Geometry is batched into instanced meshes for tablet performance.
 function cheekPlate(x,y,z,material,size=.29,angle=0){
  const local=new THREE.Vector3(x,y,z);
- local.applyAxisAngle(yAxis,head.rotation.y).add(head.position);
+ local.multiplyScalar(HEAD_SCALE).applyAxisAngle(yAxis,head.rotation.y).add(head.position);
  const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),angle);
- scalePart(material,local,q,size*1.25,size,.12);
+ scalePart(material,local,q,size*1.25*HEAD_SCALE,size*HEAD_SCALE,.12*HEAD_SCALE);
 }
 for(const s of [-1,1]){
  // Sculpted forehead/back-of-jaw layers follow the silhouette.
@@ -348,13 +350,27 @@ finalizeInstances();
 const ground=mesh(new THREE.PlaneGeometry(190,190),new THREE.MeshStandardMaterial({color:0x0b1822,roughness:.88}),scene);
 ground.rotation.x=-Math.PI/2;ground.position.y=-6.3;
 const grid=new THREE.GridHelper(80,40,0x16435a,0x173147);grid.position.y=-6.28;scene.add(grid);
-let yaw=.10,pitch=.06,distance=43,autoSpin=false,center=new THREE.Vector3(-.1,4.7,0);
+// Set initial camera from the TRUE three-dimensional mesh bounds, so neither
+// muzzle nor streaming tail is cropped on narrow iPads.
+dragon.updateMatrixWorld(true);
+const dragonBounds=new THREE.Box3().setFromObject(dragon);
+const dragonSize=dragonBounds.getSize(new THREE.Vector3());
+const heroCenter=dragonBounds.getCenter(new THREE.Vector3());
+function fitWholeDragon(){
+ const tan=Math.tan(camera.fov*Math.PI/360);
+ const aspect=Math.max(.4,camera.aspect);
+ return Math.min(110,Math.max(
+  dragonSize.x*.5/(tan*aspect),
+  dragonSize.y*.5/tan
+ )*1.20+dragonSize.z*.50);
+}
+let yaw=.10,pitch=.07,distance=fitWholeDragon(),autoSpin=false,center=heroCenter.clone();
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
  const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
- if(view==='front'){yaw=.10;pitch=.06;distance=43;center.set(-.1,4.7,0)}
- if(view==='side'){yaw=0;pitch=.02;distance=42;center.set(-.1,4.7,0)}
- if(view==='back'){yaw=Math.PI;pitch=.08;distance=47;center.set(-.1,4.7,0)}
+ if(view==='front'){yaw=.10;pitch=.07;distance=fitWholeDragon();center.copy(heroCenter)}
+ if(view==='side'){yaw=0;pitch=.02;distance=fitWholeDragon();center.copy(heroCenter)}
+ if(view==='back'){yaw=Math.PI;pitch=.08;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='head'){yaw=-.25;pitch=.01;distance=12.4;center.set(-16.5,6.6,3.4)}
 }));
 document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
@@ -374,7 +390,7 @@ canvas.addEventListener('pointermove',e=>{
 });
 for(const evt of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(evt,e=>{pointers.delete(e.pointerId);lastDist=0});
 canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(6,Math.min(85,distance*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(w/h<.75&&distance<47)distance=47}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();distance=fitWholeDragon()}
 addEventListener('resize',resize);resize();
 function render(){
  requestAnimationFrame(render);
