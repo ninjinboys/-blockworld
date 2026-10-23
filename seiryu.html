@@ -128,9 +128,9 @@ function armor(mat,x,y,z,sx,sy,sz,angle=0,parent=root){
 function eyeShape(x,y,z,side,parent){
  // Black eye socket is a recessed almond, the cyan iris is a tight light slit.
  ellipsoid([x,y,side*z],[.72,.22,.15],'black',1,parent);
- const m=ellipsoid([x-.08,y+.045,side*(z+.19)],[.55,.11,.095],'eye',1,parent);
+ const m=ellipsoid([x-.08,y+.045,side*(z+.22)],[.46,.075,.072],'eye',1,parent);
  m.rotation.z=-.17;
- const brow=bone([x-.86,y+.30,side*(z+.065)],[x+.63,y+.37,side*(z+.03)],.18,.055,'deep',parent);
+ const brow=bone([x-.86,y+.34,side*(z+.095)],[x+.63,y+.39,side*(z+.07)],.19,.055,'deep',parent);
  bone([x-.86,y+.33,side*(z+.13)],[x+.32,y+.37,side*(z+.16)],.075,.025,'sky',parent);
 }
 // Custom hollow elliptical anatomy. Keyed cross-sections are 3D volume,
@@ -315,7 +315,7 @@ for(let i=2;i<bodyN-2;i+=2){
   const under=Math.cos(ang)<-.35;
   const wave=Math.sin(i*.16+j*.61)+Math.cos(i*.29-j*.33)*.30;
   const mat=under?'belly':wave>.83?'mint':wave>.17?'teal':wave>-.52?'royal':'blue';
-  instance(mat,'scale',p,QUAT,new THREE.Vector3(.48+.11*(1-t),.45*(f.r/1.9),.92));
+  instance(mat,'scale',p,QUAT,new THREE.Vector3(.64+.09*(1-t),.72*(f.r/1.9),.89));
  }
  // Wide swept-up flowing mane along the top of the body, as coherent fins.
  if(i%4===0&&t<.97){
@@ -376,14 +376,14 @@ function fitWholeDragon(){
  )*1.10+dragonSize.z*.32);
 }
 const faceViewDistance=()=>innerWidth/Math.max(innerHeight,1)<1.15?37.0:30.5;
-let yaw=-.31,pitch=.055,distance=faceViewDistance(),autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-4.25,0.8,0));
+let yaw=-.64,pitch=.075,distance=faceViewDistance(),autoSpin=false,center=head.position.clone().add(new THREE.Vector3(-4.25,0.8,0));
 const btns=[...document.querySelectorAll('[data-view]')];
 btns.forEach(button=>button.addEventListener('click',()=>{
  const view=button.dataset.view;autoSpin=false;document.getElementById('spin').classList.remove('active');
  if(view==='front'){yaw=.10;pitch=.07;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='side'){yaw=0;pitch=.02;distance=fitWholeDragon();center.copy(heroCenter)}
  if(view==='back'){yaw=Math.PI;pitch=.08;distance=fitWholeDragon();center.copy(heroCenter)}
- if(view==='head'){yaw=-.31;pitch=.055;distance=faceViewDistance();center.copy(head.position).add(new THREE.Vector3(-4.25,0.8,0))}
+ if(view==='head'){yaw=-.64;pitch=.075;distance=faceViewDistance();center.copy(head.position).add(new THREE.Vector3(-4.25,0.8,0))}
 }));
 document.getElementById('zoomin').onclick=()=>distance=Math.max(6,distance*.8);
 document.getElementById('zoomout').onclick=()=>distance=Math.min(85,distance*1.25);
