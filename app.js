@@ -10,6 +10,7 @@ import {createVillageSystem} from './village-system.js?v=20261018RetrofitVillage
 import {createVillagerModels} from './villager-model.js?v=20261017villagerFold02';
 import {createWarpWorkbenchModel} from './warp-workbench-model.js?v=20261019warpStation01';
 import {createBossArenaModel} from './boss-arena-model.js?v=20261023bossArena01';
+import {createBossWarpDeviceModel} from './boss-warp-device-model.js?v=20261023bossWarp01';
 import {createBuildingBlockModels} from './building-block-models.js?v=20261020twoBlockBedrollFence04';
 import {drawNewItemArt,drawNewBlockArt} from './item-pixel-art.js?v=20261020waterBucket02';
 import {drawDetailedItemIcon} from './item-art-icons.js?v=20261019pixelArt01';
@@ -61,7 +62,7 @@ Object.assign(B,{
   SLEEPING_BAG_WORLD:78,SLEEPING_BAG_HEAD:79,
   SLEEPING_BAG_E:80,SLEEPING_BAG_S:81,SLEEPING_BAG_W:82,
   SLEEPING_BAG_HEAD_E:83,SLEEPING_BAG_HEAD_S:84,SLEEPING_BAG_HEAD_W:85,
-  BOSS_ARENA_CORE:86
+  BOSS_ARENA_CORE:86,BOSS_WARP_DEVICE:88,BOSS_WARP_PART:89
 });
 const SHAPED_VARIANT_BASE=new Map([
   [B.WOOD_STAIRS_E,B.WOOD_STAIRS],[B.WOOD_STAIRS_S,B.WOOD_STAIRS],[B.WOOD_STAIRS_W,B.WOOD_STAIRS],
@@ -95,7 +96,7 @@ const I={
   COOKED_PORK:144,COOKED_BEEF:145,DOOR:146,TORCH:147,CHEST:148,BOW:149,ARROW:150,SADDLE:151,LION_FANG:152,BUFFALO_HORN:153,ANACONDA_HIDE:155,SHIELD:156,CHIMERA_SOUL:157,CHIMERA_HIDE:158,
   CHIMERA_HELMET:159,CHIMERA_CHEST:160,CHIMERA_LEGS:161,CHIMERA_BOOTS:162,
   CHIMERA_FANG:163,CHIMERA_DAGGER:164,CHIMERA_HORN:165,CHIMERA_BOW:166,
-  WARP_WORKBENCH:167,BOSS_ARENA_CORE:208,
+  WARP_WORKBENCH:167,BOSS_ARENA_CORE:208,BOSS_WARP_DEVICE:209,
   SPEAR:168,IRON_DAGGER:169,BATTLE_AXE:170,HAMMER:171,CROSSBOW:172,THROWING_KNIFE:173,MOLOTOV:174,HEAL_POTION:175,STAMINA_POTION:176,POISON_ARROW:177,BUCKET:178,FISHING_ROD:179,COMPASS:180,MAP:181,BINOCULARS:182,ROPE:183,NAME_TAG:184,BACKPACK:185,GLIDER:186,SLEEPING_BAG:187,FLINT_STEEL:188,WATER_BUCKET:189
 };
 const names={
@@ -117,6 +118,7 @@ const names={
   21:'ベッド',22:'ベッド',23:'木のドア',24:'木のドア',25:'開いたドア',26:'開いたドア',27:'木のドア',28:'木のドア',29:'開いたドア',30:'開いたドア'
 };
 names[B.BOSS_ARENA_CORE]='ボスアリーナの祭壇';
+names[B.BOSS_WARP_DEVICE]='ボス転送装置';names[B.BOSS_WARP_PART]='ボス転送装置';
 names[B.STONE_BRICKS]='石レンガ';
 names[B.MOSSY_STONE_BRICKS]='苔むした石レンガ';
 names[B.CRACKED_STONE_BRICKS]='ひび割れた石レンガ';
@@ -186,7 +188,9 @@ const buildable=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.LOG,B.LEAF,B.COBBLE,B.PLANK,B.G
 const placeableItemToBlock={[I.CRAFTING_TABLE]:B.CRAFTING_TABLE,[I.FURNACE]:B.FURNACE,[I.BED]:B.BED,[I.DOOR]:B.DOOR_X,[I.TORCH]:B.TORCH,[I.CHEST]:B.CHEST};
 const WARP_WORKBENCH_BLOCKS=new Set([B.WARP_WORKBENCH_X,B.WARP_WORKBENCH_X_END,B.WARP_WORKBENCH_Z,B.WARP_WORKBENCH_Z_END]);
 const isWarpWorkbench=id=>WARP_WORKBENCH_BLOCKS.has(id);
-const specialBlockDrops={[B.BOSS_ARENA_CORE]:I.BOSS_ARENA_CORE,[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST,[B.WARP_WORKBENCH_X]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_X_END]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z_END]:I.WARP_WORKBENCH,[B.SLEEPING_BAG_WORLD]:I.SLEEPING_BAG};
+const isBossWarp=id=>id===B.BOSS_WARP_DEVICE||id===B.BOSS_WARP_PART;
+const BOSS_WARP_OFFSETS=Array.from({length:9},(_,i)=>({dx:i%3-1,dz:Math.floor(i/3)-1}));
+const specialBlockDrops={[B.BOSS_ARENA_CORE]:I.BOSS_ARENA_CORE,[B.BOSS_WARP_DEVICE]:I.BOSS_WARP_DEVICE,[B.BOSS_WARP_PART]:I.BOSS_WARP_DEVICE,[B.CRAFTING_TABLE]:I.CRAFTING_TABLE,[B.FURNACE]:I.FURNACE,[B.BED]:I.BED,[B.BED_HEAD]:I.BED,[B.TORCH]:I.TORCH,[B.CHEST]:I.CHEST,[B.WARP_WORKBENCH_X]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_X_END]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z]:I.WARP_WORKBENCH,[B.WARP_WORKBENCH_Z_END]:I.WARP_WORKBENCH,[B.SLEEPING_BAG_WORLD]:I.SLEEPING_BAG};
 for(const id of SLEEPING_BAG_BLOCKS)specialBlockDrops[id]=I.SLEEPING_BAG;
 const inventory={
   [B.GRASS]:0,[B.DIRT]:0,[B.STONE]:0,[B.SAND]:0,[B.LOG]:0,[B.LEAF]:0,[B.COBBLE]:0,[B.PLANK]:0,[B.GLASS]:0,[B.COAL]:0,[B.SNOW]:0,[B.GRAVEL]:0,[B.CACTUS]:0,
@@ -203,7 +207,7 @@ const inventory={
   [I.WOOD_AXE]:0,
   [I.WOOL]:0,[I.RAW_PORK]:0,[I.RAW_BEEF]:0,[I.LEATHER]:0,[I.LION_FANG]:0,[I.BUFFALO_HORN]:0,[I.ANACONDA_HIDE]:0,[I.CHIMERA_SOUL]:0,[I.CHIMERA_HIDE]:0,
   [I.CHIMERA_FANG]:0,[I.CHIMERA_DAGGER]:0,[I.CHIMERA_HORN]:0,[I.CHIMERA_BOW]:0,[I.BED]:0,
-  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0,[I.WARP_WORKBENCH]:0,[I.BOSS_ARENA_CORE]:0,
+  [I.COOKED_PORK]:0,[I.COOKED_BEEF]:0,[I.DOOR]:0,[I.TORCH]:0,[I.CHEST]:0,[I.BOW]:0,[I.ARROW]:0,[I.SADDLE]:0,[I.SHIELD]:0,[I.WARP_WORKBENCH]:0,[I.BOSS_ARENA_CORE]:0,[I.BOSS_WARP_DEVICE]:0,
   ...Object.fromEntries(NEW_BUILD_BLOCKS.map(id=>[id,0])),...Object.fromEntries(NEW_ITEM_IDS.map(id=>[id,0])),
   ...Object.fromEntries(JOB_WEAPON_IDS.map(id=>[id,0]))
 };
@@ -240,7 +244,7 @@ const itemGlyphs={
   [I.WOOD_AXE]:'木斧',
   [I.WOOL]:'羊',[I.RAW_PORK]:'豚',[I.RAW_BEEF]:'牛',[I.LEATHER]:'革',[I.LION_FANG]:'牙',[I.BUFFALO_HORN]:'角',[I.ANACONDA_HIDE]:'蛇革',[I.CHIMERA_SOUL]:'魂',[I.CHIMERA_HIDE]:'キ革',[I.CHIMERA_FANG]:'キ牙',[I.CHIMERA_DAGGER]:'短剣',
   [I.CHIMERA_HORN]:'キ角',[I.CHIMERA_BOW]:'キ弓',[I.BED]:'床',
-  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.WARP_WORKBENCH]:'転送台',[I.BOSS_ARENA_CORE]:'闘技場',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
+  [I.COOKED_PORK]:'焼豚',[I.COOKED_BEEF]:'焼牛',[I.DOOR]:'ドア',[I.TORCH]:'松明',[I.CHEST]:'箱',[I.WARP_WORKBENCH]:'転送台',[I.BOSS_ARENA_CORE]:'闘技場',[I.BOSS_WARP_DEVICE]:'転送門',[I.BOW]:'弓',[I.ARROW]:'矢',[I.SADDLE]:'鞍',[I.SHIELD]:'盾'
 };
 
 const ICON_MAT={
@@ -662,6 +666,8 @@ workbenchRecipes.push(...Object.values(JOBS).filter(j=>Number.isInteger(j.weapon
   needs:jobWeaponIngredients(j.kind),unlockLevel:j.level
 })));
 const warpWorkbenchRecipes=[
+  {name:'ボス転送装置（3×3設置）',out:I.BOSS_WARP_DEVICE,qty:1,
+    needs:[[B.OBSIDIAN,12],[B.POLISHED_STONE,8],[I.IRON_INGOT,8],[I.DIAMOND,2]],unlockLevel:8},
   {name:'ボス専用アリーナの核',out:I.BOSS_ARENA_CORE,qty:1,
     needs:[[B.STONE_BRICKS,32],[B.OBSIDIAN,16],[I.IRON_INGOT,8],[I.DIAMOND,2]],
     unlockLevel:8}
@@ -2405,7 +2411,7 @@ const bedHeadMaterials=[bedSide,bedSide,bedHeadTop,bedBottom,bedEnd,bedEnd];
 // Replace flat plain colors with dedicated pixel materials and true 3D shapes.
 const detailedBlockModels=createBuildingBlockModels(THREE,B);
 const newBlockMaterials=detailedBlockModels.materials;
-const M={...newBlockMaterials,[B.WARP_WORKBENCH_X]:stone,[B.WARP_WORKBENCH_X_END]:stone,[B.WARP_WORKBENCH_Z]:stone,[B.WARP_WORKBENCH_Z_END]:stone,[B.BOSS_ARENA_CORE]:stone,[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
+const M={...newBlockMaterials,[B.WARP_WORKBENCH_X]:stone,[B.WARP_WORKBENCH_X_END]:stone,[B.WARP_WORKBENCH_Z]:stone,[B.WARP_WORKBENCH_Z_END]:stone,[B.BOSS_ARENA_CORE]:stone,[B.BOSS_WARP_DEVICE]:stone,[B.BOSS_WARP_PART]:stone,[B.GRASS]:[grassSide,grassSide,grass,dirt,grassSide,grassSide],[B.DIRT]:dirt,[B.STONE]:stone,[B.SAND]:sand,[B.WATER]:water,[B.LOG]:log,[B.LEAF]:leaf,[B.COAL]:L(T.coal),[B.IRON]:L(T.iron),[B.GOLD]:L(T.gold),[B.DIAMOND]:L(T.diamond),[B.SNOW]:L(T.snow),[B.GRAVEL]:L(T.gravel),[B.CACTUS]:L(T.cactus),[B.PLANK]:L(T.plank),[B.COBBLE]:L(T.cobble),[B.GLASS]:glass,[B.BEDROCK]:L(T.bedrock),[B.CRAFTING_TABLE]:L(T.craft),[B.FURNACE]:L(T.furnace),[B.BED]:bedFootMaterials,[B.BED_HEAD]:bedHeadMaterials};
 const box=new THREE.BoxGeometry(1,1,1),bedBox=new THREE.BoxGeometry(1,.5,1);
 const doorBox=new THREE.BoxGeometry(.92,.998,.14);
 function doorTexture(top){
@@ -2530,6 +2536,7 @@ function updateTorchLights(now){
 }
 const warpWorkbenchVisual=createWarpWorkbenchModel(THREE);
 const bossArenaVisual=createBossArenaModel(THREE);
+const bossWarpVisual=createBossWarpDeviceModel(THREE);
 let meshes=[],lookup=new Map();
 const neighborVectors=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 function removeChunkMeshes(c){
@@ -2552,7 +2559,7 @@ function rebuildChunkMesh(c){
     // Previous terrain face-culling hid the bottom half when enclosed, so
     // it looked like the door was floating. Opening the door accidentally
     // made both halves render because the open IDs were treated as air.
-    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST||isWarpWorkbench(id)||id===B.BOSS_ARENA_CORE||detailedBlockModels.custom.has(id);
+    let visible=isDoor(id)||id===B.TORCH||id===B.CHEST||isWarpWorkbench(id)||id===B.BOSS_ARENA_CORE||isBossWarp(id)||detailedBlockModels.custom.has(id);
     if(!visible)for(const [dx,dy,dz] of neighborVectors){
       const nx=lx+dx,ny=y+dy,nz=lz+dz;
       const b=(nx>=0&&nx<CHUNK&&nz>=0&&nz<CHUNK&&ny>=Y_MIN&&ny<=WORLD_TOP)
@@ -2560,7 +2567,7 @@ function rebuildChunkMesh(c){
       // Doors leave visible space beside their thin panel: render the
       // neighbouring wall, floor and ceiling faces too.
       if(id===B.WATER?b!==B.WATER:
-         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST||isWarpWorkbench(b)||b===B.BOSS_ARENA_CORE||detailedBlockModels.custom.has(b)){visible=true;break}
+         b===B.AIR||b===B.WATER||b===B.GLASS||isDoor(b)||b===B.TORCH||b===B.CHEST||isWarpWorkbench(b)||b===B.BOSS_ARENA_CORE||isBossWarp(b)||detailedBlockModels.custom.has(b)){visible=true;break}
     }
     if(visible)groups[id].push({x,y,z});
   }
@@ -2573,6 +2580,8 @@ function rebuildChunkMesh(c){
       continue;
     }
     if(id===B.WARP_WORKBENCH_X_END||id===B.WARP_WORKBENCH_Z_END)continue;
+    if(id===B.BOSS_WARP_DEVICE){bossWarpVisual.build(p,scene,meshes,lookup,built,id);continue;}
+    if(id===B.BOSS_WARP_PART)continue;
     if(id===B.BOSS_ARENA_CORE){
       bossArenaVisual.build(p,scene,meshes,lookup,built,id);
       continue;
@@ -8824,7 +8833,7 @@ function showRemoteArrow(p){
 }
 function multiApplyBlock(b){
   if(!worldReady||![b.x,b.y,b.z,b.v].every(Number.isInteger))return;
-  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.BOSS_ARENA_CORE||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
+  if(!inside(b.x,b.y,b.z)||b.v<0||b.v>B.BOSS_WARP_PART||Math.abs(b.x)>1000000||Math.abs(b.z)>1000000)return;
   if(get(b.x,b.y,b.z)===b.v)return;
   multiApplying=true;try{set(b.x,b.y,b.z,b.v);rebuildEdited({x:b.x,z:b.z})}
   finally{multiApplying=false}
