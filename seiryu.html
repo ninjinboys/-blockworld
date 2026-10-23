@@ -88,8 +88,8 @@ const bodyPath=new THREE.CatmullRomCurve3([
  new THREE.Vector3(9.0,4.4,4.0),new THREE.Vector3(10.4,8.1,2.6),
  new THREE.Vector3(12.6,12.7,-.6)
 ],false,'catmullrom',.48);
-const bodyRadius=t=>t<.15?1.93+.34*Math.sin(t/.15*Math.PI/2):
- t<.61?2.27-.55*((t-.15)/.46):Math.max(.35,1.72*(1-(t-.61)/.39));
+const bodyRadius=t=>t<.15?1.90+.43*Math.sin(t/.15*Math.PI/2):
+ t<.61?2.33-.57*((t-.15)/.46):Math.max(.36,1.76*(1-(t-.61)/.39));
 const bodyScales=new Map();
 const boxGeo=new THREE.BoxGeometry(1,1,1);
 function scalePart(material,position,orientation,sx,sy,sz){
@@ -143,10 +143,14 @@ for(let i=0;i<segmentCount;i++){
   const belly=c<-.29;
   let mat;
   if(belly)mat=(i%5===0?'bellyShadow':'belly');
-  else if(c>.57&&j%4===0)mat='mint';
-  else if(c>.48&&Math.sin(i*.77+j*.86)>.15)mat='sky';
-  else if(c>.04&&Math.sin(i*.52+j*2.18)>.46)mat='teal';
-  else mat=(i+j)%3===0?'royal':j%4===0?'blue':'deep';
+  else {
+   // Interlocking scale bands, not high-frequency checkerboard noise.
+   // Dark lapis sides and subtle teal flowing currents align to the spine.
+   const wave=Math.sin(i*.145+j*.83)+.46*Math.sin(i*.31-j*.55);
+   if(c>.68)mat=wave>.64?'mint':wave>-.20?'sky':'royal';
+   else if(c>.12)mat=wave>.80?'mint':wave>.13?'teal':wave>-.61?'royal':'blue';
+   else mat=wave>.75?'teal':wave>-.30?'royal':'deep';
+  }
   const length=Math.max(.22,bodyPath.getLength()/segmentCount*1.40);
   const width=2*Math.PI*r/aroundCount*1.23;
   scalePart(mat,v,rot,length,width,belly?.105:.15);
@@ -201,10 +205,13 @@ function shell(cx,cy,cz,rx,ry,rz,step,kind){
   if(topOnly&&py<-.31)continue; // open mouth: no cubic wall underneath
   if(kind==='jaw'&&py>.19)continue;
   const jitter=Math.sin(x*4.11+y*11.79+z*7.83);
-  let col=kind==='jaw'?(jitter>.47?'sky':jitter>-.10?'royal':'blue'):
-     kind==='muzzle'?(jitter>.75?'mint':jitter>.40?'sky':jitter>-.15?'royal':'blue'):
-     jitter>.83?'mint':jitter>.54?'sky':jitter>.22?'teal':jitter>-.39?'royal':'deep';
-  if(kind==='crown'&&py>ry*.65&&jitter>.15)col='mint';
+  // Flowing horizontal banding makes the face read as blue armor instead of
+  // a random checkered toy. Each band is still a distinct 3D voxel.
+  const band=Math.sin((cx+px)*1.4+(py+cy)*2.0)+.30*Math.sin(pz*4.3);
+  let col=kind==='jaw'?(band>.80?'sky':band>.15?'royal':'deep'):
+    kind==='muzzle'?(band>.91?'sky':band>.12?'royal':'blue'):
+    band>.97?'mint':band>.48?'sky':band>-.25?'teal':band>-.74?'royal':'deep';
+  if(kind==='crown'&&py>ry*.69&&band>.30)col='mint';
   headVoxel(cx+px,cy+py,cz+pz,step*.94,step*.94,step*.94,col);
  }
 }
@@ -212,7 +219,7 @@ function shell(cx,cy,cz,rx,ry,rz,step,kind){
 // muzzle flows into a broad high cheek and tapering antlered cranium.
 headMass(-.28,.69,0,2.05,1.67,1.65,'deep',2);
 headMass(-1.38,.54,0,1.30,1.14,1.53,'royal',2);
-headMass(-3.64,.26,0,2.57,.67,1.00,'blue',2);
+headMass(-3.64,.26,0,2.57,.62,.98,'deep',2);
 headMass(-5.70,.21,0,1.12,.40,.70,'royal',2);
 shell(-.28,.69,0,2.11,1.72,1.72,.27,'crown');
 shell(-1.40,.52,0,1.30,1.12,1.56,.25,'crown');
@@ -250,12 +257,12 @@ for(const s of [-1,1]){
  rod([-1.75,-1.67,s*.91],[-4.29,-2.08,s*.69],.23,.12,'royal',head,6);
  // Recessed predatory slit-shaped azure eyes. The earlier bulging
  // circular eyes looked like a cartoon animal rather than a guardian dragon.
- const sock=headMass(-1.37,1.24,s*1.96,.74,.26,.15,'deep',1);
+ const sock=headMass(-1.37,1.24,s*2.00,.80,.29,.20,'black',1);
  sock.rotation.z=-.18;
- const eye=headMass(-1.47,1.25,s*2.19,.58,.12,.093,'eye',1);
+ const eye=headMass(-1.47,1.24,s*2.235,.51,.10,.11,'eye',1);
  eye.rotation.z=-.19;
  // Narrow vertical pupil sits on the illuminated slit instead of popping out.
- headMass(-1.57,1.25,s*2.31,.033,.10,.022,'black',1);
+ headMass(-1.57,1.25,s*2.34,.023,.09,.026,'black',1);
  rod([-1.94,1.37,s*2.27],[-1.38,1.43,s*2.25],.038,.018,'water',head,5);
  rod([-2.20,1.56,s*2.13],[-.51,1.73,s*1.88],.28,.11,'deep',head,6);
  rod([-2.16,1.64,s*2.16],[-1.15,1.71,s*2.06],.12,.025,'sky',head,5);
@@ -337,6 +344,57 @@ for(const side of [-1,1]){
        .17-.08*t,.07-.05*t,'horn',head,5);
  }
 }
+// Actual jagged, thick dragon-scale plates. Each is a beveled 3D polygon,
+// layered over the face and swept rearward toward the crests.
+const plateOutline=new THREE.Shape();
+plateOutline.moveTo(-.42,-.21);plateOutline.lineTo(-.28,.18);
+plateOutline.lineTo(.24,.29);plateOutline.lineTo(.57,-.10);
+plateOutline.lineTo(.02,-.28);plateOutline.closePath();
+const plateGeo=new THREE.ExtrudeGeometry(plateOutline,{depth:.16,steps:1,
+ bevelEnabled:true,bevelThickness:.035,bevelSize:.035,bevelSegments:1});
+plateGeo.translate(0,0,-.08);
+function armorPlate(x,y,z,sx,sy,shade,angle=0){
+ const m=mesh(plateGeo,shade,head);m.position.set(x,y,z);
+ m.scale.set(sx,sy,1);m.rotation.z=angle;return m;
+}
+for(const side of [-1,1]){
+ // Raised overlapping forehead armor slopes towards the nose,
+ // with darker colors framing the luminous dragon eye.
+ for(let row=0;row<6;row++){
+  for(let i=0;i<17;i++){
+   const x=-4.95+i*.25+(row%2)*.11;
+   const y=.60+row*.185+(i/17)*.19;
+   const width=.57+Math.min(1,(x+5)/3)*.62;
+   const z=side*(width+.16+row*.08);
+   if(x>-1.1&&row<2)continue;
+   let shade=(i+row)%7===0?'mint':(i+2*row)%5===0?'sky':row>3?'royal':'teal';
+   armorPlate(x,y,z,.57,.52,shade,-.14);
+  }
+ }
+ // Broad fin-like cheek whisker roots, layered from face to neck.
+ for(let i=0;i<12;i++){
+   const u=i/11,x=-.56+i*.25;
+   const y=.19+u*.53,z=side*(1.57+.17*Math.sin(u*Math.PI));
+   const p=armorPlate(x,y,z,1.15,1.15,i%4===0?'mint':i%2===0?'sky':'royal',.36);
+   p.rotation.y=side*.22;
+   const outer=[x+.63,y+.62+(i%3)*.12,z+side*(.32+i*.04)];
+   rod([x,y,z],outer,.17,.035,i%3===0?'mint':'teal',head,5);
+ }
+ // Lower jaw scallops overlap toward the chin, adding the beard silhouette.
+ for(let i=0;i<15;i++){
+  const u=i/14,x=-5.13+i*.285;
+  const y=-1.90+.10*Math.sin(u*Math.PI);
+  const z=side*(.57+.17*Math.sin(u*Math.PI));
+  armorPlate(x,y,z,.67,.58,i%4===0?'sky':i%3===0?'teal':'royal',-.24);
+ }
+}
+// Crown ridge is a continuous backwards sweep, not isolated needles.
+for(let i=0;i<32;i++){
+ const u=i/31,x=-1.60+i*.156;
+ const h=1.8+.85*Math.sin(u*Math.PI);
+ const z=Math.sin(i*1.4)*.45;
+ armorPlate(x,h,z,.70,1.05,i%5===0?'mint':i%2===0?'royal':'sky',.65);
+}
 // Forehead and mane flow rearwards in layered ultramarine, turquoise and cyan.
 for(let j=0;j<25;j++){
  const x=-.89+j*.15;
@@ -351,7 +409,7 @@ for(let row=0;row<4;row++)for(let i=0;i<38;i++){
  const end=[x+.42,y+.55+(i%5)*.16,z+s*(.45+Math.floor(row/2)*.21)];
  rod([x,y,z],end,.18,.020,(i+row)%3===0?'mint':i%2===0?'teal':'sky',head,4);
 }
-window.seiryuFaceVersion='v14-dragon-face'; 
+window.seiryuFaceVersion='v15-layered-dragon'; 
 // Muscular, articulated legs with three ivory hooks per claw.
 function legAt(t,sgn){
  const p=bodyPath.getPoint(t),frame=ringFrame(t),side=frame.side;
