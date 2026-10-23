@@ -305,9 +305,6 @@ for(let i=2;i<bodyN-2;i+=2){
   bone(a.toArray(),b.toArray(),.27,.015,i%8===0?'mint':'sky',root);
  }
 }
-for(const [name,v] of inst){
- if(v.g==='scale')v.g=TILE;
-}
 // Two and ONLY two forelegs; no hindlegs.
 const front=path.getPoint(.165),sideFrame=rings[18].right;
 for(const sign of [-1,1]){
