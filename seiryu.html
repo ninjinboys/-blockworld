@@ -220,50 +220,66 @@ loft([
  [-7.23,.33,.05,.15],[-6.58,.49,.10,.32],[-5.77,.68,.15,.44],
  [-4.55,.96,.20,.62],[-3.13,1.39,.24,.85],[-1.94,1.91,.14,.81]
 ],'royal');
-// Angled overlapping 3D facial scales follow the skull's anatomy. The old
-// smooth beak is deliberately replaced by layered lapis / turquoise armor.
-const facialInstances=new Map();
-function facialTile(kind,x,y,z,sx,sy,sz,ax=0,ay=0,az=0){
- if(!facialInstances.has(kind))facialInstances.set(kind,[]);
- const dummy=new THREE.Object3D();
- dummy.position.set(x,y,z);dummy.rotation.set(ax,ay,az);
- dummy.scale.set(sx,sy,sz);dummy.updateMatrix();
- facialInstances.get(kind).push(dummy.matrix.clone());
+// SURFACE-FITTED DRAGON ARMOR. Scales follow the exact cross-sections of
+// the skull, with overlapping surfaces rather than floating checker squares.
+const skullSections=[
+ [-7.30,.06,.07,.15],[-6.93,.18,.31,.34],[-6.20,.29,.43,.52],
+ [-5.20,.36,.56,.75],[-4.10,.56,.80,1.03],[-3.00,.83,1.03,1.31],
+ [-1.97,1.13,1.50,1.78],[-.90,1.05,1.62,1.92],
+ [.30,.63,1.50,1.83],[1.35,.35,1.22,1.55],[2.10,.14,.96,1.15]
+];
+function skullCross(x){
+ for(let i=0;i<skullSections.length-1;i++){
+  const a=skullSections[i],b=skullSections[i+1];
+  if(x>=a[0]&&x<=b[0]){
+   const t=(x-a[0])/(b[0]-a[0]);return a.slice(1).map((v,j)=>v*(1-t)+b[j+1]*t);
+  }
+ }
+ return skullSections[x<skullSections[0][0]?0:skullSections.length-1].slice(1);
 }
-// Dorsal rows fan outwards from a dark indigo median skull ridge.
-for(let col=0;col<29;col++){
- const x=-6.75+col*.205;
- const u=Math.max(0,Math.min(1,(x+6.75)/6.5));
- const spread=.20+u*1.21;
- const topY=.47+(x+6.75)*.30;
- for(let j=-3;j<=3;j++){
-  const z=j/3*spread*.92;
-  const y=topY-.14*Math.abs(j/3)**1.8+Math.sin(col*.36+j*.71)*.06;
-  const flow=Math.sin(col*.27+j*.44);
-  const color=j===0?'royal':
-    u<.32?(flow>.60?'royal':'blue'):
-    u<.60?(flow>.68?'turquoise':flow>.10?'royal':'blue'):
-    flow>.77?'sea':flow>-.05?'turquoise':'royal';
-  facialTile(color,x,y+.12,z,.39+.13*u,.40+.07*u,1.20,
-    -Math.PI/2+(j/3)*.21,0,-.12);
+const faceMatrices=new Map(),scalesNormal=new THREE.Vector3(0,0,1);
+const scalesDummy=new THREE.Object3D();
+function addFaceScale(x,angle,color,scaleX=.44,scaleY=.33){
+ const [cy,ry,rz]=skullCross(x);
+ const y=cy+Math.cos(angle)*(ry+.05),z=Math.sin(angle)*(rz+.08);
+ const norm=new THREE.Vector3(0,Math.cos(angle)/Math.max(.1,ry),Math.sin(angle)/Math.max(.1,rz)).normalize();
+ const rot=new THREE.Quaternion().setFromUnitVectors(scalesNormal,norm);
+ // The scale overlaps the next scale on its rearward (positive X) edge.
+ scalesDummy.position.set(x,y,z);
+ scalesDummy.quaternion.copy(rot);
+ scalesDummy.scale.set(scaleX,scaleY,1.0);
+ scalesDummy.updateMatrix();
+ if(!faceMatrices.has(color))faceMatrices.set(color,[]);
+ faceMatrices.get(color).push(scalesDummy.matrix.clone());
+}
+for(let ix=0;ix<43;ix++){
+ const x=-6.82+ix*.194;
+ const [cy,ry,rz]=skullCross(x);
+ for(let j=-6;j<=6;j++){
+  const theta=j/6*1.54+(ix%2? .047:0);
+  const v=Math.sin(ix*.30+theta*1.25);
+  const isTop=Math.abs(theta)<.47,isLower=Math.abs(theta)>.90;
+  // Keep both recessed cyan eyes uncovered by plate armor.
+  if(x>-3.08&&x<-1.30&&Math.abs(theta)>.54&&Math.abs(theta)<1.18)continue;
+  const shade=isTop?(v>.68?'sea':v>-.18?'royal':'blue'):
+   isLower?(v>.73?'sea':v>.12?'turquoise':'deep'):
+   v>.69?'ice':v>.20?'turquoise':v>-.58?'royal':'blue';
+  addFaceScale(x,theta,shade,.39+.11*Math.max(0,(x+6.8)/7),.34);
  }
 }
-// Two cheek curtains overlap in the direction of the whisker roots.
-// No scales are placed over the inset eye at y=1.17, x≈-2.2.
-for(const s of [-1,1])for(let row=0;row<5;row++)for(let col=0;col<20;col++){
- const x=-5.30+col*.247, u=Math.max(0,Math.min(1,(x+5.3)/5));
- const y=-.04+row*.235 + .10*u;
- if(x>-2.95&&y>.86)continue;
- const edge=.65+u*1.07+(row/5)*.11;
- const z=s*(edge+.055);
- const phase=Math.sin(col*.21+row*.43);
- const kind=phase>.84?'sea':phase>.19?'turquoise':phase>-.59?'royal':'deep';
- facialTile(kind,x,y,z,.41+.13*u,.40,.94,0,0,-.12);
+// The lower gill and cheek regions follow overlapping curved rows, not straight slabs.
+for(const s of [-1,1])for(let i=0;i<15;i++){
+ const x=-1.90+i*.225;
+ const cy=.42-.20*(i/15);
+ const z=s*(1.67+Math.sin(i/15*Math.PI)*.17);
+ const plate=cub(x,cy,z,.34,.21,.18,i%4===0?'ice':i%2===0?'turquoise':'royal',H);
+ plate.rotation.z=.18;
 }
-for(const [name,mats] of facialInstances){
- const im=new THREE.InstancedMesh(tile,mat[name],mats.length);
- for(let i=0;i<mats.length;i++)im.setMatrixAt(i,mats[i]);
- im.instanceMatrix.needsUpdate=true;im.frustumCulled=false;H.add(im);
+for(const [shade,matrixList] of faceMatrices){
+ const pieces=new THREE.InstancedMesh(tile,mat[shade],matrixList.length);
+ pieces.frustumCulled=false;
+ for(let j=0;j<matrixList.length;j++)pieces.setMatrixAt(j,matrixList[j]);
+ pieces.instanceMatrix.needsUpdate=true;H.add(pieces);
 }
 // 2 side jowls carry the thick armor, rather than plane of loose tiles.
 for(const s of [-1,1]){
@@ -278,6 +294,16 @@ loft([
  [-4.04,-2.92,.38,.82],[-2.91,-2.60,.43,.94],[-1.86,-1.91,.49,.97],
  [-.92,-1.16,.48,.92],[.12,-.43,.36,.70]
 ],'blue');
+// Pale lip ridges separate upper jaw from dark open mouth and connect
+// the jaws visually; the reference uses ivory framing around its roar.
+for(const s of [-1,1]){
+ tube([[-6.38,-.32,s*.25],[-5.46,-.39,s*.55],[-4.36,-.55,s*.78],
+ [-3.16,-.64,s*1.01],[-2.15,-.61,s*1.16],[-1.10,-.54,s*1.12]],
+ .085,'cream',H);
+ tube([[-5.85,-2.75,s*.40],[-4.78,-2.87,s*.70],[-3.54,-2.64,s*.85],
+ [-2.47,-2.26,s*1.0],[-1.27,-1.54,s*1.08]],
+ .074,'creamShade',H);
+}
 // Gape framed by ribs at hinged jaw, smaller details protected by geometry.
 for(const s of [-1,1]){
  rod([.05,-.13,s*.78],[-1.18,-1.25,s*.91],.34,.22,'deep',H);
@@ -286,16 +312,17 @@ for(const s of [-1,1]){
  rod([-4.73,-.02,s*.62],[-5.05,-1.42,s*.74],.24,.09,'fang',H);
  rod([-5.05,-1.42,s*.74],[-4.80,-1.89,s*.75],.09,.007,'fang',H);
  rod([-2.10,-.06,s*.98],[-2.34,-1.33,s*1.05],.18,.010,'fang',H);
- for(let j=0;j<5;j++){
-  const x=-5.93+j*.78;
+ for(let j=0;j<4;j++){
+  const x=-5.93+j*1.02;
   rod([x,-.12,s*(.36+j*.13)],[x-.04,-.67-(j%3)*.12,s*(.36+j*.13)],.10,.012,'fang',H);
   rod([x+.16,-2.84,s*(.37+j*.13)],[x+.15,-1.65,s*(.36+j*.13)],.10,.008,'fang',H);
  }
  // deep-set neon eye, shielded by a sharply sloped layered upper brow
- poly(-2.24,1.17,s*1.56,.75,.26,.21,'mouth',H,1);
- const eye=poly(-2.31,1.18,s*1.76,.43,.088,.08,'glow',H,1);eye.rotation.z=-.23;
- rod([-2.93,1.46,s*1.75],[-1.68,1.55,s*1.67],.18,.06,'deep',H);
- rod([-2.91,1.54,s*1.75],[-2.04,1.67,s*1.74],.075,.022,'ice',H);
+ poly(-2.30,1.19,s*1.82,.69,.23,.19,'mouth',H,1);
+ const eye=poly(-2.36,1.19,s*2.035,.43,.088,.11,'glow',H,1);eye.rotation.z=-.22;
+ poly(-2.43,1.20,s*2.16,.036,.08,.027,'navy',H,1);
+ rod([-2.99,1.50,s*1.97],[-1.65,1.56,s*1.93],.19,.054,'deep',H);
+ rod([-2.97,1.58,s*2.03],[-2.09,1.67,s*2.00],.07,.019,'ice',H);
  poly(-6.48,.33,s*.42,.15,.09,.07,'mouth',H,1);
  // Crown antlers: thick bony trunk, six asymmetric forks, rearward sweep.
  const horns=[
@@ -340,7 +367,7 @@ for(const s of [-1,1]){
 for(let j=0;j<30;j++){
  const x=-1.75+j*.17,z=Math.sin(j*.76)*.68;
  const y=2.14+.14*Math.sin(j*.42);
- leaf([x,y,z],[x+.86,y+.72+(j%3)*.15,z+.35],.34,
+ leaf([x,y,z],[x+.66,y+.51+(j%3)*.15,z+.31],.39,
  j%3===0?'ice':j%2?'royal':'turquoise',H);
 }
 // Exactly TWO forelegs: muscular bend and 3 visible hooked claws per foot.
@@ -424,7 +451,7 @@ function draw(){
  camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
  camera.lookAt(focus);renderer.render(scene,camera);
 }draw();
-window.seiryuModelRevision='sculpture-35-proportions';
+window.seiryuModelRevision='skull-surface36';
 
 </script>
 </body>
