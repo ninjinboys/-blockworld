@@ -202,8 +202,8 @@ function shell(cx,cy,cz,rx,ry,rz,step,kind){
   if(kind==='jaw'&&py>.19)continue;
   const jitter=Math.sin(x*4.11+y*11.79+z*7.83);
   let col=kind==='jaw'?(jitter>.47?'sky':jitter>-.10?'royal':'blue'):
-     kind==='muzzle'?(jitter>.41?'mint':jitter>-.18?'sky':jitter>-.68?'royal':'blue'):
-     jitter>.68?'mint':jitter>.25?'sky':jitter>-.16?'teal':jitter>-.61?'royal':'blue';
+     kind==='muzzle'?(jitter>.75?'mint':jitter>.40?'sky':jitter>-.15?'royal':'blue'):
+     jitter>.83?'mint':jitter>.54?'sky':jitter>.22?'teal':jitter>-.39?'royal':'deep';
   if(kind==='crown'&&py>ry*.65&&jitter>.15)col='mint';
   headVoxel(cx+px,cy+py,cz+pz,step*.94,step*.94,step*.94,col);
  }
@@ -252,10 +252,11 @@ for(const s of [-1,1]){
  // circular eyes looked like a cartoon animal rather than a guardian dragon.
  const sock=headMass(-1.37,1.24,s*1.96,.74,.26,.15,'deep',1);
  sock.rotation.z=-.18;
- const eye=headMass(-1.47,1.25,s*2.125,.53,.090,.073,'eye',1);
+ const eye=headMass(-1.47,1.25,s*2.19,.58,.12,.093,'eye',1);
  eye.rotation.z=-.19;
  // Narrow vertical pupil sits on the illuminated slit instead of popping out.
- headMass(-1.57,1.25,s*2.20,.050,.10,.023,'black',1);
+ headMass(-1.57,1.25,s*2.31,.033,.10,.022,'black',1);
+ rod([-1.94,1.37,s*2.27],[-1.38,1.43,s*2.25],.038,.018,'water',head,5);
  rod([-2.20,1.56,s*2.13],[-.51,1.73,s*1.88],.28,.11,'deep',head,6);
  rod([-2.16,1.64,s*2.16],[-1.15,1.71,s*2.06],.12,.025,'sky',head,5);
  rod([-2.02,.995,s*2.09],[-.95,1.018,s*2.01],.10,.028,'royal',head,5);
@@ -288,7 +289,10 @@ for(const s of [-1,1]){
  [[1.65,4.22,s*1.52],[2.81,4.87,s*1.80],.13,.01],
  [[.55,3.17,s*1.30],[.27,4.26,s*1.98],.16,.01],
  [[1.27,3.89,s*1.51],[1.38,4.91,s*2.20],.14,.01],
- [[1.80,4.32,s*1.65],[2.67,5.18,s*1.45],.11,.01]
+ [[1.80,4.32,s*1.65],[2.67,5.18,s*1.45],.11,.01],
+ [[1.89,4.37,s*1.64],[3.24,4.58,s*2.05],.115,.012],
+ [[.79,3.48,s*1.33],[.15,4.39,s*2.11],.14,.011],
+ [[2.05,4.49,s*1.50],[2.51,5.67,s*1.90],.10,.008]
  ];
  for(const [a,b,r1,r2] of antlers)rod(a,b,r1,r2,'horn',head,5);
  // Arc-shaped glowing whiskers: two natural strands from each muzzle corner.
@@ -347,7 +351,7 @@ for(let row=0;row<4;row++)for(let i=0;i<38;i++){
  const end=[x+.42,y+.55+(i%5)*.16,z+s*(.45+Math.floor(row/2)*.21)];
  rod([x,y,z],end,.18,.020,(i+row)%3===0?'mint':i%2===0?'teal':'sky',head,4);
 }
-window.seiryuFaceVersion='v13-dragon-face'; 
+window.seiryuFaceVersion='v14-dragon-face'; 
 // Muscular, articulated legs with three ivory hooks per claw.
 function legAt(t,sgn){
  const p=bodyPath.getPoint(t),frame=ringFrame(t),side=frame.side;
