@@ -68,7 +68,7 @@ jobs:
             }
             const bytes=fs.statSync('seiryu-skeleton-'+name+'.png').size;
             console.log('SKELETON_QA',JSON.stringify({name,w,h,bytes,...stats,errors}));
-            if(errors.length||!stats.gl||stats.count<150||stats.status!=='none'||stats.revision!=='ORIGINAL_ZERO_BASE_SKELETON_R61'||stats.anatomy?.legs!==2||stats.anatomy?.tails!==1||stats.anatomy?.oldRigReused!==false||bytes<15000)failed++;
+            if(errors.length||!stats.gl||stats.count<150||stats.status!=='none'||stats.revision!=='ORIGINAL_ZERO_BASE_SKELETON_R62_REBUILT_TORSO'||stats.anatomy?.legs!==2||stats.anatomy?.tails!==1||stats.anatomy?.oldRigReused!==false||bytes<15000)failed++;
             await page.close();
           }
           await browser.close();
