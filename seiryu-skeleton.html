@@ -191,22 +191,22 @@ for(let i=26;i<=75;i+=3){
  const r=f.r*(.87+.11*fullness);
  for(const s of [-1,1]){
    // paired ribs spring from each vertebra, bend down around real torso.
-   const A=f.p.clone().addScaledVector(f.dorsal,r*.43)
-      .addScaledVector(f.side,s*r*.17);
-   const B=f.p.clone().addScaledVector(f.dorsal,r*.63)
-      .addScaledVector(f.side,s*r*.68);
-   const C=f.p.clone().addScaledVector(f.dorsal,r*.06)
-      .addScaledVector(f.side,s*r*1.02);
-   const D=f.p.clone().addScaledVector(f.dorsal,-r*.74)
-      .addScaledVector(f.side,s*r*.62);
-   const E=f.p.clone().addScaledVector(f.dorsal,-r*.91)
-      .addScaledVector(f.side,s*r*.29);
-   bentBone([A,B,C,D,E],.145+fullness*.067,i%2?0:3);
+   const A=f.p.clone().addScaledVector(f.dorsal,r*.19)
+      .addScaledVector(f.side,s*r*.10);
+   const B=f.p.clone().addScaledVector(f.dorsal,r*.55)
+      .addScaledVector(f.side,s*r*.55);
+   const C=f.p.clone().addScaledVector(f.dorsal,r*.05)
+      .addScaledVector(f.side,s*r*1.09);
+   const D=f.p.clone().addScaledVector(f.dorsal,-r*.62)
+      .addScaledVector(f.side,s*r*.80);
+   const E=f.p.clone().addScaledVector(f.dorsal,-r*.77)
+      .addScaledVector(f.side,s*r*.37);
+   bentBone([A,B,C,D,E],.158+fullness*.061,i%2?0:3);
    joint(A,.12,1);
  }
 }
 // central sternum from mid chest to rear ribcage, short only
-for(let i=28;i<70;i+=3){
+for(let i=29;i<70;i+=3){
  const f=rings[i],a=f.p.clone().addScaledVector(f.dorsal,-f.r*.86);
  const g=rings[Math.min(spineSegments,i+3)],b=g.p.clone().addScaledVector(g.dorsal,-g.r*.86);
  stick(a,b,.075,.065,3);
@@ -214,6 +214,7 @@ for(let i=28;i<70;i+=3){
 // ==== 3. Head: articulated bone skull, open jaws, antlers ====================
 const head=new THREE.Group();
 head.name="SKULL_AND_ANTLERS";head.position.set(-12.00,8.54,.10);
+head.scale.set(1.13,1.11,1.10);
 root.add(head);
 function H(x,y,z){return V(x,y,z)}
 function hbone(a,b,w,mi=1){return bentBone(a,w,mi,head)}
@@ -304,8 +305,8 @@ for(const s of [-1,1]){
 const foreLegs=new THREE.Group();foreLegs.name="TWO_FORELEGS";root.add(foreLegs);
 for(const s of [-1,1]){
  const shoulder=V(-6.80,3.83,s*1.63);
- const elbow=V(-7.96,2.75,s*2.20);
- const wrist=V(-9.42,.92,s*2.85);
+ const elbow=V(s===1?-5.95:-8.55,2.70,s*2.20);
+ const wrist=V(s===1?-4.35:-10.30,.90,s*2.85);
  joint(shoulder,[.91,.83,.88],1,foreLegs,1);
  stick(shoulder,elbow,.49,.35,2,foreLegs,9);
  joint(elbow,[.47,.43,.44],0,foreLegs,1);
