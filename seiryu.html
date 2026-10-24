@@ -98,17 +98,18 @@ function fan(a,b,width,color,parent=dragon){
 // Named XYZ JOINTS explicitly control the silhouette (image left=head).
 // All skin, organs, limbs and whiskers depend on these nodes.
 const J={
- muzzle:V(-14.2,7.45,2.0),brow:V(-12.35,8.55,2.05),
- skull:V(-10.25,8.58,1.8),jawTip:V(-13.37,4.79,2.02),
+ muzzle:V(-15.5,7.20,2.0),brow:V(-13.15,8.40,2.05),
+ skull:V(-10.25,8.58,1.8),jawTip:V(-14.35,4.35,2.02),
  jawHinge:V(-9.63,6.83,1.79),
  throat:V(-8.44,5.96,1.65),chest:V(-7.18,3.85,1.42),
  shoulderL:V(-7.5,3.7,3.36),shoulderR:V(-7.5,3.7,-.54),
  frontBelly:V(-3.55,3.08,.76),
- backArch:V(1.3,8.38,-1.5),backTop:V(4.60,8.72,-2.30),
- secondDip:V(8.88,3.15,-.20),tailCoil:V(11.1,3.42,3.18),
+ backArch:V(1.25,7.22,-1.5),backTop:V(4.15,8.25,-2.30),
+ backShoulder:V(6.85,7.18,-2.14),secondDip:V(8.95,4.08,-.20),
+ tailCoil:V(11.1,3.42,3.18),
  tailRise:V(13.20,7.18,3.73),tailTip:V(15.80,10.75,1.25),
 };
-const backboneNames=['skull','throat','chest','frontBelly','backArch','backTop',
+const backboneNames=['skull','throat','chest','frontBelly','backArch','backTop','backShoulder',
  'secondDip','tailCoil','tailRise','tailTip'];
 const bodyPath=new THREE.CatmullRomCurve3(backboneNames.map(n=>J[n]),false,'catmullrom',.45);
 const radius=t=>t<.10?1.65+t*4.5:t<.48?2.10+Math.sin((t-.10)/.38*Math.PI)*.45:
@@ -131,6 +132,7 @@ for(const [name,p] of Object.entries(J)){
 }
 const rigTip=new THREE.CatmullRomCurve3([J.skull,J.chest,J.backArch,J.secondDip,J.tailTip]);
 const widths=[.2,.8,.9,.52,.06];
+const faceStartChildCount=dragon.children.length;
 // ---------------------------------- 2. SKULL AND MANDIBLE ----------------------------------
 // A custom non-cylindrical sectional head: broad skull + brow, compact snout.
 function loftX(frames,color,radial=24,parent=dragon){
@@ -231,6 +233,16 @@ for(const side of [-1,1]){
    fan(from,to,.41,i%4===0?'cyan':i%2===0?'ocean':'jade');
  }
 }
+// The head is one rigid joint-linked assembly. Scaling its geometry about
+// the skull anchor changes the anatomical proportion, not merely its camera zoom.
+const faceAnchor=J.skull.clone();
+const facialObjects=dragon.children.slice(faceStartChildCount);
+const faceRoot=new THREE.Group();faceRoot.position.copy(faceAnchor);
+for(const obj of facialObjects){
+  faceRoot.add(obj);
+  obj.position.sub(faceAnchor);
+}
+faceRoot.scale.setScalar(1.36);dragon.add(faceRoot);
 // ---------------------------------- 3. SKELETAL BODY ----------------------------------
 // Mesh is SKINNED TO A SINGLE CURVE THROUGH THE BONES above (no disconnected torus).
 const segments=140,sides=24,vertices=[],colors=[],indexes=[],frames=[];
@@ -344,7 +356,7 @@ grid.position.y=-3.18;scene.add(grid);
 dragon.updateMatrixWorld(true);
 const box=new THREE.Box3().setFromObject(dragon);
 const mid=box.getCenter(V(0,0,0)),dims=box.getSize(V(0,0,0));
-let yaw=-.23,pitch=.10,distance=48,focus=mid.clone(),spin=false,view='front';
+let yaw=-.39,pitch=.08,distance=48,focus=mid.clone(),spin=false,view='front';
 function fit(){
  const t=Math.tan(camera.fov*Math.PI/360),a=Math.max(camera.aspect,.45);
  return Math.min(115,Math.max(dims.x/(2*t*a),dims.y/(2*t))*1.13+dims.z*.40);
@@ -353,7 +365,7 @@ function setView(which){
  view=which;spin=false;
  document.getElementById('spin').classList.remove('active');
  document.getElementById('spin').textContent='自動回転 OFF';
- if(which==='front'){yaw=-.23;pitch=.09;focus.copy(mid);distance=fit()}
+ if(which==='front'){yaw=-.39;pitch=.08;focus.copy(mid);distance=fit()}
  if(which==='side'){yaw=0;pitch=.03;focus.copy(mid);distance=fit()}
  if(which==='back'){yaw=Math.PI+.04;pitch=.12;focus.copy(mid);distance=fit()}
  if(which==='head'){yaw=-.38;pitch=.04;focus.copy(J.skull).add(V(-2.7,-.5,.2));distance=camera.aspect<1.15?27:23}
@@ -403,7 +415,7 @@ function render(){
  camera.lookAt(focus);renderer.render(scene,camera);
 }
 render();
-window.seiryuModelRevision='SKELETON-RIG50';
+window.seiryuModelRevision='SKELETON-RIG51-PROPORTIONS';
 
 </script>
 </body>
