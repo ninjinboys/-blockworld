@@ -42,6 +42,12 @@ jobs:
               return {gl:!!gl,count:window.seiryuSkeletonMeshCount||0,status:document.getElementById('status').style.display,revision:window.seiryuSkeletonRevision,anatomy:window.seiryuAnatomy};
             });
             await page.screenshot({path:'seiryu-skeleton-'+name+'.png',animations:'disabled'});
+            if(name==='desktop'){
+              await page.locator('[data-view="profile"]').click();
+              await page.waitForTimeout(300);
+              await page.screenshot({path:'seiryu-skeleton-profile-desktop.png',animations:'disabled'});
+              await page.locator('[data-view="threequarter"]').click();
+            }
             if(name==='ipad'){
               await page.locator('[data-view="profile"]').click();
               await page.waitForTimeout(350);
@@ -62,7 +68,7 @@ jobs:
             }
             const bytes=fs.statSync('seiryu-skeleton-'+name+'.png').size;
             console.log('SKELETON_QA',JSON.stringify({name,w,h,bytes,...stats,errors}));
-            if(errors.length||!stats.gl||stats.count<150||stats.status!=='none'||stats.revision!=='ORIGINAL_ZERO_BASE_SKELETON_R60'||stats.anatomy?.legs!==2||stats.anatomy?.tails!==1||stats.anatomy?.oldRigReused!==false||bytes<15000)failed++;
+            if(errors.length||!stats.gl||stats.count<150||stats.status!=='none'||stats.revision!=='ORIGINAL_ZERO_BASE_SKELETON_R61'||stats.anatomy?.legs!==2||stats.anatomy?.tails!==1||stats.anatomy?.oldRigReused!==false||bytes<15000)failed++;
             await page.close();
           }
           await browser.close();
