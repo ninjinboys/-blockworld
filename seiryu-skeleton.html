@@ -107,92 +107,121 @@ function branch(pts,startRadius=.20,color=1,parent=root){
 // All anatomy below derives from NEW pose landmarks built for the supplied
 // osteology reference: upright neck, horizontally long expanded rib cage,
 // single raised S-tail. None of the previous skeleton's coordinates are reused.
+// R62 / COMPLETELY REBUILT TORSO, independent new geometry.
+// A single dorsal spinal axis with a physically CONNECTED rib basket.
+// No vestigial hanging spear-like "ribs" and no ribs along the actual tail.
 const landmark={
- neckTop:P(-12.0,10.1,.0),
- neckMiddle:P(-10.0,7.2,.1),
- breast:P(-8.1,5.15,.12),
- frontBelly:P(-5.3,4.42,.0),
- thoraxMid:P(-2.1,5.54,-.08),
- thoraxTop:P(1.20,8.15,-.21),
- thoraxBack:P(4.22,8.48,-.24),
- pelvisEnd:P(7.02,6.48,-.18),
- tailDip:P(10.26,3.76,.03),
- tailBend:P(13.56,4.03,.13),
- tailLift:P(16.37,7.24,.12),
- tailEnd:P(16.70,10.98,.12)
+ atlas:P(-11.62,10.17,0),
+ neckUpper:P(-10.38,8.31,0),
+ neckLower:P(-8.58,5.68,0),
+ shoulderRoot:P(-7.25,4.79,0),
+ chestFront:P(-5.66,4.93,-.02),
+ chestQuarter:P(-3.05,5.73,-.11),
+ thoraxCrest:P(.15,6.96,-.18),
+ thoraxRear:P(3.10,7.38,-.23),
+ tailRoot:P(5.85,7.05,-.21),
+ tailDescent:P(8.47,4.75,-.10),
+ tailTrough:P(10.82,3.92,.10),
+ tailCurl:P(13.57,4.83,.19),
+ tailUp:P(15.65,7.80,.16),
+ tailEnd:P(15.88,11.30,.10)
 };
-const spineControls=Object.values(landmark);
-const spine=new THREE.CatmullRomCurve3(spineControls,false,'catmullrom',.48);
-const COUNT=112, spineFrames=[];
+const spine=new THREE.CatmullRomCurve3(Object.values(landmark),false,'catmullrom',.47);
+const COUNT=150,spineFrames=[];
 for(let i=0;i<=COUNT;i++){
- const t=i/COUNT;
- const pos=spine.getPoint(t),tan=spine.getTangent(t).normalize();
- // Back/up oriented in local sagittal plane, ALWAYS roughly world-up for thorax.
+ const t=i/COUNT,p=spine.getPoint(t),tan=spine.getTangent(t).normalize();
+ // Upward-looking vertebrae. Local dorsal normals never flip at tail bends.
  let dorsal=P(-tan.y,tan.x,0).normalize();
  if(dorsal.y<0)dorsal.negate();
- spineFrames.push({t,pos,tan,dorsal,side:Z.clone()});
+ const f={index:i,t,pos:p,tan,dorsal,side:Z.clone()};spineFrames.push(f);
  if(i){
-  const pre=spineFrames[i-1].pos;
-  bone(pre,pos,t<.80?.22:.14,t<.80?.20:.055,i%9===0?1:0);
+  const pre=spineFrames[i-1];
+  const thickness=t<.67?.24:Math.max(.058,.23*(1-t)/.33);
+  bone(pre.pos,p,thickness,thickness*.96,i%9===0?1:0);
  }
 }
-// Real vertebrae: centra and paired transverse processes, no ribs on tail.
-for(let i=2;i<COUNT-2;i+=2){
- const f=spineFrames[i],t=f.t,waist=t<.80?1.0:Math.max(.27,(1-t)*4.7);
- const o=ball(f.pos,[.34*waist,.27*waist,.36*waist],i%7===0?1:0,root,0);
- o.quaternion.setFromUnitVectors(Y,f.tan);
- if(i%3===0){
-   const base=f.pos.clone().addScaledVector(f.dorsal,.21);
-   const tip=base.clone().addScaledVector(f.dorsal,(t<.70?.68:.37)*waist)
-     .addScaledVector(f.tan,-.20);
-   bone(base,tip,.16*waist,.012,1);
-   for(const s of [-1,1]){
-    bone(f.pos,f.pos.clone().addScaledVector(Z,s*.43*waist),
-      .15*waist,.021,2);
-   }
+// True segmented spine. Cervical, thoracic, and caudal vertebrae have distinct proportions.
+for(let i=2;i<COUNT-1;i+=3){
+ const f=spineFrames[i],t=f.t,section=t<.23?0:t<.67?1:2;
+ const radius=section===0?.32:section===1?.37:Math.max(.11,.33*(1-t)/.33);
+ const centrum=ball(f.pos,[radius*1.2,radius*.82,radius],i%4===0?1:0,root,0);
+ centrum.quaternion.setFromUnitVectors(Y,f.tan);
+ if(section!==2){
+  const length=section===0?.60:.82;
+  const base=f.pos.clone().addScaledVector(f.dorsal,.15);
+  const apex=base.clone().addScaledVector(f.dorsal,length).addScaledVector(f.tan,-.22);
+  curved([base,base.clone().lerp(apex,.47),apex],section===0?.17:.21,1,root,.09);
+  for(const s of [-1,1]){
+    const transverse=f.pos.clone().addScaledVector(Z,s*(section===0?.38:.56));
+    bone(f.pos,transverse,.145,.022,2);
+  }
+ }else if(i%2===0){
+  const process=f.pos.clone().addScaledVector(f.dorsal,.31*(1-t)/.33);
+  bone(f.pos,process,Math.max(.045,radius*.46),.012,1);
+  for(const s of [-1,1]){
+   const p=f.pos.clone().addScaledVector(Z,s*.36*(1-t)/.33);
+   bone(f.pos,p,Math.max(.055,radius*.47),.014,2);
+  }
  }
 }
-// Neck spinous processes are prominent individually and oriented backward.
-for(let i=5;i<29;i+=2){
- const f=spineFrames[i];
- const from=f.pos.clone().addScaledVector(f.dorsal,.16);
- const to=from.clone().addScaledVector(f.dorsal,.78)
-                   .addScaledVector(f.tan,-.37);
- curved([from,from.clone().lerp(to,.53),to],.19,1,root,.12);
- for(const s of [-1,1]){
-  const sideTip=f.pos.clone().addScaledVector(Z,s*.48)
-          .addScaledVector(f.dorsal,-.17);
-  bone(f.pos,sideTip,.16,.013,2);
+// Thorax anatomical stations use measured backbone positions, not arbitrary t range.
+// Rib ends connect to one keel and turn sideways around a wide, long chest.
+const stations=[];
+for(let x=-6.95;x<=5.22;x+=.62){
+ let pick=null,d=Infinity;
+ for(let i=20;i<115;i++){
+  const f=spineFrames[i];
+  if(f.pos.x < -7.45||f.pos.x>5.70)continue;
+  const delta=Math.abs(f.pos.x-x);
+  if(delta<d){d=delta;pick=f;}
+ }
+ if(!pick)continue;
+ const u=Math.max(0,Math.min(1,(x+6.95)/12.17));
+ // Wide chest in the middle, tapered shoulders and tail root.
+ const bloom=Math.pow(Math.sin(Math.PI*(.06+u*.87)),.60);
+ const width=1.02+2.14*bloom;
+ const depth=1.43+2.24*bloom;
+ // Cartilaginous keel is central, directly UNDER the dorsal spine.
+ const sternum=pick.pos.clone().add(P(.64,-depth,.0));
+ stations.push({x,u,spine:pick.pos.clone(),width,depth,sternum});
+}
+// One continuous ventral sternum: joins LOWER ENDS of every rib pair.
+// This is the missing structural feature in the former comb-shaped torso.
+const keelPath=stations.map(s=>s.sternum);
+curved(keelPath,.17,4,root,.82);
+for(let i=0;i<stations.length;i++){
+ const s=stations[i];
+ const t=s.u,back=t>.72;
+ // Extend ribs backwards slightly to make a sculpted, swept-back cage.
+ const sweep=back?.48:.29;
+ for(const sign of [-1,1]){
+  const A=s.spine.clone().add(P(0,.03,sign*.13));
+  const B=s.spine.clone().add(P(-.13,.22,sign*s.width*.65));
+  const C=s.spine.clone().add(P(.01,-s.depth*.30,sign*s.width*1.02));
+  const D=s.spine.clone().add(P(sweep,-s.depth*.72,sign*s.width*.82));
+  const E=s.sternum.clone().add(P(0,.04,sign*.22));
+  // Thick C-shaped rib that curls toward shared ventral sternum.
+  curved([A,B,C,D,E],(.155+.055*Math.sin(Math.PI*t)),i%3===0?1:0,root,.65);
+  // Actual bony articulation at the spine and cartilage at keel.
+  ball(A,[.19,.16,.18],1,root,0);
+  bone(E,s.sternum,.11,.09,3);
+  ribs++;
  }
 }
-// Rib cage is a LONG ORGANIC BASKET covering only thorax, not neck or tail.
-// Each rib is a U-shaped shaft from spine down the flank to the lower sternum.
-const ribStart=25,ribEnd=72,ribStep=3;
-for(let i=ribStart;i<=ribEnd;i+=ribStep){
- const u=(i-ribStart)/(ribEnd-ribStart);
- const f=spineFrames[i],amp=Math.pow(Math.sin(Math.PI*(u*.92+.035)),.55);
- const breadth=1.30+1.75*amp;
- const drop=1.25+2.15*amp;
- for(const s of [-1,1]){
-  const A=f.pos.clone().addScaledVector(f.dorsal,.06);
-  const B=f.pos.clone().addScaledVector(Z,s*breadth*.60)
-    .addScaledVector(f.dorsal,.37).addScaledVector(f.tan,-.28);
-  const C=f.pos.clone().addScaledVector(Z,s*breadth)
-    .addScaledVector(Y,-drop*.38).addScaledVector(f.tan,.04);
-  const D=f.pos.clone().addScaledVector(Z,s*breadth*.77)
-    .addScaledVector(Y,-drop*.82).addScaledVector(f.tan,.46);
-  const E=f.pos.clone().addScaledVector(Z,s*breadth*.35)
-    .addScaledVector(Y,-drop*.99).addScaledVector(f.tan,.61);
-  curved([A,B,C,D,E],.15+.080*amp,i%2===0?1:0,root,.38);
-  ball(A,[.20,.17,.18],1,root,0);ribs++;
+// Costal bridges create lateral cage continuity, rather than floating isolated arcs.
+for(const sign of [-1,1]){
+ const cross=[];
+ for(let i=0;i<stations.length;i+=2){
+  const s=stations[i];
+  cross.push(s.spine.clone().add(P(.18,-s.depth*.72,sign*s.width*.82)));
  }
+ curved(cross,.07,2,root,.35);
 }
-// Short bony ventral sternum, no unnecessary secondary skeleton branch.
-for(let i=30;i<64;i+=4){
- const a=spineFrames[i],b=spineFrames[i+4];
- const pa=a.pos.clone().addScaledVector(Y,-2.55);
- const pb=b.pos.clone().addScaledVector(Y,-2.55);
- bone(pa,pb,.083,.079,4);
+// Clavicle/scapular socket is fused into the front 3D rib basket.
+for(const sign of [-1,1]){
+ const shoulder=P(-7.85,5.02,sign*1.42);
+ const near=P(-6.65,4.93,sign*1.35);
+ curved([shoulder,P(-7.33,5.51,sign*1.74),near],.28,0,root,.62);
 }
 // New dragon skull generated from cranial architectural plates and voids,
 // never from stacked crocodile-shaped ellipsoids or previous skull algorithm.
@@ -362,8 +391,8 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='ORIGINAL_ZERO_BASE_SKELETON_R61';
-window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false};
+window.seiryuSkeletonRevision='ORIGINAL_ZERO_BASE_SKELETON_R62_REBUILT_TORSO';
+window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
  new GLTFExporter().parse(root,buffer=>{
