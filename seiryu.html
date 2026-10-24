@@ -30,415 +30,380 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#09131d;col
 <div class="top"><div><div class="brand">NEXACRAFT · GUARDIAN BEAST</div><div class="name">青龍 <span style="font-size:.49em;color:#9fd5e1">SEIRYU</span></div><div class="sub">AZURE DRAGON / 3D VOXEL MODEL</div></div><div class="pill"><span class="dot"></span> REAL 3D</div></div>
 <div id="status">青龍の詳細3Dモデルを読み込み中…</div>
 <div class="note">ドラッグで回転 · ピンチ/スクロールで拡大縮小</div>
-<div class="tools"><button data-view="front">斜め</button><button data-view="side">側面</button><button data-view="back">背面</button><button data-view="head">顔アップ</button><button id="zoomout">－</button><button id="zoomin">＋</button><button id="spin" class="active">自動回転 ON</button></div>
+<div class="tools"><button data-view="front">斜め</button><button data-view="side">側面</button><button data-view="back">背面</button><button data-view="head">顔アップ</button><button id="rig">骨格確認</button><button id="zoomout">－</button><button id="zoomin">＋</button><button id="spin" class="active">自動回転 ON</button></div>
 <script type="module">
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
-// NEXACRAFT / SEIRYU – SCULPTURE REBUILD 30. All previous model geometry is removed.
+// R50 - THE SKELETON IS THE SOURCE OF TRUTH. New pose; no legacy head/torso meshes.
 const canvas=document.getElementById('stage');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));
 renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x090e17);
-scene.fog=new THREE.Fog(0x090e17,68,125);
-const camera=new THREE.PerspectiveCamera(44,innerWidth/innerHeight,.1,180);
-const hemi=new THREE.HemisphereLight(0xb8edff,0x16202e,1.48);scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xe1f6ff,3.6);sun.position.set(-16,24,24);scene.add(sun);
-const fill=new THREE.DirectionalLight(0x159ed5,2.30);fill.position.set(14,12,-19);scene.add(fill);
-const light=new THREE.PointLight(0x2df7f8,32,41);light.position.set(-17,9,12);scene.add(light);
-const mat={
-navy:new THREE.MeshStandardMaterial({color:0x07183d,roughness:.72}),
-deep:new THREE.MeshStandardMaterial({color:0x102c75,roughness:.64,metalness:.03}),
-blue:new THREE.MeshStandardMaterial({color:0x124fa6,roughness:.56,metalness:.04}),
-royal:new THREE.MeshStandardMaterial({color:0x246fc5,roughness:.49,metalness:.09}),
-turquoise:new THREE.MeshStandardMaterial({color:0x138f9e,roughness:.49}),
-sea:new THREE.MeshStandardMaterial({color:0x2badc5,roughness:.49}),
-ice:new THREE.MeshStandardMaterial({color:0x72dae4,roughness:.43}),
-cream:new THREE.MeshStandardMaterial({color:0xd5c3a8,roughness:.81}),
-creamShade:new THREE.MeshStandardMaterial({color:0xa99e8e,roughness:.86}),
-antler:new THREE.MeshStandardMaterial({color:0xae967b,roughness:.87}),
-fang:new THREE.MeshStandardMaterial({color:0xece7d9,roughness:.48}),
-mouth:new THREE.MeshStandardMaterial({color:0x092635,roughness:.91,side:THREE.DoubleSide}),
-tongue:new THREE.MeshStandardMaterial({color:0x0f8194,roughness:.72}),
-glow:new THREE.MeshBasicMaterial({color:0x76ffff}),
-whisker:new THREE.MeshStandardMaterial({color:0x9dfbff,emissive:0x117eaa,emissiveIntensity:.64,roughness:.29}),
-cloud:new THREE.MeshStandardMaterial({color:0x8dd3fa,roughness:.3,transparent:true,opacity:.68,depthWrite:false}),
-cloudEdge:new THREE.MeshStandardMaterial({color:0x4dbbea,transparent:true,opacity:.70,depthWrite:false}),
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x070f18);
+scene.fog=new THREE.Fog(0x070f18,70,150);
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,200);
+scene.add(new THREE.HemisphereLight(0xa8d9ff,0x23313c,1.6));
+const sun=new THREE.DirectionalLight(0xdff5ff,3.1);sun.position.set(-20,25,20);scene.add(sun);
+const rim=new THREE.DirectionalLight(0x1a84d5,2.1);rim.position.set(16,13,-22);scene.add(rim);
+const groundLight=new THREE.PointLight(0x21e1f6,19,37);groundLight.position.set(-11,8,9);scene.add(groundLight);
+const paint={
+ abyss:0x081d42,indigo:0x10376f,cobalt:0x1457aa,azure:0x267cbd,
+ ocean:0x178e9f,jade:0x39bcb7,cyan:0x77d9f1,
+ belly:0xc8b9a4,bellyDark:0x978c7e,horn:0xb5a085,
+ tooth:0xece1cb,throat:0x071c25,cloud:0x8cc8ee
 };
+const materials={};
+for(const [k,v] of Object.entries(paint)){
+ materials[k]=new THREE.MeshStandardMaterial({color:v,roughness:k==='horn'?.84:.63,
+ metalness:k==='cyan'?.12:.02,side:THREE.DoubleSide});
+}
+materials.eye=new THREE.MeshBasicMaterial({color:0x71fcff});
+materials.water=new THREE.MeshStandardMaterial({color:0x6df8ff,emissive:0x167da5,emissiveIntensity:.5});
+materials.cloud.transparent=true;materials.cloud.opacity=.60;materials.cloud.depthWrite=false;
 const dragon=new THREE.Group();scene.add(dragon);
-const V=(x,y,z)=>new THREE.Vector3(x,y,z);
-const UP=V(0,1,0);
-function mesh(g,m,parent=dragon){const o=new THREE.Mesh(g,mat[m]||m);parent.add(o);return o}
-function cub(x,y,z,w,h,d,m,parent=dragon){const o=mesh(new THREE.BoxGeometry(w,h,d),m,parent);o.position.set(x,y,z);return o}
-function poly(x,y,z,sx,sy,sz,m,parent=dragon,detail=0){
- const o=mesh(new THREE.IcosahedronGeometry(1,detail),m,parent);
- o.position.set(x,y,z);o.scale.set(sx,sy,sz);return o;
+const V=(x,y,z)=>new THREE.Vector3(x,y,z), UP=V(0,1,0);
+function part(g,color,parent=dragon){
+ const m=new THREE.Mesh(g,materials[color]);parent.add(m);return m;
 }
-function rod(a,b,r0,r1,m,parent=dragon,sides=7){
- a=Array.isArray(a)?new THREE.Vector3(...a):a;b=Array.isArray(b)?new THREE.Vector3(...b):b;
- const d=b.clone().sub(a),o=mesh(new THREE.CylinderGeometry(r1,r0,d.length(),sides),m,parent);
- o.position.copy(a).add(b).multiplyScalar(.5);
- o.quaternion.setFromUnitVectors(UP,d.normalize());return o;
+function mass(pos,r,color,detail=1,parent=dragon){
+ const m=part(new THREE.IcosahedronGeometry(1,detail),color,parent);
+ m.position.copy(pos);m.scale.set(...r);return m;
 }
-function tube(arr,r,m,parent=dragon){return mesh(new THREE.TubeGeometry(
- new THREE.CatmullRomCurve3(arr.map(v=>Array.isArray(v)?new THREE.Vector3(...v):v)),52,r,6,false),m,parent)}
-// Broad feather-shaped voxel fins, not thin cylinders. Reusable on body,
-// cheek, crown and tail. Each leaf is fully 3D with bevelled thickness.
-function leaf(a,b,width,m,parent=dragon){
- a=Array.isArray(a)?V(...a):a;b=Array.isArray(b)?V(...b):b;
- const delta=b.clone().sub(a),length=delta.length();
- const s=new THREE.Shape();
- s.moveTo(-width*.33,0);s.lineTo(-width*.52,length*.25);
- s.lineTo(-width*.38,length*.67);s.lineTo(.03,length);
- s.lineTo(width*.50,length*.73);s.lineTo(width*.56,length*.24);
- s.lineTo(width*.29,0);s.closePath();
- const g=new THREE.ExtrudeGeometry(s,{depth:.12,steps:1,bevelEnabled:true,
- bevelThickness:.04,bevelSize:.04,bevelSegments:1});
- g.translate(0,0,-.06);
- const o=mesh(g,m,parent);o.position.copy(a);
- o.quaternion.setFromUnitVectors(UP,delta.normalize());
- return o;
+function stick(a,b,r0,r1,color,parent=dragon,sides=7){
+ const d=b.clone().sub(a),len=d.length();
+ if(len<.0001)return;
+ const mesh=part(new THREE.CylinderGeometry(r1,r0,len,sides),color,parent);
+ mesh.position.copy(a).add(b).multiplyScalar(.5);
+ mesh.quaternion.setFromUnitVectors(UP,d.normalize());
+ return mesh;
 }
-function ribbon(a,b,c,d,material,parent=dragon){
+function strand(points,width,color,parent=dragon){
+ return part(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),40,width,6,false),color,parent);
+}
+function fan(a,b,width,color,parent=dragon){
+ const length=b.distanceTo(a);
+ const outline=new THREE.Shape();outline.moveTo(-width*.18,0);
+ outline.lineTo(-width*.54,length*.25);outline.lineTo(-width*.45,length*.70);
+ outline.lineTo(0,length);outline.lineTo(width*.51,length*.72);
+ outline.lineTo(width*.55,length*.24);outline.lineTo(width*.17,0);outline.closePath();
+ const geo=new THREE.ExtrudeGeometry(outline,{depth:.15,bevelEnabled:true,
+ bevelSize:.035,bevelThickness:.035,bevelSegments:1,steps:1});
+ geo.translate(0,0,-.075);
+ const m=part(geo,color,parent);
+ m.position.copy(a);m.quaternion.setFromUnitVectors(UP,b.clone().sub(a).normalize());
+ return m;
+}
+// ---------------------------------- 1. ACTUAL POSE RIG ----------------------------------
+// Named XYZ JOINTS explicitly control the silhouette (image left=head).
+// All skin, organs, limbs and whiskers depend on these nodes.
+const J={
+ muzzle:V(-14.2,7.45,2.0),brow:V(-12.35,8.55,2.05),
+ skull:V(-10.25,8.58,1.8),jawTip:V(-13.37,4.79,2.02),
+ jawHinge:V(-9.63,6.83,1.79),
+ throat:V(-8.44,5.96,1.65),chest:V(-7.18,3.85,1.42),
+ shoulderL:V(-7.5,3.7,3.36),shoulderR:V(-7.5,3.7,-.54),
+ frontBelly:V(-3.55,3.08,.76),
+ backArch:V(1.3,8.38,-1.5),backTop:V(4.60,8.72,-2.30),
+ secondDip:V(8.88,3.15,-.20),tailCoil:V(11.1,3.42,3.18),
+ tailRise:V(13.20,7.18,3.73),tailTip:V(15.80,10.75,1.25),
+};
+const backboneNames=['skull','throat','chest','frontBelly','backArch','backTop',
+ 'secondDip','tailCoil','tailRise','tailTip'];
+const bodyPath=new THREE.CatmullRomCurve3(backboneNames.map(n=>J[n]),false,'catmullrom',.45);
+const radius=t=>t<.10?1.65+t*4.5:t<.48?2.10+Math.sin((t-.10)/.38*Math.PI)*.45:
+ t<.71?2.05-.24*((t-.48)/.23):Math.max(.21,1.81*(1-(t-.71)/.29));
+const debug=new THREE.Group();scene.add(debug);debug.visible=false;
+const bones=[['muzzle','brow'],['brow','skull'],['skull','jawHinge'],
+ ['jawTip','jawHinge'],...backboneNames.slice(1).map((n,i)=>[backboneNames[i],n]),
+ ['chest','shoulderL'],['chest','shoulderR']];
+const boneMat=new THREE.MeshBasicMaterial({color:0x5bf6ff,depthTest:false});
+for(const [a,b] of bones){
+ const A=J[a],B=J[b],d=B.clone().sub(A);
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,d.length(),8),boneMat);
+ m.position.copy(A).add(B).multiplyScalar(.5);
+ m.quaternion.setFromUnitVectors(UP,d.normalize());debug.add(m);
+}
+for(const [name,p] of Object.entries(J)){
+ const m=new THREE.Mesh(new THREE.SphereGeometry(.22,9,6),
+ new THREE.MeshBasicMaterial({color:name.includes('shoulder')?0xffd477:0x6df8ff,depthTest:false}));
+ m.position.copy(p);debug.add(m);
+}
+const rigTip=new THREE.CatmullRomCurve3([J.skull,J.chest,J.backArch,J.secondDip,J.tailTip]);
+const widths=[.2,.8,.9,.52,.06];
+// ---------------------------------- 2. SKULL AND MANDIBLE ----------------------------------
+// A custom non-cylindrical sectional head: broad skull + brow, compact snout.
+function loftX(frames,color,radial=24,parent=dragon){
+ const vert=[],tri=[];
+ frames.forEach(f=>{
+  for(let i=0;i<radial;i++){
+   const a=i*2*Math.PI/radial;
+   vert.push(f.x,f.y+Math.cos(a)*f.h,f.z+Math.sin(a)*f.w);
+  }
+ });
+ for(let i=0;i<frames.length-1;i++)for(let j=0;j<radial;j++){
+  const a=i*radial+j,b=i*radial+(j+1)%radial,c=(i+1)*radial+j,d=(i+1)*radial+(j+1)%radial;
+  tri.push(a,c,b,b,c,d);
+ }
  const g=new THREE.BufferGeometry();
- const v=[...a,...b,...c,...a,...c,...d];g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
- g.computeVertexNormals();
- const m=mat[material].clone();m.side=THREE.DoubleSide;return mesh(g,m,parent);
+ g.setAttribute('position',new THREE.Float32BufferAttribute(vert,3));g.setIndex(tri);
+ g.computeVertexNormals();return part(g,color,parent);
 }
-// SEIRYU REBUILD R40: fresh anatomy, face-first rather than a long crocodile skull.
-// The shapes below DO NOT reuse the previous skull, jaw, scales, antlers, spine or limbs.
-const BONE_AXIS=new THREE.Vector3(0,1,0);
-function volume(pos,dimensions,color,detail=1,parent=dragon){
-  const m=poly(...pos,...dimensions,color,parent,detail);return m;
-}
-function skinLoft(sections,color,parent=dragon,radial=20){
-  const vertices=[],indices=[];
-  for(const s of sections){
-    for(let j=0;j<radial;j++){
-      const a=2*Math.PI*j/radial;
-      vertices.push(s[0],s[1]+s[2]*Math.cos(a),s[3]*Math.sin(a));
-    }
-  }
-  for(let i=0;i<sections.length-1;i++)for(let j=0;j<radial;j++){
-    let x=i*radial+j,y=i*radial+(j+1)%radial,z=(i+1)*radial+j,w=(i+1)*radial+(j+1)%radial;
-    indices.push(x,z,y,y,z,w);
-  }
-  const g=new THREE.BufferGeometry();
-  g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-  g.setIndex(indices);g.computeVertexNormals();
-  const m=mat[color].clone();m.side=THREE.DoubleSide;return mesh(g,m,parent);
-}
-// True cranial anatomy: short broad head, massive cheekbones, separated roaring jaw.
-const head=new THREE.Group();head.position.set(-10.7,8.8,1.05);
-head.scale.set(1.58,1.62,1.58);dragon.add(head);
-const skull=[
- [-4.95,-.18,.12,.18],[-4.60,-.13,.35,.43],[-4.00,-.02,.48,.61],
- [-3.32,.12,.59,.81],[-2.72,.36,.77,1.12],
- [-2.18,.62,1.09,1.41],[-1.44,.87,1.52,1.72],
- [-.51,.91,1.70,1.85],[.46,.79,1.62,1.87],
- [1.27,.52,1.43,1.66],[1.92,.24,1.15,1.38],[2.35,.06,.71,.91]
+const skullFrames=[
+ {x:-14.5,y:7.42,z:2,w:.06,h:.10},
+ {x:-14.0,y:7.49,z:2,w:.48,h:.38},
+ {x:-13.2,y:7.65,z:2,w:.72,h:.48},
+ {x:-12.5,y:7.98,z:2,w:.98,h:.64},
+ {x:-11.7,y:8.43,z:2,w:1.35,h:.94},
+ {x:-10.9,y:8.63,z:2,w:1.73,h:1.36},
+ {x:-10.1,y:8.54,z:1.9,w:1.90,h:1.58},
+ {x:-9.28,y:8.14,z:1.84,w:1.73,h:1.38},
+ {x:-8.69,y:7.47,z:1.74,w:1.30,h:.97},
 ];
-skinLoft(skull,'deep',head,24);
-// Crest and snout give a faceted dragon-brow, NOT an extra long flat muzzle.
-skinLoft([[-4.78,.19,.05,.17],[-4.30,.33,.12,.34],
- [-3.70,.52,.17,.51],[-3.00,.74,.17,.74],
- [-2.22,1.14,.26,1.12],[-1.35,1.65,.24,1.34],
- [-.60,1.84,.14,1.08]],'blue',head,12);
-for(const side of [-1,1]){
-  // Tapered cheek masses are embedded in the skull, not two round balls.
-  const cheek=volume([-.56,.50,side*.89],[1.12,.87,.67],'deep',1,head);
-  cheek.rotation.y=side*.15;
-  volume([-2.02,.24,side*.74],[.92,.57,.41],'royal',1,head);
-  // Swept cheek armor plates blend muzzle into the jaw hinge.
-  for(let i=0;i<8;i++){
-    const t=i/7,x=-1.8+t*2.05;
-    const p=volume([x,.10+t*.34,side*(1.13+t*.18)],
-      [.36,.30,.20],i%3===0?'turquoise':i%2===0?'royal':'blue',0,head);
-    p.rotation.z=.2;
-  }
-}
-// A substantial roaring mouth, with deep opening and downward-moving lower jaw.
-volume([-2.04,-.95,0],[2.12,.60,.78],'mouth',2,head);
-volume([-2.65,-1.53,0],[1.27,.19,.42],'tongue',1,head);
-const mandible=[
- [-4.59,-2.39,.16,.31],[-4.18,-2.56,.32,.49],
- [-3.53,-2.62,.42,.75],[-2.72,-2.49,.49,.93],
- [-1.93,-2.21,.52,1.02],[-1.20,-1.74,.49,1.09],
- [-.50,-1.11,.54,1.12],[.13,-.52,.42,.96],
- [.66,-.05,.30,.72]
+loftX(skullFrames,'indigo');
+// Angular arched upper brow and brow-to-muzzle ridge (NOT elongated crocodile slab)
+loftX([
+ {x:-14.3,y:7.85,z:2,w:.09,h:.08},
+ {x:-13.58,y:8.17,z:2,w:.47,h:.14},
+ {x:-12.65,y:8.66,z:2,w:.72,h:.18},
+ {x:-11.73,y:9.14,z:2,w:1.06,h:.26},
+ {x:-10.98,y:9.61,z:1.95,w:1.22,h:.33},
+ {x:-10.14,y:9.62,z:1.9,w:1.19,h:.29}
+],'cobalt',16);
+// Jaw two separate arms with a huge BLACK mouth cavity, not a flat lower plank.
+const lower=[
+ {x:-13.80,y:4.83,z:2.01,w:.16,h:.17},
+ {x:-13.27,y:4.66,z:2.01,w:.45,h:.30},
+ {x:-12.54,y:4.65,z:2,w:.66,h:.32},
+ {x:-11.82,y:4.92,z:1.98,w:.82,h:.41},
+ {x:-10.94,y:5.50,z:1.89,w:1.11,h:.51},
+ {x:-10.04,y:6.48,z:1.81,w:1.19,h:.55},
+ {x:-9.65,y:6.92,z:1.79,w:.91,h:.48}
 ];
-skinLoft(mandible,'blue',head,20);
+mass(V(-12.1,6.11,2),[2.08,.68,.59],'throat',2);
+mass(V(-10.7,6.86,1.96),[1.05,.80,.89],'throat',1);
+loftX(lower,'cobalt',20);
+mass(V(-13.24,4.70,2.05),[.51,.28,.65],'azure',1);
+mass(V(-12.40,5.04,2.04),[.76,.15,.47],'ocean',1);
 for(const side of [-1,1]){
-  // Solid jaw muscles and jaw rim keep the mouth from looking detached.
-  rod([.52,-.04,side*.84],[-.56,-1.05,side*1.02],.46,.32,'deep',head);
-  rod([-.56,-1.05,side*1.02],[-1.61,-1.95,side*.97],.30,.17,'royal',head);
-  tube([[-4.47,-.53,side*.25],[-3.62,-.65,side*.55],
-    [-2.56,-.75,side*.89],[-1.58,-.79,side*1.15],[-.44,-.72,side*1.31]],
-    .13,'cream',head);
-  tube([[-4.24,-2.30,side*.31],[-3.52,-2.43,side*.68],
-    [-2.70,-2.26,side*.88],[-1.70,-1.89,side*1.02],
-    [-.55,-1.05,side*1.11]],.11,'creamShade',head);
-  // Four prominent hooked canines per view, fine teeth remain subordinate.
-  for(const [x,y,z,r] of [[-3.82,-.44,.50,.21],[-1.82,-.48,1.05,.27]]){
-    rod([x,y,side*z],[x-.16,y-1.20,side*(z+.045)],r,.087,'fang',head);
-    rod([x-.16,y-1.20,side*(z+.045)],[x+.08,y-1.63,side*(z+.07)],.087,.007,'fang',head);
-  }
-  for(let i=0;i<4;i++){
-    const x=-4.02+i*.73,z=side*(.39+i*.18);
-    rod([x,-.39,z],[x-.06,-.89-(i%2)*.09,z],.11,.013,'fang',head);
-    rod([x,-2.38+i*.24,z],[x+.08,-1.75+i*.11,z],.094,.013,'fang',head);
-  }
-  // Tight expressive cyan dragon eyes set in black socket and heavy overlapping brows.
-  volume([-1.55,1.16,side*1.69],[.60,.26,.20],'mouth',1,head);
-  const eye=volume([-1.62,1.18,side*1.865],[.42,.102,.11],'glow',1,head);
-  eye.rotation.z=-.26;
-  rod([-2.25,1.55,side*1.82],[-.62,1.63,side*1.83],.23,.10,'deep',head);
-  rod([-2.19,1.63,side*1.87],[-1.34,1.72,side*1.88],.084,.018,'ice',head);
-  volume([-4.32,.20,side*.43],[.13,.085,.10],'mouth',1,head);
-}
-// Layered oval forehead scales follow silhouette rather than a grid of floating squares.
-const faceTileGeo=new THREE.IcosahedronGeometry(1,0);
-const tiles=new Map();
-const faceDummy=new THREE.Object3D();
-function placeTile(color,position,rotation,scale,parent=head){
-  if(!tiles.has(color))tiles.set(color,[]);
-  faceDummy.position.copy(position);faceDummy.quaternion.copy(rotation);
-  faceDummy.scale.copy(scale);faceDummy.updateMatrix();
-  tiles.get(color).push(faceDummy.matrix.clone());
-}
-const scalpAxis=V(0,0,1);
-function skullAt(x){
-  for(let i=0;i<skull.length-1;i++){
-    if(x>=skull[i][0]&&x<=skull[i+1][0]){
-      const a=skull[i],b=skull[i+1],t=(x-a[0])/(b[0]-a[0]);
-      return [1,2,3].map(k=>a[k]+(b[k]-a[k])*t);
-    }
-  }
-  return skull[skull.length-1].slice(1);
-}
-for(let i=0;i<30;i++){
-  const x=-4.48+i*.214,[cy,ry,rz]=skullAt(x);
-  for(let k=-7;k<=7;k++){
-    const a=k/7*1.52+(i%2)*.025;
-    // Retain sculpted eye sockets, free from scale occlusion.
-    if(x>-2.30&&x<-.66&&Math.abs(a)>.6&&Math.abs(a)<1.20)continue;
-    const v=V(x,cy+Math.cos(a)*(ry+.035),Math.sin(a)*(rz+.04));
-    const n=V(0,Math.cos(a)/ry,Math.sin(a)/rz).normalize();
-    const q=new THREE.Quaternion().setFromUnitVectors(scalpAxis,n);
-    const wave=Math.sin(i*.23+a*1.43);
-    const color=Math.abs(a)<.36?(wave>.42?'turquoise':'royal'):
-      wave>.70?'ice':wave>.2?'sea':wave>-.35?'royal':'blue';
-    placeTile(color,v,q,V(.21,.16,.13));
-  }
-}
-for(const [color,items] of tiles){
- const group=new THREE.InstancedMesh(faceTileGeo,mat[color],items.length);
- group.frustumCulled=false;
- items.forEach((m,i)=>group.setMatrixAt(i,m));
- group.instanceMatrix.needsUpdate=true;head.add(group);
-}
-for(const side of [-1,1]){
-  // Branching antlers with thick naturally connected trunks.
-  const b=[
-    [[-.62,2.18,side*.88],[.0,3.32,side*1.22],.38,.29],
-    [[.0,3.32,side*1.22],[.90,4.26,side*1.46],.29,.20],
-    [[.90,4.26,side*1.46],[2.22,5.05,side*1.67],.20,.015],
-    [[-.06,3.30,side*1.24],[-.59,4.64,side*1.94],.19,.012],
-    [[.42,3.90,side*1.49],[.36,5.15,side*2.0],.14,.010],
-    [[1.24,4.56,side*1.57],[2.09,5.72,side*1.27],.13,.009],
-    [[1.80,4.85,side*1.64],[3.07,5.29,side*1.97],.13,.008]
-  ];
-  for(const [p1,p2,r1,r2] of b)rod(p1,p2,r1,r2,'antler',head);
-  // Whiskers sweep forward then curl naturally like animated water.
-  tube([[-4.03,-.12,side*.57],[-5.02,-.53,side*1.46],
-       [-6.20,-1.04,side*2.43],[-7.49,-.67,side*3.37],
-       [-8.64,.43,side*3.45],[-9.67,.85,side*2.92]],.044,'whisker',head);
-  tube([[-3.50,-.39,side*.63],[-4.51,-.81,side*1.38],
-       [-5.48,-1.03,side*2.16],[-6.52,-.43,side*2.58],
-       [-7.10,.36,side*2.34]],.026,'sea',head);
-  // Pectoral mane/cheek fins are broad feathers, not clustered needle spikes.
-  for(let i=0;i<18;i++){
-    const x=-.40+i*.19,y=.55+(i%3)*.17,z=side*(1.64+(i%4)*.12);
-    leaf([x,y,z],[x+.71,y+.65+(i%3)*.08,z+side*.49],.42,
-       i%4===0?'ice':i%2===0?'turquoise':'sea',head);
-  }
-  for(let i=0;i<10;i++){
-    const x=-1.45+i*.25;
-    leaf([x,-.74,side*1.07],[x+.3,-1.47-(i%3)*.13,side*1.35],
-      .24,i%3===0?'ice':'turquoise',head);
-  }
-}
-for(let i=0;i<25;i++){
- const x=-.9+i*.145,z=Math.sin(i*.92)*.40,y=2.21+.12*Math.cos(i*.42);
- leaf([x,y,z],[x+.60,y+.58+(i%4)*.12,z+.18],.32,
-    i%3===0?'ice':'turquoise',head);
-}
-// Neck and long two-humped coiling serpentine body. Fully rebuilt tube topology.
-const spine=new THREE.CatmullRomCurve3([
- V(-9.06,8.20,1.05),V(-7.75,6.25,1.11),V(-5.82,3.90,1.40),
- V(-3.05,3.23,1.80),V(.25,4.31,.3),V(3.32,7.13,-2.34),
- V(6.89,9.28,-3.51),V(9.72,7.70,-2.40),V(11.67,4.95,-.16),
- V(11.87,2.92,2.79),V(12.90,4.93,4.11),V(15.18,8.54,2.99),
- V(18.12,11.65,-.28)
-],false,'catmullrom',.48);
-const radius=t=>Math.max(.28,t<.13?1.66+t*5.5:t<.61?2.37-.64*(t-.13):1.73*(1-(t-.61)/.39));
-const ringCount=144,radialCount=24,rings=[],verts=[],cols=[],inds=[];
-const ctmp=new THREE.Color();
-for(let i=0;i<=ringCount;i++){
- const t=i/ringCount,p=spine.getPoint(t),tan=spine.getTangent(t);
- const bin=V(0,0,0).crossVectors(tan,UP).normalize();
- if(bin.lengthSq()<.005)bin.set(0,0,1);
- const up=V(0,0,0).crossVectors(bin,tan).normalize(),r=radius(t);
- rings.push({p,tan,bin,up,r});
- for(let j=0;j<radialCount;j++){
-  const angle=j*2*Math.PI/radialCount;
-  const n=up.clone().multiplyScalar(Math.cos(angle)).addScaledVector(bin,Math.sin(angle));
-  const pos=p.clone().addScaledVector(n,r);
-  verts.push(pos.x,pos.y,pos.z);
-  const underside=Math.cos(angle)<-.49;
-  const shade=Math.sin(i*.13+j*.39);
-  ctmp.setHex(underside?0xc8b7a1:shade>.41?0x1764a9:0x0b327a);
-  cols.push(ctmp.r,ctmp.g,ctmp.b);
+ const cheek=mass(V(-9.95,8.02,1.92+side*1.15),[.86,.94,.69],'abyss',1);
+ cheek.rotation.z=-.22;
+ stick(V(-9.58,7.50,1.95+side*.95),V(-10.47,5.94,1.94+side*.99),.51,.25,'indigo');
+ stick(V(-10.47,5.94,1.94+side*.99),V(-12.07,4.88,1.96+side*.68),.27,.14,'azure');
+ // Eye socket + pupil on OUTER cheek facing viewer.
+ mass(V(-11.26,8.92,1.95+side*1.47),[.65,.27,.18],'throat',1);
+ const eye=mass(V(-11.33,8.93,1.94+side*1.66),[.46,.105,.07],'eye',1);
+ eye.rotation.z=-.30;
+ stick(V(-12.03,9.23,1.95+side*1.62),V(-10.69,9.40,1.94+side*1.50),.21,.09,'abyss');
+ // Four large curled fangs and eight smaller teeth.
+ for(const x of [-13.23,-11.73]){
+  const zz=1.99+side*(x<-12.4?.56:1.03);
+  stick(V(x,7.06+(x>-12.4?.23:0),zz),
+        V(x-.20,5.58,zz+side*.08),.27,.10,'tooth');
+  stick(V(x-.20,5.58,zz+side*.08),
+        V(x+.02,5.23,zz+side*.04),.10,.012,'tooth');
+ }
+ for(let k=0;k<4;k++){
+  const x=-13.38+k*.61,z=2+side*(.37+k*.15);
+  stick(V(x,7.26+k*.10,z),V(x-.03,6.55+k*.05,z),.11,.015,'tooth');
+  stick(V(x,4.70+k*.30,z),V(x+.08,5.57+k*.20,z),.11,.012,'tooth');
+ }
+ // Real branching antlers emerge through thick roots, rearward and wide.
+ const antlerSegments=[
+  [[-9.97,9.71,2+side*.88],[-9.57,11.13,2+side*1.05],.40,.30],
+  [[-9.57,11.13,2+side*1.05],[-8.90,12.31,2+side*1.43],.30,.20],
+  [[-8.90,12.31,2+side*1.43],[-7.25,13.10,2+side*1.72],.20,.02],
+  [[-9.49,11.44,2+side*1.14],[-10.16,12.68,2+side*1.99],.18,.012],
+  [[-8.85,12.40,2+side*1.48],[-8.79,13.77,2+side*2.07],.17,.012],
+  [[-8.13,12.82,2+side*1.56],[-7.02,13.99,2+side*1.29],.13,.012],
+ ];
+ for(const [a,b,w,v] of antlerSegments)stick(V(...a),V(...b),w,v,'horn');
+ // Paired whiskers curl naturally away from snout, not laser-straight.
+ strand([V(-13.90,7.28,2+side*.53),V(-15.03,6.67,2+side*1.23),
+ V(-16.37,6.29,2+side*2.51),V(-17.50,7.02,2+side*3.10),
+ V(-18.27,7.83,2+side*2.62)],.055,'water');
+ strand([V(-13.23,6.94,2+side*.70),V(-14.28,6.01,2+side*1.41),
+ V(-15.12,5.79,2+side*2.2),V(-16.0,6.55,2+side*2.46)],.033,'cyan');
+ // Sweep of gill-like cheek fins.
+ for(let i=0;i<11;i++){
+   const t=i/10,from=V(-9.75+t*2.65,7.65+t*.18,1.87+side*(1.58+.18*t));
+   const to=from.clone().add(V(.73,.45+.14*(i%4),side*(.43+.17*t)));
+   fan(from,to,.41,i%4===0?'cyan':i%2===0?'ocean':'jade');
  }
 }
-for(let i=0;i<ringCount;i++)for(let j=0;j<radialCount;j++){
- const a=i*radialCount+j,b=i*radialCount+(j+1)%radialCount,
- d=(i+1)*radialCount+j,e=(i+1)*radialCount+(j+1)%radialCount;
- inds.push(a,d,b,b,d,e);
-}
-const skin=new THREE.BufferGeometry();
-skin.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
-skin.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
-skin.setIndex(inds);skin.computeVertexNormals();
-mesh(skin,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.67,side:THREE.DoubleSide}));
-// Overlapping armor follows the actual body normal and tangent, batched by material.
-const bodyTiles=new Map(),tileDummy=new THREE.Object3D();
-// Pointed angular 3D scale with an overlapped root and raised trailing ridge.
-const bodyTileShape=new THREE.Shape();
-bodyTileShape.moveTo(-.66,-.24);
-bodyTileShape.lineTo(-.39,.24);
-bodyTileShape.lineTo(.05,.36);
-bodyTileShape.lineTo(.52,.08);
-bodyTileShape.lineTo(.62,-.22);
-bodyTileShape.lineTo(-.02,-.36);
-bodyTileShape.closePath();
-const tileGeo=new THREE.ExtrudeGeometry(bodyTileShape,{
- depth:.22,steps:1,bevelEnabled:true,bevelSegments:1,
- bevelThickness:.035,bevelSize:.045,curveSegments:1
-});
-tileGeo.translate(0,0,-.11);
-for(let i=2;i<ringCount-3;i+=2){
- const f=rings[i],t=i/ringCount;
- for(let j=0;j<radialCount;j++){
-  const angle=(j+(i%4? .25:0))*2*Math.PI/radialCount;
-  const n=f.up.clone().multiplyScalar(Math.cos(angle)).addScaledVector(f.bin,Math.sin(angle));
-  const p=f.p.clone().addScaledVector(n,f.r+.055);
-  const q=new THREE.Quaternion().setFromUnitVectors(V(0,0,1),n);
-  const flow=Math.sin(i*.15+j*.47);
-  const shade=Math.cos(angle)<-.50?'cream':flow>.65?'sea':flow>.15?'royal':flow>-.65?'blue':'deep';
-  tileDummy.position.copy(p);tileDummy.quaternion.copy(q);
-  tileDummy.scale.set(.68,.72,1);
-  tileDummy.updateMatrix();
-  if(!bodyTiles.has(shade))bodyTiles.set(shade,[]);
-  bodyTiles.get(shade).push(tileDummy.matrix.clone());
+// ---------------------------------- 3. SKELETAL BODY ----------------------------------
+// Mesh is SKINNED TO A SINGLE CURVE THROUGH THE BONES above (no disconnected torus).
+const segments=140,sides=24,vertices=[],colors=[],indexes=[],frames=[];
+const blue1=new THREE.Color(paint.indigo),blue2=new THREE.Color(paint.cobalt);
+for(let i=0;i<=segments;i++){
+ const t=i/segments,center=bodyPath.getPoint(t),tangent=bodyPath.getTangent(t).normalize();
+ const lateral=new THREE.Vector3().crossVectors(tangent,UP).normalize();
+ if(lateral.lengthSq()<.01)lateral.set(0,0,1);
+ const dorsal=new THREE.Vector3().crossVectors(lateral,tangent).normalize();
+ const r=radius(t);frames.push({center,tangent,lateral,dorsal,r});
+ for(let j=0;j<sides;j++){
+  const a=2*Math.PI*j/sides,n=dorsal.clone().multiplyScalar(Math.cos(a)).addScaledVector(lateral,Math.sin(a));
+  const p=center.clone().addScaledVector(n,r);
+  vertices.push(p.x,p.y,p.z);
+  const belly=Math.cos(a)<-.54;
+  const wave=.5+.5*Math.sin(i*.10+j*.28);
+  const col=belly?new THREE.Color(paint.belly):blue1.clone().lerp(blue2,wave*.54);
+  colors.push(col.r,col.g,col.b);
  }
- if(i%5===0){
-  for(const tilt of [-.24,.10,.34]){
-   const n=f.up.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(f.bin,Math.sin(tilt));
-   const from=f.p.clone().addScaledVector(n,f.r-.08);
-   const end=from.clone().addScaledVector(n,.80+(1-t)*.48).addScaledVector(f.tan,-.49);
-   leaf(from,end,.37,i%10===0?'ice':'turquoise');
+}
+for(let i=0;i<segments;i++)for(let j=0;j<sides;j++){
+ const a=i*sides+j,b=i*sides+(j+1)%sides,c=(i+1)*sides+j,d=(i+1)*sides+(j+1)%sides;
+ indexes.push(a,c,b,b,c,d);
+}
+const bg=new THREE.BufferGeometry();
+bg.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+bg.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+bg.setIndex(indexes);bg.computeVertexNormals();
+const body=part(bg,'indigo');body.material=new THREE.MeshStandardMaterial({vertexColors:true,side:THREE.DoubleSide,roughness:.68});
+// Skin is broad overlapping scales following the SAME normals as skeleton.
+const scaleShape=new THREE.Shape();scaleShape.moveTo(-.61,-.30);
+scaleShape.lineTo(-.38,.25);scaleShape.lineTo(.05,.35);
+scaleShape.lineTo(.58,.04);scaleShape.lineTo(.56,-.25);
+scaleShape.lineTo(-.08,-.34);scaleShape.closePath();
+const scaleGeometry=new THREE.ExtrudeGeometry(scaleShape,
+ {depth:.12,bevelEnabled:true,bevelSize:.026,bevelThickness:.024,bevelSegments:1});
+scaleGeometry.translate(0,0,-.06);
+const batch=new Map(),dummy=new THREE.Object3D(),Z=V(0,0,1);
+function instance(name,pos,quat,size){
+ if(!batch.has(name))batch.set(name,[]);
+ dummy.position.copy(pos);dummy.quaternion.copy(quat);dummy.scale.copy(size);
+ dummy.updateMatrix();batch.get(name).push(dummy.matrix.clone());
+}
+for(let i=2;i<segments-1;i+=2){
+ const t=i/segments,f=frames[i];
+ for(let j=0;j<sides;j++){
+  const ang=(j+(i%4===0?.3:0))*2*Math.PI/sides;
+  const n=f.dorsal.clone().multiplyScalar(Math.cos(ang)).addScaledVector(f.lateral,Math.sin(ang)).normalize();
+  const p=f.center.clone().addScaledVector(n,f.r+.09);
+  const q=new THREE.Quaternion().setFromUnitVectors(Z,n);
+  const under=Math.cos(ang)<-.54,wave=Math.sin(i*.14+j*.64);
+  const name=under?'belly':Math.cos(ang)>.7?(wave>.38?'jade':'ocean'):
+    wave>.70?'cyan':wave>.18?'azure':wave>-.32?'cobalt':'indigo';
+  instance(name,p,q,V(.72,.72,1));
+ }
+ if(i%4===0){
+  // Continuous backward-flowing mane follows backbone from neck to tail.
+  for(const side of [-.24,.17,.43]){
+   const n=f.dorsal.clone().multiplyScalar(Math.cos(side)).addScaledVector(f.lateral,Math.sin(side));
+   const from=f.center.clone().addScaledVector(n,f.r-.02);
+   const to=from.clone().addScaledVector(n,.64+(1-t)*.62).addScaledVector(f.tangent,-.49);
+   fan(from,to,.38,i%8===0?'cyan':'ocean');
   }
  }
 }
-for(const [shade,items] of bodyTiles){
- const im=new THREE.InstancedMesh(tileGeo,mat[shade],items.length);
- im.frustumCulled=false;items.forEach((m,i)=>im.setMatrixAt(i,m));
- im.instanceMatrix.needsUpdate=true;dragon.add(im);
+for(const [name,matrices] of batch){
+ const mesh=new THREE.InstancedMesh(scaleGeometry,materials[name],matrices.length);
+ matrices.forEach((m,i)=>mesh.setMatrixAt(i,m));mesh.frustumCulled=false;mesh.instanceMatrix.needsUpdate=true;
+ dragon.add(mesh);
 }
-// Forelegs: exactly two, at front of chest, with powerful articulated claws.
-const fore=rings[20];
-for(const side of [-1,1]){
- const hip=fore.p.clone().addScaledVector(fore.bin,side*1.56);
- const elbow=hip.clone().add(V(-.41,-1.31,side*1.32));
- const wrist=elbow.clone().add(V(-1.18,-1.80,side*.59));
- volume(hip.toArray(),[.79,.83,.79],'deep',1);
- rod(hip,elbow,.65,.46,'blue');
- volume(elbow.toArray(),[.63,.55,.56],'royal',1);
- rod(elbow,wrist,.50,.33,'blue');
- volume(wrist.toArray(),[.76,.40,.61],'deep',1);
- for(let k=-1;k<=1;k++){
-   const p=wrist.clone().add(V(-.37,-.08,k*.32));
-   rod(p,p.clone().add(V(-.93,-.31,k*.09)),.18,.012,'fang');
+// ---------------------------------- 4. TWO GIANT FOREPAWS ----------------------------------
+function foreleg(sign){
+ const shoulder=J.chest.clone().add(V(-.25,.18,sign*2.03));
+ const upper=shoulder.clone().add(V(-.48,-1.27,sign*1.12));
+ const elbow=upper.clone().add(V(-.30,-.66,sign*.52));
+ const wrist=elbow.clone().add(V(-.96,-1.09,sign*.37));
+ mass(shoulder,[.90,.88,.90],'abyss',1);
+ stick(shoulder,upper,.79,.63,'cobalt');
+ mass(elbow,[.71,.68,.69],'indigo',1);
+ stick(elbow,wrist,.59,.37,'azure');
+ const paw=mass(wrist,[.86,.47,.75],'indigo',1);paw.rotation.z=-.16;
+ for(let i=-1;i<=1;i++){
+  const p=wrist.clone().add(V(-.36,-.08,i*.37));
+  const tip=p.clone().add(V(-1.00,-.40,i*.09));
+  stick(p,tip,.21,.016,'tooth');
  }
 }
-const tail=spine.getPoint(1),last=rings[ringCount-1];
+foreleg(-1);foreleg(1); // only two legs, per accepted reference.
+// Organic ice plume fans UP from the last skeletal point.
+const tail=J.tailTip,tailTangent=bodyPath.getTangent(1);
 for(let i=0;i<18;i++){
- const a=i*2*Math.PI/18,n=last.up.clone().multiplyScalar(Math.cos(a))
- .addScaledVector(last.bin,Math.sin(a));
- const end=tail.clone().addScaledVector(n,2.4+(i%3)*.24).addScaledVector(last.tan,1.53);
- leaf(tail,end,.43,i%4===0?'ice':'turquoise');
+ const a=i*2*Math.PI/18;
+ const radial=V(Math.cos(a),.25*Math.sin(a),Math.sin(a)).normalize();
+ const tip=tail.clone().addScaledVector(radial,2.10+(i%4)*.19)
+   .addScaledVector(tailTangent,1.3);
+ fan(tail,tip,.48,i%4===0?'cyan':'ocean');
 }
-// Ambient voxel clouds stay clear of the head silhouette.
-for(const [x,y,z] of [[-4.2,2.1,-5.9],[3.2,2.7,5.2],[10.2,7,-6.0],[16,8.9,5.1]]){
- for(let i=0;i<22;i++){
-  const a=i*2.39996,r=.36+(i%5)*.18;
-  cub(x+Math.cos(a)*r,y+Math.sin(a*.7)*r*.54,z+Math.sin(a)*r,
-  .30+(i%3)*.16,.25+(i%4)*.12,.33+(i%4)*.11,i%5===0?'cloudEdge':'cloud');
+// Water vapor cubes, secondary; no floating blocks in front of the face.
+for(const p of [V(0,2,-5),V(7,4,5),V(11,8,-4)]){
+ for(let i=0;i<26;i++){
+  const a=i*2.39996,r=.25+(i%5)*.18;
+  const m=part(new THREE.BoxGeometry(.32+(i%3)*.14,.30+(i%4)*.12,.34+(i%3)*.18),'cloud');
+  m.position.copy(p).add(V(Math.cos(a)*r,Math.sin(a*.7)*r*.55,Math.sin(a)*r));
  }
 }
-const floor=mesh(new THREE.PlaneGeometry(130,130),new THREE.MeshStandardMaterial({color:0x0b131d,roughness:1}),scene);
-floor.rotation.x=-Math.PI/2;floor.position.y=-3.5;
-const grid=new THREE.GridHelper(80,40,0x1a3a51,0x142938);
-grid.position.y=-3.48;scene.add(grid);
-// Stable camera presets, with full sculpture initially framed at heroic 3/4.
+const floor=part(new THREE.PlaneGeometry(150,150),'abyss',scene);
+floor.rotation.x=-Math.PI/2;floor.position.y=-3.2;
+const grid=new THREE.GridHelper(80,40,0x1b3747,0x122331);
+grid.position.y=-3.18;scene.add(grid);
+// Camera controls. FIRST SHOW COMPLETE SKELETON SILHOUETTE, not cropped face.
 dragon.updateMatrixWorld(true);
-const bounds=new THREE.Box3().setFromObject(dragon);
-const whole=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());
-let yaw=-.50,pitch=.08,distance=31,focus=head.position.clone().add(V(-4.7,.55,0)),spin=false,mode='head';
+const box=new THREE.Box3().setFromObject(dragon);
+const mid=box.getCenter(V(0,0,0)),dims=box.getSize(V(0,0,0));
+let yaw=-.23,pitch=.10,distance=48,focus=mid.clone(),spin=false,view='front';
 function fit(){
- const aspect=Math.max(.45,camera.aspect),t=Math.tan(camera.fov*Math.PI/360);
- return Math.min(115,Math.max(size.x*.52/(t*aspect),size.y*.60/t)*1.14+size.z*.36);
+ const t=Math.tan(camera.fov*Math.PI/360),a=Math.max(camera.aspect,.45);
+ return Math.min(115,Math.max(dims.x/(2*t*a),dims.y/(2*t))*1.13+dims.z*.40);
 }
 function setView(which){
- mode=which;spin=false;document.getElementById('spin').classList.remove('active');
- if(which==='front'){yaw=-.42;pitch=.13;focus.copy(whole);distance=fit()}
- if(which==='side'){yaw=0;pitch=.045;focus.copy(whole);distance=fit()}
- if(which==='back'){yaw=Math.PI+.15;pitch=.14;focus.copy(whole);distance=fit()}
- if(which==='head'){
-  yaw=-.50;pitch=.08;focus.copy(head.position).add(V(-4.7,.55,0));
-  distance=(innerWidth/Math.max(1,innerHeight)<1.1?31:28.0);
- }
+ view=which;spin=false;
+ document.getElementById('spin').classList.remove('active');
+ document.getElementById('spin').textContent='自動回転 OFF';
+ if(which==='front'){yaw=-.23;pitch=.09;focus.copy(mid);distance=fit()}
+ if(which==='side'){yaw=0;pitch=.03;focus.copy(mid);distance=fit()}
+ if(which==='back'){yaw=Math.PI+.04;pitch=.12;focus.copy(mid);distance=fit()}
+ if(which==='head'){yaw=-.38;pitch=.04;focus.copy(J.skull).add(V(-2.7,-.5,.2));distance=camera.aspect<1.15?27:23}
 }
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
-document.getElementById('zoomin').onclick=()=>distance=Math.max(7,distance*.8);
-document.getElementById('zoomout').onclick=()=>distance=Math.min(120,distance*1.25);
-document.getElementById('spin').onclick=e=>{spin=!spin;e.currentTarget.classList.toggle('active',spin);e.currentTarget.textContent=spin?'自動回転 ON':'自動回転 OFF'};
-const pointers=new Map();let pinch=0;
-canvas.addEventListener('pointerdown',e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId)});
+document.getElementById('zoomin').onclick=()=>distance=Math.max(7,distance*.82);
+document.getElementById('zoomout').onclick=()=>distance=Math.min(140,distance*1.21);
+document.getElementById('spin').onclick=e=>{
+ spin=!spin;e.currentTarget.classList.toggle('active',spin);
+ e.currentTarget.textContent=spin?'自動回転 ON':'自動回転 OFF';
+};
+let showingRig=false;
+document.getElementById('rig').onclick=e=>{
+ showingRig=!showingRig;debug.visible=showingRig;dragon.visible=!showingRig;
+ e.currentTarget.classList.toggle('active',showingRig);
+ e.currentTarget.textContent=showingRig?'完成表示':'骨格確認';
+};
+const pointers=new Map();let lastPinch=0;
+canvas.addEventListener('pointerdown',e=>{
+ pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId)});
 canvas.addEventListener('pointermove',e=>{
- if(!pointers.has(e.pointerId))return;
- const old=pointers.get(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(pointers.size===1){yaw-=(e.clientX-old.x)*.006;pitch=Math.max(-1.0,Math.min(1.2,pitch+(e.clientY-old.y)*.005));spin=false}
- if(pointers.size===2){const pts=[...pointers.values()],p=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
-  if(pinch)distance=Math.max(7,Math.min(115,distance*pinch/p));pinch=p}
+ const p=pointers.get(e.pointerId);if(!p)return;
+ pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(pointers.size===1){
+  yaw-=(e.clientX-p.x)*.006;pitch=Math.max(-1,Math.min(1.1,pitch+(e.clientY-p.y)*.004));
+  spin=false;
+ }else if(pointers.size===2){
+  const arr=[...pointers.values()],dd=Math.hypot(arr[0].x-arr[1].x,arr[0].y-arr[1].y);
+  if(lastPinch)distance=Math.min(145,Math.max(7,distance*lastPinch/dd));lastPinch=dd;
+ }
 });
-for(const event of ['pointerup','pointercancel','lostpointercapture'])
- canvas.addEventListener(event,e=>{pointers.delete(e.pointerId);pinch=0});
-canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(7,Math.min(115,distance*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
-function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
- if(mode==='full')distance=fit()}
-addEventListener('resize',resize);resize();setView(innerWidth/innerHeight>1.32?'front':'head');
-document.getElementById('spin').classList.remove('active');document.getElementById('spin').textContent='自動回転 OFF';
+for(const e of ['pointerup','pointercancel','lostpointercapture'])
+ canvas.addEventListener(e,p=>{pointers.delete(p.pointerId);lastPinch=0});
+canvas.addEventListener('wheel',e=>{
+ e.preventDefault();distance=Math.max(7,Math.min(145,distance*(1+Math.sign(e.deltaY)*.1)));
+},{passive:false});
+function resize(){
+ renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+ if(view==='front'||view==='side'||view==='back')distance=fit();
+}
+addEventListener('resize',resize);resize();setView('front');
 document.getElementById('status').style.display='none';
-function draw(){
- requestAnimationFrame(draw);if(spin)yaw+=.0016;
+function render(){
+ requestAnimationFrame(render);if(spin)yaw+=.0015;
  const cp=Math.cos(pitch);
  camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
  camera.lookAt(focus);renderer.render(scene,camera);
-}draw();
-window.seiryuModelRevision='anatomy-rebuild41';
+}
+render();
+window.seiryuModelRevision='SKELETON-RIG50';
 
 </script>
 </body>
