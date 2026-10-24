@@ -62,6 +62,14 @@ jobs:
             console.log('SEIRYU_QA '+JSON.stringify({...item,...snapshot,bytes,errors}));
             if(errors.length||!snapshot.webgl||bytes<18000||snapshot.status!=='none')failures++;
             if(item.name==='seiryu-ipad'){
+              // Assert the new root-joint rig inspection toggle actually works.
+              const toggle=page.locator('#rig');
+              await toggle.click();
+              await page.waitForTimeout(350);
+              const active=await toggle.evaluate(el=>el.classList.contains('active'));
+              if(!active)failures++;
+              await page.screenshot({path:'seiryu-ipad-rig.png',animations:'disabled'});
+              await toggle.click();
               await page.locator('button[data-view="side"]').click();
               await page.waitForTimeout(500);
               await page.screenshot({path:'seiryu-ipad-side.png',animations:'disabled'});
