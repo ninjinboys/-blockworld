@@ -121,6 +121,19 @@
 #screen .primary:not(:disabled):hover,#screen .secondary:not(:disabled):hover,#screen .job:hover{filter:brightness(1.12)}
 #screen input{border-radius:7px;background:#081d20;border:1px solid #538d82}
 #screen .roomline strong{color:#8fdbc5}
+
+/* Battle result buttons use the same jade beveled design as NEXACRAFT's main menu. */
+#finish .panel{background:#091c20f2;border:2px solid #397c73;border-radius:13px;box-shadow:0 18px 60px #000c,inset 0 1px #a4e5cf19}
+#finish .primary,#finish .secondary{
+ width:100%;min-height:56px;border:2px solid #65a496;border-radius:7px;
+ background:linear-gradient(180deg,#327d70,#28695f);color:#f5fff9;
+ font-size:17px;font-weight:850;text-shadow:0 1px 2px #0a2b26;
+ box-shadow:inset 0 3px #b5eed333,inset 0 -4px #092b2766,0 4px 0 #0b302b,0 6px 12px #0006;
+ transition:filter .15s,transform .12s;
+}
+#finish .secondary{background:linear-gradient(180deg,#2b6157,#204d46);border-color:#548e80}
+#finish .primary:not(:disabled):hover,#finish .secondary:not(:disabled):hover{filter:brightness(1.12)}
+#finish .primary:not(:disabled):active,#finish .secondary:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 2px #0004,0 2px 5px #0005}
 </style>
 </head>
 <body>
