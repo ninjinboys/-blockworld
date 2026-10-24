@@ -77,10 +77,46 @@
 #lookHelp{position:fixed;left:50%;top:54px;transform:translateX(-50%);z-index:3;pointer-events:none;display:none;color:#eafaff;background:#081c31ab;border-radius:8px;padding:4px 9px;font-size:11px}
 #lookHelp.show{display:block}
 @media(hover:none),(pointer:coarse){#weaponHud{bottom:108px;padding:5px 11px;min-width:100px}#weaponName{font-size:11px}#lookHelp{top:76px;font-size:10px}#leaveButton{bottom:210px}}
+/* The original arena artwork serves as the boot splash, never the battle UI.
+   Contain keeps both fighters/logo visible on tablets (4:3) and phones (9:16). */
+#titleSplash{
+ position:fixed;inset:0;z-index:30;background:#071421;
+ display:grid;place-items:center;overflow:hidden;
+ isolation:isolate;opacity:1;visibility:visible;
+ transition:opacity .38s ease,visibility .38s ease;
+}
+#titleSplash:before{
+ content:"";position:absolute;inset:-5%;
+ background:url('./pvp-title.avif?v=20261024arena01') center / cover no-repeat;
+ filter:blur(32px) brightness(.42);transform:scale(1.06);z-index:-1;
+}
+#titleSplash .title-art{
+ width:100%;height:100%;object-fit:contain;display:block;
+ filter:drop-shadow(0 0 24px #0008);
+ pointer-events:none;-webkit-user-drag:none;
+}
+#titleEnter{
+ position:absolute;inset:0;width:100%;height:100%;
+ display:block;cursor:pointer;
+ border:0;outline:none;background:transparent;
+ touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+ color:transparent;padding:0;
+}
+#titleEnter:focus-visible{outline:4px solid #92efff;outline-offset:-8px}
+#titleSplash.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+@media(prefers-reduced-motion:reduce){
+ #titleSplash{transition:none}
+}
 </style>
 </head>
 <body>
 <main id="stage"></main>
+<section id="titleSplash" role="dialog" aria-label="NEXACRAFT PvP タイトル画面" aria-modal="true">
+ <img class="title-art" src="./pvp-title.avif?v=20261024arena01"
+      alt="NEXACRAFT PVP。青と赤の剣士が対峙する大闘技場。PRESS ANY BUTTON。"
+      draggable="false" fetchpriority="high">
+ <button id="titleEnter" type="button" aria-label="タイトル画面を進めてジョブ選択へ"></button>
+</section>
 <header id="top"><div class="fighter"><div class="line"><span id="myName">YOU</span><span id="myHealth">100/100</span></div><div class="hp"><span id="myBar"></span></div></div><div id="clock">01:30</div><div class="fighter right"><div class="line"><span id="enemyName">RIVAL</span><span id="enemyHealth">100/100</span></div><div class="hp"><span id="enemyBar"></span></div></div></header>
 <div id="status" role="status"></div>
 <div id="crosshair" aria-hidden="true"></div>
@@ -117,6 +153,41 @@
   </div>
 </div>
 <button id="leaveButton" class="secondary">退出</button>
+<script>
+// Show the splash only on initial entry; the existing PvP menu remains intact.
+(()=>{
+ const splash=document.getElementById('titleSplash');
+ const trigger=document.getElementById('titleEnter');
+ let entered=false,gamepadPressed=false;
+ const enter=()=>{
+  if(entered)return;
+  entered=true;
+  document.removeEventListener('keydown',onKey,true);
+  splash.classList.add('is-hidden');
+  splash.setAttribute('aria-hidden','true');
+  document.getElementById('hostBtn')?.focus({preventScroll:true});
+  window.setTimeout(()=>splash.remove(),420);
+ };
+ function onKey(e){
+  if(entered||e.repeat||['Shift','Control','Alt','Meta','Tab'].includes(e.key))return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  enter();
+ }
+ document.addEventListener('keydown',onKey,true);
+ trigger.addEventListener('click',enter);
+ // Gamepads also work with the artwork's PRESS ANY BUTTON instruction.
+ const pollGamepad=()=>{
+  if(entered)return;
+  const pads=navigator.getGamepads?.()||[];
+  const down=Array.from(pads).some(p=>p?.buttons?.some(b=>b.pressed));
+  if(down&&!gamepadPressed){enter();return;}
+  gamepadPressed=down;
+  requestAnimationFrame(pollGamepad);
+ };
+ requestAnimationFrame(pollGamepad);
+})();
+</script>
 <script type="module" src="./pvp.js?v=20261023joystickJump01"></script>
 </body>
 </html>
