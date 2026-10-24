@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1018">
+<link rel="icon" href="data:,">
 <title>青龍・骨格モデル | NEXACRAFT</title>
 <style>
 *{box-sizing:border-box}
@@ -260,29 +261,77 @@ for(const s of [-1,1]){
  }
 }
 joint(H(-3.03,-2.40,0),[.31,.22,.44],1,head,1);
+// Layered skull osteology: branched zygomatic plates, sculpted nasal crest,
+// sweeping occipital prongs, and small bone flanges along the open jaw.
+for(const s of [-1,1]){
+ // Skull crest consists of interlocking bone ridges rather than soft hair.
+ for(let i=0;i<13;i++){
+   const t=i/12;
+   const p=H(-1.25+i*.265, .85+.18*Math.sin(t*Math.PI), s*(.68+Math.sin(t*Math.PI)*.34));
+   const mid=p.clone().add(H(.14,.30+.20*(i%3),s*.30));
+   const tip=mid.clone().add(H(.37,.20+.12*(i%4),s*.43));
+   bentBone([p,mid,tip],.115,i%4===0?4:2,head,.18);
+ }
+ // The cheek is a broad branched bony shield above the open mouth.
+ bentBone([H(-1.16,.17,s*.92),H(-.18,-.14,s*1.24),H(1.12,.12,s*1.08)],.21,1,head);
+ for(let i=0;i<9;i++){
+   const x=-.48+i*.26;
+   bentBone([H(x,.08,s*1.06),H(x+.18,.43,s*1.28),
+     H(x+.51,.66+(i%3)*.11,s*1.58)],.095,i%4===0?1:3,head,.17);
+ }
+ // Tiny neck-like ossicles behind occipital surface.
+ for(let i=0;i<7;i++){
+   const x=1.15+i*.20;
+   joint(H(x,.05+i*.105,s*(.63+i*.09)),[.21,.14,.15],i%2===0?3:0,head,0);
+ }
+ // Upper nasal ridges and tooth roots give skull a more carved, skeletal look.
+ for(let i=0;i<11;i++){
+   const x=-3.1+i*.23,z=s*(.40+i*.044),h=.26+Math.sin(i/11*Math.PI)*.18;
+   joint(H(x,.44+i*.034,z),[.14,.07,.10],i%3===0?4:2,head,0);
+   if(i%2===0)stick(H(x,.35+i*.032,z),H(x+.18,.66+i*.028,z+s*.08),
+       .068,.011,i%3===0?4:2,head,6);
+ }
+ // Scale-like mandibular osseous studs wrap the single curved lower jaw.
+ for(let i=0;i<11;i++){
+   const x=-2.7+i*.31,y=-2.47+.25*Math.sin(i*.39)+i*.12;
+   joint(H(x,y,s*(.29+i*.046)),[.15,.09,.10],i%3===0?4:2,head,0);
+ }
+}
 // ==== 4. Exactly TWO full forelegs, anatomically rooted in chest ============
 const foreLegs=new THREE.Group();foreLegs.name="TWO_FORELEGS";root.add(foreLegs);
 for(const s of [-1,1]){
  const shoulder=V(-6.78,3.57,.58+s*1.52);
  const elbow=V(-7.25,2.18,.58+s*2.42);
- const wrist=V(s===1?-5.45:-9.15,.77,.58+s*3.03);
- joint(shoulder,[.67,.72,.68],1,foreLegs,1);
- stick(shoulder,elbow,.38,.28,2,foreLegs,9);
- joint(elbow,[.39,.41,.38],0,foreLegs,1);
- stick(elbow,wrist,.28,.22,1,foreLegs,9);
- const palm=wrist.clone().add(V(-.21,-.07,0));
- joint(palm,[.38,.22,.37],0,foreLegs,1);
+ const wrist=V(s===1?-5.30:-9.55,.80,.58+s*3.22);
+ joint(shoulder,[.91,.83,.88],1,foreLegs,1);
+ stick(shoulder,elbow,.49,.35,2,foreLegs,9);
+ joint(elbow,[.47,.43,.44],0,foreLegs,1);
+ stick(elbow,wrist,.36,.25,1,foreLegs,9);
+ const palm=wrist.clone().add(V(-.28,-.06,0));
+ joint(palm,[.49,.26,.48],0,foreLegs,1);
  // four separate articulated toes, each ending in a long curved ivory talon
  for(let k=0;k<4;k++){
    const zShift=(k-1.5)*.22;
-   const p0=palm.clone().add(V(-.19,-.06,zShift));
-   const p1=p0.clone().add(V(-.37,-.02,zShift*.35));
-   const p2=p1.clone().add(V(-.27,-.14,zShift*.40));
-   const p3=p2.clone().add(V(-.23,-.37,-zShift*.13));
+   const p0=palm.clone().add(V(-.23,-.06,zShift*1.28));
+   const p1=p0.clone().add(V(-.47,-.02,zShift*.38));
+   const p2=p1.clone().add(V(-.38,-.13,zShift*.42));
+   const p3=p2.clone().add(V(-.29,-.47,-zShift*.13));
    stick(p0,p1,.114,.087,1,foreLegs);
    joint(p1,.106,0,foreLegs,0);
    stick(p1,p2,.082,.058,1,foreLegs);
    bentBone([p2,p2.clone().add(V(-.14,-.06,0)),p3],.075,4,foreLegs,.10);
+ }
+}
+// Distal tail has individual articulated chevrons and small lateral prongs.
+for(let i=73;i<107;i+=2){
+ const f=rings[i];
+ const t=(i-73)/(107-73);
+ for(const side of [-1,1]){
+  const start=f.p.clone().addScaledVector(f.side,side*.08);
+  const tip=start.clone().addScaledVector(f.side,side*(.21+.24*(1-t)))
+      .addScaledVector(f.dorsal,-.16*(1-t))
+      .addScaledVector(f.tang,-.09);
+  stick(start,tip,.09*(1-t*.50),.012,2);
  }
 }
 // ==== 5. Single continuous tail; only a branching plume at its terminal tip ==
