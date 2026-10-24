@@ -146,9 +146,17 @@ skinLoft([[-4.78,.19,.05,.17],[-4.30,.33,.12,.34],
  [-2.22,1.14,.26,1.12],[-1.35,1.65,.24,1.34],
  [-.60,1.84,.14,1.08]],'blue',head,12);
 for(const side of [-1,1]){
-  const cheek=volume([-.85,.26,side*1.17],[1.17,1.17,.89],'royal',1,head);
+  // Tapered cheek masses are embedded in the skull, not two round balls.
+  const cheek=volume([-.56,.50,side*.89],[1.12,.87,.67],'deep',1,head);
   cheek.rotation.y=side*.15;
-  volume([-2.08,.16,side*.87],[.84,.63,.48],'blue',1,head);
+  volume([-2.02,.24,side*.74],[.92,.57,.41],'royal',1,head);
+  // Swept cheek armor plates blend muzzle into the jaw hinge.
+  for(let i=0;i<8;i++){
+    const t=i/7,x=-1.8+t*2.05;
+    const p=volume([x,.10+t*.34,side*(1.13+t*.18)],
+      [.36,.30,.20],i%3===0?'turquoise':i%2===0?'royal':'blue',0,head);
+    p.rotation.z=.2;
+  }
 }
 // A substantial roaring mouth, with deep opening and downward-moving lower jaw.
 volume([-2.04,-.95,0],[2.12,.60,.78],'mouth',2,head);
@@ -305,7 +313,21 @@ skin.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
 skin.setIndex(inds);skin.computeVertexNormals();
 mesh(skin,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.67,side:THREE.DoubleSide}));
 // Overlapping armor follows the actual body normal and tangent, batched by material.
-const bodyTiles=new Map(),tileGeo=new THREE.IcosahedronGeometry(1,0),tileDummy=new THREE.Object3D();
+const bodyTiles=new Map(),tileDummy=new THREE.Object3D();
+// Pointed angular 3D scale with an overlapped root and raised trailing ridge.
+const bodyTileShape=new THREE.Shape();
+bodyTileShape.moveTo(-.66,-.24);
+bodyTileShape.lineTo(-.39,.24);
+bodyTileShape.lineTo(.05,.36);
+bodyTileShape.lineTo(.52,.08);
+bodyTileShape.lineTo(.62,-.22);
+bodyTileShape.lineTo(-.02,-.36);
+bodyTileShape.closePath();
+const tileGeo=new THREE.ExtrudeGeometry(bodyTileShape,{
+ depth:.22,steps:1,bevelEnabled:true,bevelSegments:1,
+ bevelThickness:.035,bevelSize:.045,curveSegments:1
+});
+tileGeo.translate(0,0,-.11);
 for(let i=2;i<ringCount-3;i+=2){
  const f=rings[i],t=i/ringCount;
  for(let j=0;j<radialCount;j++){
@@ -316,7 +338,7 @@ for(let i=2;i<ringCount-3;i+=2){
   const flow=Math.sin(i*.15+j*.47);
   const shade=Math.cos(angle)<-.50?'cream':flow>.65?'sea':flow>.15?'royal':flow>-.65?'blue':'deep';
   tileDummy.position.copy(p);tileDummy.quaternion.copy(q);
-  tileDummy.scale.set(.43,.38,.22);
+  tileDummy.scale.set(.68,.72,1);
   tileDummy.updateMatrix();
   if(!bodyTiles.has(shade))bodyTiles.set(shade,[]);
   bodyTiles.get(shade).push(tileDummy.matrix.clone());
@@ -416,7 +438,7 @@ function draw(){
  camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
  camera.lookAt(focus);renderer.render(scene,camera);
 }draw();
-window.seiryuModelRevision='anatomy-rebuild40';
+window.seiryuModelRevision='anatomy-rebuild41';
 
 </script>
 </body>
