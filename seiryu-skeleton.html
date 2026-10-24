@@ -133,13 +133,13 @@ for(let i=0;i<=COUNT;i++){
  spineFrames.push({t,pos,tan,dorsal,side:Z.clone()});
  if(i){
   const pre=spineFrames[i-1].pos;
-  bone(pre,pos,t<.66?.19:.14,t<.66?.185:.045,i%9===0?1:0);
+  bone(pre,pos,t<.80?.22:.14,t<.80?.20:.055,i%9===0?1:0);
  }
 }
 // Real vertebrae: centra and paired transverse processes, no ribs on tail.
 for(let i=2;i<COUNT-2;i+=2){
- const f=spineFrames[i],t=f.t,waist=t<.64?1.0:Math.max(.32,(1-t)*2.4);
- const o=ball(f.pos,[.28*waist,.24*waist,.32*waist],i%7===0?1:0,root,0);
+ const f=spineFrames[i],t=f.t,waist=t<.80?1.0:Math.max(.27,(1-t)*4.7);
+ const o=ball(f.pos,[.34*waist,.27*waist,.36*waist],i%7===0?1:0,root,0);
  o.quaternion.setFromUnitVectors(Y,f.tan);
  if(i%3===0){
    const base=f.pos.clone().addScaledVector(f.dorsal,.21);
@@ -153,12 +153,17 @@ for(let i=2;i<COUNT-2;i+=2){
  }
 }
 // Neck spinous processes are prominent individually and oriented backward.
-for(let i=5;i<29;i+=3){
+for(let i=5;i<29;i+=2){
  const f=spineFrames[i];
  const from=f.pos.clone().addScaledVector(f.dorsal,.16);
- const to=from.clone().addScaledVector(f.dorsal,.65)
-                   .addScaledVector(f.tan,-.31);
- curved([from,from.clone().lerp(to,.53),to],.16,1,root,.12);
+ const to=from.clone().addScaledVector(f.dorsal,.78)
+                   .addScaledVector(f.tan,-.37);
+ curved([from,from.clone().lerp(to,.53),to],.19,1,root,.12);
+ for(const s of [-1,1]){
+  const sideTip=f.pos.clone().addScaledVector(Z,s*.48)
+          .addScaledVector(f.dorsal,-.17);
+  bone(f.pos,sideTip,.16,.013,2);
+ }
 }
 // Rib cage is a LONG ORGANIC BASKET covering only thorax, not neck or tail.
 // Each rib is a U-shaped shaft from spine down the flank to the lower sternum.
@@ -166,18 +171,18 @@ const ribStart=25,ribEnd=72,ribStep=3;
 for(let i=ribStart;i<=ribEnd;i+=ribStep){
  const u=(i-ribStart)/(ribEnd-ribStart);
  const f=spineFrames[i],amp=Math.pow(Math.sin(Math.PI*(u*.92+.035)),.55);
- const breadth=1.20+1.65*amp;
- const drop=1.35+2.47*amp;
+ const breadth=1.30+1.75*amp;
+ const drop=1.25+2.15*amp;
  for(const s of [-1,1]){
   const A=f.pos.clone().addScaledVector(f.dorsal,.06);
-  const B=f.pos.clone().addScaledVector(Z,s*breadth*.58)
-    .addScaledVector(f.dorsal,.32);
+  const B=f.pos.clone().addScaledVector(Z,s*breadth*.60)
+    .addScaledVector(f.dorsal,.37).addScaledVector(f.tan,-.28);
   const C=f.pos.clone().addScaledVector(Z,s*breadth)
-    .addScaledVector(Y,-drop*.43);
-  const D=f.pos.clone().addScaledVector(Z,s*breadth*.75)
-    .addScaledVector(Y,-drop*.88);
-  const E=f.pos.clone().addScaledVector(Z,s*breadth*.30)
-    .addScaledVector(Y,-drop*1.03);
+    .addScaledVector(Y,-drop*.38).addScaledVector(f.tan,.04);
+  const D=f.pos.clone().addScaledVector(Z,s*breadth*.77)
+    .addScaledVector(Y,-drop*.82).addScaledVector(f.tan,.46);
+  const E=f.pos.clone().addScaledVector(Z,s*breadth*.35)
+    .addScaledVector(Y,-drop*.99).addScaledVector(f.tan,.61);
   curved([A,B,C,D,E],.15+.080*amp,i%2===0?1:0,root,.38);
   ball(A,[.20,.17,.18],1,root,0);ribs++;
  }
@@ -192,6 +197,10 @@ for(let i=30;i<64;i+=4){
 // New dragon skull generated from cranial architectural plates and voids,
 // never from stacked crocodile-shaped ellipsoids or previous skull algorithm.
 const head=new THREE.Group();head.name='HAND_BUILT_OPEN_CRANIUM';root.add(head);
+const skullPivot=P(-12.9,9.88);
+head.position.copy(skullPivot);
+head.scale.set(1.18,1.18,1.10);
+head.position.addScaledVector(skullPivot,-.18);
 const C=(x,y,z=0)=>P(x,y,z);
 const cranium=C(-12.5,10.4,0);
 const upperNose=C(-17.18,9.96,0);
@@ -317,7 +326,7 @@ grid.position.y=-.69;scene.add(grid);
 root.updateMatrixWorld(true);
 const bound=new THREE.Box3().setFromObject(root),center=bound.getCenter(P(0,0)),
  dims=bound.getSize(P(0,0));
-let azimuth=0.035,altitude=.055,range=55,target=center.clone(),mode='profile',rotation=false;
+let azimuth=-.33,altitude=.070,range=55,target=center.clone(),mode='threequarter',rotation=false;
 function fit(){
  const tan=Math.tan(camera.fov*Math.PI/360),aspect=Math.max(.42,camera.aspect);
  return Math.max(dims.x/(2*tan*aspect),dims.y/(2*tan))*1.10+dims.z*.38;
@@ -350,10 +359,10 @@ canvas.addEventListener('pointermove',e=>{
 for(const k of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(k,e=>{touch.delete(e.pointerId);lastSpan=0});
 canvas.addEventListener('wheel',e=>{e.preventDefault();range=Math.max(5,Math.min(160,range*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
 function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(mode!=='skull')range=fit()}
-addEventListener('resize',resize);resize();preset('profile');
+addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='ORIGINAL_ZERO_BASE_SKELETON_R60';
+window.seiryuSkeletonRevision='ORIGINAL_ZERO_BASE_SKELETON_R61';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
