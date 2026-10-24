@@ -107,6 +107,20 @@
 @media(prefers-reduced-motion:reduce){
  #titleSplash{transition:none}
 }
+
+/* Match the original NEXACRAFT main-menu buttons: muted jade, beveled edges,
+   compact corners and inset highlights. Keep PvP's existing layout/actions. */
+#screen .panel{background:#091c20ed;border:2px solid #397c73;border-radius:13px;box-shadow:0 18px 60px #000c,inset 0 1px #a4e5cf19}
+#screen .column{background:#0b2225d9;border:1px solid #326c66;border-radius:9px}
+#screen .job{background:linear-gradient(180deg,#235b54,#19463f);border:2px solid #508f83;border-radius:8px;box-shadow:inset 0 3px #9bd4bc24,0 4px #0005;color:#f0faf5}
+#screen .job.selected{background:linear-gradient(180deg,#367e71,#245e55);border:2px solid #9de2c4;box-shadow:inset 0 2px #e1fff347,0 0 0 2px #17483f}
+#screen .primary,#screen .secondary,#screen .job{transition:filter .15s,transform .12s,border-color .15s}
+#screen .primary,#screen .secondary{border-radius:7px;border:2px solid #65a496;background:linear-gradient(180deg,#327d70,#28695f);color:#f5fff9;font-weight:850;box-shadow:inset 0 3px #b5eed333,inset 0 -4px #092b2766,0 4px 0 #0b302b,0 6px 12px #0006;text-shadow:0 1px 2px #0a2b26;min-height:46px}
+#screen .secondary{background:linear-gradient(180deg,#2b6157,#204d46);border-color:#548e80}
+#screen .primary:not(:disabled):active,#screen .secondary:not(:disabled):active,#screen .job:active{transform:translateY(2px);box-shadow:inset 0 2px #0004,0 2px 5px #0005}
+#screen .primary:not(:disabled):hover,#screen .secondary:not(:disabled):hover,#screen .job:hover{filter:brightness(1.12)}
+#screen input{border-radius:7px;background:#081d20;border:1px solid #538d82}
+#screen .roomline strong{color:#8fdbc5}
 </style>
 </head>
 <body>
