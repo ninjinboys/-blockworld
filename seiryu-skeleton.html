@@ -136,22 +136,25 @@ function curveFins(from,to,length,spread,mi=1){
 }
 // ==== 1. Continuous spine and vertebrae. Reference side silhouette ===========
 const anchors=[
- V(-10.85,7.55,.85),V(-9.68,6.40,.82),V(-8.45,4.62,.78),
- V(-6.85,3.36,.58),V(-4.8,3.20,.32),V(-2.25,4.10,-.14),
- V(.35,6.05,-1.25),V(2.85,6.78,-1.89),
- V(5.6,6.2,-1.87),V(7.83,4.30,-.98),
- V(9.75,2.82,.62),V(12.0,2.73,2.07),
- V(14.25,4.35,2.20),V(15.25,7.15,1.92),
- V(14.55,9.30,1.38)
+ // Compact head joins a nearly vertical raised neck (as in the bone reference).
+ V(-10.98,8.36,.10),V(-9.45,8.10,.12),V(-8.18,6.05,.18),
+ V(-7.58,4.26,.14),V(-6.18,3.73,0.0),V(-3.70,3.88,-.22),
+ V(-.92,5.42,-.45),V(1.46,7.12,-.58),
+ V(3.90,7.29,-.73),V(6.21,6.18,-.62),
+ V(8.42,3.83,-.38),V(10.61,3.02,.07),
+ V(12.80,4.11,.18),V(14.56,7.25,.18),
+ V(14.28,10.12,.10)
 ];
 const spine=new THREE.CatmullRomCurve3(anchors,false,"catmullrom",.51);
 const spineSegments=110;
 const rings=[];
 function bodyRadius(t){
- if(t<.13)return 1.20+.92*t/.13;
- if(t<.53)return 2.12+.45*Math.sin((t-.13)/.40*Math.PI);
- if(t<.66)return 2.12-.72*(t-.53)/.13;
- return Math.max(.13,1.40*Math.pow(1-(t-.66)/.34,.85));
+ // Neck stays narrow; full rib cage starts at the shoulder, not the skull.
+ if(t<.20)return .66+.41*t/.20;
+ if(t<.33)return 1.07+1.18*(t-.20)/.13;
+ if(t<.57)return 2.25+.42*Math.sin(Math.PI*(t-.33)/.24);
+ if(t<.69)return 2.25-1.20*(t-.57)/.12;
+ return Math.max(.12,1.05*Math.pow((1-t)/.31,1.10));
 }
 for(let i=0;i<=spineSegments;i++){
  const t=i/spineSegments;
@@ -182,9 +185,9 @@ for(let i=2;i<spineSegments-3;i+=2){
  }
 }
 // ==== 2. Articulated curved rib cage (no extra secondary tail) ================
-for(let i=11;i<=60;i+=3){
+for(let i=26;i<=75;i+=3){
  const f=rings[i],t=f.t;
- const fullness=Math.sin(Math.PI*Math.min(1,(t-.08)/.54))**.64;
+ const fullness=Math.pow(Math.max(.04,Math.sin(Math.PI*(i-26)/(75-26))),.52);
  const r=f.r*(.87+.11*fullness);
  for(const s of [-1,1]){
    // paired ribs spring from each vertebra, bend down around real torso.
@@ -203,14 +206,14 @@ for(let i=11;i<=60;i+=3){
  }
 }
 // central sternum from mid chest to rear ribcage, short only
-for(let i=17;i<48;i+=3){
+for(let i=28;i<70;i+=3){
  const f=rings[i],a=f.p.clone().addScaledVector(f.dorsal,-f.r*.86);
  const g=rings[Math.min(spineSegments,i+3)],b=g.p.clone().addScaledVector(g.dorsal,-g.r*.86);
  stick(a,b,.075,.065,3);
 }
 // ==== 3. Head: articulated bone skull, open jaws, antlers ====================
 const head=new THREE.Group();
-head.name="SKULL_AND_ANTLERS";head.position.set(-10.85,7.55,.85);
+head.name="SKULL_AND_ANTLERS";head.position.set(-12.00,8.54,.10);
 root.add(head);
 function H(x,y,z){return V(x,y,z)}
 function hbone(a,b,w,mi=1){return bentBone(a,w,mi,head)}
@@ -300,9 +303,9 @@ for(const s of [-1,1]){
 // ==== 4. Exactly TWO full forelegs, anatomically rooted in chest ============
 const foreLegs=new THREE.Group();foreLegs.name="TWO_FORELEGS";root.add(foreLegs);
 for(const s of [-1,1]){
- const shoulder=V(-6.78,3.57,.58+s*1.52);
- const elbow=V(-7.25,2.18,.58+s*2.42);
- const wrist=V(s===1?-5.30:-9.55,.80,.58+s*3.22);
+ const shoulder=V(-6.80,3.83,s*1.63);
+ const elbow=V(-7.96,2.75,s*2.20);
+ const wrist=V(-9.42,.92,s*2.85);
  joint(shoulder,[.91,.83,.88],1,foreLegs,1);
  stick(shoulder,elbow,.49,.35,2,foreLegs,9);
  joint(elbow,[.47,.43,.44],0,foreLegs,1);
@@ -350,8 +353,9 @@ floor.rotation.x=-Math.PI/2;floor.position.y=-1.2;
 const grid=new THREE.GridHelper(75,35,0x27303c,0x1e2730);
 grid.position.y=-1.18;scene.add(grid);
 // ==== 6. Orbit/presets/touch control =========================================
+// Bounds exclude dark floor and include only the real skeletal mesh.
 const box=new THREE.Box3().setFromObject(root),center=box.getCenter(V(0,0,0)),size=box.getSize(V(0,0,0));
-let yaw=-.40,pitch=.10,distance=39,focus=center.clone(),autospin=false,mode="hero";
+let yaw=-.16,pitch=.075,distance=39,focus=center.clone(),autospin=false,mode="hero";
 function frame(){
  const tan=Math.tan(camera.fov*Math.PI/360),aspect=Math.max(camera.aspect,.38);
  return Math.max(size.x/(2*tan*aspect),size.y/(2*tan))*1.14+size.z*.4;
@@ -359,11 +363,11 @@ function frame(){
 function show(which){
  mode=which;
  document.querySelectorAll("[data-v]").forEach(b=>b.classList.toggle("active",b.dataset.v===which));
- if(which==="hero"){yaw=-.43;pitch=.11;distance=frame();focus.copy(center);}
+ if(which==="hero"){yaw=-.16;pitch=.075;distance=frame();focus.copy(center);}
  if(which==="side"){yaw=0;pitch=.035;distance=frame();focus.copy(center);}
  if(which==="front"){yaw=-Math.PI/2;pitch=.04;distance=frame();focus.copy(center);}
  if(which==="back"){yaw=Math.PI+.03;pitch=.09;distance=frame();focus.copy(center);}
- if(which==="head"){yaw=-.48;pitch=.06;distance=19;focus.copy(head.position).add(V(-1.5,-.1,0));}
+ if(which==="head"){yaw=-.34;pitch=.035;distance=17;focus.copy(head.position).add(V(-1.3,-.15,0));}
 }
 document.querySelectorAll("[data-v]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.v)));
 $("in").onclick=()=>{distance=Math.max(5,distance*.83)};
