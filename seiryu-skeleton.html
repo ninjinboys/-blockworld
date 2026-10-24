@@ -1,417 +1,377 @@
 <!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1018">
-<link rel="icon" href="data:,">
-<title>青龍・骨格モデル | NEXACRAFT</title>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090c12"><link rel="icon" href="data:,">
+<title>NEXACRAFT — 青龍 / 骨格 3D 再設計</title>
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a0e15;color:#f1e4d2;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
-#view{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:grab}
-#view:active{cursor:grabbing}
-.header{position:fixed;z-index:4;top:0;left:0;right:0;padding:16px 19px 31px;background:linear-gradient(#090e16ee,transparent);pointer-events:none}
-.micro{font-size:10px;letter-spacing:.24em;color:#af9f8b;font-weight:850}
-.title{font-size:clamp(25px,4vw,43px);font-weight:950;letter-spacing:.09em;margin-top:3px;line-height:1.1}
-.subtitle{font-size:11px;letter-spacing:.17em;color:#cab99f;margin-top:5px}
-.state{position:fixed;top:18px;right:16px;background:#26313bcc;border:1px solid #655a47;border-radius:20px;padding:7px 10px;color:#dbc5a0;font-size:10px;font-weight:750;pointer-events:none}
-#status{position:fixed;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);border:1px solid #87785b;background:#171c24e0;border-radius:15px;padding:16px 20px;white-space:nowrap}
-.hint{position:fixed;z-index:4;bottom:88px;left:17px;font-size:11px;color:#b1aca6;pointer-events:none;text-shadow:0 2px 8px black}
-.tools{position:fixed;z-index:5;bottom:15px;left:10px;right:10px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
-.tools button{border:1px solid #6c5d49;background:#1b222be8;border-radius:11px;min-height:41px;padding:10px 13px;color:#e9dfcd;font-size:12px;font-weight:750;cursor:pointer;touch-action:manipulation}
-.tools button.active{background:#60513a;border-color:#e4c78b;color:white}
-#save{border-color:#b8a27e;background:#4c3d29e8}
-@media(max-width:640px){.header{padding:12px}.title{font-size:27px}.tools{gap:4px;bottom:8px}.tools button{padding:8px 9px;font-size:11px;min-height:40px}.hint{bottom:98px;font-size:10px}.state{padding:5px 7px;right:9px;top:10px;font-size:9px}}
+*{box-sizing:border-box}html,body{height:100%;width:100%;margin:0;overflow:hidden;background:#090d14;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;color:#f5e9d7}
+#view{width:100%;height:100%;display:block;touch-action:none;cursor:grab}#view:active{cursor:grabbing}
+header{position:fixed;top:0;left:0;right:0;padding:17px 20px 38px;background:linear-gradient(180deg,#060b15ee,transparent);pointer-events:none;z-index:2}
+small{display:block;color:#c8af8e;font-size:10px;letter-spacing:.23em;font-weight:800}h1{font-size:31px;margin:3px 0 1px;font-weight:900;letter-spacing:.09em}h1 span{font-size:13px;color:#c7b49a;letter-spacing:.1em}
+header p{font-size:11px;color:#b9a58b;margin:2px 0;letter-spacing:.12em}
+#status{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);border:1px solid #72614b;background:#202734e8;border-radius:12px;padding:14px;color:#f2e1c5;z-index:4}
+.controls{position:fixed;bottom:max(10px,env(safe-area-inset-bottom));left:8px;right:8px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;z-index:5}
+button{touch-action:manipulation;border:1px solid #70614d;border-radius:10px;background:#19202cdd;color:#eee1c8;padding:10px 12px;min-height:42px;font-size:12px;font-weight:700;cursor:pointer}
+button[aria-pressed="true"]{background:#685039;color:#fff;border-color:#d6b88f}#export{background:#5a4129;border-color:#bda47a}
+.guide{position:fixed;bottom:89px;left:15px;font-size:11px;color:#c2b5a3;text-shadow:0 1px 6px black;pointer-events:none}
+@media(max-width:650px){header{padding:12px 12px 25px}h1{font-size:26px}button{font-size:11px;padding:8px 9px;min-height:40px}.controls{gap:4px}.guide{bottom:97px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
-<body>
-<canvas id="view" aria-label="360度回転できる青龍の立体骨格モデル"></canvas>
-<div class="header"><div class="micro">NEXACRAFT · GUARDIAN BEAST</div><div class="title">青龍 <span style="font-size:.55em;color:#c6af8e">SEIRYU</span></div><div class="subtitle">SKELETON · REAL 3D MODEL / 骨格のみ</div></div>
-<div class="state">● INTERACTIVE 3D</div>
-<div id="status">立体骨格を構築中…</div>
-<div class="hint">ドラッグで回転 · ピンチで拡大縮小</div>
-<div class="tools">
-<button data-v="hero" class="active">斜め</button>
-<button data-v="side">側面</button>
-<button data-v="front">正面</button>
-<button data-v="back">背面</button>
-<button data-v="head">頭部</button>
-<button id="out">−</button><button id="in">＋</button>
-<button id="spin">自動回転 OFF</button>
-<button id="save">GLB保存</button>
-</div>
+<body><canvas id="view" aria-label="青龍の完全新規骨格3Dモデル"></canvas>
+<header><small>NEXACRAFT · GUARDIAN BEAST</small><h1>青龍 <span>SEIRYU</span></h1><p>ZERO-BASE SKELETON / 頭・背骨・肋骨・前脚２本・尾１本</p></header>
+<div id="status">3D骨格を構築中…</div>
+<div class="guide">指で360°回転　・　ピンチで拡大縮小</div>
+<nav class="controls">
+<button data-view="profile" aria-pressed="true">全身</button>
+<button data-view="threequarter">斜め</button>
+<button data-view="front">正面</button>
+<button data-view="back">背面</button>
+<button data-view="skull">頭部</button>
+<button id="less">−</button><button id="more">＋</button>
+<button id="turn">自動回転 OFF</button>
+<button id="export">GLB保存</button>
+</nav>
 <script type="module">
-import * as THREE from "three";
-import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
-const $=id=>document.getElementById(id);
-const canvas=$("view");
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
-renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.25;
+import * as THREE from 'three';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+const el=id=>document.getElementById(id),canvas=el('view');
+const rend=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+rend.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+rend.setSize(innerWidth,innerHeight);
+rend.outputColorSpace=THREE.SRGBColorSpace;
+rend.toneMapping=THREE.ACESFilmicToneMapping;
+rend.toneMappingExposure=1.19;
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x0c1018);
-scene.fog=new THREE.Fog(0x0c1018,63,115);
-const camera=new THREE.PerspectiveCamera(41,innerWidth/innerHeight,.1,160);
-scene.add(new THREE.HemisphereLight(0xffe9d3,0x3c2d26,2.2));
-const key=new THREE.DirectionalLight(0xffead2,3.3);key.position.set(-17,25,18);scene.add(key);
-const rim=new THREE.DirectionalLight(0xb8c8dd,1.7);rim.position.set(11,14,-18);scene.add(rim);
-const fill=new THREE.PointLight(0xe5b67a,20,40);fill.position.set(-13,5,11);scene.add(fill);
-const boneColors=[0xd7c3a8,0xe8d3b7,0xb8a18a,0xc9b397,0xf0dec8];
-const mats=boneColors.map(x=>new THREE.MeshStandardMaterial({color:x,roughness:.79,metalness:.015}));
-const black=new THREE.MeshStandardMaterial({color:0x141012,roughness:1,side:THREE.DoubleSide});
-const floorMat=new THREE.MeshStandardMaterial({color:0x14171d,roughness:1});
-const root=new THREE.Group();root.name="SEIRYU_BONE_SKELETON";scene.add(root);
-const V=(x,y,z)=>new THREE.Vector3(x,y,z);
-const up=V(0,1,0);
-const icoGeo=[0,1,2].map(d=>new THREE.IcosahedronGeometry(1,d));
-const boxGeo=new THREE.BoxGeometry(1,1,1);
-let meshCount=0;
-function put(geo,mi,parent=root){
- const m=new THREE.Mesh(geo,typeof mi==="number"?mats[mi]:mi);
- parent.add(m);meshCount++;return m;
+scene.background=new THREE.Color(0x0a0e15);
+scene.fog=new THREE.Fog(0x0a0e15,65,115);
+const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.1,160);
+scene.add(new THREE.HemisphereLight(0xffebd7,0x283344,2.3));
+const sunlight=new THREE.DirectionalLight(0xffead5,3.2);
+sunlight.position.set(-19,24,18);scene.add(sunlight);
+const bounce=new THREE.DirectionalLight(0xb3becf,1.65);
+bounce.position.set(13,9,-17);scene.add(bounce);
+const boneMaterial=[0xd5bca1,0xe5cdb0,0xb99f84,0xf1dec3,0xaa9279].map(color=>
+ new THREE.MeshStandardMaterial({color,roughness:.79,metalness:0,side:THREE.DoubleSide}));
+const darkMat=new THREE.MeshStandardMaterial({color:0x110f11,roughness:.92,side:THREE.DoubleSide});
+const root=new THREE.Group();root.name='NEXACRAFT_SEIRYU_NEW_SKELETON_ONLY';scene.add(root);
+const P=(x,y,z=0)=>new THREE.Vector3(x,y,z), Y=P(0,1),Z=P(0,0,1);
+const quat=new THREE.Quaternion();
+let modelMeshes=0, ribs=0;
+function add(g,m=0,parent=root){
+ const obj=new THREE.Mesh(g,typeof m==='number'?boneMaterial[m%boneMaterial.length]:m);
+ obj.castShadow=false;parent.add(obj);if(parent!==scene)modelMeshes++;return obj;
 }
-function joint(point,r,mi=1,parent=root,detail=1){
- const o=put(icoGeo[detail],mi,parent);o.position.copy(point);
- if(Array.isArray(r))o.scale.set(...r);else o.scale.setScalar(r);
- return o;
+function ball(p,scale,color=0,parent=root,facets=1){
+ const obj=add(new THREE.IcosahedronGeometry(1,facets),color,parent);
+ obj.position.copy(p);obj.scale.set(...scale);return obj;
 }
-function block(point,size,mi=0,parent=root){
- const o=put(boxGeo,mi,parent);o.position.copy(point);o.scale.set(...size);return o;
-}
-function stick(a,b,r0,r1,mi=0,parent=root,n=8){
- const dir=b.clone().sub(a),len=dir.length();
- if(len<.001)return null;
- const g=new THREE.CylinderGeometry(r1,r0,len,n,1);
- const m=put(g,mi,parent);
+function bone(a,b,rA,rB,color=0,parent=root){
+ const v=b.clone().sub(a),len=v.length();
+ if(len<1e-4)return;
+ const m=add(new THREE.CylinderGeometry(rB,rA,len,8,1),color,parent);
  m.position.copy(a).add(b).multiplyScalar(.5);
- m.quaternion.setFromUnitVectors(up,dir.normalize());
+ m.quaternion.setFromUnitVectors(Y,v.normalize());
  return m;
 }
-function bentBone(points,width,mi=0,parent=root,endWidth=.30){
- // Organic tapering tubular bone across measured points, with actual mesh volume.
- const curve=new THREE.CatmullRomCurve3(points);
- const N=Math.max(13,points.length*8),sides=7;
- const frames=curve.computeFrenetFrames(N,false);
- const verts=[],inds=[];
+function curved(pts,r=.14,color=0,parent=root,tipFactor=.26){
+ const curve=new THREE.CatmullRomCurve3(pts,false,'catmullrom',.4);
+ const N=Math.max(12,pts.length*8),S=8;
+ const frames=curve.computeFrenetFrames(N,false),v=[],ids=[];
  for(let i=0;i<=N;i++){
-  const t=i/N,p=curve.getPoint(t);
-  const taper=.26+.74*Math.sin(Math.PI*Math.pow(t,.72))**.45;
-  const radius=width*(endWidth+(1-endWidth)*taper);
-  for(let k=0;k<sides;k++){
-   const ang=2*Math.PI*k/sides;
-   const normal=frames.normals[i].clone().multiplyScalar(Math.cos(ang))
-       .addScaledVector(frames.binormals[i],Math.sin(ang));
-   const pt=p.clone().addScaledVector(normal,radius);
-   verts.push(pt.x,pt.y,pt.z);
+  let t=i/N,c=curve.getPoint(t);
+  const fade=tipFactor+(1-tipFactor)*Math.pow(Math.sin(Math.PI*Math.max(.015,Math.min(.985,t))),.30);
+  for(let j=0;j<S;j++){
+   const a=j*2*Math.PI/S;
+   const off=frames.normals[i].clone().multiplyScalar(Math.cos(a))
+     .addScaledVector(frames.binormals[i],Math.sin(a));
+   const p=c.clone().addScaledVector(off,r*fade);
+   v.push(p.x,p.y,p.z);
   }
  }
- for(let i=0;i<N;i++)for(let k=0;k<sides;k++){
-  const a=i*sides+k,b=i*sides+(k+1)%sides,c=(i+1)*sides+k,d=(i+1)*sides+(k+1)%sides;
-  inds.push(a,b,c,b,d,c);
+ for(let i=0;i<N;i++)for(let j=0;j<S;j++){
+  const a=i*S+j,b=i*S+(j+1)%S,c=(i+1)*S+j,d=(i+1)*S+(j+1)%S;
+  ids.push(a,c,b,b,c,d);
  }
- const geo=new THREE.BufferGeometry();
- geo.setAttribute("position",new THREE.Float32BufferAttribute(verts,3));
- geo.setIndex(inds);geo.computeVertexNormals();
- return put(geo,mi,parent);
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.setIndex(ids);g.computeVertexNormals();
+ return add(g,color,parent);
 }
-function antler(points,r,parent=root,mi=2){
- for(let i=1;i<points.length;i++){
-  stick(points[i-1],points[i],r*(1-(i-1)/points.length*.45),r*(1-i/points.length*.75),mi,parent,7);
-  if(i<points.length-1)joint(points[i],r*(1-i/points.length*.6),mi,parent,0);
- }
-}
-function curveFins(from,to,length,spread,mi=1){
- // Tail tip: continuous central tail, branchlets only at the very end.
- for(let j=-5;j<=5;j++){
-   const k=j/5;
-   const p=from.clone().lerp(to,.35+Math.abs(k)*.17);
-   const end=to.clone().add(V(-.65,1.0+(1-Math.abs(k))*.85,k*spread));
-   bentBone([p,p.clone().add(V(.30,.28,k*.21)),end],.10,mi);
+function branch(pts,startRadius=.20,color=1,parent=root){
+ for(let i=1;i<pts.length;i++){
+  const r=startRadius*Math.pow(1-(i-1)/pts.length,.85);
+  bone(pts[i-1],pts[i],r,Math.max(.012,r*.69),color,parent);
+  if(i<pts.length-1)ball(pts[i],[r*.91,r*.88,r*.91],color,parent,0);
  }
 }
-// ==== 1. Continuous spine and vertebrae. Reference side silhouette ===========
-const anchors=[
- // Compact head joins a nearly vertical raised neck (as in the bone reference).
- V(-10.98,8.36,.10),V(-9.45,8.10,.12),V(-8.18,6.05,.18),
- V(-7.58,4.26,.14),V(-6.18,3.73,0.0),V(-3.70,3.88,-.22),
- V(-.92,5.42,-.45),V(1.46,7.12,-.58),
- V(3.90,7.29,-.73),V(6.21,6.18,-.62),
- V(8.42,3.83,-.38),V(10.61,3.02,.07),
- V(12.80,4.11,.18),V(14.56,7.25,.18),
- V(14.28,10.12,.10)
-];
-const spine=new THREE.CatmullRomCurve3(anchors,false,"catmullrom",.51);
-const spineSegments=110;
-const rings=[];
-function bodyRadius(t){
- // Neck stays narrow; full rib cage starts at the shoulder, not the skull.
- if(t<.20)return .66+.41*t/.20;
- if(t<.33)return 1.07+1.18*(t-.20)/.13;
- if(t<.57)return 2.25+.42*Math.sin(Math.PI*(t-.33)/.24);
- if(t<.69)return 2.25-1.20*(t-.57)/.12;
- return Math.max(.12,1.05*Math.pow((1-t)/.31,1.10));
+// All anatomy below derives from NEW pose landmarks built for the supplied
+// osteology reference: upright neck, horizontally long expanded rib cage,
+// single raised S-tail. None of the previous skeleton's coordinates are reused.
+const landmark={
+ neckTop:P(-12.0,10.1,.0),
+ neckMiddle:P(-10.0,7.2,.1),
+ breast:P(-8.1,5.15,.12),
+ frontBelly:P(-5.3,4.42,.0),
+ thoraxMid:P(-2.1,5.54,-.08),
+ thoraxTop:P(1.20,8.15,-.21),
+ thoraxBack:P(4.22,8.48,-.24),
+ pelvisEnd:P(7.02,6.48,-.18),
+ tailDip:P(10.26,3.76,.03),
+ tailBend:P(13.56,4.03,.13),
+ tailLift:P(16.37,7.24,.12),
+ tailEnd:P(16.70,10.98,.12)
+};
+const spineControls=Object.values(landmark);
+const spine=new THREE.CatmullRomCurve3(spineControls,false,'catmullrom',.48);
+const COUNT=112, spineFrames=[];
+for(let i=0;i<=COUNT;i++){
+ const t=i/COUNT;
+ const pos=spine.getPoint(t),tan=spine.getTangent(t).normalize();
+ // Back/up oriented in local sagittal plane, ALWAYS roughly world-up for thorax.
+ let dorsal=P(-tan.y,tan.x,0).normalize();
+ if(dorsal.y<0)dorsal.negate();
+ spineFrames.push({t,pos,tan,dorsal,side:Z.clone()});
+ if(i){
+  const pre=spineFrames[i-1].pos;
+  bone(pre,pos,t<.66?.19:.14,t<.66?.185:.045,i%9===0?1:0);
+ }
 }
-for(let i=0;i<=spineSegments;i++){
- const t=i/spineSegments;
- const p=spine.getPoint(t);
- const tang=spine.getTangent(t).normalize();
- const side=new THREE.Vector3().crossVectors(tang,up).normalize();
- if(side.lengthSq()<.05)side.set(0,0,1);
- const dorsal=new THREE.Vector3().crossVectors(side,tang).normalize();
- rings.push({t,p,tang,side,dorsal,r:bodyRadius(t)});
-}
-for(let i=0;i<spineSegments-1;i++){
- const a=rings[i],b=rings[i+1],thick=.18*(1-a.t)+.047;
- stick(a.p,b.p,thick,thick*.96,i%5===0?1:0,root,8);
-}
-for(let i=2;i<spineSegments-3;i+=2){
- const f=rings[i],r=f.r,t=f.t;
- // Sculpted vertebral centrum with transverse processes, not spheres only.
- const o=joint(f.p,[.28*(1-t*.35),.21*(1-t*.45),.29*(1-t*.5)],i%5===0?1:0);
- o.quaternion.setFromUnitVectors(up,f.tang);
- if(i%4===0){
-   const stem=f.p.clone().addScaledVector(f.dorsal,.17+r*.08);
-   const tip=stem.clone().addScaledVector(f.dorsal,(t>.72?.30:.53)+(1-t)*.34).addScaledVector(f.tang,-.23);
-   stick(stem,tip,.17*(1-t*.52),.016,0);
+// Real vertebrae: centra and paired transverse processes, no ribs on tail.
+for(let i=2;i<COUNT-2;i+=2){
+ const f=spineFrames[i],t=f.t,waist=t<.64?1.0:Math.max(.32,(1-t)*2.4);
+ const o=ball(f.pos,[.28*waist,.24*waist,.32*waist],i%7===0?1:0,root,0);
+ o.quaternion.setFromUnitVectors(Y,f.tan);
+ if(i%3===0){
+   const base=f.pos.clone().addScaledVector(f.dorsal,.21);
+   const tip=base.clone().addScaledVector(f.dorsal,(t<.70?.68:.37)*waist)
+     .addScaledVector(f.tan,-.20);
+   bone(base,tip,.16*waist,.012,1);
    for(const s of [-1,1]){
-     const tip2=f.p.clone().addScaledVector(f.side,s*(.28+r*.19));
-     stick(f.p,tip2,.17*(1-t*.35),.025,2);
+    bone(f.pos,f.pos.clone().addScaledVector(Z,s*.43*waist),
+      .15*waist,.021,2);
    }
  }
 }
-// ==== 2. Articulated curved rib cage (no extra secondary tail) ================
-for(let i=26;i<=75;i+=3){
- const f=rings[i],t=f.t;
- const fullness=Math.pow(Math.max(.04,Math.sin(Math.PI*(i-26)/(75-26))),.52);
- const r=f.r*(.87+.11*fullness);
+// Neck spinous processes are prominent individually and oriented backward.
+for(let i=5;i<29;i+=3){
+ const f=spineFrames[i];
+ const from=f.pos.clone().addScaledVector(f.dorsal,.16);
+ const to=from.clone().addScaledVector(f.dorsal,.65)
+                   .addScaledVector(f.tan,-.31);
+ curved([from,from.clone().lerp(to,.53),to],.16,1,root,.12);
+}
+// Rib cage is a LONG ORGANIC BASKET covering only thorax, not neck or tail.
+// Each rib is a U-shaped shaft from spine down the flank to the lower sternum.
+const ribStart=25,ribEnd=72,ribStep=3;
+for(let i=ribStart;i<=ribEnd;i+=ribStep){
+ const u=(i-ribStart)/(ribEnd-ribStart);
+ const f=spineFrames[i],amp=Math.pow(Math.sin(Math.PI*(u*.92+.035)),.55);
+ const breadth=1.20+1.65*amp;
+ const drop=1.35+2.47*amp;
  for(const s of [-1,1]){
-   // paired ribs spring from each vertebra, bend down around real torso.
-   const A=f.p.clone().addScaledVector(f.dorsal,r*.19)
-      .addScaledVector(f.side,s*r*.10);
-   const B=f.p.clone().addScaledVector(f.dorsal,r*.55)
-      .addScaledVector(f.side,s*r*.55);
-   const C=f.p.clone().addScaledVector(f.dorsal,r*.05)
-      .addScaledVector(f.side,s*r*1.09);
-   const D=f.p.clone().addScaledVector(f.dorsal,-r*.62)
-      .addScaledVector(f.side,s*r*.80);
-   const E=f.p.clone().addScaledVector(f.dorsal,-r*.77)
-      .addScaledVector(f.side,s*r*.37);
-   bentBone([A,B,C,D,E],.158+fullness*.061,i%2?0:3);
-   joint(A,.12,1);
+  const A=f.pos.clone().addScaledVector(f.dorsal,.06);
+  const B=f.pos.clone().addScaledVector(Z,s*breadth*.58)
+    .addScaledVector(f.dorsal,.32);
+  const C=f.pos.clone().addScaledVector(Z,s*breadth)
+    .addScaledVector(Y,-drop*.43);
+  const D=f.pos.clone().addScaledVector(Z,s*breadth*.75)
+    .addScaledVector(Y,-drop*.88);
+  const E=f.pos.clone().addScaledVector(Z,s*breadth*.30)
+    .addScaledVector(Y,-drop*1.03);
+  curved([A,B,C,D,E],.15+.080*amp,i%2===0?1:0,root,.38);
+  ball(A,[.20,.17,.18],1,root,0);ribs++;
  }
 }
-// central sternum from mid chest to rear ribcage, short only
-for(let i=29;i<70;i+=3){
- const f=rings[i],a=f.p.clone().addScaledVector(f.dorsal,-f.r*.86);
- const g=rings[Math.min(spineSegments,i+3)],b=g.p.clone().addScaledVector(g.dorsal,-g.r*.86);
- stick(a,b,.075,.065,3);
+// Short bony ventral sternum, no unnecessary secondary skeleton branch.
+for(let i=30;i<64;i+=4){
+ const a=spineFrames[i],b=spineFrames[i+4];
+ const pa=a.pos.clone().addScaledVector(Y,-2.55);
+ const pb=b.pos.clone().addScaledVector(Y,-2.55);
+ bone(pa,pb,.083,.079,4);
 }
-// ==== 3. Head: articulated bone skull, open jaws, antlers ====================
-const head=new THREE.Group();
-head.name="SKULL_AND_ANTLERS";head.position.set(-12.00,8.54,.10);
-head.scale.set(1.13,1.11,1.10);
-root.add(head);
-function H(x,y,z){return V(x,y,z)}
-function hbone(a,b,w,mi=1){return bentBone(a,w,mi,head)}
-// short but heavy upper skull cast from stepped osteological masses
-joint(H(.43,.28,0),[1.62,1.11,1.19],0,head,1);
-joint(H(-1.10,.27,0),[1.44,.70,.92],1,head,1);
-joint(H(-2.42,.11,0),[.96,.48,.57],0,head,1);
-joint(H(-3.08,.06,0),[.52,.34,.48],1,head,0);
+// New dragon skull generated from cranial architectural plates and voids,
+// never from stacked crocodile-shaped ellipsoids or previous skull algorithm.
+const head=new THREE.Group();head.name='HAND_BUILT_OPEN_CRANIUM';root.add(head);
+const C=(x,y,z=0)=>P(x,y,z);
+const cranium=C(-12.5,10.4,0);
+const upperNose=C(-17.18,9.96,0);
+const jawHinge=C(-11.40,9.54,0);
+const lowerTip=C(-15.85,7.00,0);
+const skullBones=[
+ [C(-12.80,10.42,0),[1.60,1.17,1.33]],
+ [C(-14.10,10.34,0),[1.10,.70,.95]],
+ [C(-15.40,10.11,0),[.79,.49,.67]]
+];
+for(const [p,r] of skullBones)ball(p,r,1,head,1);
 for(const s of [-1,1]){
- const z=s*.90;
- // zygomatic arches and orbital rim; dark recess is visibly open.
- joint(H(.12,.48,s*1.01),[.70,.59,.18],0,head,1);
- joint(H(.06,.38,s*1.10),[.43,.37,.11],black,head,1);
- bentBone([H(-.8,.91,s*.71),H(-.02,1.16,s*1.03),H(.78,.98,s*.93)],.20,1,head);
- bentBone([H(-1.24,-.10,s*.49),H(-.36,-.37,s*.92),H(.71,-.35,s*.84)],.18,0,head);
- // nasal hole darkens snout opening
- joint(H(-2.64,.20,s*.39),[.19,.12,.06],black,head,1);
- // upper jaw palatal outline
- bentBone([H(-3.29,-.18,s*.34),H(-2.18,-.27,s*.53),H(-.70,-.44,s*.72),H(.80,-.45,s*.78)],.19,1,head);
- // roaring, downward hinged lower jaw made of two curved thick jaw bones
- bentBone([H(.77,-.48,s*.79),H(.25,-1.26,s*.86),H(-1.13,-2.11,s*.63),H(-2.75,-2.51,s*.30),H(-3.14,-2.36,0)],.225,0,head);
- // powerful hanging upper canines and smaller interrupted teeth
- for(let j=0;j<6;j++){
-   const x=-2.91+j*.50,z=s*(.36+.10*j);
-   const start=H(x,-.28+j*.005,z);
-   stick(start,start.clone().add(V(-.10,-(j===0||j===4? .85:.38),s*.02)),
-     j===0||j===4?.15:.083,.008,1,head,7);
+ // Sculptural eyebrow, enormous vacant orbital hole, bony lateral orbital arch.
+ const socket=C(-13.17,10.58,s*1.29);
+ // There is no filled eye: open orbital cavity. Oval ring only.
+ const oval=[];
+ for(let k=0;k<=14;k++){
+  let a=2*Math.PI*k/14;
+  oval.push(socket.clone().add(C(.69*Math.cos(a),.51*Math.sin(a),s*(.13*Math.cos(a)))));
  }
- for(let j=0;j<6;j++){
-   const x=-2.75+j*.48;
-   const y=-2.37+j*.15;
-   const start=H(x,y,s*(.30+.095*j));
-   stick(start,start.clone().add(V(.09,.39+(j%3)*.09,0)),.09,.009,1,head,7);
+ curved(oval,.105,3,head,.96);
+ curved([C(-14.27,11.04,s*.88),C(-13.25,11.31,s*1.40),
+         C(-12.23,11.17,s*1.33)],.22,1,head,.50);
+ // Massive cheek bar arches BACK to atlas, connecting head to spinal column.
+ curved([C(-15.30,9.88,s*.55),C(-14.18,9.60,s*1.01),
+         C(-12.50,9.76,s*1.29),C(-11.42,9.84,s*.90)],.235,0,head,.56);
+ // Sharply tapered upper muzzle: nasal bridge and bony palate.
+ curved([C(-12.87,11.28,s*.50),C(-14.54,10.65,s*.64),
+         C(-16.36,10.23,s*.39),C(-17.20,10.02,s*.34)],.31,1,head,.49);
+ curved([C(-17.22,9.73,s*.37),C(-15.89,9.58,s*.59),
+         C(-13.89,9.46,s*.86),C(-11.60,9.54,s*.93)],.19,0,head,.68);
+ // Segmented pointed maxillary spurs provide skeletal character.
+ for(let j=0;j<9;j++){
+  const x=-16.54+j*.56;
+  const y=10.23+.11*Math.sin(j*.29);
+  const z=s*(.47+j*.056);
+  bone(C(x,y,z),C(x+.42,y+.19+(j%3)*.09,z+s*.42),
+       .15,.014,j%3===0?3:0,head);
  }
- // large front lower tusks
- stick(H(-2.90,-2.32,s*.28),H(-2.73,-1.39,s*.33),.18,.008,1,head,8);
- // long asymmetrically forked antlers, grown directly from skull
- const base=H(.76,1.16,s*.78),trunk=H(1.05,2.35,s*1.05);
- antler([base,trunk,H(1.82,3.20,s*1.25),H(3.12,3.65,s*1.47)],.28,head);
- antler([H(1.05,2.35,s*1.05),H(.63,3.35,s*1.66),H(.25,3.86,s*1.98)],.155,head);
- antler([H(1.80,3.16,s*1.23),H(1.87,4.08,s*1.63)],.17,head);
- antler([H(2.32,3.40,s*1.32),H(2.91,4.32,s*1.75)],.115,head);
- antler([H(2.80,3.52,s*1.42),H(3.85,4.06,s*1.52)],.105,head);
- // cheek plate spurs, skull rather than mane
- for(let k=0;k<8;k++){
-   const x=.39+k*.20, y=.22+.11*(k%3),z=s*(1.13+.06*(k%3));
-   stick(H(x,y,z),H(x+.44,y+.34+.07*(k%3),z+s*.41),.13,.014,3,head,6);
+ // Vast downturned mandible formed by separate left and right dentaries.
+ curved([jawHinge.clone().add(C(.0,.0,s*.68)),C(-11.91,8.51,s*.89),
+         C(-13.21,7.52,s*.83),C(-15.04,7.00,s*.53),
+         lowerTip.clone().add(C(0,0,s*.19))],.25,1,head,.57);
+ // Straight lower ramus bridge near chin, only jaw anatomically.
+ curved([C(-15.79,7.0,s*.23),C(-16.28,7.04,0),
+         C(-15.75,7.0,-s*.23)],.15,0,head,.50);
+ // Big upper and lower hooked fangs, not skin or tongue.
+ for(let k=0;k<7;k++){
+  let x=-16.64+k*.76,z=s*(.42+k*.075);
+  let y=9.63+(k*.035);
+  let d=(k===0||k===4)?.91:.46;
+  curved([C(x,y,z),C(x-.08,y-d*.75,z+s*.05),
+   C(x+.07,y-d,z+s*.04)],k===0||k===4?.145:.081,k===0?3:1,head,.09);
  }
-}
-joint(H(-3.03,-2.40,0),[.31,.22,.44],1,head,1);
-// Layered skull osteology: branched zygomatic plates, sculpted nasal crest,
-// sweeping occipital prongs, and small bone flanges along the open jaw.
-for(const s of [-1,1]){
- // Skull crest consists of interlocking bone ridges rather than soft hair.
- for(let i=0;i<13;i++){
-   const t=i/12;
-   const p=H(-1.25+i*.265, .85+.18*Math.sin(t*Math.PI), s*(.68+Math.sin(t*Math.PI)*.34));
-   const mid=p.clone().add(H(.14,.30+.20*(i%3),s*.30));
-   const tip=mid.clone().add(H(.37,.20+.12*(i%4),s*.43));
-   bentBone([p,mid,tip],.115,i%4===0?4:2,head,.18);
+ for(let k=0;k<7;k++){
+  let x=-15.64+k*.65,z=s*(.27+k*.081);
+  let y=7.01+(k/6)*1.06;
+  curved([C(x,y,z),C(x-.12,y+.34,z),
+    C(x+.06,y+.55+(k%2)*.12,z)],.083,3,head,.08);
  }
- // The cheek is a broad branched bony shield above the open mouth.
- bentBone([H(-1.16,.17,s*.92),H(-.18,-.14,s*1.24),H(1.12,.12,s*1.08)],.21,1,head);
- for(let i=0;i<9;i++){
-   const x=-.48+i*.26;
-   bentBone([H(x,.08,s*1.06),H(x+.18,.43,s*1.28),
-     H(x+.51,.66+(i%3)*.11,s*1.58)],.095,i%4===0?1:3,head,.17);
- }
- // Tiny neck-like ossicles behind occipital surface.
- for(let i=0;i<7;i++){
-   const x=1.15+i*.20;
-   joint(H(x,.05+i*.105,s*(.63+i*.09)),[.21,.14,.15],i%2===0?3:0,head,0);
- }
- // Upper nasal ridges and tooth roots give skull a more carved, skeletal look.
- for(let i=0;i<11;i++){
-   const x=-3.1+i*.23,z=s*(.40+i*.044),h=.26+Math.sin(i/11*Math.PI)*.18;
-   joint(H(x,.44+i*.034,z),[.14,.07,.10],i%3===0?4:2,head,0);
-   if(i%2===0)stick(H(x,.35+i*.032,z),H(x+.18,.66+i*.028,z+s*.08),
-       .068,.011,i%3===0?4:2,head,6);
- }
- // Scale-like mandibular osseous studs wrap the single curved lower jaw.
- for(let i=0;i<11;i++){
-   const x=-2.7+i*.31,y=-2.47+.25*Math.sin(i*.39)+i*.12;
-   joint(H(x,y,s*(.29+i*.046)),[.15,.09,.10],i%3===0?4:2,head,0);
+ // Branching deer-like antlers anchored into robust skull roots.
+ const hornRoot=C(-12.05,11.25,s*.83);
+ const h1=C(-11.85,12.75,s*1.23),h2=C(-10.91,14.12,s*1.67);
+ branch([hornRoot,h1,h2,C(-9.17,15.0,s*1.86)],.32,2,head);
+ branch([h1,C(-12.54,14.03,s*1.69),C(-13.06,14.59,s*2.09)],.16,1,head);
+ branch([h2,C(-10.95,15.33,s*2.27)],.17,1,head);
+ branch([C(-10.07,14.58,s*1.80),C(-9.39,15.78,s*1.48)],.15,0,head);
+ branch([C(-9.43,14.92,s*1.84),C(-8.49,15.56,s*2.31)],.13,1,head);
+ // Collared occiput and pointed lateral skull flanges join the neck.
+ for(let j=0;j<10;j++){
+  let a=j*.27,p=C(-11.12+j*.22,9.72-j*.10,s*(.67+.12*(j%3)));
+  curved([p,p.clone().add(C(.33,.20,s*.34)),
+   p.clone().add(C(.72,.44+(j%4)*.05,s*.51))],.105,2,head,.12);
  }
 }
-// ==== 4. Exactly TWO full forelegs, anatomically rooted in chest ============
-const foreLegs=new THREE.Group();foreLegs.name="TWO_FORELEGS";root.add(foreLegs);
-for(const s of [-1,1]){
- const shoulder=V(-6.80,3.83,s*1.63);
- const elbow=V(s===1?-5.95:-8.55,2.70,s*2.20);
- const wrist=V(s===1?-4.35:-10.30,.90,s*2.85);
- joint(shoulder,[.91,.83,.88],1,foreLegs,1);
- stick(shoulder,elbow,.49,.35,2,foreLegs,9);
- joint(elbow,[.47,.43,.44],0,foreLegs,1);
- stick(elbow,wrist,.36,.25,1,foreLegs,9);
- const palm=wrist.clone().add(V(-.28,-.06,0));
- joint(palm,[.49,.26,.48],0,foreLegs,1);
- // four separate articulated toes, each ending in a long curved ivory talon
- for(let k=0;k<4;k++){
-   const zShift=(k-1.5)*.22;
-   const p0=palm.clone().add(V(-.23,-.06,zShift*1.28));
-   const p1=p0.clone().add(V(-.47,-.02,zShift*.38));
-   const p2=p1.clone().add(V(-.38,-.13,zShift*.42));
-   const p3=p2.clone().add(V(-.29,-.47,-zShift*.13));
-   stick(p0,p1,.114,.087,1,foreLegs);
-   joint(p1,.106,0,foreLegs,0);
-   stick(p1,p2,.082,.058,1,foreLegs);
-   bentBone([p2,p2.clone().add(V(-.14,-.06,0)),p3],.075,4,foreLegs,.10);
+// Pointed, clasping nasal bone and chin bones complete the head silhouette.
+ball(upperNose,[.33,.20,.36],1,head,0);
+ball(lowerTip,[.31,.21,.42],0,head,0);
+// Forelegs have only TWO shoulder attachment sites at FRONT of rib cage.
+// Silhouette of far arm projects toward snout, near arm sweeps below chest.
+function addForeleg(s){
+ const shoulder=C(-7.85,5.02,s*1.42);
+ const elbow=s===1?C(-6.91,3.54,s*2.35):C(-9.32,3.43,s*2.18);
+ const carpal=s===1?C(-5.46,1.16,s*2.87):C(-11.17,1.10,s*2.73);
+ ball(shoulder,[.87,.83,.70],1,root,1);
+ // Scapula: broad, distinctly attached to neck/ribcage.
+ curved([C(-8.61,6.24,s*.88),C(-8.14,5.42,s*1.67),shoulder],.33,0,root,.57);
+ curved([shoulder,shoulder.clone().lerp(elbow,.43).add(C(.12,.02,0)),elbow],.33,2);
+ ball(elbow,[.44,.42,.40],0,root,1);
+ curved([elbow,elbow.clone().lerp(carpal,.56),carpal],.26,1);
+ ball(carpal,[.43,.31,.48],0,root,1);
+ // FOUR separate, jointed curved fingers ending in natural long talons.
+ for(let j=0;j<4;j++){
+  const shift=(j-1.5)*.27;
+  const base=carpal.clone().add(C(-.18,-.04,shift));
+  const mid=base.clone().add(C(-.47,-.07,shift*.13));
+  const tip=mid.clone().add(C(-.39,-.10,shift*.17));
+  const hook=tip.clone().add(C(-.26,-.35,0));
+  bone(base,mid,.132,.11,1);
+  ball(mid,[.12,.11,.11],0,root,0);
+  bone(mid,tip,.110,.065,1);
+  curved([tip,tip.clone().add(C(-.18,-.13,0)),hook],.092,3,root,.05);
  }
 }
-// Distal tail has individual articulated chevrons and small lateral prongs.
-for(let i=73;i<107;i+=2){
- const f=rings[i];
- const t=(i-73)/(107-73);
- for(const side of [-1,1]){
-  const start=f.p.clone().addScaledVector(f.side,side*.08);
-  const tip=start.clone().addScaledVector(f.side,side*(.21+.24*(1-t)))
-      .addScaledVector(f.dorsal,-.16*(1-t))
-      .addScaledVector(f.tang,-.09);
-  stick(start,tip,.09*(1-t*.50),.012,2);
+addForeleg(-1);addForeleg(1);
+// Last vertebra terminates ONCE at tail tip. No secondary lower appendage.
+// Fanlike articulated caudal spines share the final vertebral node.
+const tailEnd=spineFrames[COUNT].pos;
+for(let j=-7;j<=7;j++){
+ const a=j/7;
+ const endpoint=tailEnd.clone().add(C(.58+Math.cos(a*1.4)*.32,
+  1.10+(1-Math.abs(a))*.68,a*1.80));
+ curved([tailEnd,tailEnd.clone().lerp(endpoint,.42),endpoint],
+        .093,j%3===0?3:1,root,.06);
+}
+// Environment is not exported with the bones.
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(130,130),
+ new THREE.MeshStandardMaterial({color:0x141923,roughness:1}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-.72;scene.add(floor);
+const grid=new THREE.GridHelper(80,40,0x29323c,0x171e28);
+grid.position.y=-.69;scene.add(grid);
+// Interactive orbit and device-responsive framing.
+root.updateMatrixWorld(true);
+const bound=new THREE.Box3().setFromObject(root),center=bound.getCenter(P(0,0)),
+ dims=bound.getSize(P(0,0));
+let azimuth=0.035,altitude=.055,range=55,target=center.clone(),mode='profile',rotation=false;
+function fit(){
+ const tan=Math.tan(camera.fov*Math.PI/360),aspect=Math.max(.42,camera.aspect);
+ return Math.max(dims.x/(2*tan*aspect),dims.y/(2*tan))*1.10+dims.z*.38;
+}
+function preset(v){
+ mode=v;
+ document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===v)));
+ if(v==='profile'){azimuth=.035;altitude=.045;target.copy(center);range=fit()}
+ if(v==='threequarter'){azimuth=-.34;altitude=.09;target.copy(center);range=fit()}
+ if(v==='front'){azimuth=-Math.PI/2;altitude=.06;target.copy(center);range=fit()}
+ if(v==='back'){azimuth=Math.PI+.03;altitude=.06;target.copy(center);range=fit()}
+ if(v==='skull'){azimuth=-.37;altitude=.03;target.set(-13.6,10.6,0);range=camera.aspect<1.15?20:17}
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>preset(b.dataset.view));
+el('less').onclick=()=>range=Math.min(160,range*1.24);
+el('more').onclick=()=>range=Math.max(5,range*.81);
+el('turn').onclick=e=>{rotation=!rotation;e.currentTarget.textContent='自動回転 '+(rotation?'ON':'OFF');
+ e.currentTarget.setAttribute('aria-pressed',String(rotation))};
+const touch=new Map();let lastSpan=0;
+canvas.addEventListener('pointerdown',e=>{touch.set(e.pointerId,[e.clientX,e.clientY]);canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{
+ const prev=touch.get(e.pointerId);if(!prev)return;
+ touch.set(e.pointerId,[e.clientX,e.clientY]);
+ if(touch.size===1){azimuth-=(e.clientX-prev[0])*.006;altitude=Math.max(-1.1,Math.min(1.12,altitude+(e.clientY-prev[1])*.0048));rotation=false}
+ else if(touch.size===2){
+  const p=[...touch.values()],span=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);
+  if(lastSpan)range=Math.max(5,Math.min(160,range*lastSpan/span));lastSpan=span;
  }
-}
-// ==== 5. Single continuous tail; only a branching plume at its terminal tip ==
-const t0=rings[rings.length-1].p;
-const t1=t0.clone().add(V(.02,.7,-.1));
-for(let k=0;k<15;k++){
- const a=2*Math.PI*k/15;
- const dir=V(Math.cos(a)*1.16,.75+Math.sin(a)*.24,Math.sin(a)*1.16);
- const mid=t1.clone().addScaledVector(dir,.46);
- const end=t1.clone().addScaledVector(dir,1.38);
- bentBone([t0,mid,end],.105,k%3===0?1:2,root,.2);
-}
-// dark ground is a stage object, NOT included in GLB export
-const floor=put(new THREE.PlaneGeometry(120,120),floorMat,scene);
-floor.rotation.x=-Math.PI/2;floor.position.y=-1.2;
-const grid=new THREE.GridHelper(75,35,0x27303c,0x1e2730);
-grid.position.y=-1.18;scene.add(grid);
-// ==== 6. Orbit/presets/touch control =========================================
-// Bounds exclude dark floor and include only the real skeletal mesh.
-const box=new THREE.Box3().setFromObject(root),center=box.getCenter(V(0,0,0)),size=box.getSize(V(0,0,0));
-let yaw=-.16,pitch=.075,distance=39,focus=center.clone(),autospin=false,mode="hero";
-function frame(){
- const tan=Math.tan(camera.fov*Math.PI/360),aspect=Math.max(camera.aspect,.38);
- return Math.max(size.x/(2*tan*aspect),size.y/(2*tan))*1.14+size.z*.4;
-}
-function show(which){
- mode=which;
- document.querySelectorAll("[data-v]").forEach(b=>b.classList.toggle("active",b.dataset.v===which));
- if(which==="hero"){yaw=-.16;pitch=.075;distance=frame();focus.copy(center);}
- if(which==="side"){yaw=0;pitch=.035;distance=frame();focus.copy(center);}
- if(which==="front"){yaw=-Math.PI/2;pitch=.04;distance=frame();focus.copy(center);}
- if(which==="back"){yaw=Math.PI+.03;pitch=.09;distance=frame();focus.copy(center);}
- if(which==="head"){yaw=-.34;pitch=.035;distance=17;focus.copy(head.position).add(V(-1.3,-.15,0));}
-}
-document.querySelectorAll("[data-v]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.v)));
-$("in").onclick=()=>{distance=Math.max(5,distance*.83)};
-$("out").onclick=()=>{distance=Math.min(130,distance*1.22)};
-$("spin").onclick=e=>{autospin=!autospin;e.currentTarget.classList.toggle("active",autospin);e.currentTarget.textContent="自動回転 "+(autospin?"ON":"OFF")};
-const pts=new Map();let pinch=0;
-canvas.addEventListener("pointerdown",e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId)});
-canvas.addEventListener("pointermove",e=>{
- if(!pts.has(e.pointerId))return;
- const prev=pts.get(e.pointerId);
- pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(pts.size===1){yaw-=(e.clientX-prev.x)*.0063;pitch=Math.max(-1.25,Math.min(1.25,pitch+(e.clientY-prev.y)*.005));autospin=false}
- else if(pts.size===2){const p=[...pts.values()],v=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
- if(pinch)distance=Math.max(5,Math.min(130,distance*pinch/v));pinch=v;}
 });
-for(const ev of ["pointerup","pointercancel","lostpointercapture"])
- canvas.addEventListener(ev,e=>{pts.delete(e.pointerId);pinch=0});
-canvas.addEventListener("wheel",e=>{e.preventDefault();distance=Math.max(5,Math.min(130,distance*(1+Math.sign(e.deltaY)*.10)))},{passive:false});
-function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
- if(mode!=="head")distance=frame();}
-window.addEventListener("resize",resize);resize();show("hero");
-$("status").style.display="none";
-window.seiryuSkeletonReady=true;
-window.seiryuSkeletonMeshCount=meshCount;
-$("save").onclick=()=>{
- const b=$("save");b.disabled=true;b.textContent="GLB生成中…";
- const exporter=new GLTFExporter();
- exporter.parse(root,bin=>{
-   const blob=new Blob([bin],{type:"model/gltf-binary"});
-   const url=URL.createObjectURL(blob);
-   const a=document.createElement("a");a.href=url;a.download="NEXACRAFT_Seiryu_Skeleton.glb";
-   document.body.append(a);a.click();a.remove();
-   setTimeout(()=>URL.revokeObjectURL(url),2000);b.disabled=false;b.textContent="GLB保存";
- },err=>{console.error(err);b.disabled=false;b.textContent="GLB保存";alert("GLB書き出しに失敗しました")},
- {binary:true,onlyVisible:true,trs:false});
+for(const k of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(k,e=>{touch.delete(e.pointerId);lastSpan=0});
+canvas.addEventListener('wheel',e=>{e.preventDefault();range=Math.max(5,Math.min(160,range*(1+Math.sign(e.deltaY)*.11)))},{passive:false});
+function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(mode!=='skull')range=fit()}
+addEventListener('resize',resize);resize();preset('profile');
+el('status').style.display='none';
+window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
+window.seiryuSkeletonRevision='ORIGINAL_ZERO_BASE_SKELETON_R60';
+window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false};
+el('export').onclick=()=>{
+ const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
+ new GLTFExporter().parse(root,buffer=>{
+  const blob=new Blob([buffer],{type:'model/gltf-binary'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='NEXACRAFT_Seiryu_ZeroBase_Skeleton.glb';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  btn.disabled=false;btn.textContent='GLB保存';
+ },e=>{console.error(e);btn.disabled=false;btn.textContent='GLB保存';},{binary:true});
 };
 function animate(){
- requestAnimationFrame(animate);if(autospin)yaw+=.0017;
- const cp=Math.cos(pitch);
- camera.position.set(focus.x+distance*Math.sin(yaw)*cp,focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*cp);
- camera.lookAt(focus);renderer.render(scene,camera);
+ requestAnimationFrame(animate);if(rotation)azimuth+=.0017;
+ const cos=Math.cos(altitude);
+ camera.position.set(target.x+range*Math.sin(azimuth)*cos,
+ target.y+range*Math.sin(altitude),target.z+range*Math.cos(azimuth)*cos);
+ camera.lookAt(target);rend.render(scene,camera);
 }
 animate();
-</script>
-</body>
-</html>
+</script></body></html>
