@@ -78,7 +78,7 @@
 #lookHelp.show{display:block}
 @media(hover:none),(pointer:coarse){#weaponHud{bottom:108px;padding:5px 11px;min-width:100px}#weaponName{font-size:11px}#lookHelp{top:76px;font-size:10px}#leaveButton{bottom:210px}}
 /* The original arena artwork serves as the boot splash, never the battle UI.
-   Contain keeps both fighters/logo visible on tablets (4:3) and phones (9:16). */
+   Cover fills the viewport edge-to-edge without top/bottom letterboxing. */
 #titleSplash{
  position:fixed;inset:0;z-index:30;background:#071421;
  display:grid;place-items:center;overflow:hidden;
@@ -91,7 +91,7 @@
  filter:blur(32px) brightness(.42);transform:scale(1.06);z-index:-1;
 }
 #titleSplash .title-art{
- width:100%;height:100%;object-fit:contain;display:block;
+ width:100%;height:100%;object-fit:cover;object-position:center center;display:block;
  filter:drop-shadow(0 0 24px #0008);
  pointer-events:none;-webkit-user-drag:none;
 }
