@@ -39,19 +39,19 @@ jobs:
             await page.waitForTimeout(1600);
             const stats=await page.evaluate(()=>{
               const gl=document.getElementById('view').getContext('webgl2')||document.getElementById('view').getContext('webgl');
-              return {gl:!!gl,count:window.seiryuSkeletonMeshCount||0,status:document.getElementById('status').style.display};
+              return {gl:!!gl,count:window.seiryuSkeletonMeshCount||0,status:document.getElementById('status').style.display,revision:window.seiryuSkeletonRevision,anatomy:window.seiryuAnatomy};
             });
             await page.screenshot({path:'seiryu-skeleton-'+name+'.png',animations:'disabled'});
             if(name==='ipad'){
-              await page.locator('[data-v="side"]').click();
+              await page.locator('[data-view="profile"]').click();
               await page.waitForTimeout(350);
               await page.screenshot({path:'seiryu-skeleton-side.png',animations:'disabled'});
-              await page.locator('[data-v="head"]').click();
+              await page.locator('[data-view="skull"]').click();
               await page.waitForTimeout(350);
               await page.screenshot({path:'seiryu-skeleton-head.png',animations:'disabled'});
               try{
                 const downloadPromise=page.waitForEvent('download',{timeout:45000});
-                await page.locator('#save').click();
+                await page.locator('#export').click();
                 const dl=await downloadPromise;
                 await dl.saveAs('seiryu-qa-export.glb');
                 const buff=fs.readFileSync('seiryu-qa-export.glb');
@@ -62,7 +62,7 @@ jobs:
             }
             const bytes=fs.statSync('seiryu-skeleton-'+name+'.png').size;
             console.log('SKELETON_QA',JSON.stringify({name,w,h,bytes,...stats,errors}));
-            if(errors.length||!stats.gl||stats.count<150||stats.status!=='none'||bytes<15000)failed++;
+            if(errors.length||!stats.gl||stats.count<150||stats.status!=='none'||stats.revision!=='ORIGINAL_ZERO_BASE_SKELETON_R60'||stats.anatomy?.legs!==2||stats.anatomy?.tails!==1||stats.anatomy?.oldRigReused!==false||bytes<15000)failed++;
             await page.close();
           }
           await browser.close();
