@@ -1,0 +1,78 @@
+name: Seiryu skeleton viewer QA
+on:
+  push:
+    paths:
+      - 'seiryu-skeleton.html'
+      - '.github/workflows/seiryu-skeleton-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  webgl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install runtime
+        run: npm install --no-save playwright-core@1.55.0
+      - name: Screenshot and GLB export validation
+        run: |
+          python3 -m http.server 8765 >/tmp/seiryu-skeleton-http.log 2>&1 &
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright-core';
+          import fs from 'node:fs';
+          const path=fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':
+            fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':'google-chrome';
+          const browser=await chromium.launch({headless:true,executablePath:path,args:[
+            '--no-sandbox','--disable-dev-shm-usage','--ignore-certificate-errors',
+            '--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'
+          ]});
+          let failed=0;
+          for(const [name,w,h] of [['desktop',1440,900],['ipad',725,730]]){
+            const page=await browser.newPage({viewport:{width:w,height:h},acceptDownloads:true,ignoreHTTPSErrors:true});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.stack||e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8765/seiryu-skeleton.html',{waitUntil:'domcontentloaded',timeout:30000});
+            try{await page.waitForFunction(()=>window.seiryuSkeletonReady===true,null,{timeout:70000})}
+            catch(e){errors.push('model did not initialize: '+e.message)}
+            await page.waitForTimeout(1600);
+            const stats=await page.evaluate(()=>{
+              const gl=document.getElementById('view').getContext('webgl2')||document.getElementById('view').getContext('webgl');
+              return {gl:!!gl,count:window.seiryuSkeletonMeshCount||0,status:document.getElementById('status').style.display};
+            });
+            await page.screenshot({path:'seiryu-skeleton-'+name+'.png',animations:'disabled'});
+            if(name==='ipad'){
+              await page.locator('[data-v="side"]').click();
+              await page.waitForTimeout(350);
+              await page.screenshot({path:'seiryu-skeleton-side.png',animations:'disabled'});
+              await page.locator('[data-v="head"]').click();
+              await page.waitForTimeout(350);
+              await page.screenshot({path:'seiryu-skeleton-head.png',animations:'disabled'});
+              try{
+                const downloadPromise=page.waitForEvent('download',{timeout:45000});
+                await page.locator('#save').click();
+                const dl=await downloadPromise;
+                await dl.saveAs('seiryu-qa-export.glb');
+                const buff=fs.readFileSync('seiryu-qa-export.glb');
+                if(buff.subarray(0,4).toString()!=='glTF'||buff.length<25000)
+                  errors.push('bad GLB '+buff.length);
+                console.log('GLB_EXPORT_BYTES',buff.length);
+              }catch(e){errors.push('GLB export failure: '+e.message)}
+            }
+            const bytes=fs.statSync('seiryu-skeleton-'+name+'.png').size;
+            console.log('SKELETON_QA',JSON.stringify({name,w,h,bytes,...stats,errors}));
+            if(errors.length||!stats.gl||stats.count<150||stats.status!=='none'||bytes<15000)failed++;
+            await page.close();
+          }
+          await browser.close();
+          if(failed)process.exit(1);
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: seiryu-skeleton-webgl-evidence
+          path: |
+            seiryu-skeleton-*.png
+            seiryu-qa-export.glb
+          if-no-files-found: warn
