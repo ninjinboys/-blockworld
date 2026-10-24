@@ -198,9 +198,9 @@ for(let i=30;i<64;i+=4){
 // never from stacked crocodile-shaped ellipsoids or previous skull algorithm.
 const head=new THREE.Group();head.name='HAND_BUILT_OPEN_CRANIUM';root.add(head);
 const skullPivot=P(-12.9,9.88);
-head.position.copy(skullPivot);
+// Scale around the anatomical skull origin; never shift the whole head.
 head.scale.set(1.18,1.18,1.10);
-head.position.addScaledVector(skullPivot,-.18);
+head.position.set(-skullPivot.x*.18,-skullPivot.y*.18,-skullPivot.z*.10);
 const C=(x,y,z=0)=>P(x,y,z);
 const cranium=C(-12.5,10.4,0);
 const upperNose=C(-17.18,9.96,0);
