@@ -23,6 +23,9 @@ const JUMP_SPEED=7.4,GRAVITY=19.5;
 let lookPitch=0,walkMotion=0,walkPhase=0,lastHurtUntil=0,attackVisualAt=0,enemyAttackAt=-Infinity;
 // CPU-only projectiles. PvP between human players keeps its existing rules.
 let cpuProjectiles=[];
+let entranceStart=0;
+const entranceDuration=5200;
+const arenaGates=[];
 let cpuAim={x:0,z:0,nextUpdate:0};
 const touchLooks=new Map();
 const clampPitch=v=>THREE.MathUtils.clamp(v,-1.28,1.28);
@@ -280,6 +283,7 @@ for(let i=0;i<archCount;i++){
 // Monumental gate integrated into the seating wall, with a stone arch rather than a box.
 for(const sign of [-1,1]){
  const z=sign*55.2;
+ const movingGate=new THREE.Group();scene.add(movingGate);arenaGates.push(movingGate);
  const gateStone=mat(0xa58d73),gateDark=mat(0x4a4039);
  for(const x of [-8.2,8.2]){
   block(4.1,12.5,6.5,0x8c7761,x,6.25,z);
@@ -296,8 +300,13 @@ for(const sign of [-1,1]){
  block(20,2.1,7.4,0x9e8870,0,18.8,z);
  block(21,1,8,0x5e4d3f,0,20.3,z);
  // Deep iron gate set back under the arched opening.
- block(14.1,10,.5,0x292927,0,5,z+sign*2.5);
- for(let i=-6;i<=6;i++)block(.19,10,.65,0x8c8980,i,5,z-sign*1.1);
+ // Raised portcullis is animated when fighters enter the arena.
+ const gatePanel=new THREE.Mesh(new THREE.BoxGeometry(14.1,1,.5),gateDark);
+ gatePanel.position.set(0,10,z+sign*2.5);movingGate.add(gatePanel);
+ for(let i=-6;i<=6;i++){
+  const bar=new THREE.Mesh(new THREE.BoxGeometry(.19,10,.65),mortar);
+  bar.position.set(i,5,z-sign*1.1);movingGate.add(bar);
+ }
  for(const x of [-11.8,11.8]){
   block(3.2,1.5,3.3,0x746251,x,1,z-sign*2.4);
   block(2,6.2,2,0xb7a38c,x,4.8,z-sign*2.4);
@@ -308,7 +317,7 @@ for(const sign of [-1,1]){
  const royalBanner=block(5.5,7,.2,0x9d2535,0,24,z-sign*4.2);
 }
 // Start close enough to see the opponent immediately in first-person view.
-const spawning=[new THREE.Vector3(-5,0,0),new THREE.Vector3(5,0,0)];
+const spawning=[new THREE.Vector3(0,0,-49),new THREE.Vector3(0,0,49)];
 
 function createAvatar(team,job){
   const cube=(parent,w,h,d,color,x=0,y=0,z=0)=>{
@@ -538,16 +547,18 @@ function beginMatch(){
  clearCpuProjectiles();
  resetJoystick();
  state='playing';keys.clear();touchLooks.clear();lookPitch=0;walkMotion=0;walkPhase=0;
+ entranceStart=performance.now();
+ arenaGates.forEach(g=>g.position.y=0);
  const onLeft=role!=='guest';
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
  me=makeFighter(myClass,a.x,a.z);rival=makeFighter(enemyClass,b.x,b.z);
  if(role==='cpu'){
-  rival=makeFighter(enemyClass,5,0);
+  rival=makeFighter(enemyClass,b.x,b.z);
   // The ranged CPU must spend time drawing its bow or preparing a spell.
   if(enemyClass==='archer'||enemyClass==='mage')rival.lastAttack=performance.now();
  }
  cpuAim={x:me.x,z:me.z,nextUpdate:0};
- roundEnd=performance.now()+roundLength*1000;remaining=roundLength;lastSync=0;
+ roundEnd=entranceStart+entranceDuration+roundLength*1000;remaining=roundLength;lastSync=0;
  replaceAvatars();
  $('screen').style.display='none';$('finish').style.display='none';
  $('top').classList.add('show');$('controlsHelp').classList.add('show');
@@ -557,7 +568,7 @@ function beginMatch(){
  $('crosshair').classList.add('show');
  $('weaponHud').classList.add('show');
  $('weaponName').textContent=CLASSES[myClass].name+' / '+(JOBS[myClass]?.kind==='dual'?'双剣':JOBS[myClass]?.kind==='bow'?'弓':JOBS[myClass]?.kind==='staff'?'魔法の杖':JOBS[myClass]?.kind==='shield'?'盾':'剣');
- updateHud();flash('FIGHT!');
+ updateHud();flash('門が開く… 出陣！');
 }
 function updateHud(){
  if(!me||!rival)return;
@@ -583,6 +594,7 @@ function effectLine(from,to,job){
  scene.add(mesh);effects.push({mesh,life:.23});
 }
 function resolveAttack(attackerIsHost){
+ if(performance.now()<entranceStart+entranceDuration)return;
  if(state!=='playing'||!me||!rival)return;
  if(!attackerIsHost)animateSwing(enemyAvatar);
  const attacker=attackerIsHost?me:rival,target=attackerIsHost?rival:me;
@@ -760,6 +772,7 @@ for(const b of document.querySelectorAll('#mobileControls button')){
  b.addEventListener('lostpointercapture',release);
 }
 function moveLocal(dt){
+ if(performance.now()<entranceStart+entranceDuration)return;
  const keyX=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
  const keyZ=(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0);
  const x=keyX+joystick.x,z=keyZ+joystick.y;
@@ -886,6 +899,18 @@ function stepCPU(dt){
 }
 function update(dt,t){
  if(state!=='playing'||!me||!rival)return;
+ const entryProgress=THREE.MathUtils.clamp((t-entranceStart)/entranceDuration,0,1);
+ if(entryProgress<1){
+  const travel=THREE.MathUtils.smoothstep(entryProgress,.12,.88);
+  me.z=(role==='guest'?1:-1)*(49-39*travel);
+  me.x=0;me.face=role==='guest'?Math.PI:0;
+  rival.z=(role==='guest'?-1:1)*(49-39*travel);
+  rival.x=0;rival.face=role==='guest'?0:Math.PI;
+  arenaGates.forEach(g=>g.position.y=11*THREE.MathUtils.smoothstep(entryProgress,.04,.42));
+  remaining=roundLength;updateHud();syncAvatars();
+  if(entryProgress>.90&&entryProgress<.93)flash('FIGHT!');
+  return;
+ }
  moveLocal(dt);
  if(role==='cpu'){
   stepCPU(dt);
