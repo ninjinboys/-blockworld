@@ -367,18 +367,22 @@ function skinLink(a,b,r0,r1,mat=skinBlue){
  mesh.position.copy(a).add(b).multiplyScalar(.5);
  mesh.quaternion.setFromUnitVectors(Y,delta.normalize());muscle.add(mesh);return mesh;
 }
-// Anatomical taper: thin neck, narrow muscular trunk, and long tapered tail.
-const rings=[],indices=[],radial=10,steps=130;
+// Muscular anatomy: bulky at chest and shoulder, tapering smoothly into a long tail.
+// Preserve every skeleton vertex; all new mass is a separate surface.
+function muscleRadius(t){
+ const trunk=1.02+1.04*Math.exp(-Math.pow((t-.36)/.20,2));
+ const shoulder=0.72*Math.exp(-Math.pow((t-.13)/.12,2));
+ const tail=t>.64?Math.pow(Math.max(.018,(1-t)/.36),.75):1;
+ return (trunk+shoulder)*tail;
+}
+const rings=[],indices=[],radial=16,steps=156;
 for(let i=0;i<=steps;i++){
  const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
- const chest=Math.exp(-Math.pow((t-.42)/.24,2));
- const taper=t>.69?Math.pow(Math.max(.025,(1-t)/.31),.80):1;
- const radius=(.92+.70*chest)*taper;
- const v=f.dorsal.clone().normalize(),side=f.side.clone().normalize();
+ const radius=muscleRadius(t);
  for(let j=0;j<radial;j++){
   const theta=j*2*Math.PI/radial;
-  const q=p.clone().addScaledVector(v,Math.cos(theta)*radius*.94)
-     .addScaledVector(side,Math.sin(theta)*radius);
+  const q=p.clone().addScaledVector(f.dorsal,Math.cos(theta)*radius*1.12)
+     .addScaledVector(f.side,Math.sin(theta)*radius*.99);
   rings.push(q.x,q.y,q.z);
  }
 }
@@ -391,37 +395,43 @@ const bodyGeo=new THREE.BufferGeometry();
 bodyGeo.setAttribute('position',new THREE.Float32BufferAttribute(rings,3));
 bodyGeo.setIndex(indices);bodyGeo.computeVertexNormals();
 muscle.add(new THREE.Mesh(bodyGeo,skinBlue));
-// Cream ventral skin strip follows the same spine, without individual scales.
+// Ventral tissue flush with the muscular body, not a separate tube.
 const bellyPoints=[],bellyIndices=[];
 for(let i=0;i<=steps;i++){
  const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
- const chest=Math.exp(-Math.pow((t-.42)/.24,2));
- const taper=t>.69?Math.pow(Math.max(.025,(1-t)/.31),.80):1;
- const radius=(.92+.70*chest)*taper;
- for(const angle of [Math.PI-.49,Math.PI,Math.PI+.49]){
-  const q=p.clone().addScaledVector(f.dorsal,Math.cos(angle)*radius*.90)
-   .addScaledVector(f.side,Math.sin(angle)*radius*1.015);
+ const radius=muscleRadius(t);
+ for(const angle of [Math.PI-.40,Math.PI,Math.PI+.40]){
+  const q=p.clone().addScaledVector(f.dorsal,Math.cos(angle)*radius*1.133)
+   .addScaledVector(f.side,Math.sin(angle)*radius*1.01);
   bellyPoints.push(q.x,q.y,q.z);
  }
- if(i<steps){for(let j=0;j<2;j++){let a=i*3+j,b=a+1,d=a+3,e=d+1;bellyIndices.push(a,d,b,b,d,e)}}
+ if(i<steps)for(let j=0;j<2;j++){
+  const a=i*3+j,b=a+1,d=a+3,e=d+1;bellyIndices.push(a,d,b,b,d,e);
+ }
 }
 const bellyGeo=new THREE.BufferGeometry();
 bellyGeo.setAttribute('position',new THREE.Float32BufferAttribute(bellyPoints,3));
 bellyGeo.setIndex(bellyIndices);bellyGeo.computeVertexNormals();
 muscle.add(new THREE.Mesh(bellyGeo,bellySkin));
-// Skin around both oversized forelimbs, maintaining two arms only.
+// Two heavily muscled forelimbs, with deltoids, biceps and forearms.
 for(const s of [-1,1]){
  const shoulder=P(-7.85,5.02,s*1.42);
  const elbow=s===1?P(-6.35,2.55,s*3.00):P(-10.15,2.45,s*2.95);
  const wrist=s===1?P(-4.40,-.04,s*3.85):P(-12.40,-.04,s*3.75);
- skinOval(shoulder,[1.92,1.78,1.67]);
- skinLink(shoulder,elbow,1.48,1.12);skinOval(elbow,[.91,.84,.85]);
- skinLink(elbow,wrist,1.14,.88);skinOval(wrist,[.84,.60,.89]);
+ skinOval(shoulder,[2.15,2.05,1.91],skinBlue,3);
+ skinLink(shoulder,elbow,1.62,1.27);
+ const upper=shoulder.clone().lerp(elbow,.47);
+ skinOval(upper,[1.38,1.52,1.30],skinBlue,3);
+ skinOval(elbow,[1.10,1.02,.98],skinBlue,3);
+ skinLink(elbow,wrist,1.29,.95);
+ const fore=elbow.clone().lerp(wrist,.40);
+ skinOval(fore,[1.20,1.38,1.11],skinBlue,3);
+ skinOval(wrist,[.95,.72,.97],skinBlue,3);
  for(let j=0;j<4;j++){
   const shift=(j-1.5)*.40;
   const base=wrist.clone().add(P(-.18,-.04,shift));
   const mid=base.clone().add(P(-.75,-.07,shift*.13));
-  skinLink(base,mid,.16,.11);
+  skinLink(base,mid,.24,.15);
  }
 }
 // Facial muscles use the SAME local coordinates as the original skull bones.
@@ -505,7 +515,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R80_RESTORE_HORNS_FACE_LOCAL';
+window.seiryuSkeletonRevision='R81_MUSCLE_ANATOMY_BULK';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
