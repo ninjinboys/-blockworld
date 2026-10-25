@@ -348,10 +348,14 @@ for(let j=-7;j<=7;j++){
 }
 // Skin stage must REPLACE the exposed skeleton, not be drawn on top of it.
 // Hide all existing skeletal geometry before building the flesh layer.
-root.traverse(obj=>{if(obj.isMesh)obj.visible=false;});
+// Keep the original skeleton geometry and anatomy intact; hide bones only where skin covers them.
+const originalBones=[];
+root.traverse(obj=>{if(obj.isMesh)originalBones.push(obj);});
+// Existing skeleton stays in the scene and is preserved for export and inspection.
+for(const obj of originalBones){obj.visible=true;}
 // R72: first anatomy pass ONLY — continuous skin and muscle, no scales/armor.
-const skinBlue=new THREE.MeshStandardMaterial({color:0x477eac,roughness:.89,metalness:0,side:THREE.DoubleSide});
-const bellySkin=new THREE.MeshStandardMaterial({color:0xb6a68c,roughness:.94,metalness:0,side:THREE.DoubleSide});
+const skinBlue=new THREE.MeshStandardMaterial({color:0x477eac,roughness:.89,metalness:0,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
+const bellySkin=new THREE.MeshStandardMaterial({color:0xb6a68c,roughness:.94,metalness:0,transparent:true,opacity:.45,depthWrite:false,side:THREE.DoubleSide});
 const muscle=new THREE.Group();muscle.name='SEIRYU_SKIN_MUSCLE_STAGE_NO_SCALES';root.add(muscle);
 function skinOval(pos,sizes,mat=skinBlue,facets=2){
  const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,facets),mat);
@@ -479,7 +483,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R73_SKIN_ONLY_HIDE_SKELETON';
+window.seiryuSkeletonRevision='R74_PRESERVE_SKELETON_TRANSLUCENT_SKIN';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
