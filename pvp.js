@@ -40,8 +40,8 @@ const camera=new THREE.PerspectiveCamera(73,1,.1,130);
 camera.rotation.order='YXZ';
 camera.position.set(0,15,19);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.7));
-renderer.shadowMap.enabled=true;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.15));
+renderer.shadowMap.enabled=false;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 $('stage').append(renderer.domElement);
@@ -63,7 +63,7 @@ scene.fog=new THREE.FogExp2(0x7898af,.005);
 camera.far=240;camera.updateProjectionMatrix();
 const ambient=new THREE.HemisphereLight(0xc2d4e7,0x342a23,1.05);scene.add(ambient);
 const sun=new THREE.DirectionalLight(0xffd09b,3.15);
-sun.position.set(-35,60,35);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+sun.position.set(-35,60,35);sun.castShadow=true;sun.shadow.mapSize.set(512,512);
 sun.shadow.camera.left=-75;sun.shadow.camera.right=75;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75;scene.add(sun);
 const mat=(color,metalness=0,roughness=.92)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
 function block(w,h,d,color,x,y,z){
@@ -78,7 +78,7 @@ for(const radius of [8,24,39,48]){
  ring.rotation.x=-Math.PI/2;ring.position.y=.02;scene.add(ring);
 }
 // Multi-level Roman-style arena: vaulted galleries, audience, royal box and stone paving.
-const TAU=Math.PI*2,SECTIONS=48,archCount=32;
+const TAU=Math.PI*2,SECTIONS=48,archCount=24;
 const limestone=mat(0x8d7865),mortar=mat(0x41362f),lightStone=mat(0xb09a80);
 const bronze=mat(0xc49b50,.35),cloth=mat(0x9d2535),shade=mat(0x392c2a);
 function polar(radius,angle,y=0){return [Math.sin(angle)*radius,y,Math.cos(angle)*radius]}
@@ -86,7 +86,7 @@ function radialBlock(w,h,d,material,radius,angle,y){
  const [x,yy,z]=polar(radius,angle,y);
  const obj=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
  obj.position.set(x,yy,z);obj.rotation.y=angle;
- obj.castShadow=true;obj.receiveShadow=true;scene.add(obj);return obj;
+ obj.castShadow=false;obj.receiveShadow=false;scene.add(obj);return obj;
 }
 function arcStrip(radius,y,thickness,material){
  const m=new THREE.Mesh(new THREE.TorusGeometry(radius,thickness,6,96),material);
@@ -95,7 +95,7 @@ function arcStrip(radius,y,thickness,material){
 // Large individually laid flagstones, dark joints and central circular motif.
 const paving=mat(0x8e745d),pavingAlt=mat(0xb69a79);
 for(let r=5;r<49;r+=4.5){
- const count=Math.max(14,Math.floor(r*1.1));
+ const count=Math.max(12,Math.floor(r*.7));
  for(let i=0;i<count;i++){
   const angle=(i+(Math.floor(r)%2)*.5)*TAU/count;
   const width=Math.min(3.9,r*TAU/count*.83);
@@ -125,7 +125,7 @@ const foundationMaterial=mat(0x796654);
 const foundation=new THREE.Mesh(new THREE.CylinderGeometry(78.9,78.9,13.8,96,1,true),foundationMaterial);
 foundation.position.y=6.9;foundation.material.side=THREE.DoubleSide;foundation.receiveShadow=true;scene.add(foundation);
 // Vertical stone courses support the uppermost seats without covering the battle floor.
-for(let tier=0;tier<8;tier++){
+for(let tier=0;tier<8;tier+=2){
  const radius=56.75+tier*2.9,level=.75+tier*1.75;
  for(let i=0;i<archCount;i++){
   const a=(i+.5)*TAU/archCount;
@@ -139,16 +139,16 @@ function addArcadeLevel(baseY,height){
  // Three radial layers give every arcade a real walkable-looking depth.
  for(let i=0;i<archCount;i++){
   const angle=i*archSpan,mid=angle+archSpan*.5;
-  for(const radius of [arcadeRadius-4.8,arcadeRadius,arcadeRadius+4.8]){
+  for(const radius of [arcadeRadius-4.8,arcadeRadius+4.8]){
    radialBlock(4.7,height,5.2,limestone,radius,angle,baseY+height*.5);
    radialBlock(5.6,1.5,5.8,mortar,radius,angle,baseY+.75);
    radialBlock(5.7,1.7,5.9,lightStone,radius,angle,beamY-.85);
    const span=radius*archSpan;
    const archWidth=Math.max(2.4,span-4.7);
    const archRadius=archWidth*.5;
-   for(let k=0;k<=12;k++){
-    const t=Math.PI*k/12,offset=Math.cos(t)*archRadius,rise=Math.sin(t)*archRadius*.6;
-    const segment=radialBlock(archWidth/12+.65,2.2,5.3,k%2?limestone:lightStone,
+   for(let k=0;k<=7;k++){
+    const t=Math.PI*k/7,offset=Math.cos(t)*archRadius,rise=Math.sin(t)*archRadius*.6;
+    const segment=radialBlock(archWidth/7+.65,2.2,5.3,k%2?limestone:lightStone,
       radius,mid+offset/radius,beamY-3.6+rise);
     segment.rotation.z=-Math.cos(t)*.65;
    }
@@ -234,7 +234,7 @@ for(let row=-23;row<=23&&jointIndex<jointCount;row++){
 pavingJoints.count=jointIndex;pavingJoints.instanceMatrix.needsUpdate=true;scene.add(pavingJoints);
 // Colour variation and stone courses on the spectator terraces.
 const spectatorStone=mat(0xb49a7e);
-for(let tier=0;tier<8;tier++){
+for(let tier=0;tier<8;tier+=2){
  const radius=56.9+tier*2.9;
  for(let i=0;i<archCount;i++){
   const a=(i+.5)*archSpan;
