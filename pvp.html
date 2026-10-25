@@ -79,7 +79,7 @@
 @media(hover:none),(pointer:coarse){#weaponHud{bottom:108px;padding:5px 11px;min-width:100px}#weaponName{font-size:11px}#lookHelp{top:76px;font-size:10px}#leaveButton{bottom:210px}}
 /* Fill the arena title screen without black letterbox bars. */
 #titleSplash{
- position:fixed;inset:0;width:100%;height:100%;height:100dvh;
+ position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;height:100dvh;
  z-index:30;background:#071421;
  display:grid;place-items:center;overflow:hidden;
  isolation:isolate;opacity:1;visibility:visible;
@@ -188,11 +188,29 @@
 // Show the splash only on initial entry; the existing PvP menu remains intact.
 (()=>{
  const splash=document.getElementById('titleSplash');
+ // iPad Safari may report a CSS viewport taller than the visible area.
+ // Anchor the title to the actual visual viewport, including its offset.
+ const syncTitleViewport=()=>{
+  if(!splash.isConnected)return;
+  const v=window.visualViewport;
+  splash.style.top=`${v?.offsetTop||0}px`;
+  splash.style.left=`${v?.offsetLeft||0}px`;
+  splash.style.width=`${v?.width||window.innerWidth}px`;
+  splash.style.height=`${v?.height||window.innerHeight}px`;
+  splash.style.bottom='auto';splash.style.right='auto';
+ };
+ syncTitleViewport();
+ window.visualViewport?.addEventListener('resize',syncTitleViewport);
+ window.visualViewport?.addEventListener('scroll',syncTitleViewport);
+ window.addEventListener('orientationchange',syncTitleViewport);
  const trigger=document.getElementById('titleEnter');
  let entered=false,gamepadPressed=false;
  const enter=()=>{
   if(entered)return;
   entered=true;
+  window.visualViewport?.removeEventListener('resize',syncTitleViewport);
+  window.visualViewport?.removeEventListener('scroll',syncTitleViewport);
+  window.removeEventListener('orientationchange',syncTitleViewport);
   document.removeEventListener('keydown',onKey,true);
   const lobby=document.getElementById('screen');
   lobby.scrollTop=0;
