@@ -424,16 +424,27 @@ for(const s of [-1,1]){
   skinLink(base,mid,.16,.11);
  }
 }
-// Solid facial flesh, broad cranium, snout, and lower jaw; keep horns and teeth exposed.
-skinOval(P(-12.65,10.25,0),[1.95,1.43,1.75]);
-skinOval(P(-14.13,10.16,0),[1.67,1.05,1.51]);
-skinOval(P(-15.40,9.99,0),[1.15,.69,1.13]);
-skinOval(P(-16.14,9.84,0),[.52,.36,.73]);
-for(const s of [-1,1]){
- skinOval(P(-13.70,10.35,s*1.20),[.86,.50,.33]);
- skinLink(P(-12.46,9.45,s*.89),P(-14.76,7.39,s*.65),.49,.38);
- skinLink(P(-14.76,7.39,s*.65),P(-15.68,7.26,s*.44),.28,.20);
+// Facial muscle follows the skull's transformed local coordinates.
+const faceSkin=new THREE.Group();head.add(faceSkin);
+function faceVolume(x,y,z,sx,sy,sz){
+ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,2),skinBlue);
+ m.position.set(x,y,z);m.scale.set(sx,sy,sz);faceSkin.add(m);
 }
+faceVolume(-12.65,10.25,0,1.68,1.17,1.49);
+faceVolume(-14.03,10.15,0,1.48,.91,1.29);
+faceVolume(-15.32,9.98,0,1.04,.59,1.02);
+faceVolume(-16.02,9.83,0,.51,.32,.66);
+for(const s of [-1,1]){
+ faceVolume(-13.50,10.27,s*1.05,.83,.54,.38);
+ faceVolume(-13.55,8.50,s*.78,.52,.85,.39);
+ faceVolume(-14.70,7.52,s*.56,.86,.35,.34);
+}
+// Preserve the exposed antlers and whiskers, not the old cranium shell.
+head.traverse(o=>{
+ if(!o.isMesh||o.parent===faceSkin)return;
+ const p=o.position;
+ if(p.y>11.4||p.x < -16.6)o.visible=true;
+});
 // The first pass intentionally has NO scales, mane, fur, fins or ornament meshes.
 window.seiryuStage='SKIN_MUSCLE_ONLY';
 
@@ -483,7 +494,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R77_MUSCLE_CONTOUR_FIX';
+window.seiryuSkeletonRevision='R78_FACE_SKIN_RIG_ALIGNED';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
