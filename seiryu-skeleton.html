@@ -137,14 +137,14 @@ for(let i=0;i<=COUNT;i++){
  const f={index:i,t,pos:p,tan,dorsal,side:Z.clone()};spineFrames.push(f);
  if(i){
   const pre=spineFrames[i-1];
-  const thickness=t<.67?.24:Math.max(.058,.23*(1-t)/.33);
+  const thickness=t<.67?.16:Math.max(.045,.16*(1-t)/.33);
   bone(pre.pos,p,thickness,thickness*.96,i%9===0?1:0);
  }
 }
 // True segmented spine. Cervical, thoracic, and caudal vertebrae have distinct proportions.
 for(let i=2;i<COUNT-1;i+=3){
  const f=spineFrames[i],t=f.t,section=t<.23?0:t<.67?1:2;
- const radius=section===0?.32:section===1?.37:Math.max(.11,.33*(1-t)/.33);
+ const radius=section===0?.23:section===1?.25:Math.max(.085,.23*(1-t)/.33);
  const centrum=ball(f.pos,[radius*1.2,radius*.82,radius],i%4===0?1:0,root,0);
  centrum.quaternion.setFromUnitVectors(Y,f.tan);
  if(section!==2){
@@ -180,8 +180,8 @@ for(let x=-6.95;x<=5.22;x+=.62){
  const u=Math.max(0,Math.min(1,(x+6.95)/12.17));
  // Wide chest in the middle, tapered shoulders and tail root.
  const bloom=Math.pow(Math.sin(Math.PI*(.06+u*.87)),.60);
- const width=1.02+2.14*bloom;
- const depth=1.43+2.24*bloom;
+ const width=.46+.72*bloom;
+ const depth=.72+.88*bloom;
  // Cartilaginous keel is central, directly UNDER the dorsal spine.
  const sternum=pick.pos.clone().add(P(.64,-depth,.0));
  stations.push({x,u,spine:pick.pos.clone(),width,depth,sternum});
@@ -189,7 +189,7 @@ for(let x=-6.95;x<=5.22;x+=.62){
 // One continuous ventral sternum: joins LOWER ENDS of every rib pair.
 // This is the missing structural feature in the former comb-shaped torso.
 const keelPath=stations.map(s=>s.sternum);
-curved(keelPath,.17,4,root,.82);
+curved(keelPath,.11,4,root,.82);
 for(let i=0;i<stations.length;i++){
  const s=stations[i];
  const t=s.u,back=t>.72;
@@ -202,7 +202,7 @@ for(let i=0;i<stations.length;i++){
   const D=s.spine.clone().add(P(sweep,-s.depth*.72,sign*s.width*.82));
   const E=s.sternum.clone().add(P(0,.04,sign*.22));
   // Thick C-shaped rib that curls toward shared ventral sternum.
-  curved([A,B,C,D,E],(.155+.055*Math.sin(Math.PI*t)),i%3===0?1:0,root,.65);
+  curved([A,B,C,D,E],(.095+.025*Math.sin(Math.PI*t)),i%3===0?1:0,root,.65);
   // Actual bony articulation at the spine and cartilage at keel.
   ball(A,[.19,.16,.18],1,root,0);
   bone(E,s.sternum,.11,.09,3);
@@ -392,7 +392,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R63_MOBILE_RENDER_OPTIMIZATION';
+window.seiryuSkeletonRevision='R64_SLENDER_TORSO';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
