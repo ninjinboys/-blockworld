@@ -395,10 +395,10 @@ function loft(parent,points,radii,mat=skinBlue,segments=20){
 // Body reconstructed as irregular muscular stations: slim cervical section,
 // broad chest, tapered abdomen and long tail. Distinct back/ventral planes.
 const stationsR88=[
- [0,.77,.73],[.075,.88,.87],[.14,1.12,1.12],[.20,1.48,1.50],
- [.27,2.28,2.30],[.34,2.55,2.46],[.43,2.45,2.24],
- [.52,2.08,1.87],[.61,1.54,1.38],[.69,1.03,.98],
- [.76,.76,.74],[.83,.55,.54],[.91,.32,.33],[.97,.15,.17],[1,.035,.04]
+ [0,.94,.87],[.075,1.04,1.01],[.14,1.27,1.28],[.20,1.72,1.73],
+ [.27,2.40,2.42],[.34,2.63,2.51],[.43,2.47,2.30],
+ [.52,2.03,1.94],[.61,1.57,1.48],[.69,1.16,1.11],
+ [.76,.91,.87],[.83,.67,.63],[.91,.40,.39],[.97,.20,.20],[1,.035,.04]
 ];
 const bodyVerts=[],bodyIds=[],M=20,N=190;
 function stationValue(t,k){
@@ -469,6 +469,42 @@ for(const s of [-1,1]){
   P(-15.71,7.20,s*.45)],[.52,.59,.48,.31,.14],skinBlue,12);
  ellipsoid(face,P(-13.20,9.35,s*1.12),[.63,.69,.48],muscleShade,2);
 }
+// Reference-driven first refinement: stronger cheek silhouette,
+// paired long flowing whiskers, substantial claws, and dorsal muscle ridges.
+// Still muscle stage: NO scales, mane or ornamental fins.
+const turquoise=new THREE.MeshStandardMaterial({color:0x50a9b8,roughness:.82,flatShading:true});
+const clawMat=new THREE.MeshStandardMaterial({color:0xd8c8a6,roughness:.72,flatShading:true});
+for(const s of [-1,1]){
+ // Flowing whiskers emerge from the muzzle and curl away from the face.
+ loft(face,[P(-15.40,9.70,s*.85),P(-16.60,9.82,s*1.37),
+  P(-17.60,9.38,s*2.25),P(-18.10,8.56,s*2.98),
+  P(-17.55,8.06,s*3.38)],[.13,.12,.095,.064,.015],turquoise,9);
+ // Sculpted cheek muscle follows the jaw hinge, not a detached spike.
+ loft(face,[P(-12.57,10.15,s*1.11),P(-12.99,9.35,s*1.41),
+  P(-13.58,8.75,s*1.24),P(-14.12,8.18,s*.96)],
+ [.25,.66,.49,.08],skinBlue,12);
+ // Chin whiskers
+ loft(face,[P(-14.80,7.38,s*.65),P(-15.40,6.82,s*.93),
+  P(-15.34,6.25,s*1.18)],[.10,.065,.012],turquoise,8);
+ const wrist=s===1?P(-4.40,-.04,s*3.85):P(-12.40,-.04,s*3.75);
+ for(let j=0;j<4;j++){
+  const shift=(j-1.5)*.43;
+  const base=wrist.clone().add(P(-1.01,-.28,shift*1.18));
+  const tip=base.clone().add(P(-.46,-.28,shift*.12));
+  tendon(muscle,base,tip,.17,.008,clawMat);
+ }
+}
+// Dorsal longitudinal muscle groups add distinct definition without scales.
+for(const s of [-1,1]){
+ const pts=[];
+ for(let i=0;i<=9;i++){
+  const t=.20+i*.045,f=spineFrames[Math.round(t*COUNT)];
+  const r=stationValue(t,1);
+  pts.push(f.pos.clone().addScaledVector(f.dorsal,r*.88)
+   .addScaledVector(f.side,s*stationValue(t,2)*.43));
+ }
+ loft(muscle,pts,[.05,.18,.25,.29,.31,.30,.27,.21,.12,.015],muscleShade,12);
+}
 // Explicitly retain every original horn, whisker and tooth by its local
 // geometry location; skeletal ribs/vertebrae remain hidden.
 head.updateMatrixWorld(true);
@@ -481,8 +517,8 @@ for(const obj of originalBones){
  const p=head.worldToLocal(box.getCenter(new THREE.Vector3()));
  if(p.y>11.5||p.x < -16.8||(p.y<9.35&&p.x< -13.9))obj.visible=true;
 }
-window.seiryuStage='R88_FULL_FLESH_REBUILD';
-window.seiryuSkeletonRevision='R88_FULL_FLESH_REBUILD';
+window.seiryuStage='R89_REFERENCE_REFINEMENT';
+window.seiryuSkeletonRevision='R89_REFERENCE_REFINEMENT';
 // Environment is not exported with the bones.
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(130,130),
  new THREE.MeshStandardMaterial({color:0x141923,roughness:1}));
