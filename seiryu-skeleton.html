@@ -246,58 +246,57 @@ const lowerTip=C(-15.85,7.00,0);
 // R69: rebuild the FACE from the reference: compact broad brow, coherent
 // wedge muzzle, substantial cheek plates, jaw hinged at the back of skull.
 // No exaggerated vertical mouth or detached teeth scaffolding.
-const skullBones=[
- [C(-12.92,10.36,0),[1.30,.78,1.18]],
- [C(-14.10,10.22,0),[1.10,.62,1.06]],
- [C(-15.10,10.07,0),[.80,.42,.78]]
-];
-for(const [p,r] of skullBones)ball(p,r,1,head,0);
-for(const s of [-1,1]){
- // Layered angular eyebrows frame the eye and sweep into cheek fins.
- curved([C(-15.13,10.53,s*.63),C(-14.10,10.95,s*1.12),
-         C(-12.98,10.88,s*1.22),C(-12.00,10.46,s*.94)],.25,1,head,.65);
- // A distinct orbit and pronounced cheek bone, not a flat snout.
- curved([C(-13.90,10.73,s*1.14),C(-13.28,10.28,s*1.36),
-         C(-13.49,9.79,s*1.24),C(-14.13,9.83,s*1.00)],.16,3,head,.8);
- for(let k=0;k<5;k++){
-  const x=-13.68+k*.42;
-  branch([C(x,10.14,s*1.02),C(x+.38,10.30,s*1.47),
-          C(x+.82,10.65+(k%3)*.13,s*1.85)],.14,2,head);
- }
- // Continuous compact muzzle with blunt, downturned nose.
- curved([C(-14.03,10.39,s*.84),C(-15.10,10.16,s*.77),
-         C(-16.08,9.95,s*.50),C(-16.27,9.76,s*.35)],.28,1,head,.72);
- curved([C(-16.27,9.66,s*.37),C(-15.23,9.55,s*.70),
-         C(-13.80,9.48,s*.91),C(-12.03,9.52,s*.75)],.18,0,head,.74);
- // Open jaws, but close enough to form a recognizable dragon FACE.
- curved([C(-12.04,9.51,s*.77),C(-12.79,8.90,s*.92),
-         C(-14.05,8.55,s*.76),C(-15.65,8.54,s*.39)],.26,1,head,.72);
- // Visible fangs integrated into the jawline.
- for(let k=0;k<6;k++){
-  const x=-15.83+k*.62;
-  branch([C(x,9.57,s*(.49+k*.065)),C(x-.07,9.32,s*(.49+k*.065)),
-          C(x+.05,9.10-(k%3)*.07,s*(.49+k*.065))],.105,3,head);
- }
- for(let k=0;k<5;k++){
-  const x=-15.22+k*.58;
-  branch([C(x,8.58,s*(.38+k*.075)),C(x-.08,8.84,s*(.38+k*.075)),
-          C(x+.02,9.01,s*(.38+k*.075))],.082,3,head);
- }
- // Paired backward-swept branching antlers.
- const h=C(-12.64,11.02,s*.77);
- branch([h,C(-12.35,12.18,s*1.10),C(-11.36,13.43,s*1.41),
-         C(-9.75,14.02,s*1.64)],.25,2,head);
- branch([C(-12.35,12.18,s*1.10),C(-12.87,13.31,s*1.51),
-         C(-13.14,13.89,s*1.78)],.12,1,head);
- branch([C(-11.36,13.43,s*1.41),C(-11.15,14.53,s*1.83)],.13,1,head);
- // Characteristic long whiskers originate at the muzzle, not at the skull back.
- curved([C(-15.65,9.85,s*.72),C(-16.88,10.18,s*1.48),
-         C(-17.82,9.65,s*2.15),C(-17.41,9.02,s*2.45)],.055,3,head,.08);
- curved([C(-14.80,8.62,s*.60),C(-15.04,8.08,s*.94),
-         C(-14.62,7.68,s*1.15)],.06,2,head,.09);
+// R70 - replace the former tooth-rack face with a continuous wedge-shaped skull.
+function plate(points,color=1,parent=head){
+ const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);
+ for(let i=1;i<points.length;i++)shape.lineTo(points[i][0],points[i][1]);
+ shape.closePath();
+ const g=new THREE.ExtrudeGeometry(shape,{depth:.24,bevelEnabled:true,bevelThickness:.10,bevelSize:.12,bevelSegments:1,steps:1});
+ const mesh=add(g,color,parent);return mesh;
 }
-ball(C(-16.24,9.85,0),[.30,.22,.54],1,head,0);
-ball(C(-15.68,8.54,0),[.28,.16,.45],0,head,0);
+// Cranial mass: one wide skull, a pronounced brow and a shorter blunt snout.
+ball(C(-12.88,10.23,0),[1.60,1.08,1.52],1,head,1);
+ball(C(-14.10,10.08,0),[1.38,.72,1.25],0,head,0);
+ball(C(-15.33,9.91,0),[.89,.48,.95],1,head,0);
+for(const s of [-1,1]){
+ // Broad upper and lower muzzle contours create a distinct facial silhouette.
+ curved([C(-12.72,10.88,s*1.10),C(-14.10,10.87,s*1.22),
+         C(-15.50,10.31,s*.94),C(-16.16,9.96,s*.72)],.32,1,head,.75);
+ curved([C(-16.16,9.67,s*.67),C(-15.05,9.46,s*.99),
+         C(-13.56,9.40,s*1.20),C(-12.20,9.49,s*1.02)],.22,0,head,.77);
+ // Angular lateral cheek fan, rather than dozens of floating spines.
+ for(let j=0;j<4;j++){
+  const x=-13.85+j*.53;
+  branch([C(x,10.44,s*1.08),C(x+.44,10.69,s*1.60),
+          C(x+1.05,10.90+(j%2)*.20,s*1.96)],.18,2,head);
+ }
+ // Eye socket and heavy eyebrow.
+ curved([C(-14.23,10.82,s*1.27),C(-13.62,11.10,s*1.46),
+         C(-12.90,10.83,s*1.42)],.23,1,head,.7);
+ // Jaw hinges close to the skull; open but NOT a huge dangling U-shaped rack.
+ curved([C(-12.18,9.43,s*.98),C(-13.03,8.99,s*1.08),
+         C(-14.48,8.70,s*.90),C(-15.81,8.75,s*.53)],.32,0,head,.78);
+ curved([C(-15.81,8.75,s*.53),C(-15.96,8.77,0),
+         C(-15.81,8.75,-s*.53)],.13,1,head,.8);
+ // Fangs concentrated near the front, not hanging all along the face.
+ for(let j=0;j<3;j++){
+  const x=-15.75+j*.63;
+  branch([C(x,9.53,s*.77),C(x-.04,9.13,s*.74),
+          C(x+.07,8.91,s*.71)],.13,3,head);
+ }
+ branch([C(-15.28,8.80,s*.52),C(-15.29,9.22,s*.56)],.11,3,head);
+ // Swept-back branching horns, rooted behind eyes.
+ const base=C(-12.41,11.08,s*.82);
+ branch([base,C(-11.86,12.32,s*1.15),C(-10.55,13.62,s*1.52),
+         C(-9.02,14.09,s*1.75)],.31,2,head);
+ branch([C(-11.86,12.32,s*1.15),C(-12.49,13.40,s*1.46),
+         C(-12.73,13.92,s*1.70)],.16,1,head);
+ branch([C(-10.55,13.62,s*1.52),C(-10.24,14.74,s*1.94)],.15,1,head);
+ // Two flowing whiskers, with visible origins on the nose.
+ curved([C(-15.76,9.94,s*.81),C(-16.78,10.24,s*1.48),
+         C(-17.90,9.75,s*2.18),C(-17.65,9.00,s*2.60)],.062,3,head,.12);
+}
+ball(C(-16.13,9.89,0),[.31,.22,.70],1,head,0);
 // Forelegs have only TWO shoulder attachment sites at FRONT of rib cage.
 // Silhouette of far arm projects toward snout, near arm sweeps below chest.
 function addForeleg(s){
@@ -381,7 +380,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R69_REBUILT_FACE_ANATOMY';
+window.seiryuSkeletonRevision='R70_NEW_SKULL_FACE';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
