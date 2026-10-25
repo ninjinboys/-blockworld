@@ -13,7 +13,7 @@ const CLASSES={
 };
 const PEER_URL='https://cdn.jsdelivr.net/npm/peerjs@1.5.5/+esm';
 const PEER_PREFIX='nexacraft-pvp-arena-v1-';
-const roundLength=90;
+const roundLength=180;
 let myClass='sword',enemyClass='sword',role='',state='menu',roomCode='',peer=null,connection=null,peerLoader=null;
 let me=null,rival=null,myAvatar=null,enemyAvatar=null,roundEnd=0,remaining=roundLength,lastSync=0,lastClock=0;
 let keys=new Set(),clock=new THREE.Clock(),effects=[],noticeTimeout=0;
@@ -57,25 +57,58 @@ const firstPersonHand=makeFirstPersonHand(THREE,{
 });
 const avatarItems=makeAvatarHeldItems(THREE,()=>{});
 
-const ambient=new THREE.HemisphereLight(0xaad8ff,0x233a2b,2.1);scene.add(ambient);
-const sun=new THREE.DirectionalLight(0xffe9c9,2.3);sun.position.set(-10,24,17);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;scene.add(sun);
-const mat=(color,metalness=0,roughness=.7)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
-const ground=new THREE.Mesh(new THREE.BoxGeometry(34,1,25),mat(0x304c54));ground.position.y=-.55;ground.receiveShadow=true;scene.add(ground);
-const ring=new THREE.Mesh(new THREE.RingGeometry(8.3,8.55,90),new THREE.MeshBasicMaterial({color:0x65dacd,side:THREE.DoubleSide,transparent:true,opacity:.55}));ring.rotation.x=-Math.PI/2;ring.position.y=.018;scene.add(ring);
-const grid=new THREE.GridHelper(34,17,0x5a9c9c,0x365a62);grid.position.y=.028;scene.add(grid);
+const PLAY_RADIUS=48;
+scene.background=new THREE.Color(0xa9c2d3);
+scene.fog=new THREE.FogExp2(0xa9c2d3,.005);
+camera.far=240;camera.updateProjectionMatrix();
+const ambient=new THREE.HemisphereLight(0xe9efff,0x655541,2.1);scene.add(ambient);
+const sun=new THREE.DirectionalLight(0xffd9aa,2.5);
+sun.position.set(-35,60,35);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-75;sun.shadow.camera.right=75;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75;scene.add(sun);
+const mat=(color,metalness=0,roughness=.85)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
 function block(w,h,d,color,x,y,z){
- const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color,.18,.7));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);
+ m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
 }
-for(const x of [-17,17])block(.75,2.7,26,0x213a4b,x,1.15,0);
-for(const z of [-12.5,12.5])block(34,.75,.75,0x213a4b,0,.22,z);
-for(const x of [-14.8,14.8])for(const z of [-10.2,10.2]){
- block(1.1,5,1.1,0x273e50,x,2.5,z);
- const cap=block(1.9,.25,1.9,0x67bdc0,x,5.05,z);
- cap.material.emissive=new THREE.Color(0x175d68);
- const lamp=new THREE.PointLight(0x5feadd,2,9);lamp.position.set(x,5.3,z);scene.add(lamp);
+const sand=mat(0xc6a979),stone=mat(0x998671),dark=mat(0x64574d);
+const ground=new THREE.Mesh(new THREE.CylinderGeometry(55,55,1,96),sand);
+ground.position.y=-.52;ground.receiveShadow=true;scene.add(ground);
+for(const radius of [8,24,39,48]){
+ const ring=new THREE.Mesh(new THREE.RingGeometry(radius,radius+.24,96),dark);
+ ring.rotation.x=-Math.PI/2;ring.position.y=.02;scene.add(ring);
 }
-for(const z of [-8,8]){block(6,.15,.12,0x4d8487,0,.09,z)}
-const spawning=[new THREE.Vector3(-6,0,0),new THREE.Vector3(6,0,0)];
+for(let tier=0;tier<4;tier++){
+ const inner=57+tier*4.5,outer=inner+4.7,height=1.7+tier*3.2;
+ const stand=new THREE.Mesh(new THREE.RingGeometry(inner,outer,72),tier%2?stone:dark);
+ stand.rotation.x=-Math.PI/2;stand.position.y=height;stand.receiveShadow=true;scene.add(stand);
+ const riser=new THREE.Mesh(new THREE.CylinderGeometry(outer,outer,3.2,72,1,true),stone.clone());
+ riser.material.side=THREE.DoubleSide;riser.position.y=height-1.6;scene.add(riser);
+}
+const wallRadius=78;
+const wall=new THREE.Mesh(new THREE.CylinderGeometry(wallRadius,wallRadius,24,64,1,true),stone.clone());
+wall.material.side=THREE.DoubleSide;wall.position.y=14;scene.add(wall);
+for(let i=0;i<48;i++){
+ const a=i*Math.PI*2/48,x=Math.sin(a)*wallRadius,z=Math.cos(a)*wallRadius;
+ const pillar=block(2.2,21,2.2,0x877663,x,14,z);pillar.rotation.y=a;
+ const cap=block(3.3,.8,3.3,0x574d44,x,24.6,z);cap.rotation.y=a;
+ if(i%4===0){
+  const banner=block(2.5,5,.18,0x912c35,Math.sin(a)*(wallRadius-.8),19,Math.cos(a)*(wallRadius-.8));
+  banner.rotation.y=a;
+ }
+ if(i%6===0){
+  const flame=new THREE.Mesh(new THREE.ConeGeometry(.75,2,5),new THREE.MeshBasicMaterial({color:0xff983f}));
+  flame.position.set(x,26.6,z);scene.add(flame);
+  const torch=block(1.8,.5,1.8,0x40362f,x,25.5,z);torch.rotation.y=a;
+ }
+}
+for(const sign of [-1,1]){
+ const z=sign*56;
+ for(const x of [-6,6])block(3,12,3,0x6d6054,x,6,z);
+ block(17,3,4,0xa5947d,0,12,z);
+ block(10,9,.5,0x322d2b,0,4.5,z);
+ for(let i=-4;i<=4;i++)block(.13,8,.35,0x8d8071,i,4.5,z-sign*.4);
+}
+const spawning=[new THREE.Vector3(-9,0,0),new THREE.Vector3(9,0,0)];
 
 function createAvatar(team,job){
   const cube=(parent,w,h,d,color,x=0,y=0,z=0)=>{
@@ -538,8 +571,9 @@ function moveLocal(dt){
  // Analog motion is proportional to joystick tilt, including diagonals.
  const dx=(Math.sin(yaw)*forward-Math.cos(yaw)*strafe)*speed*dt;
  const dz=(Math.cos(yaw)*forward+Math.sin(yaw)*strafe)*speed*dt;
- me.x=THREE.MathUtils.clamp(me.x+dx,-14.7,14.7);
- me.z=THREE.MathUtils.clamp(me.z+dz,-10.5,10.5);
+ const nx=me.x+dx,nz=me.z+dz,dist=Math.hypot(nx,nz);
+ const boundaryScale=dist>PLAY_RADIUS?PLAY_RADIUS/dist:1;
+ me.x=nx*boundaryScale;me.z=nz*boundaryScale;
  walkMotion=Math.hypot(dx,dz)/Math.max(dt,.001);
  me.guard=keys.has('KeyG');
  advanceJump(dt);
@@ -599,7 +633,7 @@ function updateCpuProjectiles(dt){
   const verticalGap=Math.abs(1.42-(me.y+1.2));
   const hit=verticalGap<.78&&(me.x-hx)**2+(me.z-hz)**2<shot.radius**2;
   const expired=shot.travelled>=shot.range||
-    Math.abs(shot.x)>16.5||Math.abs(shot.z)>12.2;
+    Math.abs(shot.x)>PLAY_RADIUS+1||Math.abs(shot.z)>PLAY_RADIUS+1;
   if(hit){
    const blocking=me.guard?(CLASSES[myClass].block||.42):0;
    const damage=Math.max(1,Math.round(shot.damage*(1-blocking)));
@@ -635,11 +669,11 @@ function stepCPU(dt){
  }else rival.face=Math.atan2(dx,dz);
  const safeRange=Math.max(2.2,c.range*.67);
  if(d>safeRange){
-  rival.x=THREE.MathUtils.clamp(rival.x+dx/d*c.speed*.66*dt,-14.7,14.7);
-  rival.z=THREE.MathUtils.clamp(rival.z+dz/d*c.speed*.66*dt,-10.5,10.5);
+  rival.x=THREE.MathUtils.clamp(rival.x+dx/d*c.speed*.66*dt,-PLAY_RADIUS,PLAY_RADIUS);
+  rival.z=THREE.MathUtils.clamp(rival.z+dz/d*c.speed*.66*dt,-PLAY_RADIUS,PLAY_RADIUS);
  }else if(d<c.range*.42){
-  rival.x=THREE.MathUtils.clamp(rival.x-dx/d*c.speed*.3*dt,-14.7,14.7);
-  rival.z=THREE.MathUtils.clamp(rival.z-dz/d*c.speed*.3*dt,-10.5,10.5);
+  rival.x=THREE.MathUtils.clamp(rival.x-dx/d*c.speed*.3*dt,-PLAY_RADIUS,PLAY_RADIUS);
+  rival.z=THREE.MathUtils.clamp(rival.z-dz/d*c.speed*.3*dt,-PLAY_RADIUS,PLAY_RADIUS);
  }
  rival.guard=enemyClass==='shield'&&d<3.4&&Math.sin(now/700)>0.15;
  if(ranged){
