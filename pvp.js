@@ -23,8 +23,9 @@ const JUMP_SPEED=7.4,GRAVITY=19.5;
 let lookPitch=0,walkMotion=0,walkPhase=0,lastHurtUntil=0,attackVisualAt=0,enemyAttackAt=-Infinity;
 // CPU-only projectiles. PvP between human players keeps its existing rules.
 let cpuProjectiles=[];
-let entranceStart=0;
-const entranceDuration=5200;
+let entranceStart=0,entranceFightAnnounced=false;
+const entranceDuration=6500;
+const ENTRANCE_Z=64,ENTRANCE_END_Z=12;
 const arenaGates=[];
 let cpuAim={x:0,z:0,nextUpdate:0};
 const touchLooks=new Map();
@@ -315,10 +316,27 @@ for(const sign of [-1,1]){
  for(const x of [-7,0,7])block(1.3,7,1.5,0xb7a38c,x,25,z+sign*1.2);
  block(20,1.5,10,0x685242,0,29,z+sign*1.2);
  const royalBanner=block(5.5,7,.2,0x9d2535,0,24,z-sign*4.2);
+ // A real roofed stone passage exists BEHIND each gate: enter from here,
+ // not from the battlefield in front of the portcullis.
+ const tunnelCenter=sign*63.2;
+ block(17,.55,19,0x776452,0,-.28,tunnelCenter); // stable floor to walk on
+ for(const x of [-8.2,8.2]){
+  block(2.6,11.8,19,0x5c4b3c,x,5.9,tunnelCenter); // thick side walls
+  block(2.9,.85,19,0xb09a80,x,11.55,tunnelCenter); // upper cornice
+  // Three projecting inner piers create a proper vaulted entrance.
+  for(const offset of [-6,0,6]){
+   const zz=tunnelCenter+sign*offset;
+   block(1.15,9.5,1.2,0x9b856c,x-Math.sign(x)*1.0,4.75,zz);
+   const flame=new THREE.Mesh(
+    new THREE.ConeGeometry(.32,.8,6),
+    new THREE.MeshBasicMaterial({color:0xffac47}));
+   flame.position.set(x-Math.sign(x)*1.0,5.8,zz);scene.add(flame);
+  }
+ }
+ block(17,1.4,19,0x75614f,0,12.4,tunnelCenter); // vaulted-roof silhouette
 }
-// Start close enough to see the opponent immediately in first-person view.
-const spawning=[new THREE.Vector3(0,0,-49),new THREE.Vector3(0,0,49)];
-
+// Fighters spawn INSIDE the passages, behind the iron gates at z ±55.2.
+const spawning=[new THREE.Vector3(0,0,-ENTRANCE_Z),new THREE.Vector3(0,0,ENTRANCE_Z)];
 function createAvatar(team,job){
   const cube=(parent,w,h,d,color,x=0,y=0,z=0)=>{
     const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color}));
@@ -503,9 +521,10 @@ function receive(data){
  if(data.t==='start'&&role==='guest'){beginMatch();return}
  if(data.t==='state'&&state==='playing'&&Number.isFinite(data.x)&&Number.isFinite(data.z)&&Number.isFinite(data.face)){
   // Position updates are cosmetic until verified by the host on attack.
-  const maxX=14.9,maxZ=10.8;
-  rival.x=THREE.MathUtils.clamp(data.x,-maxX,maxX);
-  rival.z=THREE.MathUtils.clamp(data.z,-maxZ,maxZ);
+  const remoteDistance=Math.hypot(data.x,data.z);
+  const remoteScale=remoteDistance>PLAY_RADIUS?PLAY_RADIUS/remoteDistance:1;
+  rival.x=data.x*remoteScale;
+  rival.z=data.z*remoteScale;
   rival.face=data.face;
   rival.y=Number.isFinite(data.y)?THREE.MathUtils.clamp(data.y,0,2.6):0;
   rival.guard=!!data.guard;
@@ -547,7 +566,7 @@ function beginMatch(){
  clearCpuProjectiles();
  resetJoystick();
  state='playing';keys.clear();touchLooks.clear();lookPitch=0;walkMotion=0;walkPhase=0;
- entranceStart=performance.now();
+ entranceStart=performance.now();entranceFightAnnounced=false;
  arenaGates.forEach(g=>g.position.y=0);
  const onLeft=role!=='guest';
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
@@ -901,14 +920,20 @@ function update(dt,t){
  if(state!=='playing'||!me||!rival)return;
  const entryProgress=THREE.MathUtils.clamp((t-entranceStart)/entranceDuration,0,1);
  if(entryProgress<1){
-  const travel=THREE.MathUtils.smoothstep(entryProgress,.12,.88);
-  me.z=(role==='guest'?1:-1)*(49-39*travel);
-  me.x=0;me.face=role==='guest'?Math.PI:0;
-  rival.z=(role==='guest'?-1:1)*(49-39*travel);
-  rival.x=0;rival.face=role==='guest'?0:Math.PI;
-  arenaGates.forEach(g=>g.position.y=11*THREE.MathUtils.smoothstep(entryProgress,.04,.42));
+  // Stay behind the bars for the opening beat; only then walk out.
+  const travel=THREE.MathUtils.smoothstep(entryProgress,.23,.90);
+  const startSide=role==='guest'?1:-1;
+  const zDistance=ENTRANCE_Z-(ENTRANCE_Z-ENTRANCE_END_Z)*travel;
+  me.z=startSide*zDistance;
+  me.x=0;me.face=startSide>0?Math.PI:0;
+  rival.z=-startSide*zDistance;
+  rival.x=0;rival.face=startSide>0?0:Math.PI;
+  const gateLift=12*THREE.MathUtils.smoothstep(entryProgress,.02,.27);
+  arenaGates.forEach(g=>g.position.y=gateLift);
   remaining=roundLength;updateHud();syncAvatars();
-  if(entryProgress>.90&&entryProgress<.93)flash('FIGHT!');
+  if(entryProgress>.92&&!entranceFightAnnounced){
+   entranceFightAnnounced=true;flash('FIGHT!');
+  }
   return;
  }
  moveLocal(dt);
