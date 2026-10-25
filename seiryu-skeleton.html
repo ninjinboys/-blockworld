@@ -424,15 +424,12 @@ for(const s of [-1,1]){
   skinLink(base,mid,.16,.11);
  }
 }
-// Facial muscles are generated in world space and then converted into the
-// existing skull's local space, so the original skeleton transform is preserved.
+// Facial muscles use the SAME local coordinates as the original skull bones.
+// Do not worldToLocal() these points: the skull itself already transforms them.
 const faceSkin=new THREE.Group();head.add(faceSkin);
-head.updateMatrixWorld(true);
 function faceVolume(x,y,z,sx,sy,sz){
  const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,3),skinBlue);
- const world=new THREE.Vector3(x,y,z);
- m.position.copy(head.worldToLocal(world));m.scale.set(sx,sy,sz);
- faceSkin.add(m);
+ m.position.set(x,y,z);m.scale.set(sx,sy,sz);faceSkin.add(m);
 }
 faceVolume(-12.65,10.25,0,1.68,1.17,1.49);
 faceVolume(-14.03,10.15,0,1.48,.91,1.29);
@@ -442,6 +439,22 @@ for(const s of [-1,1]){
  faceVolume(-13.50,10.27,s*1.05,.83,.54,.38);
  faceVolume(-13.55,8.50,s*.78,.52,.85,.39);
  faceVolume(-14.70,7.52,s*.56,.86,.35,.34);
+}
+// Restore ORIGINAL horn, whisker and fang geometry by revealing skull
+// meshes that extend beyond the skin envelope. Do not alter the skeleton.
+const skullBox=new THREE.Box3();
+head.updateMatrixWorld(true);
+for(const obj of originalBones){
+ if(!obj.isMesh)continue;
+ let node=obj.parent,belongs=false;
+ while(node){if(node===head){belongs=true;break}node=node.parent}
+ if(!belongs)continue;
+ obj.updateMatrixWorld(true);
+ skullBox.setFromObject(obj);
+ const center=skullBox.getCenter(new THREE.Vector3());
+ const local=head.worldToLocal(center.clone());
+ if(local.y>11.35 || local.x < -16.55 ||
+    (local.y<9.55 && local.y>8.45 && local.x < -14.1))obj.visible=true;
 }
 // The first pass intentionally has NO scales, mane, fur, fins or ornament meshes.
 window.seiryuStage='SKIN_MUSCLE_ONLY';
@@ -492,7 +505,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R79_HEAD_WORLD_LOCAL_FIX';
+window.seiryuSkeletonRevision='R80_RESTORE_HORNS_FACE_LOCAL';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
