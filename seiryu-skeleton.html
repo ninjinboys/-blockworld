@@ -235,49 +235,69 @@ const skullPivot=P(-12.9,9.88);
 // Scale around the anatomical skull origin; never shift the whole head.
 // Enlarge the cranium vertically around the atlas instead of flattening the face.
 // Lengthen the snout-to-occiput axis, not the vertical height.
-head.scale.set(1.65,1.18,1.20);
-head.position.set(-skullPivot.x*.65,-skullPivot.y*.18,-skullPivot.z*.20);
+head.scale.set(1.20,1.10,1.15);
+head.position.set(-skullPivot.x*.20,-skullPivot.y*.10,-skullPivot.z*.15);
 const C=(x,y,z=0)=>P(x,y,z);
 const cranium=C(-12.5,10.4,0);
 const upperNose=C(-17.18,9.96,0);
 const jawHinge=C(-11.40,9.54,0);
 const lowerTip=C(-15.85,7.00,0);
 // R66: broad, angular Asian-dragon skull, short deep muzzle and enormous open jaws.
+// R69: rebuild the FACE from the reference: compact broad brow, coherent
+// wedge muzzle, substantial cheek plates, jaw hinged at the back of skull.
+// No exaggerated vertical mouth or detached teeth scaffolding.
 const skullBones=[
- [C(-12.85,10.43,0),[1.62,1.12,1.42]],
- [C(-14.05,10.31,0),[1.30,.81,1.27]],
- [C(-15.10,10.12,0),[.83,.56,.91]]
+ [C(-12.92,10.36,0),[1.30,.78,1.18]],
+ [C(-14.10,10.22,0),[1.10,.62,1.06]],
+ [C(-15.10,10.07,0),[.80,.42,.78]]
 ];
 for(const [p,r] of skullBones)ball(p,r,1,head,0);
 for(const s of [-1,1]){
- // Strong angular brow and deep, triangular cheek armor.
- curved([C(-14.75,10.97,s*.78),C(-13.72,11.30,s*1.39),C(-12.36,11.10,s*1.26)],.29,1,head,.60);
- curved([C(-14.25,10.58,s*1.20),C(-13.45,9.75,s*1.48),C(-12.18,9.67,s*.88)],.25,0,head,.48);
+ // Layered angular eyebrows frame the eye and sweep into cheek fins.
+ curved([C(-15.13,10.53,s*.63),C(-14.10,10.95,s*1.12),
+         C(-12.98,10.88,s*1.22),C(-12.00,10.46,s*.94)],.25,1,head,.65);
+ // A distinct orbit and pronounced cheek bone, not a flat snout.
+ curved([C(-13.90,10.73,s*1.14),C(-13.28,10.28,s*1.36),
+         C(-13.49,9.79,s*1.24),C(-14.13,9.83,s*1.00)],.16,3,head,.8);
+ for(let k=0;k<5;k++){
+  const x=-13.68+k*.42;
+  branch([C(x,10.14,s*1.02),C(x+.38,10.30,s*1.47),
+          C(x+.82,10.65+(k%3)*.13,s*1.85)],.14,2,head);
+ }
+ // Continuous compact muzzle with blunt, downturned nose.
+ curved([C(-14.03,10.39,s*.84),C(-15.10,10.16,s*.77),
+         C(-16.08,9.95,s*.50),C(-16.27,9.76,s*.35)],.28,1,head,.72);
+ curved([C(-16.27,9.66,s*.37),C(-15.23,9.55,s*.70),
+         C(-13.80,9.48,s*.91),C(-12.03,9.52,s*.75)],.18,0,head,.74);
+ // Open jaws, but close enough to form a recognizable dragon FACE.
+ curved([C(-12.04,9.51,s*.77),C(-12.79,8.90,s*.92),
+         C(-14.05,8.55,s*.76),C(-15.65,8.54,s*.39)],.26,1,head,.72);
+ // Visible fangs integrated into the jawline.
  for(let k=0;k<6;k++){
-  const x=-14.55+k*.48;
-  branch([C(x,10.55,s*1.0),C(x+.32,10.92+(k%2)*.17,s*1.55),C(x+.75,11.23+(k%3)*.19,s*1.98)],.16,2,head);
+  const x=-15.83+k*.62;
+  branch([C(x,9.57,s*(.49+k*.065)),C(x-.07,9.32,s*(.49+k*.065)),
+          C(x+.05,9.10-(k%3)*.07,s*(.49+k*.065))],.105,3,head);
  }
- // Shorter broad nasal bridge with downturned upper lip.
- curved([C(-13.92,10.72,s*.85),C(-15.02,10.38,s*.86),C(-16.15,10.04,s*.57)],.32,1,head,.55);
- curved([C(-16.15,9.91,s*.53),C(-15.12,9.65,s*.88),C(-13.68,9.56,s*1.10),C(-11.75,9.60,s*.89)],.22,0,head,.65);
- // Deep open lower jaw: strong hinge, descending mandible, broad chin.
- curved([C(-11.67,9.52,s*.79),C(-12.32,8.20,s*1.07),C(-13.56,7.10,s*.89),C(-15.26,6.88,s*.49)],.31,1,head,.65);
- for(let k=0;k<7;k++){
-  const x=-15.83+k*.61;
-  branch([C(x,9.73,s*.61),C(x-.10,9.25,s*.64),C(x+.06,8.94-(k%3)*.13,s*.61)],.12,3,head);
-  branch([C(-15.02+k*.51,7.05+k*.10,s*.42),C(-15.13+k*.51,7.48+k*.11,s*.48),C(-15.02+k*.51,7.76+k*.11,s*.43)],.10,3,head);
+ for(let k=0;k<5;k++){
+  const x=-15.22+k*.58;
+  branch([C(x,8.58,s*(.38+k*.075)),C(x-.08,8.84,s*(.38+k*.075)),
+          C(x+.02,9.01,s*(.38+k*.075))],.082,3,head);
  }
- // Branched antlers sweep back, not straight spikes.
- const horn=C(-12.37,11.23,s*.82);
- branch([horn,C(-12.08,12.55,s*1.24),C(-10.98,13.85,s*1.60),C(-9.28,14.48,s*1.82)],.31,2,head);
- branch([C(-12.08,12.55,s*1.24),C(-12.67,13.70,s*1.65),C(-12.98,14.24,s*1.91)],.15,1,head);
- branch([C(-10.98,13.85,s*1.60),C(-10.90,15.02,s*2.12)],.16,1,head);
- // Long floating whiskers and chin tendrils.
- curved([C(-15.33,9.92,s*.84),C(-17.23,10.35,s*1.9),C(-18.03,9.40,s*2.7),C(-17.36,8.60,s*3.05)],.062,3,head,.11);
- curved([C(-14.77,7.12,s*.53),C(-15.30,6.05,s*.88),C(-14.93,5.56,s*1.13)],.078,2,head,.12);
+ // Paired backward-swept branching antlers.
+ const h=C(-12.64,11.02,s*.77);
+ branch([h,C(-12.35,12.18,s*1.10),C(-11.36,13.43,s*1.41),
+         C(-9.75,14.02,s*1.64)],.25,2,head);
+ branch([C(-12.35,12.18,s*1.10),C(-12.87,13.31,s*1.51),
+         C(-13.14,13.89,s*1.78)],.12,1,head);
+ branch([C(-11.36,13.43,s*1.41),C(-11.15,14.53,s*1.83)],.13,1,head);
+ // Characteristic long whiskers originate at the muzzle, not at the skull back.
+ curved([C(-15.65,9.85,s*.72),C(-16.88,10.18,s*1.48),
+         C(-17.82,9.65,s*2.15),C(-17.41,9.02,s*2.45)],.055,3,head,.08);
+ curved([C(-14.80,8.62,s*.60),C(-15.04,8.08,s*.94),
+         C(-14.62,7.68,s*1.15)],.06,2,head,.09);
 }
-ball(C(-16.08,10.02,0),[.39,.25,.70],1,head,0);
-ball(C(-15.23,6.88,0),[.41,.22,.54],0,head,0);
+ball(C(-16.24,9.85,0),[.30,.22,.54],1,head,0);
+ball(C(-15.68,8.54,0),[.28,.16,.45],0,head,0);
 // Forelegs have only TWO shoulder attachment sites at FRONT of rib cage.
 // Silhouette of far arm projects toward snout, near arm sweeps below chest.
 function addForeleg(s){
@@ -361,7 +381,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R68_LONGER_HEAD_NOT_TALLER';
+window.seiryuSkeletonRevision='R69_REBUILT_FACE_ANATOMY';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
