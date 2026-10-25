@@ -233,8 +233,9 @@ for(const sign of [-1,1]){
 const head=new THREE.Group();head.name='HAND_BUILT_OPEN_CRANIUM';root.add(head);
 const skullPivot=P(-12.9,9.88);
 // Scale around the anatomical skull origin; never shift the whole head.
-head.scale.set(1.18,1.18,1.10);
-head.position.set(-skullPivot.x*.18,-skullPivot.y*.18,-skullPivot.z*.10);
+// Enlarge the cranium vertically around the atlas instead of flattening the face.
+head.scale.set(1.12,1.53,1.20);
+head.position.set(-skullPivot.x*.12,-skullPivot.y*.53,-skullPivot.z*.20);
 const C=(x,y,z=0)=>P(x,y,z);
 const cranium=C(-12.5,10.4,0);
 const upperNose=C(-17.18,9.96,0);
@@ -359,7 +360,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R66_REBUILT_DRAGON_HEAD';
+window.seiryuSkeletonRevision='R67_HEAD_VERTICAL_PROPORTIONS';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
