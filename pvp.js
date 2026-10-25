@@ -58,19 +58,19 @@ const firstPersonHand=makeFirstPersonHand(THREE,{
 const avatarItems=makeAvatarHeldItems(THREE,()=>{});
 
 const PLAY_RADIUS=48;
-scene.background=new THREE.Color(0xa9c2d3);
-scene.fog=new THREE.FogExp2(0xa9c2d3,.005);
+scene.background=new THREE.Color(0x7898af);
+scene.fog=new THREE.FogExp2(0x7898af,.005);
 camera.far=240;camera.updateProjectionMatrix();
-const ambient=new THREE.HemisphereLight(0xe9efff,0x655541,2.1);scene.add(ambient);
-const sun=new THREE.DirectionalLight(0xffd9aa,2.5);
+const ambient=new THREE.HemisphereLight(0xc2d4e7,0x342a23,1.05);scene.add(ambient);
+const sun=new THREE.DirectionalLight(0xffd09b,3.15);
 sun.position.set(-35,60,35);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-75;sun.shadow.camera.right=75;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75;scene.add(sun);
-const mat=(color,metalness=0,roughness=.85)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
+const mat=(color,metalness=0,roughness=.92)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
 function block(w,h,d,color,x,y,z){
  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);
  m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
 }
-const sand=mat(0xc6a979),stone=mat(0x998671),dark=mat(0x64574d);
+const sand=mat(0x967655),stone=mat(0x776554),dark=mat(0x40352f);
 const ground=new THREE.Mesh(new THREE.CylinderGeometry(55,55,1,96),sand);
 ground.position.y=-.52;ground.receiveShadow=true;scene.add(ground);
 for(const radius of [8,24,39,48]){
@@ -79,7 +79,7 @@ for(const radius of [8,24,39,48]){
 }
 // Multi-level Roman-style arena: vaulted galleries, audience, royal box and stone paving.
 const TAU=Math.PI*2,SECTIONS=48,archCount=32;
-const limestone=mat(0xb6a18a),mortar=mat(0x736457),lightStone=mat(0xd2bca0);
+const limestone=mat(0x8d7865),mortar=mat(0x41362f),lightStone=mat(0xb09a80);
 const bronze=mat(0xc49b50,.35),cloth=mat(0x9d2535),shade=mat(0x392c2a);
 function polar(radius,angle,y=0){return [Math.sin(angle)*radius,y,Math.cos(angle)*radius]}
 function radialBlock(w,h,d,material,radius,angle,y){
@@ -93,7 +93,7 @@ function arcStrip(radius,y,thickness,material){
  m.rotation.x=Math.PI/2;m.position.y=y;scene.add(m);return m;
 }
 // Large individually laid flagstones, dark joints and central circular motif.
-const paving=mat(0xbda483),pavingAlt=mat(0xcab18e);
+const paving=mat(0x8e745d),pavingAlt=mat(0xb69a79);
 for(let r=5;r<49;r+=4.5){
  const count=Math.max(14,Math.floor(r*1.1));
  for(let i=0;i<count;i++){
@@ -107,7 +107,7 @@ for(const radius of [8,24,39,48])arcStrip(radius,.065,.13,mortar);
 const medallion=new THREE.Mesh(new THREE.RingGeometry(3.1,3.7,32),bronze);
 medallion.rotation.x=-Math.PI/2;medallion.position.y=.09;scene.add(medallion);
 // The seating is made of stepped horizontal rings, with stairs between sections.
-const seatMats=[limestone,lightStone,mat(0x9f8a73)];
+const seatMats=[limestone,lightStone,mat(0x77614e)];
 for(let tier=0;tier<8;tier++){
  const inner=55.3+tier*2.9,outer=inner+2.87,height=.75+tier*1.75;
  const seat=new THREE.Mesh(new THREE.RingGeometry(inner,outer,96),seatMats[tier%3]);
@@ -170,7 +170,7 @@ for(let i=0;i<archCount;i+=4){
 }
 // Spectator silhouettes grouped into merged geometry for mobile performance.
 const crowdGeometry=new THREE.BoxGeometry(.55,1.05,.55);
-const crowdMaterial=mat(0x3b3937);
+const crowdMaterial=mat(0x28221f);
 const audience=new THREE.InstancedMesh(crowdGeometry,crowdMaterial,1100);
 const dummy=new THREE.Object3D();
 for(let i=0;i<1100;i++){
@@ -185,7 +185,7 @@ audience.instanceMatrix.needsUpdate=true;audience.castShadow=false;scene.add(aud
 for(const sign of [-1,1]){
  const z=sign*54.8;
  for(const x of [-9,9])block(4,14,4,0x8c7761,x,7,z);
- block(22,3,5,0xc5b096,0,15,z);
+ block(22,3,5,0x99826b,0,15,z);
  block(23,1.4,5.5,0x665344,0,17,z);
  block(12,10,.6,0x3b322c,0,5,z);
  for(let i=-5;i<=5;i++)block(.18,9,.4,0x9c927e,i,5,z-sign*.4);
