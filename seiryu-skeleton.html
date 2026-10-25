@@ -19,7 +19,7 @@ button[aria-pressed="true"]{background:#685039;color:#fff;border-color:#d6b88f}#
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
 <body><canvas id="view" aria-label="青龍の完全新規骨格3Dモデル"></canvas>
-<header><small>NEXACRAFT · GUARDIAN BEAST</small><h1>青龍 <span>SEIRYU</span></h1><p>ZERO-BASE SKELETON / 頭・背骨・肋骨・前脚２本・尾１本</p></header>
+<header><small>NEXACRAFT · GUARDIAN BEAST</small><h1>青龍 <span>SEIRYU</span></h1><p>SKIN + MUSCLE / 皮膚・筋肉のみ（鱗なし）</p></header>
 <div id="status">3D骨格を構築中…</div>
 <div class="guide">指で360°回転　・　ピンチで拡大縮小</div>
 <nav class="controls">
@@ -346,6 +346,90 @@ for(let j=-7;j<=7;j++){
  curved([tailEnd,tailEnd.clone().lerp(endpoint,.42),endpoint],
         .093,j%3===0?3:1,root,.06);
 }
+// R72: first anatomy pass ONLY — continuous skin and muscle, no scales/armor.
+const skinBlue=new THREE.MeshStandardMaterial({color:0x477eac,roughness:.89,metalness:0,side:THREE.DoubleSide});
+const bellySkin=new THREE.MeshStandardMaterial({color:0xb6a68c,roughness:.94,metalness:0,side:THREE.DoubleSide});
+const muscle=new THREE.Group();muscle.name='SEIRYU_SKIN_MUSCLE_STAGE_NO_SCALES';root.add(muscle);
+function skinOval(pos,sizes,mat=skinBlue,facets=2){
+ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,facets),mat);
+ m.position.copy(pos);m.scale.set(...sizes);muscle.add(m);return m;
+}
+function skinLink(a,b,r0,r1,mat=skinBlue){
+ const delta=b.clone().sub(a),len=delta.length();
+ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,10,1),mat);
+ mesh.position.copy(a).add(b).multiplyScalar(.5);
+ mesh.quaternion.setFromUnitVectors(Y,delta.normalize());muscle.add(mesh);return mesh;
+}
+// Anatomical taper: thin neck, narrow muscular trunk, and long tapered tail.
+const rings=[],indices=[],radial=10,steps=130;
+for(let i=0;i<=steps;i++){
+ const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
+ const chest=Math.exp(-Math.pow((t-.42)/.24,2));
+ const taper=t>.69?Math.pow(Math.max(.025,(1-t)/.31),.80):1;
+ const radius=(.48+.54*chest)*taper;
+ const v=f.dorsal.clone().normalize(),side=f.side.clone().normalize();
+ for(let j=0;j<radial;j++){
+  const theta=j*2*Math.PI/radial;
+  const q=p.clone().addScaledVector(v,Math.cos(theta)*radius*.88)
+     .addScaledVector(side,Math.sin(theta)*radius);
+  rings.push(q.x,q.y,q.z);
+ }
+}
+for(let i=0;i<steps;i++)for(let j=0;j<radial;j++){
+ const a=i*radial+j,b=i*radial+(j+1)%radial;
+ const d=(i+1)*radial+j,e=(i+1)*radial+(j+1)%radial;
+ indices.push(a,b,d,b,e,d);
+}
+const bodyGeo=new THREE.BufferGeometry();
+bodyGeo.setAttribute('position',new THREE.Float32BufferAttribute(rings,3));
+bodyGeo.setIndex(indices);bodyGeo.computeVertexNormals();
+muscle.add(new THREE.Mesh(bodyGeo,skinBlue));
+// Cream ventral skin strip follows the same spine, without individual scales.
+const bellyPoints=[],bellyIndices=[];
+for(let i=0;i<=steps;i++){
+ const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
+ const chest=Math.exp(-Math.pow((t-.42)/.24,2));
+ const taper=t>.69?Math.pow(Math.max(.025,(1-t)/.31),.80):1;
+ const radius=(.48+.54*chest)*taper;
+ for(const angle of [Math.PI-.49,Math.PI,Math.PI+.49]){
+  const q=p.clone().addScaledVector(f.dorsal,Math.cos(angle)*radius*.90)
+   .addScaledVector(f.side,Math.sin(angle)*radius*1.015);
+  bellyPoints.push(q.x,q.y,q.z);
+ }
+ if(i<steps){for(let j=0;j<2;j++){let a=i*3+j,b=a+1,d=a+3,e=d+1;bellyIndices.push(a,d,b,b,d,e)}}
+}
+const bellyGeo=new THREE.BufferGeometry();
+bellyGeo.setAttribute('position',new THREE.Float32BufferAttribute(bellyPoints,3));
+bellyGeo.setIndex(bellyIndices);bellyGeo.computeVertexNormals();
+muscle.add(new THREE.Mesh(bellyGeo,bellySkin));
+// Skin around both oversized forelimbs, maintaining two arms only.
+for(const s of [-1,1]){
+ const shoulder=P(-7.85,5.02,s*1.42);
+ const elbow=s===1?P(-6.35,2.55,s*3.00):P(-10.15,2.45,s*2.95);
+ const wrist=s===1?P(-4.40,-.04,s*3.85):P(-12.40,-.04,s*3.75);
+ skinOval(shoulder,[1.05,1.02,.86]);
+ skinLink(shoulder,elbow,.64,.47);skinOval(elbow,[.55,.56,.53]);
+ skinLink(elbow,wrist,.43,.34);skinOval(wrist,[.58,.43,.62]);
+ for(let j=0;j<4;j++){
+  const shift=(j-1.5)*.40;
+  const base=wrist.clone().add(P(-.18,-.04,shift));
+  const mid=base.clone().add(P(-.75,-.07,shift*.13));
+  skinLink(base,mid,.16,.11);
+ }
+}
+// Solid facial flesh, broad cranium, snout, and lower jaw; keep horns and teeth exposed.
+skinOval(P(-12.65,10.25,0),[1.62,1.12,1.43]);
+skinOval(P(-14.13,10.16,0),[1.52,.84,1.31]);
+skinOval(P(-15.40,9.99,0),[1.05,.58,1.02]);
+skinOval(P(-16.14,9.84,0),[.52,.36,.73]);
+for(const s of [-1,1]){
+ skinOval(P(-13.70,10.35,s*1.20),[.86,.50,.33]);
+ skinLink(P(-12.46,9.45,s*.89),P(-14.76,7.39,s*.65),.36,.27);
+ skinLink(P(-14.76,7.39,s*.65),P(-15.68,7.26,s*.44),.28,.20);
+}
+// The first pass intentionally has NO scales, mane, fur, fins or ornament meshes.
+window.seiryuStage='SKIN_MUSCLE_ONLY';
+
 // Environment is not exported with the bones.
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(130,130),
  new THREE.MeshStandardMaterial({color:0x141923,roughness:1}));
@@ -392,7 +476,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R71_REFERENCE_SKULL_REBUILD';
+window.seiryuSkeletonRevision='R72_SKIN_MUSCLE_STAGE';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
