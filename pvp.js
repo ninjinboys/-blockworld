@@ -81,12 +81,15 @@ for(let tier=0;tier<4;tier++){
  const inner=57+tier*4.5,outer=inner+4.7,height=1.7+tier*3.2;
  const stand=new THREE.Mesh(new THREE.RingGeometry(inner,outer,72),tier%2?stone:dark);
  stand.rotation.x=-Math.PI/2;stand.position.y=height;stand.receiveShadow=true;scene.add(stand);
- const riser=new THREE.Mesh(new THREE.CylinderGeometry(outer,outer,3.2,72,1,true),stone.clone());
+ // A riser must be a thin ring wall, not a solid cylinder blocking every row.
+ const riser=new THREE.Mesh(new THREE.CylinderGeometry(inner,inner,3.2,72,1,true),tier%2?dark:stone);
  riser.material.side=THREE.DoubleSide;riser.position.y=height-1.6;scene.add(riser);
+ const edge=new THREE.Mesh(new THREE.TorusGeometry(inner,.22,6,72),dark);
+ edge.rotation.x=Math.PI/2;edge.position.y=height+.05;scene.add(edge);
 }
 const wallRadius=78;
-const wall=new THREE.Mesh(new THREE.CylinderGeometry(wallRadius,wallRadius,24,64,1,true),stone.clone());
-wall.material.side=THREE.DoubleSide;wall.position.y=14;scene.add(wall);
+const wall=new THREE.Mesh(new THREE.CylinderGeometry(wallRadius,wallRadius,13,64,1,true),stone.clone());
+wall.material.side=THREE.DoubleSide;wall.position.y=18;scene.add(wall);
 for(let i=0;i<48;i++){
  const a=i*Math.PI*2/48,x=Math.sin(a)*wallRadius,z=Math.cos(a)*wallRadius;
  const pillar=block(2.2,21,2.2,0x877663,x,14,z);pillar.rotation.y=a;
@@ -108,7 +111,8 @@ for(const sign of [-1,1]){
  block(10,9,.5,0x322d2b,0,4.5,z);
  for(let i=-4;i<=4;i++)block(.13,8,.35,0x8d8071,i,4.5,z-sign*.4);
 }
-const spawning=[new THREE.Vector3(-9,0,0),new THREE.Vector3(9,0,0)];
+// Start close enough to see the opponent immediately in first-person view.
+const spawning=[new THREE.Vector3(-5,0,0),new THREE.Vector3(5,0,0)];
 
 function createAvatar(team,job){
   const cube=(parent,w,h,d,color,x=0,y=0,z=0)=>{
@@ -342,7 +346,7 @@ function beginMatch(){
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
  me=makeFighter(myClass,a.x,a.z);rival=makeFighter(enemyClass,b.x,b.z);
  if(role==='cpu'){
-  rival=makeFighter(enemyClass,6,0);
+  rival=makeFighter(enemyClass,5,0);
   // The ranged CPU must spend time drawing its bow or preparing a spell.
   if(enemyClass==='archer'||enemyClass==='mage')rival.lastAttack=performance.now();
  }
