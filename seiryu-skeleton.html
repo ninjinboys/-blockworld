@@ -246,57 +246,69 @@ const lowerTip=C(-15.85,7.00,0);
 // R69: rebuild the FACE from the reference: compact broad brow, coherent
 // wedge muzzle, substantial cheek plates, jaw hinged at the back of skull.
 // No exaggerated vertical mouth or detached teeth scaffolding.
-// R70 - replace the former tooth-rack face with a continuous wedge-shaped skull.
-function plate(points,color=1,parent=head){
- const shape=new THREE.Shape();shape.moveTo(points[0][0],points[0][1]);
- for(let i=1;i<points.length;i++)shape.lineTo(points[i][0],points[i][1]);
- shape.closePath();
- const g=new THREE.ExtrudeGeometry(shape,{depth:.24,bevelEnabled:true,bevelThickness:.10,bevelSize:.12,bevelSegments:1,steps:1});
- const mesh=add(g,color,parent);return mesh;
+// R71 - reference-driven rebuild. No long overlapping capsule skull.
+// The source silhouette has a heavy angular brow, downturned snout,
+// large triangular cheek fins, and a wide open jaw.
+function skullBeam(points,r=.2,mat=0){return curved(points.map(p=>C(...p)),r,mat,head,.7)}
+function skullJoint(x,y,z,sx,sy,sz,mat=0){
+ return ball(C(x,y,z),[sx,sy,sz],mat,head,0);
 }
-// Cranial mass: one wide skull, a pronounced brow and a shorter blunt snout.
-ball(C(-12.88,10.23,0),[1.60,1.08,1.52],1,head,1);
-ball(C(-14.10,10.08,0),[1.38,.72,1.25],0,head,0);
-ball(C(-15.33,9.91,0),[.89,.48,.95],1,head,0);
+// compact occiput, broad temples, tapering nasal bridge
+skullJoint(-12.58,10.18,0,1.03,.86,1.13,0);
+skullJoint(-13.48,10.21,0,1.18,.70,1.26,1);
+skullJoint(-14.62,10.02,0,.93,.52,.97,0);
 for(const s of [-1,1]){
- // Broad upper and lower muzzle contours create a distinct facial silhouette.
- curved([C(-12.72,10.88,s*1.10),C(-14.10,10.87,s*1.22),
-         C(-15.50,10.31,s*.94),C(-16.16,9.96,s*.72)],.32,1,head,.75);
- curved([C(-16.16,9.67,s*.67),C(-15.05,9.46,s*.99),
-         C(-13.56,9.40,s*1.20),C(-12.20,9.49,s*1.02)],.22,0,head,.77);
- // Angular lateral cheek fan, rather than dozens of floating spines.
- for(let j=0;j<4;j++){
-  const x=-13.85+j*.53;
-  branch([C(x,10.44,s*1.08),C(x+.44,10.69,s*1.60),
-          C(x+1.05,10.90+(j%2)*.20,s*1.96)],.18,2,head);
+ // massive continuous angular skull roof and downturned muzzle
+ skullBeam([[-12.18,10.76,s*.85],[-13.35,10.98,s*1.24],
+  [-14.58,10.65,s*.94],[-15.48,10.15,s*.65],
+  [-16.16,9.89,s*.57]],.31,1);
+ skullBeam([[-16.16,9.89,s*.57],[-16.29,9.59,s*.58],
+  [-15.52,9.38,s*.79],[-14.08,9.42,s*1.06],
+  [-12.32,9.54,s*.93]],.22,0);
+ // angular brow arches around a prominent eye SOCKET
+ skullBeam([[-14.42,10.72,s*1.15],[-13.92,11.13,s*1.42],
+  [-13.19,11.05,s*1.52],[-12.68,10.57,s*1.31]],.26,1);
+ skullBeam([[-14.20,10.70,s*1.21],[-13.86,9.92,s*1.44],
+  [-13.15,9.77,s*1.45],[-12.68,10.57,s*1.31]],.18,2);
+ // prominent swept-back stacked cheek plates, not floating spikes
+ for(let j=0;j<6;j++){
+  const x=-14.28+j*.44;
+  skullBeam([[x,10.38,s*1.03],[x+.42,10.61,s*1.47],
+   [x+.91,10.87+(j%2)*.11,s*(1.94+j*.04)]],.16,2);
  }
- // Eye socket and heavy eyebrow.
- curved([C(-14.23,10.82,s*1.27),C(-13.62,11.10,s*1.46),
-         C(-12.90,10.83,s*1.42)],.23,1,head,.7);
- // Jaw hinges close to the skull; open but NOT a huge dangling U-shaped rack.
- curved([C(-12.18,9.43,s*.98),C(-13.03,8.99,s*1.08),
-         C(-14.48,8.70,s*.90),C(-15.81,8.75,s*.53)],.32,0,head,.78);
- curved([C(-15.81,8.75,s*.53),C(-15.96,8.77,0),
-         C(-15.81,8.75,-s*.53)],.13,1,head,.8);
- // Fangs concentrated near the front, not hanging all along the face.
- for(let j=0;j<3;j++){
-  const x=-15.75+j*.63;
-  branch([C(x,9.53,s*.77),C(x-.04,9.13,s*.74),
-          C(x+.07,8.91,s*.71)],.13,3,head);
+ // cheekbone running to the jaw hinge
+ skullBeam([[-14.39,9.67,s*.99],[-13.57,9.20,s*1.22],
+  [-12.45,9.38,s*.93]],.22,0);
+ // broad open lower jaw, hinge under cheek, jaw TIP far below the muzzle
+ skullBeam([[-12.39,9.44,s*.91],[-12.81,8.56,s*1.07],
+  [-13.74,7.75,s*.92],[-14.84,7.27,s*.67],
+  [-15.66,7.22,s*.46]],.29,1);
+ for(let k=0;k<6;k++){
+  const x=-15.88+k*.54;
+  branch([C(x,9.47,s*(.60+k*.06)),
+   C(x-.09,9.04,s*(.60+k*.06)),
+   C(x+.08,8.68-(k%3)*.12,s*(.60+k*.06))],.12,3,head);
  }
- branch([C(-15.28,8.80,s*.52),C(-15.29,9.22,s*.56)],.11,3,head);
- // Swept-back branching horns, rooted behind eyes.
- const base=C(-12.41,11.08,s*.82);
- branch([base,C(-11.86,12.32,s*1.15),C(-10.55,13.62,s*1.52),
-         C(-9.02,14.09,s*1.75)],.31,2,head);
- branch([C(-11.86,12.32,s*1.15),C(-12.49,13.40,s*1.46),
-         C(-12.73,13.92,s*1.70)],.16,1,head);
- branch([C(-10.55,13.62,s*1.52),C(-10.24,14.74,s*1.94)],.15,1,head);
- // Two flowing whiskers, with visible origins on the nose.
- curved([C(-15.76,9.94,s*.81),C(-16.78,10.24,s*1.48),
-         C(-17.90,9.75,s*2.18),C(-17.65,9.00,s*2.60)],.062,3,head,.12);
+ for(let k=0;k<4;k++){
+  const x=-15.29+k*.67;
+  branch([C(x,7.31+k*.17,s*.48),C(x-.08,7.79+k*.20,s*.51),
+   C(x+.02,8.02+k*.20,s*.51)],.105,3,head);
+ }
+ // reference: deer-like branched antlers leaning backwards
+ branch([C(-12.59,10.90,s*.87),C(-12.30,12.18,s*1.18),
+  C(-11.29,13.32,s*1.48),C(-9.80,13.88,s*1.75)],.25,2,head);
+ branch([C(-12.30,12.18,s*1.18),C(-12.89,13.32,s*1.57),
+  C(-13.06,13.83,s*1.83)],.14,1,head);
+ branch([C(-11.29,13.32,s*1.48),C(-11.04,14.39,s*1.91)],.13,1,head);
+ // sweeping whiskers start on the cheeks, as in the reference
+ skullBeam([[-15.29,9.85,s*.84],[-16.59,10.29,s*1.42],
+  [-17.72,9.89,s*2.24],[-17.54,9.03,s*2.76]],.058,3);
+ skullBeam([[-14.92,7.34,s*.58],[-15.38,6.55,s*.92],
+  [-14.99,6.01,s*1.21]],.075,2);
 }
-ball(C(-16.13,9.89,0),[.31,.22,.70],1,head,0);
+// bridge upper/lower jaws at the snout and chin, preserving the open cavity
+skullBeam([[-16.16,9.78,-.57],[-16.32,9.74,0],[-16.16,9.78,.57]],.20,1);
+skullBeam([[-15.66,7.22,-.46],[-15.79,7.19,0],[-15.66,7.22,.46]],.21,0);
 // Forelegs have only TWO shoulder attachment sites at FRONT of rib cage.
 // Silhouette of far arm projects toward snout, near arm sweeps below chest.
 function addForeleg(s){
@@ -380,7 +392,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R70_NEW_SKULL_FACE';
+window.seiryuSkeletonRevision='R71_REFERENCE_SKULL_REBUILD';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
