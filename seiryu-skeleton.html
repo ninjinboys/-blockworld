@@ -349,290 +349,140 @@ for(let j=-7;j<=7;j++){
 // Skin stage must REPLACE the exposed skeleton, not be drawn on top of it.
 // Hide all existing skeletal geometry before building the flesh layer.
 // Keep the original skeleton geometry and anatomy intact; hide bones only where skin covers them.
-const originalBones=[];
-root.traverse(obj=>{if(obj.isMesh)originalBones.push(obj);});
-// Existing skeleton stays in the scene and is preserved for export and inspection.
-for(const obj of originalBones){obj.visible=false;}
-// R72: first anatomy pass ONLY — continuous skin and muscle, no scales/armor.
-const skinBlue=new THREE.MeshStandardMaterial({color:0x477eac,roughness:.89,metalness:0,side:THREE.DoubleSide});
-const bellySkin=new THREE.MeshStandardMaterial({color:0xb6a68c,roughness:.94,metalness:0,side:THREE.DoubleSide});
-const muscle=new THREE.Group();muscle.name='SEIRYU_SKIN_MUSCLE_STAGE_NO_SCALES';root.add(muscle);
-function skinOval(pos,sizes,mat=skinBlue,facets=2){
- const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,facets),mat);
- m.position.copy(pos);m.scale.set(...sizes);muscle.add(m);return m;
+// R88: Entire flesh geometry rebuilt. No legacy muscle meshes survive.
+const originalBones=[];root.traverse(o=>{if(o.isMesh)originalBones.push(o)});
+for(const o of originalBones)o.visible=false;
+const muscle=new THREE.Group();muscle.name='SEIRYU_R88_REBUILT_ANATOMY';root.add(muscle);
+const skinBlue=new THREE.MeshStandardMaterial({color:0x377ca4,roughness:.82,flatShading:true,side:THREE.DoubleSide});
+const muscleShade=new THREE.MeshStandardMaterial({color:0x276488,roughness:.91,flatShading:true,side:THREE.DoubleSide});
+const bellySkin=new THREE.MeshStandardMaterial({color:0x8ea8a6,roughness:.94,flatShading:true,side:THREE.DoubleSide});
+const eyeMat=new THREE.MeshStandardMaterial({color:0xf0b54c,emissive:0x5b2b09,roughness:.35});
+const pupilMat=new THREE.MeshStandardMaterial({color:0x11131a,roughness:.5});
+function ellipsoid(parent,p,scale,mat=skinBlue,detail=2){
+ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,detail),mat);
+ m.position.copy(p);m.scale.set(...scale);parent.add(m);return m;
 }
-function skinLink(a,b,r0,r1,mat=skinBlue){
- const delta=b.clone().sub(a),len=delta.length();
- const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,10,1),mat);
+function tendon(parent,a,b,r0,r1,mat=skinBlue){
+ const d=b.clone().sub(a),len=d.length();
+ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,10),mat);
  mesh.position.copy(a).add(b).multiplyScalar(.5);
- mesh.quaternion.setFromUnitVectors(Y,delta.normalize());muscle.add(mesh);return mesh;
+ mesh.quaternion.setFromUnitVectors(Y,d.normalize());parent.add(mesh);return mesh;
 }
-// Muscular anatomy: bulky at chest and shoulder, tapering smoothly into a long tail.
-// Preserve every skeleton vertex; all new mass is a separate surface.
-// Major muscle masses are localized around actual shoulder and thorax,
-// not uniformly inflated along the serpentine spine.
-function muscleRadius(t){
- const bell=(m,w)=>Math.exp(-Math.pow((t-m)/w,2));
- const chest=1.65*bell(.27,.12);
- const ribcage=1.28*bell(.43,.18);
- const neck=.77+.30*bell(.10,.12);
- const tail=t>.67?Math.pow(Math.max(.006,(1-t)/.33),.82):1;
- return (neck+chest+ribcage)*tail;
-}
-function anatomyContour(t,angle){
- const bell=(m,w)=>Math.exp(-Math.pow((t-m)/w,2));
- const dorsal=.24*bell(.34,.24)*Math.pow(Math.max(0,Math.cos(angle)),3);
- const pairedFlanks=.22*bell(.38,.20)*Math.pow(Math.sin(2*angle),2);
- const ventral=.20*bell(.33,.15)*Math.pow(Math.max(0,-Math.cos(angle)),3);
- return 1+dorsal+pairedFlanks+ventral;
-}
-const rings=[],indices=[],radial=16,steps=156;
-for(let i=0;i<=steps;i++){
- const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
- const radius=muscleRadius(t);
- for(let j=0;j<radial;j++){
-  const theta=j*2*Math.PI/radial;
-  const q=p.clone().addScaledVector(f.dorsal,Math.cos(theta)*radius*1.12*anatomyContour(t,theta))
-     .addScaledVector(f.side,Math.sin(theta)*radius*.99*anatomyContour(t,theta));
-  rings.push(q.x,q.y,q.z);
- }
-}
-for(let i=0;i<steps;i++)for(let j=0;j<radial;j++){
- const a=i*radial+j,b=i*radial+(j+1)%radial;
- const d=(i+1)*radial+j,e=(i+1)*radial+(j+1)%radial;
- indices.push(a,b,d,b,e,d);
-}
-const bodyGeo=new THREE.BufferGeometry();
-bodyGeo.setAttribute('position',new THREE.Float32BufferAttribute(rings,3));
-bodyGeo.setIndex(indices);bodyGeo.computeVertexNormals();
-muscle.add(new THREE.Mesh(bodyGeo,skinBlue));
-// Ventral tissue flush with the muscular body, not a separate tube.
-const bellyPoints=[],bellyIndices=[];
-for(let i=0;i<=steps;i++){
- const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
- const radius=muscleRadius(t);
- for(const angle of [Math.PI-.40,Math.PI,Math.PI+.40]){
-  const q=p.clone().addScaledVector(f.dorsal,Math.cos(angle)*radius*1.133)
-   .addScaledVector(f.side,Math.sin(angle)*radius*1.01);
-  bellyPoints.push(q.x,q.y,q.z);
- }
- if(i<steps)for(let j=0;j<2;j++){
-  const a=i*3+j,b=a+1,d=a+3,e=d+1;bellyIndices.push(a,d,b,b,d,e);
- }
-}
-const bellyGeo=new THREE.BufferGeometry();
-bellyGeo.setAttribute('position',new THREE.Float32BufferAttribute(bellyPoints,3));
-bellyGeo.setIndex(bellyIndices);bellyGeo.computeVertexNormals();
-muscle.add(new THREE.Mesh(bellyGeo,bellySkin));
-// Anatomical forelimbs: ONE continuous tapered muscle surface per arm.
-// The swelling follows shoulder/deltoid, biceps, elbow, brachioradialis and wrist,
-// rather than stacking intersecting cylinders and spheres.
-function sculptLimb(shoulder,elbow,wrist){
- const curve=new THREE.CatmullRomCurve3([
-  shoulder,shoulder.clone().lerp(elbow,.42),elbow,
-  elbow.clone().lerp(wrist,.52),wrist],false,'catmullrom',.45);
- const verts=[],faces=[],N=52,M=14;
+function loft(parent,points,radii,mat=skinBlue,segments=20){
+ const path=new THREE.CatmullRomCurve3(points,false,'catmullrom',.45);
+ const N=points.length*9,frames=path.computeFrenetFrames(N,false),v=[],ix=[];
  for(let i=0;i<=N;i++){
-  const t=i/N,p=curve.getPoint(t),tangent=curve.getTangent(t).normalize();
-  let side=new THREE.Vector3(0,0,1).cross(tangent).normalize();
-  if(side.lengthSq()<.1)side=new THREE.Vector3(1,0,0);
-  const up=tangent.clone().cross(side).normalize();
-  const bell=(x,m,w)=>Math.exp(-Math.pow((x-m)/w,2));
-  const radius=.43+1.03*bell(t,.12,.16)+.62*bell(t,.34,.13)
-   -.20*bell(t,.52,.07)+.75*bell(t,.71,.14)+.18*bell(t,.88,.09);
-  const endTaper=1-.30*Math.max(0,(t-.83)/.17);
-  for(let j=0;j<M;j++){
-   const ang=j*Math.PI*2/M;
-   // Distinct dorsal extensor and ventral flexor groups, subtle tendon valley.
-   const muscleShape=1+.20*Math.cos(2*ang)*bell(t,.34,.17)
-      +.17*Math.cos(ang+.55)*bell(t,.71,.16)
-      -.08*Math.cos(4*ang)*bell(t,.51,.055);
-   const v=p.clone().addScaledVector(side,Math.cos(ang)*radius*endTaper*muscleShape)
-      .addScaledVector(up,Math.sin(ang)*radius*endTaper*muscleShape*.88);
-   verts.push(v.x,v.y,v.z);
+  const t=i/N,p=path.getPoint(t),k=t*(radii.length-1),j=Math.min(radii.length-2,Math.floor(k));
+  const u=k-j,w=u*u*(3-2*u);
+  const r=radii[j]*(1-w)+radii[j+1]*w;
+  for(let q=0;q<segments;q++){
+   const th=2*Math.PI*q/segments;
+   const swell=1+.055*Math.cos(4*th+5*t);
+   const pos=p.clone().addScaledVector(frames.normals[i],Math.cos(th)*r*swell)
+    .addScaledVector(frames.binormals[i],Math.sin(th)*r*swell);
+   v.push(pos.x,pos.y,pos.z);
   }
  }
- for(let i=0;i<N;i++)for(let j=0;j<M;j++){
-  const a=i*M+j,b=i*M+(j+1)%M,d=(i+1)*M+j,e=(i+1)*M+(j+1)%M;
-  faces.push(a,b,d,b,e,d);
+ for(let i=0;i<N;i++)for(let q=0;q<segments;q++){
+  const x=i*segments+q,y=i*segments+(q+1)%segments,z=(i+1)*segments+q,w=(i+1)*segments+(q+1)%segments;
+  ix.push(x,z,y,y,z,w);
  }
- const g=new THREE.BufferGeometry();
- g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
- g.setIndex(faces);g.computeVertexNormals();
- muscle.add(new THREE.Mesh(g,skinBlue));
+ const geo=new THREE.BufferGeometry();
+ geo.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+ geo.setIndex(ix);geo.computeVertexNormals();
+ const mesh=new THREE.Mesh(geo,mat);parent.add(mesh);return mesh;
 }
+// Body reconstructed as irregular muscular stations: slim cervical section,
+// broad chest, tapered abdomen and long tail. Distinct back/ventral planes.
+const stationsR88=[
+ [0,.77,.73],[.075,.88,.87],[.14,1.12,1.12],[.20,1.48,1.50],
+ [.27,2.28,2.30],[.34,2.55,2.46],[.43,2.45,2.24],
+ [.52,2.08,1.87],[.61,1.54,1.38],[.69,1.03,.98],
+ [.76,.76,.74],[.83,.55,.54],[.91,.32,.33],[.97,.15,.17],[1,.035,.04]
+];
+const bodyVerts=[],bodyIds=[],M=20,N=190;
+function stationValue(t,k){
+ for(let i=0;i<stationsR88.length-1;i++){
+  const a=stationsR88[i],b=stationsR88[i+1];
+  if(t<=b[0]){
+   const f=(t-a[0])/(b[0]-a[0]),s=f*f*(3-2*f);
+   return a[k]*(1-s)+b[k]*s;
+  }
+ }
+ return stationsR88[stationsR88.length-1][k];
+}
+for(let i=0;i<=N;i++){
+ const t=i/N,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
+ const ry=stationValue(t,1),rz=stationValue(t,2);
+ for(let j=0;j<M;j++){
+  const th=j*2*Math.PI/M;
+  const dorsal=Math.cos(th),lateral=Math.sin(th);
+  const chest=Math.exp(-Math.pow((t-.34)/.16,2));
+  const paired=1+.14*chest*Math.cos(4*th);
+  const abdominal=1-.12*chest*Math.pow(Math.max(0,-dorsal),4);
+  const q=p.clone().addScaledVector(f.dorsal,dorsal*ry*paired*abdominal)
+   .addScaledVector(f.side,lateral*rz*paired);
+  bodyVerts.push(q.x,q.y,q.z);
+ }
+}
+for(let i=0;i<N;i++)for(let j=0;j<M;j++){
+ const a=i*M+j,b=i*M+(j+1)%M,d=(i+1)*M+j,e=(i+1)*M+(j+1)%M;
+ bodyIds.push(a,d,b,b,d,e);
+}
+const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.Float32BufferAttribute(bodyVerts,3));
+bg.setIndex(bodyIds);bg.computeVertexNormals();muscle.add(new THREE.Mesh(bg,skinBlue));
+// Rebuild forelegs as large anatomically segmented masses (two only).
 for(const s of [-1,1]){
  const shoulder=P(-7.85,5.02,s*1.42);
  const elbow=s===1?P(-6.35,2.55,s*3.00):P(-10.15,2.45,s*2.95);
  const wrist=s===1?P(-4.40,-.04,s*3.85):P(-12.40,-.04,s*3.75);
- sculptLimb(shoulder,elbow,wrist);
- // Palms and four muscular fingers continue the existing skeletal digits.
- skinOval(wrist,[.71,.50,.80],skinBlue,3);
+ // Shoulder socket fused into the thorax, not a round detached ball.
+ ellipsoid(muscle,shoulder.clone().add(P(.46,.26,-s*.18)),[1.78,1.56,1.78],skinBlue,3);
+ loft(muscle,[shoulder,shoulder.clone().lerp(elbow,.32),elbow],[1.46,1.27,.68],skinBlue);
+ ellipsoid(muscle,shoulder.clone().lerp(elbow,.38).add(P(-.23,.02,s*.18)),[.90,1.27,.94],muscleShade,3);
+ ellipsoid(muscle,elbow,[.76,.75,.79],skinBlue,3);
+ loft(muscle,[elbow,elbow.clone().lerp(wrist,.40),wrist],[.78,1.07,.48],skinBlue);
+ ellipsoid(muscle,elbow.clone().lerp(wrist,.35).add(P(.13,.02,s*.14)),[.74,1.02,.76],muscleShade,3);
+ ellipsoid(muscle,wrist,[.68,.42,.83],skinBlue,2);
  for(let j=0;j<4;j++){
-  const shift=(j-1.5)*.40;
-  const base=wrist.clone().add(P(-.18,-.04,shift));
-  const mid=base.clone().add(P(-.75,-.07,shift*.13));
-  const tip=mid.clone().add(P(-.60,-.10,shift*.17));
-  skinLink(base,mid,.18,.14);
-  skinLink(mid,tip,.14,.075);
+  const shift=(j-1.5)*.43;
+  const base=wrist.clone().add(P(-.20,-.06,shift));
+  const mid=base.clone().add(P(-.57,-.13,shift*.10));
+  const tip=mid.clone().add(P(-.48,-.12,shift*.08));
+  loft(muscle,[base,mid,tip],[.18,.13,.035],skinBlue,10);
  }
 }
-// Scapular and pectoral muscle bundles sweep into the two shoulders.
-// Each bundle is a tapered, oriented mesh following its insertion points.
-function anatomyBundle(points,widths,depth=.62){
- const path=new THREE.CatmullRomCurve3(points.map(p=>P(...p)),false,'catmullrom',.45);
- const v=[],ind=[],N=28,M=12;
- for(let i=0;i<=N;i++){
-  const t=i/N,point=path.getPoint(t),tan=path.getTangent(t).normalize();
-  let lateral=P(0,0,1).cross(tan).normalize();
-  if(lateral.lengthSq()<.01)lateral=P(1,0,0);
-  const vertical=tan.clone().cross(lateral).normalize();
-  const section=t*(widths.length-1),k=Math.min(widths.length-2,Math.floor(section));
-  const u=section-k,blend=u*u*(3-2*u);
-  const radius=widths[k]*(1-blend)+widths[k+1]*blend;
-  for(let j=0;j<M;j++){
-   const ang=2*Math.PI*j/M;
-   const p=point.clone().addScaledVector(lateral,Math.cos(ang)*radius)
-    .addScaledVector(vertical,Math.sin(ang)*radius*depth);
-   v.push(p.x,p.y,p.z);
-  }
- }
- for(let i=0;i<N;i++)for(let j=0;j<M;j++){
-  const a=i*M+j,b=i*M+(j+1)%M,d=(i+1)*M+j,e=(i+1)*M+(j+1)%M;
-  ind.push(a,d,b,b,d,e);
- }
- const g=new THREE.BufferGeometry();
- g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
- g.setIndex(ind);g.computeVertexNormals();
- muscle.add(new THREE.Mesh(g,skinBlue));
-}
+// Fresh head construction: broad cranial mass, large eye arches, pronounced
+// cheek muscles and a deep open lower jaw. Existing horns/teeth remain.
+const face=new THREE.Group();head.add(face);
+loft(face,[P(-11.65,10.12,0),P(-12.70,10.25,0),P(-13.75,10.30,0),
+ P(-14.73,10.13,0),P(-15.65,9.93,0),P(-16.45,9.82,0)],
+ [.52,1.28,1.45,1.15,.83,.24],skinBlue);
 for(const s of [-1,1]){
- anatomyBundle([[-5.05,5.60,s*.65],[-6.15,5.45,s*1.45],
-  [-7.38,5.20,s*1.85],[-8.10,4.54,s*2.15]],
-  [.16,.74,.98,.21],.85);
- anatomyBundle([[-5.00,4.28,s*.72],[-6.03,4.25,s*1.23],
-  [-7.14,4.45,s*1.75],[-7.75,4.86,s*2.05]],
-  [.12,.64,.80,.12],.72);
- anatomyBundle([[-7.72,4.96,s*1.78],[-7.30,3.94,s*2.13],
-  [-6.78,3.05,s*2.65],[-6.40,2.52,s*3.00]],
-  [.18,.75,.68,.10],.77);
+ ellipsoid(face,P(-13.02,10.03,s*1.14),[.92,.83,.71],skinBlue,3);
+ // Prominent, angular eyebrow and dark eye socket with bright eye.
+ ellipsoid(face,P(-14.04,10.36,s*1.26),[.62,.38,.27],muscleShade,1);
+ ellipsoid(face,P(-14.07,10.14,s*1.51),[.29,.23,.16],eyeMat,2);
+ ellipsoid(face,P(-14.13,10.14,s*1.65),[.075,.16,.06],pupilMat,2);
+ loft(face,[P(-12.39,9.50,s*.95),P(-12.85,8.68,s*1.11),
+  P(-13.73,7.80,s*.88),P(-14.75,7.29,s*.65),
+  P(-15.71,7.20,s*.45)],[.52,.59,.48,.31,.14],skinBlue,12);
+ ellipsoid(face,P(-13.20,9.35,s*1.12),[.63,.69,.48],muscleShade,2);
 }
-// NEW VISIBLE SILHOUETTE: major longissimus and lateral muscle masses.
-// These run along the chest and back, not along the entire tail.
-const deepBlue=new THREE.MeshStandardMaterial({color:0x346b94,roughness:.93,metalness:0});
-function muscleSweep(samples,radii,material=deepBlue){
- const path=new THREE.CatmullRomCurve3(samples,false,'catmullrom',.4);
- const vertices=[],faces=[],N=56,M=12;
- for(let i=0;i<=N;i++){
-  const t=i/N,p=path.getPoint(t),tangent=path.getTangent(t).normalize();
-  let n=P(0,0,1).cross(tangent).normalize();
-  if(n.lengthSq()<.1)n=P(0,1,0);
-  const b=tangent.clone().cross(n).normalize();
-  const f=t*(radii.length-1),k=Math.min(radii.length-2,Math.floor(f));
-  const u=f-k,blend=u*u*(3-2*u),rad=radii[k]*(1-blend)+radii[k+1]*blend;
-  for(let j=0;j<M;j++){
-   const angle=j*2*Math.PI/M;
-   const v=p.clone().addScaledVector(n,Math.cos(angle)*rad)
-     .addScaledVector(b,Math.sin(angle)*rad*.63);
-   vertices.push(v.x,v.y,v.z);
-  }
- }
- for(let i=0;i<N;i++)for(let j=0;j<M;j++){
-  const a=i*M+j,b=i*M+(j+1)%M,d=(i+1)*M+j,e=(i+1)*M+(j+1)%M;
-  faces.push(a,b,d,b,e,d);
- }
- const geo=new THREE.BufferGeometry();
- geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
- geo.setIndex(faces);geo.computeVertexNormals();
- muscle.add(new THREE.Mesh(geo,material));
-}
-for(const s of [-1,1]){
- // Shoulder caps and pectorals now form the dominant frontal silhouette.
- muscleSweep([P(-5.4,5.4,s*.55),P(-6.3,5.55,s*1.9),
-  P(-7.65,5.0,s*2.45),P(-7.0,3.9,s*2.95),
-  P(-6.35,2.60,s*3.0)],[.12,1.08,1.45,1.05,.10]);
- muscleSweep([P(-4.5,4.1,s*.5),P(-5.7,3.95,s*1.3),
-  P(-7.2,4.35,s*2.15),P(-8.15,4.95,s*1.75)],
-  [.12,.98,1.30,.12]);
- // Broad longissimus muscles raised along either side of the dorsal spine.
- const back=[];
- for(let i=0;i<=8;i++){
-  const t=.19+i*.043,f=spineFrames[Math.round(t*COUNT)];
-  back.push(f.pos.clone().addScaledVector(f.dorsal,1.65)
-    .addScaledVector(f.side,s*1.05));
- }
- muscleSweep(back,[.10,.50,.72,.84,.86,.78,.63,.40,.08]);
-}
-// Facial muscles use the SAME local coordinates as the original skull bones.
-// Do not worldToLocal() these points: the skull itself already transforms them.
-const faceSkin=new THREE.Group();head.add(faceSkin);
-// Rebuild the head as a broad, angular Asian dragon, with raised brow,
-// hollow eye sockets, paired jaw muscles and a sharply tapered muzzle.
-const faceMat=new THREE.MeshStandardMaterial({color:0x376b94,roughness:.91,flatShading:true,side:THREE.DoubleSide});
-const jawMat=new THREE.MeshStandardMaterial({color:0x5389b3,roughness:.89,flatShading:true,side:THREE.DoubleSide});
-function skullHull(sections,mat){
- const v=[],tri=[],M=8;
- for(const [x,y,wy,wz] of sections){
-  for(let j=0;j<M;j++){
-   const th=2*Math.PI*j/M;
-   v.push(x,y+Math.cos(th)*wy,Math.sin(th)*wz);
-  }
- }
- for(let i=0;i<sections.length-1;i++)for(let j=0;j<M;j++){
-  const a=i*M+j,b=i*M+(j+1)%M,d=(i+1)*M+j,e=(i+1)*M+(j+1)%M;
-  tri.push(a,d,b,b,d,e);
- }
- const g=new THREE.BufferGeometry();
- g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
- g.setIndex(tri);g.computeVertexNormals();
- faceSkin.add(new THREE.Mesh(g,mat));
-}
-skullHull([
- [-16.60,9.80,.13,.31],[-16.25,9.92,.31,.68],
- [-15.73,10.06,.44,.89],[-15.03,10.16,.56,1.06],
- [-14.43,10.23,.64,1.23],[-13.86,10.27,.81,1.35],
- [-13.24,10.25,.91,1.36],[-12.63,10.17,.88,1.20],
- [-12.05,10.10,.68,.97],[-11.57,10.05,.15,.28]
-],faceMat);
-// Thick orbital ridges, temporal bulges and jaw-closing muscles.
-function orientedMuscle(a,b,r0,r1,material=jawMat){
- const p=new THREE.Vector3(...a),q=new THREE.Vector3(...b);
- const len=p.distanceTo(q),mid=p.clone().add(q).multiplyScalar(.5);
- const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,8,1),material);
- mesh.position.copy(mid);
- mesh.quaternion.setFromUnitVectors(Y,q.sub(p).normalize());
- faceSkin.add(mesh);
-}
-for(const s of [-1,1]){
- // Distinct upper and lower eye ridge, keeping a visible socket.
- orientedMuscle([-14.65,10.75,s*1.05],[-13.40,11.04,s*1.39],.30,.36);
- orientedMuscle([-14.55,9.76,s*1.06],[-13.27,9.65,s*1.32],.17,.25);
- // Bulging cheek mass connects skull to lower jaw hinge.
- orientedMuscle([-12.65,10.03,s*1.03],[-13.25,8.79,s*1.10],.52,.57);
- orientedMuscle([-13.25,8.79,s*1.10],[-14.13,7.78,s*.80],.49,.36);
- orientedMuscle([-14.13,7.78,s*.80],[-15.65,7.22,s*.43],.36,.16);
- // Angular brow hornlets and whiskers stay from the original skeleton.
-}
-// Snout bridge projects forward beyond the jaws, with no detached head blobs.
-// Restore ORIGINAL horn, whisker and fang geometry by revealing skull
-// meshes that extend beyond the skin envelope. Do not alter the skeleton.
-const skullBox=new THREE.Box3();
+// Explicitly retain every original horn, whisker and tooth by its local
+// geometry location; skeletal ribs/vertebrae remain hidden.
 head.updateMatrixWorld(true);
+const box=new THREE.Box3();
 for(const obj of originalBones){
- if(!obj.isMesh)continue;
- let node=obj.parent,belongs=false;
- while(node){if(node===head){belongs=true;break}node=node.parent}
- if(!belongs)continue;
- obj.updateMatrixWorld(true);
- skullBox.setFromObject(obj);
- const center=skullBox.getCenter(new THREE.Vector3());
- const local=head.worldToLocal(center.clone());
- if(local.y>11.35 || local.x < -16.55 ||
-    (local.y<9.55 && local.y>8.45 && local.x < -14.1))obj.visible=true;
+ let n=obj.parent,inHead=false;
+ while(n){if(n===head){inHead=true;break}n=n.parent}
+ if(!inHead)continue;
+ box.setFromObject(obj);
+ const p=head.worldToLocal(box.getCenter(new THREE.Vector3()));
+ if(p.y>11.5||p.x < -16.8||(p.y<9.35&&p.x< -13.9))obj.visible=true;
 }
-// The first pass intentionally has NO scales, mane, fur, fins or ornament meshes.
-window.seiryuStage='SKIN_MUSCLE_ONLY';
-
+window.seiryuStage='R88_FULL_FLESH_REBUILD';
+window.seiryuSkeletonRevision='R88_FULL_FLESH_REBUILD';
 // Environment is not exported with the bones.
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(130,130),
  new THREE.MeshStandardMaterial({color:0x141923,roughness:1}));
