@@ -120,6 +120,18 @@ for(let tier=0;tier<8;tier++){
   radialBlock(.28,.14,2.7,mortar,inner+1.4,angle,height+.09);
  }
 }
+// Solid masonry foundations under the seating: no more sky visible below the terraces.
+const foundationMaterial=mat(0x796654);
+const foundation=new THREE.Mesh(new THREE.CylinderGeometry(78.9,78.9,13.8,96,1,true),foundationMaterial);
+foundation.position.y=6.9;foundation.material.side=THREE.DoubleSide;foundation.receiveShadow=true;scene.add(foundation);
+// Vertical stone courses support the uppermost seats without covering the battle floor.
+for(let tier=0;tier<8;tier++){
+ const radius=56.75+tier*2.9,level=.75+tier*1.75;
+ for(let i=0;i<archCount;i++){
+  const a=(i+.5)*TAU/archCount;
+  radialBlock(1.15,Math.max(.6,level),.7,limestone,radius,a,level*.5);
+ }
+}
 // Two arcaded levels. Each bay has a real arched opening, not just columns and a straight beam.
 const arcadeRadius=82,archSpan=TAU/archCount;
 function addArcadeLevel(baseY,height){
@@ -202,20 +214,24 @@ for(let i=0;i<1100;i++){
  audience.setMatrixAt(i,dummy.matrix);
 }
 audience.instanceMatrix.needsUpdate=true;audience.castShadow=false;scene.add(audience);
-// Fine stone paving: irregular inset joints and individual masonry highlights.
-// Instancing avoids thousands of mobile draw calls.
-const seamGeometry=new THREE.BoxGeometry(1,.012,.025);
-const seamMaterial=mat(0x5b4738);
-const seams=new THREE.InstancedMesh(seamGeometry,seamMaterial,1800);
-const seamDummy=new THREE.Object3D();
-for(let i=0;i<1800;i++){
- const r=8+Math.sqrt((i+.5)/1800)*43;
- const angle=i*2.399963229728653;
- seamDummy.position.set(Math.sin(angle)*r,.084,Math.cos(angle)*r);
- seamDummy.rotation.set(0,angle+(i%3)*.35,0);
- seamDummy.scale.set(.45+(i%7)*.22,1,1);seamDummy.updateMatrix();seams.setMatrixAt(i,seamDummy.matrix);
+// Real staggered masonry courses: each joint belongs to a laid paving stone.
+const jointMat=mat(0x66503e);
+const jointGeom=new THREE.BoxGeometry(1,.012,.045);
+const jointCount=1600;
+const pavingJoints=new THREE.InstancedMesh(jointGeom,jointMat,jointCount);
+const jointDummy=new THREE.Object3D();
+let jointIndex=0;
+for(let row=-23;row<=23&&jointIndex<jointCount;row++){
+ const z=row*2.05;
+ for(let col=-23;col<=23&&jointIndex<jointCount;col++){
+  const x=(col+(row%2)*.5)*2.4;
+  if(x*x+z*z>47*47)continue;
+  jointDummy.position.set(x,.087,z);jointDummy.rotation.set(0,0,0);
+  jointDummy.scale.set(2.15,1,1);jointDummy.updateMatrix();
+  pavingJoints.setMatrixAt(jointIndex++,jointDummy.matrix);
+ }
 }
-seams.instanceMatrix.needsUpdate=true;scene.add(seams);
+pavingJoints.count=jointIndex;pavingJoints.instanceMatrix.needsUpdate=true;scene.add(pavingJoints);
 // Colour variation and stone courses on the spectator terraces.
 const spectatorStone=mat(0xb49a7e);
 for(let tier=0;tier<8;tier++){
@@ -225,6 +241,18 @@ for(let tier=0;tier<8;tier++){
   radialBlock(2.6,.28,.7,spectatorStone,radius,a,1.03+tier*1.75);
  }
 }
+// Simple recognizable heads above the dark spectator torsos.
+const headGeometry=new THREE.BoxGeometry(.52,.52,.52);
+const headMaterial=mat(0xc6a080);
+const heads=new THREE.InstancedMesh(headGeometry,headMaterial,650);
+const headDummy=new THREE.Object3D();
+for(let i=0;i<650;i++){
+ const tier=i%8,angle=((i*37)%653)/653*TAU,radius=56.6+tier*2.9;
+ headDummy.position.set(Math.sin(angle)*radius,2.15+tier*1.75,Math.cos(angle)*radius);
+ headDummy.rotation.y=angle;headDummy.scale.setScalar(.78+(i%4)*.08);headDummy.updateMatrix();
+ heads.setMatrixAt(i,headDummy.matrix);
+}
+heads.instanceMatrix.needsUpdate=true;scene.add(heads);
 // Coloured crowd silhouettes, kept in two instanced batches for tablet performance.
 for(const [tone,shift] of [[0x8e3c32,0],[0xb49a6e,1]]){
  const people=new THREE.InstancedMesh(new THREE.BoxGeometry(.62,1.25,.55),mat(tone),420);
