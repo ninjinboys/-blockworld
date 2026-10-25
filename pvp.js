@@ -128,10 +128,13 @@ for(let tier=0;tier<8;tier++){
  const inner=55.3+tier*2.9,outer=inner+2.87,height=.75+tier*1.75;
  for(const [start,arcLength] of seatArcs){
   const seat=new THREE.Mesh(
-   new THREE.RingGeometry(inner,outer,48,1,start,arcLength),seatMats[tier%3]);
+   // Horizontal rings use X=cos(theta),Z=-sin(theta), unlike CylinderGeometry.
+   // Rotate their missing wedge by 90 degrees to line up with the +/-Z gates.
+   new THREE.RingGeometry(inner,outer,48,1,start+Math.PI/2,arcLength),seatMats[tier%3]);
   seat.rotation.x=-Math.PI/2;seat.position.y=height;seat.receiveShadow=true;scene.add(seat);
   const rise=new THREE.Mesh(
    new THREE.CylinderGeometry(outer,outer,1.75,48,1,true,start,arcLength),mortar);
+  rise.material.side=THREE.DoubleSide;
   rise.position.y=height-.875;scene.add(rise);
  }
  for(let i=0;i<archCount;i++){
