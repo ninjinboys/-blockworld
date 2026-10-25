@@ -127,6 +127,10 @@ const landmark={
  tailUp:P(15.65,7.80,.16),
  tailEnd:P(15.88,11.30,.10)
 };
+// Extend the serpentine body and tail length while preserving the head and foreleg landmarks.
+for(const key of ['chestQuarter','thoraxCrest','thoraxRear','tailRoot','tailDescent','tailTrough','tailCurl','tailUp','tailEnd']){
+ const p=landmark[key];p.x=-5.66+(p.x+5.66)*1.53;
+}
 const spine=new THREE.CatmullRomCurve3(Object.values(landmark),false,'catmullrom',.47);
 const COUNT=150,spineFrames=[];
 for(let i=0;i<=COUNT;i++){
@@ -168,16 +172,16 @@ for(let i=2;i<COUNT-1;i+=3){
 // Thorax anatomical stations use measured backbone positions, not arbitrary t range.
 // Rib ends connect to one keel and turn sideways around a wide, long chest.
 const stations=[];
-for(let x=-6.95;x<=5.22;x+=.62){
+for(let x=-6.95;x<=11.0;x+=.82){
  let pick=null,d=Infinity;
  for(let i=20;i<115;i++){
   const f=spineFrames[i];
-  if(f.pos.x < -7.45||f.pos.x>5.70)continue;
+  if(f.pos.x < -7.45||f.pos.x>12.1)continue;
   const delta=Math.abs(f.pos.x-x);
   if(delta<d){d=delta;pick=f;}
  }
  if(!pick)continue;
- const u=Math.max(0,Math.min(1,(x+6.95)/12.17));
+ const u=Math.max(0,Math.min(1,(x+6.95)/17.95));
  // Wide chest in the middle, tapered shoulders and tail root.
  const bloom=Math.pow(Math.sin(Math.PI*(.06+u*.87)),.60);
  const width=.46+.72*bloom;
@@ -313,22 +317,22 @@ ball(lowerTip,[.31,.21,.42],0,head,0);
 // Silhouette of far arm projects toward snout, near arm sweeps below chest.
 function addForeleg(s){
  const shoulder=C(-7.85,5.02,s*1.42);
- const elbow=s===1?C(-6.91,3.54,s*2.35):C(-9.32,3.43,s*2.18);
- const carpal=s===1?C(-5.46,1.16,s*2.87):C(-11.17,1.10,s*2.73);
- ball(shoulder,[.87,.83,.70],1,root,1);
+ const elbow=s===1?C(-6.35,2.55,s*3.00):C(-10.15,2.45,s*2.95);
+ const carpal=s===1?C(-4.40,-.04,s*3.85):C(-12.40,-.04,s*3.75);
+ ball(shoulder,[1.12,1.03,.94],1,root,1);
  // Scapula: broad, distinctly attached to neck/ribcage.
  curved([C(-8.61,6.24,s*.88),C(-8.14,5.42,s*1.67),shoulder],.33,0,root,.57);
- curved([shoulder,shoulder.clone().lerp(elbow,.43).add(C(.12,.02,0)),elbow],.33,2);
- ball(elbow,[.44,.42,.40],0,root,1);
- curved([elbow,elbow.clone().lerp(carpal,.56),carpal],.26,1);
- ball(carpal,[.43,.31,.48],0,root,1);
+ curved([shoulder,shoulder.clone().lerp(elbow,.43).add(C(.12,.02,0)),elbow],.46,2);
+ ball(elbow,[.58,.56,.54],0,root,1);
+ curved([elbow,elbow.clone().lerp(carpal,.56),carpal],.37,1);
+ ball(carpal,[.60,.43,.66],0,root,1);
  // FOUR separate, jointed curved fingers ending in natural long talons.
  for(let j=0;j<4;j++){
-  const shift=(j-1.5)*.27;
+  const shift=(j-1.5)*.40;
   const base=carpal.clone().add(C(-.18,-.04,shift));
-  const mid=base.clone().add(C(-.47,-.07,shift*.13));
-  const tip=mid.clone().add(C(-.39,-.10,shift*.17));
-  const hook=tip.clone().add(C(-.26,-.35,0));
+  const mid=base.clone().add(C(-.75,-.07,shift*.13));
+  const tip=mid.clone().add(C(-.60,-.10,shift*.17));
+  const hook=tip.clone().add(C(-.40,-.45,0));
   bone(base,mid,.132,.11,1);
   ball(mid,[.12,.11,.11],0,root,0);
   bone(mid,tip,.110,.065,1);
@@ -392,7 +396,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R64_SLENDER_TORSO';
+window.seiryuSkeletonRevision='R65_LONG_BODY_LARGE_ARMS';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
