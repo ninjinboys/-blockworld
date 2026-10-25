@@ -354,8 +354,8 @@ root.traverse(obj=>{if(obj.isMesh)originalBones.push(obj);});
 // Existing skeleton stays in the scene and is preserved for export and inspection.
 for(const obj of originalBones){obj.visible=true;}
 // R72: first anatomy pass ONLY — continuous skin and muscle, no scales/armor.
-const skinBlue=new THREE.MeshStandardMaterial({color:0x477eac,roughness:.89,metalness:0,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
-const bellySkin=new THREE.MeshStandardMaterial({color:0xb6a68c,roughness:.94,metalness:0,transparent:true,opacity:.45,depthWrite:false,side:THREE.DoubleSide});
+const skinBlue=new THREE.MeshStandardMaterial({color:0x477eac,roughness:.89,metalness:0,side:THREE.DoubleSide});
+const bellySkin=new THREE.MeshStandardMaterial({color:0xb6a68c,roughness:.94,metalness:0,side:THREE.DoubleSide});
 const muscle=new THREE.Group();muscle.name='SEIRYU_SKIN_MUSCLE_STAGE_NO_SCALES';root.add(muscle);
 function skinOval(pos,sizes,mat=skinBlue,facets=2){
  const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,facets),mat);
@@ -373,7 +373,7 @@ for(let i=0;i<=steps;i++){
  const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
  const chest=Math.exp(-Math.pow((t-.42)/.24,2));
  const taper=t>.69?Math.pow(Math.max(.025,(1-t)/.31),.80):1;
- const radius=(.83+.60*chest)*taper;
+ const radius=(1.08+.82*chest)*taper;
  const v=f.dorsal.clone().normalize(),side=f.side.clone().normalize();
  for(let j=0;j<radial;j++){
   const theta=j*2*Math.PI/radial;
@@ -414,9 +414,9 @@ for(const s of [-1,1]){
  const shoulder=P(-7.85,5.02,s*1.42);
  const elbow=s===1?P(-6.35,2.55,s*3.00):P(-10.15,2.45,s*2.95);
  const wrist=s===1?P(-4.40,-.04,s*3.85):P(-12.40,-.04,s*3.75);
- skinOval(shoulder,[1.36,1.22,1.14]);
- skinLink(shoulder,elbow,.88,.68);skinOval(elbow,[.55,.56,.53]);
- skinLink(elbow,wrist,.65,.49);skinOval(wrist,[.58,.43,.62]);
+ skinOval(shoulder,[1.60,1.43,1.37]);
+ skinLink(shoulder,elbow,1.13,.82);skinOval(elbow,[.91,.84,.85]);
+ skinLink(elbow,wrist,.82,.65);skinOval(wrist,[.84,.60,.89]);
  for(let j=0;j<4;j++){
   const shift=(j-1.5)*.40;
   const base=wrist.clone().add(P(-.18,-.04,shift));
@@ -425,13 +425,13 @@ for(const s of [-1,1]){
  }
 }
 // Solid facial flesh, broad cranium, snout, and lower jaw; keep horns and teeth exposed.
-skinOval(P(-12.65,10.25,0),[1.72,1.20,1.51]);
-skinOval(P(-14.13,10.16,0),[1.52,.84,1.31]);
-skinOval(P(-15.40,9.99,0),[1.05,.58,1.02]);
+skinOval(P(-12.65,10.25,0),[1.95,1.43,1.75]);
+skinOval(P(-14.13,10.16,0),[1.67,1.05,1.51]);
+skinOval(P(-15.40,9.99,0),[1.15,.69,1.13]);
 skinOval(P(-16.14,9.84,0),[.52,.36,.73]);
 for(const s of [-1,1]){
  skinOval(P(-13.70,10.35,s*1.20),[.86,.50,.33]);
- skinLink(P(-12.46,9.45,s*.89),P(-14.76,7.39,s*.65),.36,.27);
+ skinLink(P(-12.46,9.45,s*.89),P(-14.76,7.39,s*.65),.49,.38);
  skinLink(P(-14.76,7.39,s*.65),P(-15.68,7.26,s*.44),.28,.20);
 }
 // The first pass intentionally has NO scales, mane, fur, fins or ornament meshes.
@@ -483,7 +483,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R74_PRESERVE_SKELETON_TRANSLUCENT_SKIN';
+window.seiryuSkeletonRevision='R75_OPAQUE_BULK_MUSCLE';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
