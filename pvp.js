@@ -234,7 +234,9 @@ for(let i=0;i<1100;i++){
  const tier=i%8,seatAngle=((i*37)%1100)/1100*TAU;
  const radius=56.6+tier*2.9;
  dummy.position.set(Math.sin(seatAngle)*radius,1.35+tier*1.75,Math.cos(seatAngle)*radius);
- dummy.rotation.y=seatAngle;dummy.scale.setScalar(.75+(i%5)*.08);dummy.updateMatrix();
+ dummy.rotation.y=seatAngle;
+ dummy.scale.setScalar(insideEntranceLane(seatAngle)?0:.75+(i%5)*.08);
+ dummy.updateMatrix();
  audience.setMatrixAt(i,dummy.matrix);
 }
 audience.instanceMatrix.needsUpdate=true;audience.castShadow=false;scene.add(audience);
@@ -274,7 +276,9 @@ const headDummy=new THREE.Object3D();
 for(let i=0;i<650;i++){
  const tier=i%8,angle=((i*37)%653)/653*TAU,radius=56.6+tier*2.9;
  headDummy.position.set(Math.sin(angle)*radius,2.15+tier*1.75,Math.cos(angle)*radius);
- headDummy.rotation.y=angle;headDummy.scale.setScalar(.78+(i%4)*.08);headDummy.updateMatrix();
+ headDummy.rotation.y=angle;
+ headDummy.scale.setScalar(insideEntranceLane(angle)?0:.78+(i%4)*.08);
+ headDummy.updateMatrix();
  heads.setMatrixAt(i,headDummy.matrix);
 }
 heads.instanceMatrix.needsUpdate=true;scene.add(heads);
@@ -286,7 +290,9 @@ for(const [tone,shift] of [[0x8e3c32,0],[0xb49a6e,1]]){
   const tier=(i*3+shift)%8,angle=((i*71+shift*19)%421)/421*TAU;
   const rad=56.6+tier*2.9;
   person.position.set(Math.sin(angle)*rad,1.48+tier*1.75,Math.cos(angle)*rad);
-  person.rotation.y=angle;person.scale.setScalar(.8+(i%4)*.07);person.updateMatrix();
+  person.rotation.y=angle;
+  person.scale.setScalar(insideEntranceLane(angle)?0:.8+(i%4)*.07);
+  person.updateMatrix();
   people.setMatrixAt(i,person.matrix);
  }
  people.instanceMatrix.needsUpdate=true;scene.add(people);
@@ -337,26 +343,16 @@ for(const sign of [-1,1]){
  for(const x of [-7,0,7])block(1.3,7,1.5,0xb7a38c,x,25,z+sign*1.2);
  block(20,1.5,10,0x685242,0,29,z+sign*1.2);
  const royalBanner=block(5.5,7,.2,0x9d2535,0,24,z-sign*4.2);
- // A real roofed stone passage exists BEHIND each gate: enter from here,
- // not from the battlefield in front of the portcullis.
+ // Empty grey-stone entrance passage: no decorative posts, flames or protrusions.
+ // Keep only the level floor, flat enclosing walls and roof.
  const tunnelCenter=sign*63.2;
- block(17,.55,19,0x776452,0,-.28,tunnelCenter); // stable floor to walk on
+ block(17,.55,19,0x888d92,0,-.28,tunnelCenter); // grey stone floor
  for(const x of [-8.2,8.2]){
-  block(2.6,11.8,19,0x5c4b3c,x,5.9,tunnelCenter); // thick side walls
-  block(2.9,.85,19,0xb09a80,x,11.55,tunnelCenter); // upper cornice
-  // Three projecting inner piers create a proper vaulted entrance.
-  for(const offset of [-6,0,6]){
-   const zz=tunnelCenter+sign*offset;
-   block(1.15,9.5,1.2,0x9b856c,x-Math.sign(x)*1.0,4.75,zz);
-   const flame=new THREE.Mesh(
-    new THREE.ConeGeometry(.32,.8,6),
-    new THREE.MeshBasicMaterial({color:0xffac47}));
-   flame.position.set(x-Math.sign(x)*1.0,5.8,zz);scene.add(flame);
-  }
+  block(2.6,11.8,19,0x737981,x,5.9,tunnelCenter); // smooth grey side wall
  }
- block(17,1.4,19,0x75614f,0,12.4,tunnelCenter); // vaulted-roof silhouette
- // Open front view toward the raised portcullis; lighting doesn't add draw-heavy shadows.
- const entryLight=new THREE.PointLight(0xffd6a2,2.4,24,2);
+ block(17,1.4,19,0x666e76,0,12.4,tunnelCenter); // plain grey ceiling
+ // Neutral fill keeps the grey interior readable without adding objects.
+ const entryLight=new THREE.PointLight(0xe1ebff,1.8,25,2);
  entryLight.position.set(0,6,sign*58.5);scene.add(entryLight);
 }
 // Fighters spawn INSIDE the passages, behind the iron gates at z ±55.2.
