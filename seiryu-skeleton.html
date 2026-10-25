@@ -36,8 +36,9 @@ button[aria-pressed="true"]{background:#685039;color:#fff;border-color:#d6b88f}#
 import * as THREE from 'three';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 const el=id=>document.getElementById(id),canvas=el('view');
-const rend=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-rend.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||innerWidth<750;
+const rend=new THREE.WebGLRenderer({canvas,antialias:!isMobile,powerPreference:'high-performance'});
+rend.setPixelRatio(Math.min(window.devicePixelRatio||1,isMobile?1:1.5));
 rend.setSize(innerWidth,innerHeight);
 rend.outputColorSpace=THREE.SRGBColorSpace;
 rend.toneMapping=THREE.ACESFilmicToneMapping;
@@ -391,7 +392,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='ORIGINAL_ZERO_BASE_SKELETON_R62_REBUILT_TORSO';
+window.seiryuSkeletonRevision='R63_MOBILE_RENDER_OPTIMIZATION';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
@@ -404,8 +405,13 @@ el('export').onclick=()=>{
   btn.disabled=false;btn.textContent='GLB保存';
  },e=>{console.error(e);btn.disabled=false;btn.textContent='GLB保存';},{binary:true});
 };
-function animate(){
- requestAnimationFrame(animate);if(rotation)azimuth+=.0017;
+let lastFrame=0;
+function animate(now=0){
+ requestAnimationFrame(animate);
+ if(document.hidden)return;
+ if(isMobile && now-lastFrame<32)return;
+ lastFrame=now;
+ if(rotation)azimuth+=.0017;
  const cos=Math.cos(altitude);
  camera.position.set(target.x+range*Math.sin(azimuth)*cos,
  target.y+range*Math.sin(altitude),target.z+range*Math.cos(azimuth)*cos);
