@@ -346,6 +346,9 @@ for(let j=-7;j<=7;j++){
  curved([tailEnd,tailEnd.clone().lerp(endpoint,.42),endpoint],
         .093,j%3===0?3:1,root,.06);
 }
+// Skin stage must REPLACE the exposed skeleton, not be drawn on top of it.
+// Hide all existing skeletal geometry before building the flesh layer.
+root.traverse(obj=>{if(obj.isMesh)obj.visible=false;});
 // R72: first anatomy pass ONLY — continuous skin and muscle, no scales/armor.
 const skinBlue=new THREE.MeshStandardMaterial({color:0x477eac,roughness:.89,metalness:0,side:THREE.DoubleSide});
 const bellySkin=new THREE.MeshStandardMaterial({color:0xb6a68c,roughness:.94,metalness:0,side:THREE.DoubleSide});
@@ -366,7 +369,7 @@ for(let i=0;i<=steps;i++){
  const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
  const chest=Math.exp(-Math.pow((t-.42)/.24,2));
  const taper=t>.69?Math.pow(Math.max(.025,(1-t)/.31),.80):1;
- const radius=(.48+.54*chest)*taper;
+ const radius=(.83+.60*chest)*taper;
  const v=f.dorsal.clone().normalize(),side=f.side.clone().normalize();
  for(let j=0;j<radial;j++){
   const theta=j*2*Math.PI/radial;
@@ -407,9 +410,9 @@ for(const s of [-1,1]){
  const shoulder=P(-7.85,5.02,s*1.42);
  const elbow=s===1?P(-6.35,2.55,s*3.00):P(-10.15,2.45,s*2.95);
  const wrist=s===1?P(-4.40,-.04,s*3.85):P(-12.40,-.04,s*3.75);
- skinOval(shoulder,[1.05,1.02,.86]);
- skinLink(shoulder,elbow,.64,.47);skinOval(elbow,[.55,.56,.53]);
- skinLink(elbow,wrist,.43,.34);skinOval(wrist,[.58,.43,.62]);
+ skinOval(shoulder,[1.36,1.22,1.14]);
+ skinLink(shoulder,elbow,.88,.68);skinOval(elbow,[.55,.56,.53]);
+ skinLink(elbow,wrist,.65,.49);skinOval(wrist,[.58,.43,.62]);
  for(let j=0;j<4;j++){
   const shift=(j-1.5)*.40;
   const base=wrist.clone().add(P(-.18,-.04,shift));
@@ -418,7 +421,7 @@ for(const s of [-1,1]){
  }
 }
 // Solid facial flesh, broad cranium, snout, and lower jaw; keep horns and teeth exposed.
-skinOval(P(-12.65,10.25,0),[1.62,1.12,1.43]);
+skinOval(P(-12.65,10.25,0),[1.72,1.20,1.51]);
 skinOval(P(-14.13,10.16,0),[1.52,.84,1.31]);
 skinOval(P(-15.40,9.99,0),[1.05,.58,1.02]);
 skinOval(P(-16.14,9.84,0),[.52,.36,.73]);
@@ -476,7 +479,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R72_SKIN_MUSCLE_STAGE';
+window.seiryuSkeletonRevision='R73_SKIN_ONLY_HIDE_SKELETON';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
