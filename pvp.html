@@ -77,10 +77,11 @@
 #lookHelp{position:fixed;left:50%;top:54px;transform:translateX(-50%);z-index:3;pointer-events:none;display:none;color:#eafaff;background:#081c31ab;border-radius:8px;padding:4px 9px;font-size:11px}
 #lookHelp.show{display:block}
 @media(hover:none),(pointer:coarse){#weaponHud{bottom:108px;padding:5px 11px;min-width:100px}#weaponName{font-size:11px}#lookHelp{top:76px;font-size:10px}#leaveButton{bottom:210px}}
-/* The original arena artwork serves as the boot splash, never the battle UI.
-   Cover fills the viewport edge-to-edge without top/bottom letterboxing. */
+/* Keep the entire title artwork visible on tablets and narrow viewports.
+   The softened backdrop fills the unused space without cropping the logo. */
 #titleSplash{
- position:fixed;inset:0;z-index:30;background:#071421;
+ position:fixed;inset:0;width:100%;height:100%;height:100dvh;
+ z-index:30;background:#071421;
  display:grid;place-items:center;overflow:hidden;
  isolation:isolate;opacity:1;visibility:visible;
  transition:opacity .38s ease,visibility .38s ease;
@@ -91,7 +92,8 @@
  filter:blur(32px) brightness(.42);transform:scale(1.06);z-index:-1;
 }
 #titleSplash .title-art{
- width:100%;height:100%;object-fit:cover;object-position:center center;display:block;
+ width:100%;height:100%;max-width:100%;max-height:100%;
+ object-fit:contain;object-position:center center;display:block;
  filter:drop-shadow(0 0 24px #0008);
  pointer-events:none;-webkit-user-drag:none;
 }
