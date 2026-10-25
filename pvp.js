@@ -202,6 +202,53 @@ for(let i=0;i<1100;i++){
  audience.setMatrixAt(i,dummy.matrix);
 }
 audience.instanceMatrix.needsUpdate=true;audience.castShadow=false;scene.add(audience);
+// Fine stone paving: irregular inset joints and individual masonry highlights.
+// Instancing avoids thousands of mobile draw calls.
+const seamGeometry=new THREE.BoxGeometry(1,.012,.025);
+const seamMaterial=mat(0x5b4738);
+const seams=new THREE.InstancedMesh(seamGeometry,seamMaterial,1800);
+const seamDummy=new THREE.Object3D();
+for(let i=0;i<1800;i++){
+ const r=8+Math.sqrt((i+.5)/1800)*43;
+ const angle=i*2.399963229728653;
+ seamDummy.position.set(Math.sin(angle)*r,.084,Math.cos(angle)*r);
+ seamDummy.rotation.set(0,angle+(i%3)*.35,0);
+ seamDummy.scale.set(.45+(i%7)*.22,1,1);seamDummy.updateMatrix();seams.setMatrixAt(i,seamDummy.matrix);
+}
+seams.instanceMatrix.needsUpdate=true;scene.add(seams);
+// Colour variation and stone courses on the spectator terraces.
+const spectatorStone=mat(0xb49a7e);
+for(let tier=0;tier<8;tier++){
+ const radius=56.9+tier*2.9;
+ for(let i=0;i<archCount;i++){
+  const a=(i+.5)*archSpan;
+  radialBlock(2.6,.28,.7,spectatorStone,radius,a,1.03+tier*1.75);
+ }
+}
+// Coloured crowd silhouettes, kept in two instanced batches for tablet performance.
+for(const [tone,shift] of [[0x8e3c32,0],[0xb49a6e,1]]){
+ const people=new THREE.InstancedMesh(new THREE.BoxGeometry(.62,1.25,.55),mat(tone),420);
+ const person=new THREE.Object3D();
+ for(let i=0;i<420;i++){
+  const tier=(i*3+shift)%8,angle=((i*71+shift*19)%421)/421*TAU;
+  const rad=56.6+tier*2.9;
+  person.position.set(Math.sin(angle)*rad,1.48+tier*1.75,Math.cos(angle)*rad);
+  person.rotation.y=angle;person.scale.setScalar(.8+(i%4)*.07);person.updateMatrix();
+  people.setMatrixAt(i,person.matrix);
+ }
+ people.instanceMatrix.needsUpdate=true;scene.add(people);
+}
+// Stone keystones, banner hems and flame glows make the upper arcade less bare.
+const keystone=mat(0xc5ad91);
+for(let i=0;i<archCount;i++){
+ const angle=(i+.5)*archSpan;
+ for(const y of [22.8,33.8])radialBlock(1.5,1.25,6.2,keystone,arcadeRadius-5,angle,y);
+ if(i%4===0){
+  radialBlock(4.2,.3,.35,bronze,arcadeRadius-2.1,i*archSpan,24.6);
+  const p=polar(arcadeRadius,i*archSpan,39.8);
+  const glow=new THREE.PointLight(0xffa247,1.1,13,2);glow.position.set(...p);scene.add(glow);
+ }
+}
 // Monumental gate integrated into the seating wall, with a stone arch rather than a box.
 for(const sign of [-1,1]){
  const z=sign*55.2;
