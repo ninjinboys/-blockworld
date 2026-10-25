@@ -112,15 +112,31 @@ const medallion=new THREE.Mesh(new THREE.RingGeometry(3.1,3.7,32),bronze);
 medallion.rotation.x=-Math.PI/2;medallion.position.y=.09;scene.add(medallion);
 // The seating is made of stepped horizontal rings, with stairs between sections.
 const seatMats=[limestone,lightStone,mat(0x77614e)];
+// Preserve two full-width entrance corridors centred on +/-Z.
+// Previously every tier was an unbroken solid cylinder: fighters walked
+// THROUGH its walls between the rear tunnel and the battle floor.
+const GATE_CLEAR_HALF_ANGLE=.17;
+const seatArcs=[
+ [GATE_CLEAR_HALF_ANGLE,Math.PI-2*GATE_CLEAR_HALF_ANGLE],
+ [Math.PI+GATE_CLEAR_HALF_ANGLE,Math.PI-2*GATE_CLEAR_HALF_ANGLE]
+];
+function insideEntranceLane(angle){
+ const t=((angle%TAU)+TAU)%TAU;
+ return Math.min(t,Math.abs(t-Math.PI),TAU-t)<GATE_CLEAR_HALF_ANGLE;
+}
 for(let tier=0;tier<8;tier++){
  const inner=55.3+tier*2.9,outer=inner+2.87,height=.75+tier*1.75;
- const seat=new THREE.Mesh(new THREE.RingGeometry(inner,outer,96),seatMats[tier%3]);
- seat.rotation.x=-Math.PI/2;seat.position.y=height;seat.receiveShadow=true;scene.add(seat);
- const rise=new THREE.Mesh(new THREE.CylinderGeometry(outer,outer,1.75,96,1,true),mortar);
- rise.material.side=THREE.DoubleSide;rise.position.y=height-.875;scene.add(rise);
- arcStrip(inner,height+.07,.14,mortar);
+ for(const [start,arcLength] of seatArcs){
+  const seat=new THREE.Mesh(
+   new THREE.RingGeometry(inner,outer,48,1,start,arcLength),seatMats[tier%3]);
+  seat.rotation.x=-Math.PI/2;seat.position.y=height;seat.receiveShadow=true;scene.add(seat);
+  const rise=new THREE.Mesh(
+   new THREE.CylinderGeometry(outer,outer,1.75,48,1,true,start,arcLength),mortar);
+  rise.position.y=height-.875;scene.add(rise);
+ }
  for(let i=0;i<archCount;i++){
   const angle=i*TAU/archCount;
+  if(insideEntranceLane(angle))continue;
   radialBlock(.28,.14,2.7,mortar,inner+1.4,angle,height+.09);
  }
 }
@@ -133,6 +149,7 @@ for(let tier=0;tier<8;tier+=2){
  const radius=56.75+tier*2.9,level=.75+tier*1.75;
  for(let i=0;i<archCount;i++){
   const a=(i+.5)*TAU/archCount;
+  if(insideEntranceLane(a))continue;
   radialBlock(1.15,Math.max(.6,level),.7,limestone,radius,a,level*.5);
  }
 }
@@ -242,6 +259,7 @@ for(let tier=0;tier<8;tier+=2){
  const radius=56.9+tier*2.9;
  for(let i=0;i<archCount;i++){
   const a=(i+.5)*archSpan;
+  if(insideEntranceLane(a))continue;
   radialBlock(2.6,.28,.7,spectatorStone,radius,a,1.03+tier*1.75);
  }
 }
@@ -334,6 +352,9 @@ for(const sign of [-1,1]){
   }
  }
  block(17,1.4,19,0x75614f,0,12.4,tunnelCenter); // vaulted-roof silhouette
+ // Open front view toward the raised portcullis; lighting doesn't add draw-heavy shadows.
+ const entryLight=new THREE.PointLight(0xffd6a2,2.4,24,2);
+ entryLight.position.set(0,6,sign*58.5);scene.add(entryLight);
 }
 // Fighters spawn INSIDE the passages, behind the iron gates at z ±55.2.
 const spawning=[new THREE.Vector3(0,0,-ENTRANCE_Z),new THREE.Vector3(0,0,ENTRANCE_Z)];
