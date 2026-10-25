@@ -240,79 +240,42 @@ const cranium=C(-12.5,10.4,0);
 const upperNose=C(-17.18,9.96,0);
 const jawHinge=C(-11.40,9.54,0);
 const lowerTip=C(-15.85,7.00,0);
+// R66: broad, angular Asian-dragon skull, short deep muzzle and enormous open jaws.
 const skullBones=[
- [C(-12.80,10.42,0),[1.60,1.17,1.33]],
- [C(-14.10,10.34,0),[1.10,.70,.95]],
- [C(-15.40,10.11,0),[.79,.49,.67]]
+ [C(-12.85,10.43,0),[1.62,1.12,1.42]],
+ [C(-14.05,10.31,0),[1.30,.81,1.27]],
+ [C(-15.10,10.12,0),[.83,.56,.91]]
 ];
-for(const [p,r] of skullBones)ball(p,r,1,head,1);
+for(const [p,r] of skullBones)ball(p,r,1,head,0);
 for(const s of [-1,1]){
- // Sculptural eyebrow, enormous vacant orbital hole, bony lateral orbital arch.
- const socket=C(-13.17,10.58,s*1.29);
- // There is no filled eye: open orbital cavity. Oval ring only.
- const oval=[];
- for(let k=0;k<=14;k++){
-  let a=2*Math.PI*k/14;
-  oval.push(socket.clone().add(C(.69*Math.cos(a),.51*Math.sin(a),s*(.13*Math.cos(a)))));
+ // Strong angular brow and deep, triangular cheek armor.
+ curved([C(-14.75,10.97,s*.78),C(-13.72,11.30,s*1.39),C(-12.36,11.10,s*1.26)],.29,1,head,.60);
+ curved([C(-14.25,10.58,s*1.20),C(-13.45,9.75,s*1.48),C(-12.18,9.67,s*.88)],.25,0,head,.48);
+ for(let k=0;k<6;k++){
+  const x=-14.55+k*.48;
+  branch([C(x,10.55,s*1.0),C(x+.32,10.92+(k%2)*.17,s*1.55),C(x+.75,11.23+(k%3)*.19,s*1.98)],.16,2,head);
  }
- curved(oval,.105,3,head,.96);
- curved([C(-14.27,11.04,s*.88),C(-13.25,11.31,s*1.40),
-         C(-12.23,11.17,s*1.33)],.22,1,head,.50);
- // Massive cheek bar arches BACK to atlas, connecting head to spinal column.
- curved([C(-15.30,9.88,s*.55),C(-14.18,9.60,s*1.01),
-         C(-12.50,9.76,s*1.29),C(-11.42,9.84,s*.90)],.235,0,head,.56);
- // Sharply tapered upper muzzle: nasal bridge and bony palate.
- curved([C(-12.87,11.28,s*.50),C(-14.54,10.65,s*.64),
-         C(-16.36,10.23,s*.39),C(-17.20,10.02,s*.34)],.31,1,head,.49);
- curved([C(-17.22,9.73,s*.37),C(-15.89,9.58,s*.59),
-         C(-13.89,9.46,s*.86),C(-11.60,9.54,s*.93)],.19,0,head,.68);
- // Segmented pointed maxillary spurs provide skeletal character.
- for(let j=0;j<9;j++){
-  const x=-16.54+j*.56;
-  const y=10.23+.11*Math.sin(j*.29);
-  const z=s*(.47+j*.056);
-  bone(C(x,y,z),C(x+.42,y+.19+(j%3)*.09,z+s*.42),
-       .15,.014,j%3===0?3:0,head);
- }
- // Vast downturned mandible formed by separate left and right dentaries.
- curved([jawHinge.clone().add(C(.0,.0,s*.68)),C(-11.91,8.51,s*.89),
-         C(-13.21,7.52,s*.83),C(-15.04,7.00,s*.53),
-         lowerTip.clone().add(C(0,0,s*.19))],.25,1,head,.57);
- // Straight lower ramus bridge near chin, only jaw anatomically.
- curved([C(-15.79,7.0,s*.23),C(-16.28,7.04,0),
-         C(-15.75,7.0,-s*.23)],.15,0,head,.50);
- // Big upper and lower hooked fangs, not skin or tongue.
+ // Shorter broad nasal bridge with downturned upper lip.
+ curved([C(-13.92,10.72,s*.85),C(-15.02,10.38,s*.86),C(-16.15,10.04,s*.57)],.32,1,head,.55);
+ curved([C(-16.15,9.91,s*.53),C(-15.12,9.65,s*.88),C(-13.68,9.56,s*1.10),C(-11.75,9.60,s*.89)],.22,0,head,.65);
+ // Deep open lower jaw: strong hinge, descending mandible, broad chin.
+ curved([C(-11.67,9.52,s*.79),C(-12.32,8.20,s*1.07),C(-13.56,7.10,s*.89),C(-15.26,6.88,s*.49)],.31,1,head,.65);
  for(let k=0;k<7;k++){
-  let x=-16.64+k*.76,z=s*(.42+k*.075);
-  let y=9.63+(k*.035);
-  let d=(k===0||k===4)?.91:.46;
-  curved([C(x,y,z),C(x-.08,y-d*.75,z+s*.05),
-   C(x+.07,y-d,z+s*.04)],k===0||k===4?.145:.081,k===0?3:1,head,.09);
+  const x=-15.83+k*.61;
+  branch([C(x,9.73,s*.61),C(x-.10,9.25,s*.64),C(x+.06,8.94-(k%3)*.13,s*.61)],.12,3,head);
+  branch([C(-15.02+k*.51,7.05+k*.10,s*.42),C(-15.13+k*.51,7.48+k*.11,s*.48),C(-15.02+k*.51,7.76+k*.11,s*.43)],.10,3,head);
  }
- for(let k=0;k<7;k++){
-  let x=-15.64+k*.65,z=s*(.27+k*.081);
-  let y=7.01+(k/6)*1.06;
-  curved([C(x,y,z),C(x-.12,y+.34,z),
-    C(x+.06,y+.55+(k%2)*.12,z)],.083,3,head,.08);
- }
- // Branching deer-like antlers anchored into robust skull roots.
- const hornRoot=C(-12.05,11.25,s*.83);
- const h1=C(-11.85,12.75,s*1.23),h2=C(-10.91,14.12,s*1.67);
- branch([hornRoot,h1,h2,C(-9.17,15.0,s*1.86)],.32,2,head);
- branch([h1,C(-12.54,14.03,s*1.69),C(-13.06,14.59,s*2.09)],.16,1,head);
- branch([h2,C(-10.95,15.33,s*2.27)],.17,1,head);
- branch([C(-10.07,14.58,s*1.80),C(-9.39,15.78,s*1.48)],.15,0,head);
- branch([C(-9.43,14.92,s*1.84),C(-8.49,15.56,s*2.31)],.13,1,head);
- // Collared occiput and pointed lateral skull flanges join the neck.
- for(let j=0;j<10;j++){
-  let a=j*.27,p=C(-11.12+j*.22,9.72-j*.10,s*(.67+.12*(j%3)));
-  curved([p,p.clone().add(C(.33,.20,s*.34)),
-   p.clone().add(C(.72,.44+(j%4)*.05,s*.51))],.105,2,head,.12);
- }
+ // Branched antlers sweep back, not straight spikes.
+ const horn=C(-12.37,11.23,s*.82);
+ branch([horn,C(-12.08,12.55,s*1.24),C(-10.98,13.85,s*1.60),C(-9.28,14.48,s*1.82)],.31,2,head);
+ branch([C(-12.08,12.55,s*1.24),C(-12.67,13.70,s*1.65),C(-12.98,14.24,s*1.91)],.15,1,head);
+ branch([C(-10.98,13.85,s*1.60),C(-10.90,15.02,s*2.12)],.16,1,head);
+ // Long floating whiskers and chin tendrils.
+ curved([C(-15.33,9.92,s*.84),C(-17.23,10.35,s*1.9),C(-18.03,9.40,s*2.7),C(-17.36,8.60,s*3.05)],.062,3,head,.11);
+ curved([C(-14.77,7.12,s*.53),C(-15.30,6.05,s*.88),C(-14.93,5.56,s*1.13)],.078,2,head,.12);
 }
-// Pointed, clasping nasal bone and chin bones complete the head silhouette.
-ball(upperNose,[.33,.20,.36],1,head,0);
-ball(lowerTip,[.31,.21,.42],0,head,0);
+ball(C(-16.08,10.02,0),[.39,.25,.70],1,head,0);
+ball(C(-15.23,6.88,0),[.41,.22,.54],0,head,0);
 // Forelegs have only TWO shoulder attachment sites at FRONT of rib cage.
 // Silhouette of far arm projects toward snout, near arm sweeps below chest.
 function addForeleg(s){
@@ -396,7 +359,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R65_LONG_BODY_LARGE_ARMS';
+window.seiryuSkeletonRevision='R66_REBUILT_DRAGON_HEAD';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
