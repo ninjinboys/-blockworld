@@ -77,59 +77,122 @@ for(const radius of [8,24,39,48]){
  const ring=new THREE.Mesh(new THREE.RingGeometry(radius,radius+.24,96),dark);
  ring.rotation.x=-Math.PI/2;ring.position.y=.02;scene.add(ring);
 }
-// Visible colosseum stands: open radial seating, NOT opaque cylindrical walls.
-const TAU=Math.PI*2,SECTIONS=40;
-const terraceMaterials=[mat(0xbba58b),mat(0x9c8065),mat(0xc2ae93),mat(0x9c816a)];
-for(let tier=0;tier<7;tier++){
- const inner=55.3+tier*3.1,outer=inner+3.05,height=.8+tier*2.05;
- const seating=new THREE.Mesh(new THREE.RingGeometry(inner,outer,SECTIONS),terraceMaterials[tier%4]);
- seating.rotation.x=-Math.PI/2;seating.position.y=height;seating.receiveShadow=true;scene.add(seating);
- // Individual short risers follow the back edge of each row, keeping the tiers open.
- const rise=new THREE.Mesh(new THREE.CylinderGeometry(outer,outer,2.05,SECTIONS,1,true),mat(tier%2?0x7d6958:0xa38d73));
- rise.material.side=THREE.DoubleSide;rise.position.y=height-1.025;scene.add(rise);
- for(let k=0;k<SECTIONS;k++){
-  const angle=k*TAU/SECTIONS;
-  const step=new THREE.Mesh(new THREE.BoxGeometry(.23,.15,3),mat(0x705d4e));
-  step.position.set(Math.sin(angle)*(inner+1.5),height+.09,Math.cos(angle)*(inner+1.5));
-  step.rotation.y=angle;scene.add(step);
+// Multi-level Roman-style arena: vaulted galleries, audience, royal box and stone paving.
+const TAU=Math.PI*2,SECTIONS=48,archCount=32;
+const limestone=mat(0xb6a18a),mortar=mat(0x736457),lightStone=mat(0xd2bca0);
+const bronze=mat(0xc49b50,.35),cloth=mat(0x9d2535),shade=mat(0x392c2a);
+function polar(radius,angle,y=0){return [Math.sin(angle)*radius,y,Math.cos(angle)*radius]}
+function radialBlock(w,h,d,material,radius,angle,y){
+ const [x,yy,z]=polar(radius,angle,y);
+ const obj=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+ obj.position.set(x,yy,z);obj.rotation.y=angle;
+ obj.castShadow=true;obj.receiveShadow=true;scene.add(obj);return obj;
+}
+function arcStrip(radius,y,thickness,material){
+ const m=new THREE.Mesh(new THREE.TorusGeometry(radius,thickness,6,96),material);
+ m.rotation.x=Math.PI/2;m.position.y=y;scene.add(m);return m;
+}
+// Large individually laid flagstones, dark joints and central circular motif.
+const paving=mat(0xbda483),pavingAlt=mat(0xcab18e);
+for(let r=5;r<49;r+=4.5){
+ const count=Math.max(14,Math.floor(r*1.1));
+ for(let i=0;i<count;i++){
+  const angle=(i+(Math.floor(r)%2)*.5)*TAU/count;
+  const width=Math.min(3.9,r*TAU/count*.83);
+  const tile=radialBlock(width,.055,3.7,i%3===0?pavingAlt:paving,r,angle,-.012);
+  tile.castShadow=false;
  }
 }
-// Monumental open arcades on the outermost ring. Empty gaps between columns
-// remain transparent so the stands and bright sky are actually visible.
-const arcadeRadius=80,archCount=32;
-const columnMat=mat(0xa8957e),capMat=mat(0x655345);
+for(const radius of [8,24,39,48])arcStrip(radius,.065,.13,mortar);
+const medallion=new THREE.Mesh(new THREE.RingGeometry(3.1,3.7,32),bronze);
+medallion.rotation.x=-Math.PI/2;medallion.position.y=.09;scene.add(medallion);
+// The seating is made of stepped horizontal rings, with stairs between sections.
+const seatMats=[limestone,lightStone,mat(0x9f8a73)];
+for(let tier=0;tier<8;tier++){
+ const inner=55.3+tier*2.9,outer=inner+2.87,height=.75+tier*1.75;
+ const seat=new THREE.Mesh(new THREE.RingGeometry(inner,outer,96),seatMats[tier%3]);
+ seat.rotation.x=-Math.PI/2;seat.position.y=height;seat.receiveShadow=true;scene.add(seat);
+ const rise=new THREE.Mesh(new THREE.CylinderGeometry(outer,outer,1.75,96,1,true),mortar);
+ rise.material.side=THREE.DoubleSide;rise.position.y=height-.875;scene.add(rise);
+ arcStrip(inner,height+.07,.14,mortar);
+ for(let i=0;i<archCount;i++){
+  const angle=i*TAU/archCount;
+  radialBlock(.28,.14,2.7,mortar,inner+1.4,angle,height+.09);
+ }
+}
+// Two arcaded levels. Each bay has a real arched opening, not just columns and a straight beam.
+const arcadeRadius=82,archSpan=TAU/archCount;
+function addArcadeLevel(baseY,height){
+ const beamY=baseY+height;
+ for(let i=0;i<archCount;i++){
+  const angle=i*archSpan,mid=angle+archSpan*.5;
+  radialBlock(3.25,height,3.6,limestone,arcadeRadius,angle,baseY+height*.5);
+  radialBlock(4.1,1.0,4.2,mortar,arcadeRadius,angle,baseY+.5);
+  radialBlock(4.1,1.0,4.2,lightStone,arcadeRadius,angle,beamY-.4);
+  // A curved voussoir arch, built from individually rotated stone blocks.
+  const span=arcadeRadius*archSpan;
+  const archWidth=Math.max(2.4,span-3.3);
+  const radius=archWidth*.5;
+  for(let k=0;k<=12;k++){
+   const t=Math.PI*k/12;
+   const offset=Math.cos(t)*radius;
+   const rise=Math.sin(t)*radius*.58;
+   const segment=radialBlock(archWidth/12+.35,1.2,3.8,k%2?limestone:lightStone,
+    arcadeRadius,mid+offset/arcadeRadius,beamY-3.1+rise);
+   segment.rotation.z=-Math.cos(t)*.65;
+  }
+ }
+ arcStrip(arcadeRadius,beamY,.55,mortar);
+}
+addArcadeLevel(14,10);
+addArcadeLevel(26,9);
 for(let i=0;i<archCount;i++){
- const angle=i*TAU/archCount;
- const x=Math.sin(angle)*arcadeRadius,z=Math.cos(angle)*arcadeRadius;
- const column=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.65,12,8),columnMat);
- column.position.set(x,21,z);column.castShadow=true;scene.add(column);
- const plinth=new THREE.Mesh(new THREE.BoxGeometry(3.4,1.1,3.4),capMat);
- plinth.position.set(x,15.4,z);plinth.rotation.y=angle;scene.add(plinth);
- const capital=new THREE.Mesh(new THREE.BoxGeometry(3.5,1.1,3.5),capMat);
- capital.position.set(x,27.4,z);capital.rotation.y=angle;scene.add(capital);
- const top=new THREE.Mesh(new THREE.BoxGeometry(arcadeRadius*TAU/archCount+1.5,1.8,3.6),columnMat);
- top.position.set(Math.sin(angle+TAU/(archCount*2))*arcadeRadius,29.2,Math.cos(angle+TAU/(archCount*2))*arcadeRadius);
- top.rotation.y=angle+TAU/(archCount*2);scene.add(top);
+ const angle=i*archSpan;
+ radialBlock(3.7,2.2,4.3,limestone,arcadeRadius,angle,37);
  if(i%4===0){
-  const banner=block(3.6,7,.15,0xa72e39,Math.sin(angle)*(arcadeRadius-1.2),24,Math.cos(angle)*(arcadeRadius-1.2));
-  banner.rotation.y=angle;
-  const crest=block(.9,1.6,.19,0xd9b16b,Math.sin(angle)*(arcadeRadius-1.1),24.7,Math.cos(angle)*(arcadeRadius-1.1));
-  crest.rotation.y=angle;
+  const banner=radialBlock(3.5,7,.2,cloth,arcadeRadius-2,angle,28.2);
+  const crest=radialBlock(1,1.5,.24,bronze,arcadeRadius-1.85,angle,29.1);
+  const fringe=radialBlock(3.5,.35,.24,bronze,arcadeRadius-1.8,angle,24.7);
  }
- if(i%8===0){
-  const fire=new THREE.Mesh(new THREE.ConeGeometry(.85,2.2,6),new THREE.MeshBasicMaterial({color:0xffa244}));
-  fire.position.set(x,31.6,z);scene.add(fire);
-  const bowl=new THREE.Mesh(new THREE.CylinderGeometry(1.3,.9,.7,8),capMat);
-  bowl.position.set(x,30.3,z);scene.add(bowl);
+ if(i%2===0){
+  const x=Math.sin(angle)*arcadeRadius,z=Math.cos(angle)*arcadeRadius;
+  const bowl=new THREE.Mesh(new THREE.CylinderGeometry(1.15,.7,.65,8),mortar);
+  bowl.position.set(x,39,z);scene.add(bowl);
+  const fire=new THREE.Mesh(new THREE.ConeGeometry(.85,2.5,7),new THREE.MeshBasicMaterial({color:0xff982c}));
+  fire.position.set(x,40.5,z);scene.add(fire);
  }
 }
-// Entrance arches face the combat floor. Their silhouette stays distinct.
+// Crimson fabric canopies hung between high parapet posts.
+for(let i=0;i<archCount;i+=4){
+ const angle=(i+2)*archSpan;
+ const canopy=radialBlock(arcadeRadius*archSpan*3.4,.22,7,cloth,arcadeRadius-1.2,angle,37.8);
+ canopy.rotation.z=.035;
+}
+// Spectator silhouettes grouped into merged geometry for mobile performance.
+const crowdGeometry=new THREE.BoxGeometry(.55,1.05,.55);
+const crowdMaterial=mat(0x3b3937);
+const audience=new THREE.InstancedMesh(crowdGeometry,crowdMaterial,1100);
+const dummy=new THREE.Object3D();
+for(let i=0;i<1100;i++){
+ const tier=i%8,seatAngle=((i*37)%1100)/1100*TAU;
+ const radius=56.6+tier*2.9;
+ dummy.position.set(Math.sin(seatAngle)*radius,1.35+tier*1.75,Math.cos(seatAngle)*radius);
+ dummy.rotation.y=seatAngle;dummy.scale.setScalar(.75+(i%5)*.08);dummy.updateMatrix();
+ audience.setMatrixAt(i,dummy.matrix);
+}
+audience.instanceMatrix.needsUpdate=true;audience.castShadow=false;scene.add(audience);
+// Raised imperial viewing gallery above the northern gate.
 for(const sign of [-1,1]){
- const z=sign*55.5;
- for(const x of [-7.5,7.5])block(3.2,12,3.3,0x786451,x,6,z);
- block(19,2.5,3.8,0xb4a087,0,12.5,z);
- block(21,1.2,4,0x665344,0,14.3,z);
- for(let i=-5;i<=5;i++)block(.16,8,.4,0x51443a,i,4,z-sign*.2);
+ const z=sign*54.8;
+ for(const x of [-9,9])block(4,14,4,0x8c7761,x,7,z);
+ block(22,3,5,0xc5b096,0,15,z);
+ block(23,1.4,5.5,0x665344,0,17,z);
+ block(12,10,.6,0x3b322c,0,5,z);
+ for(let i=-5;i<=5;i++)block(.18,9,.4,0x9c927e,i,5,z-sign*.4);
+ for(const x of [-12,12]){
+  const statue=block(2.2,6,2.1,0xb7a38c,x,5,z-sign*2.2);
+  block(3.1,1.2,3.1,0x796553,x,1,z-sign*2.2);
+ }
 }
 // Start close enough to see the opponent immediately in first-person view.
 const spawning=[new THREE.Vector3(-5,0,0),new THREE.Vector3(5,0,0)];
