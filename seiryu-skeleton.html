@@ -373,11 +373,11 @@ for(let i=0;i<=steps;i++){
  const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
  const chest=Math.exp(-Math.pow((t-.42)/.24,2));
  const taper=t>.69?Math.pow(Math.max(.025,(1-t)/.31),.80):1;
- const radius=(1.08+.82*chest)*taper;
+ const radius=(1.55+1.12*chest)*taper;
  const v=f.dorsal.clone().normalize(),side=f.side.clone().normalize();
  for(let j=0;j<radial;j++){
   const theta=j*2*Math.PI/radial;
-  const q=p.clone().addScaledVector(v,Math.cos(theta)*radius*.88)
+  const q=p.clone().addScaledVector(v,Math.cos(theta)*radius*.94)
      .addScaledVector(side,Math.sin(theta)*radius);
   rings.push(q.x,q.y,q.z);
  }
@@ -397,7 +397,7 @@ for(let i=0;i<=steps;i++){
  const t=i/steps,f=spineFrames[Math.round(t*COUNT)],p=f.pos;
  const chest=Math.exp(-Math.pow((t-.42)/.24,2));
  const taper=t>.69?Math.pow(Math.max(.025,(1-t)/.31),.80):1;
- const radius=(.48+.54*chest)*taper;
+ const radius=(1.55+1.12*chest)*taper;
  for(const angle of [Math.PI-.49,Math.PI,Math.PI+.49]){
   const q=p.clone().addScaledVector(f.dorsal,Math.cos(angle)*radius*.90)
    .addScaledVector(f.side,Math.sin(angle)*radius*1.015);
@@ -414,9 +414,9 @@ for(const s of [-1,1]){
  const shoulder=P(-7.85,5.02,s*1.42);
  const elbow=s===1?P(-6.35,2.55,s*3.00):P(-10.15,2.45,s*2.95);
  const wrist=s===1?P(-4.40,-.04,s*3.85):P(-12.40,-.04,s*3.75);
- skinOval(shoulder,[1.60,1.43,1.37]);
- skinLink(shoulder,elbow,1.13,.82);skinOval(elbow,[.91,.84,.85]);
- skinLink(elbow,wrist,.82,.65);skinOval(wrist,[.84,.60,.89]);
+ skinOval(shoulder,[1.92,1.78,1.67]);
+ skinLink(shoulder,elbow,1.48,1.12);skinOval(elbow,[.91,.84,.85]);
+ skinLink(elbow,wrist,1.14,.88);skinOval(wrist,[.84,.60,.89]);
  for(let j=0;j<4;j++){
   const shift=(j-1.5)*.40;
   const base=wrist.clone().add(P(-.18,-.04,shift));
@@ -483,7 +483,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R75_OPAQUE_BULK_MUSCLE';
+window.seiryuSkeletonRevision='R76_DEEP_MUSCLE_VOLUME';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
