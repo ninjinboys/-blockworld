@@ -25,6 +25,8 @@ let lookPitch=0,walkMotion=0,walkPhase=0,lastHurtUntil=0,attackVisualAt=0,enemyA
 let cpuProjectiles=[];
 let entranceStart=0,entranceFightAnnounced=false;
 const entranceDuration=6500;
+const gateCloseDuration=1600; // The iron gates descend after the fighters enter.
+const GATE_OPEN_HEIGHT=12;
 const ENTRANCE_Z=64,ENTRANCE_END_Z=12;
 const arenaGates=[];
 let cpuAim={x:0,z:0,nextUpdate:0};
@@ -475,6 +477,8 @@ function showMenu(message=''){
  resetJoystick();
  if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
  state='menu';keys.clear();touchLooks.clear();shutdown(false);
+ // Restore the entrance to its initial closed state in the menu.
+ arenaGates.forEach(g=>g.position.y=0);
  $('screen').style.display='flex';$('finish').style.display='none';$('top').classList.remove('show');
  $('mobileControls').classList.remove('show');$('controlsHelp').classList.remove('show');
  $('leaveButton').style.display='none';$('lookHelp').classList.remove('show');$('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
@@ -948,7 +952,7 @@ function update(dt,t){
   me.x=0;me.face=startSide>0?Math.PI:0;
   rival.z=-startSide*zDistance;
   rival.x=0;rival.face=startSide>0?0:Math.PI;
-  const gateLift=12*THREE.MathUtils.smoothstep(entryProgress,.02,.27);
+  const gateLift=GATE_OPEN_HEIGHT*THREE.MathUtils.smoothstep(entryProgress,.02,.27);
   arenaGates.forEach(g=>g.position.y=gateLift);
   remaining=roundLength;updateHud();syncAvatars();
   if(entryProgress>.92&&!entranceFightAnnounced){
@@ -956,6 +960,12 @@ function update(dt,t){
   }
   return;
  }
+ // Both fighters have safely crossed the portcullis (at Z +/-55).
+ // Close both iron gates smoothly after FIGHT, without blocking the battle.
+ const closingProgress=THREE.MathUtils.clamp(
+  (t-entranceStart-entranceDuration)/gateCloseDuration,0,1);
+ const gateHeight=GATE_OPEN_HEIGHT*(1-THREE.MathUtils.smoothstep(closingProgress,0,1));
+ arenaGates.forEach(g=>g.position.y=gateHeight);
  moveLocal(dt);
  if(role==='cpu'){
   stepCPU(dt);
