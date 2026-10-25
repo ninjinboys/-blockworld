@@ -138,6 +138,13 @@
 #finish .secondary{background:linear-gradient(180deg,#2b6157,#204d46);border-color:#548e80}
 #finish .primary:not(:disabled):hover,#finish .secondary:not(:disabled):hover{filter:brightness(1.12)}
 #finish .primary:not(:disabled):active,#finish .secondary:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 2px #0004,0 2px 5px #0005}
+
+/* Shared NEXACRAFT username/password authentication. */
+#pvpAuth{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;padding:20px;background:#07111cf2;color:#edf5ff}
+#pvpAuth.show{display:flex}#pvpAuth .auth-card{width:min(420px,100%);padding:30px;border-radius:18px;background:#14273a;border:1px solid #62849a;box-shadow:0 20px 60px #000b}
+#pvpAuth h2{margin:0 0 16px;font-size:24px}#pvpAuth .auth-tabs{display:flex;gap:8px;margin-bottom:16px}#pvpAuth .auth-tabs button{flex:1;background:#29445c;color:#fff;border:1px solid #5c8299;border-radius:9px;padding:10px}#pvpAuth .auth-tabs button.active{background:#357b8c}
+#pvpAuth label{display:block;margin:12px 0;font-size:13px}#pvpAuth input{margin-top:5px}#pvpAuth .auth-error{min-height:22px;color:#ff9d9d;font-size:13px;margin:10px 0}#pvpAuth .auth-info{font-size:12px;color:#b6d3e0;line-height:1.6}
+#pvpAccount{position:fixed;z-index:7;right:15px;top:12px;display:none;align-items:center;gap:8px;font-size:12px;background:#0c1d2bcc;padding:7px 10px;border-radius:10px}#pvpAccount button{border:0;border-radius:7px;background:#335873;color:white;padding:5px 9px}
 </style>
 </head>
 <body>
@@ -241,5 +248,23 @@
 })();
 </script>
 <script type="module" src="./pvp.js?v=20261025gateClose15"></script>
+
+<script type="module">
+import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut} from './nexacraft-cloud.js';
+const auth=document.getElementById('pvpAuth'),form=document.getElementById('pvpAuthForm'),name=document.getElementById('pvpAuthName'),pass=document.getElementById('pvpAuthPass'),error=document.getElementById('pvpAuthError'),submit=document.getElementById('pvpAuthSubmit'),account=document.getElementById('pvpAccount');
+let mode='login',identity=null;
+const tab=(next)=>{mode=next;document.getElementById('pvpLoginTab').classList.toggle('active',mode==='login');document.getElementById('pvpCreateTab').classList.toggle('active',mode==='create');submit.textContent=mode==='login'?'ログイン':'アカウント作成';pass.autocomplete=mode==='login'?'current-password':'new-password';error.textContent='';};
+document.getElementById('pvpLoginTab').onclick=()=>tab('login');document.getElementById('pvpCreateTab').onclick=()=>tab('create');
+const show=()=>{auth.classList.add('show');account.style.display='none';};
+const signedIn=(user)=>{identity=user;window.NEXACRAFT_PVP_ACCOUNT={key:user.key,name:user.name,uid:user.uid};document.getElementById('pvpPlayerName').textContent=user.name;auth.classList.remove('show');account.style.display='flex';};
+// Title screen must lead to authentication, not directly to the match menu.
+const enter=document.getElementById('titleEnter');enter.addEventListener('click',()=>{if(!identity)show();});
+document.addEventListener('keydown',()=>{if(!identity&&!document.getElementById('titleSplash')?.isConnected&&!auth.classList.contains('show'))show();});
+form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';const n=name.value.normalize('NFKC').trim();if(n.length<2||n.length>20){error.textContent='名前は2〜20文字で入力してください';return;}if(pass.value.length<6){error.textContent='パスワードは6文字以上で入力してください';return;}if(!cloudEnabled){error.textContent='共通アカウントのクラウド認証が利用できません';return;}submit.disabled=true;try{signedIn(mode==='create'?await cloudRegister(n,pass.value):await cloudLogin(n,pass.value));pass.value='';}catch(ex){error.textContent=ex?.message||'ログインできませんでした';}finally{submit.disabled=false;}});
+document.getElementById('pvpLogout').onclick=async()=>{try{await cloudSignOut();}catch(e){console.warn(e);}identity=null;window.NEXACRAFT_PVP_ACCOUNT=null;show();};
+// Firebase persists the same session across Pages origins on compatible browsers only after explicit sign-in.
+try{const user=await cloudRestore();if(user)signedIn(user);}catch(e){console.warn('PvP account restore:',e);}
+if(!identity){const splash=document.getElementById('titleSplash');if(!splash?.isConnected)show();}
+</script>
 </body>
 </html>
