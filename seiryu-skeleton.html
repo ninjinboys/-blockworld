@@ -413,25 +413,56 @@ const bellyGeo=new THREE.BufferGeometry();
 bellyGeo.setAttribute('position',new THREE.Float32BufferAttribute(bellyPoints,3));
 bellyGeo.setIndex(bellyIndices);bellyGeo.computeVertexNormals();
 muscle.add(new THREE.Mesh(bellyGeo,bellySkin));
-// Two heavily muscled forelimbs, with deltoids, biceps and forearms.
+// Anatomical forelimbs: ONE continuous tapered muscle surface per arm.
+// The swelling follows shoulder/deltoid, biceps, elbow, brachioradialis and wrist,
+// rather than stacking intersecting cylinders and spheres.
+function sculptLimb(shoulder,elbow,wrist){
+ const curve=new THREE.CatmullRomCurve3([
+  shoulder,shoulder.clone().lerp(elbow,.42),elbow,
+  elbow.clone().lerp(wrist,.52),wrist],false,'catmullrom',.45);
+ const verts=[],faces=[],N=52,M=14;
+ for(let i=0;i<=N;i++){
+  const t=i/N,p=curve.getPoint(t),tangent=curve.getTangent(t).normalize();
+  let side=new THREE.Vector3(0,0,1).cross(tangent).normalize();
+  if(side.lengthSq()<.1)side=new THREE.Vector3(1,0,0);
+  const up=tangent.clone().cross(side).normalize();
+  const bell=(x,m,w)=>Math.exp(-Math.pow((x-m)/w,2));
+  const radius=.37+1.13*bell(t,.08,.17)+.48*bell(t,.34,.16)
+   +.13*bell(t,.53,.08)+.61*bell(t,.69,.17)+.16*bell(t,.86,.11);
+  const endTaper=1-.30*Math.max(0,(t-.83)/.17);
+  for(let j=0;j<M;j++){
+   const ang=j*Math.PI*2/M;
+   // Distinct dorsal extensor and ventral flexor groups, subtle tendon valley.
+   const muscleShape=1+.09*Math.cos(2*ang)*bell(t,.35,.23)
+      +.12*Math.cos(ang+.55)*bell(t,.70,.20);
+   const v=p.clone().addScaledVector(side,Math.cos(ang)*radius*endTaper*muscleShape)
+      .addScaledVector(up,Math.sin(ang)*radius*endTaper*muscleShape*.88);
+   verts.push(v.x,v.y,v.z);
+  }
+ }
+ for(let i=0;i<N;i++)for(let j=0;j<M;j++){
+  const a=i*M+j,b=i*M+(j+1)%M,d=(i+1)*M+j,e=(i+1)*M+(j+1)%M;
+  faces.push(a,b,d,b,e,d);
+ }
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+ g.setIndex(faces);g.computeVertexNormals();
+ muscle.add(new THREE.Mesh(g,skinBlue));
+}
 for(const s of [-1,1]){
  const shoulder=P(-7.85,5.02,s*1.42);
  const elbow=s===1?P(-6.35,2.55,s*3.00):P(-10.15,2.45,s*2.95);
  const wrist=s===1?P(-4.40,-.04,s*3.85):P(-12.40,-.04,s*3.75);
- skinOval(shoulder,[2.15,2.05,1.91],skinBlue,3);
- skinLink(shoulder,elbow,1.62,1.27);
- const upper=shoulder.clone().lerp(elbow,.47);
- skinOval(upper,[1.38,1.52,1.30],skinBlue,3);
- skinOval(elbow,[1.10,1.02,.98],skinBlue,3);
- skinLink(elbow,wrist,1.29,.95);
- const fore=elbow.clone().lerp(wrist,.40);
- skinOval(fore,[1.20,1.38,1.11],skinBlue,3);
- skinOval(wrist,[.95,.72,.97],skinBlue,3);
+ sculptLimb(shoulder,elbow,wrist);
+ // Palms and four muscular fingers continue the existing skeletal digits.
+ skinOval(wrist,[.71,.50,.80],skinBlue,3);
  for(let j=0;j<4;j++){
   const shift=(j-1.5)*.40;
   const base=wrist.clone().add(P(-.18,-.04,shift));
   const mid=base.clone().add(P(-.75,-.07,shift*.13));
-  skinLink(base,mid,.24,.15);
+  const tip=mid.clone().add(P(-.60,-.10,shift*.17));
+  skinLink(base,mid,.18,.14);
+  skinLink(mid,tip,.14,.075);
  }
 }
 // Facial muscles use the SAME local coordinates as the original skull bones.
@@ -515,7 +546,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R81_MUSCLE_ANATOMY_BULK';
+window.seiryuSkeletonRevision='R82_SCULPTED_MUSCLE_LIMBS';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
