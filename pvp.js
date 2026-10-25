@@ -124,31 +124,36 @@ for(let tier=0;tier<8;tier++){
 const arcadeRadius=82,archSpan=TAU/archCount;
 function addArcadeLevel(baseY,height){
  const beamY=baseY+height;
+ // Three radial layers give every arcade a real walkable-looking depth.
  for(let i=0;i<archCount;i++){
   const angle=i*archSpan,mid=angle+archSpan*.5;
-  radialBlock(3.25,height,3.6,limestone,arcadeRadius,angle,baseY+height*.5);
-  radialBlock(4.1,1.0,4.2,mortar,arcadeRadius,angle,baseY+.5);
-  radialBlock(4.1,1.0,4.2,lightStone,arcadeRadius,angle,beamY-.4);
-  // A curved voussoir arch, built from individually rotated stone blocks.
-  const span=arcadeRadius*archSpan;
-  const archWidth=Math.max(2.4,span-3.3);
-  const radius=archWidth*.5;
-  for(let k=0;k<=12;k++){
-   const t=Math.PI*k/12;
-   const offset=Math.cos(t)*radius;
-   const rise=Math.sin(t)*radius*.58;
-   const segment=radialBlock(archWidth/12+.35,1.2,3.8,k%2?limestone:lightStone,
-    arcadeRadius,mid+offset/arcadeRadius,beamY-3.1+rise);
-   segment.rotation.z=-Math.cos(t)*.65;
+  for(const radius of [arcadeRadius-4.8,arcadeRadius,arcadeRadius+4.8]){
+   radialBlock(4.7,height,5.2,limestone,radius,angle,baseY+height*.5);
+   radialBlock(5.6,1.5,5.8,mortar,radius,angle,baseY+.75);
+   radialBlock(5.7,1.7,5.9,lightStone,radius,angle,beamY-.85);
+   const span=radius*archSpan;
+   const archWidth=Math.max(2.4,span-4.7);
+   const archRadius=archWidth*.5;
+   for(let k=0;k<=12;k++){
+    const t=Math.PI*k/12,offset=Math.cos(t)*archRadius,rise=Math.sin(t)*archRadius*.6;
+    const segment=radialBlock(archWidth/12+.65,2.2,5.3,k%2?limestone:lightStone,
+      radius,mid+offset/radius,beamY-3.6+rise);
+    segment.rotation.z=-Math.cos(t)*.65;
+   }
   }
+  // Thick radial cross-walls visually connect the front and rear arch rings.
+  radialBlock(4.8,2.1,14.8,mortar,arcadeRadius,angle,beamY-1.1);
+  radialBlock(4.8,1.5,14.8,limestone,arcadeRadius,angle,baseY+.75);
  }
- arcStrip(arcadeRadius,beamY,.55,mortar);
+ for(const radius of [arcadeRadius-5.4,arcadeRadius+5.4]){
+  arcStrip(radius,beamY,.75,mortar);
+ }
 }
 addArcadeLevel(14,10);
 addArcadeLevel(26,9);
 for(let i=0;i<archCount;i++){
  const angle=i*archSpan;
- radialBlock(3.7,2.2,4.3,limestone,arcadeRadius,angle,37);
+ radialBlock(5.5,3.3,14.2,limestone,arcadeRadius,angle,37);
  if(i%4===0){
   const banner=radialBlock(3.5,7,.2,cloth,arcadeRadius-2,angle,28.2);
   const crest=radialBlock(1,1.5,.24,bronze,arcadeRadius-1.85,angle,29.1);
@@ -184,9 +189,9 @@ audience.instanceMatrix.needsUpdate=true;audience.castShadow=false;scene.add(aud
 // Raised imperial viewing gallery above the northern gate.
 for(const sign of [-1,1]){
  const z=sign*54.8;
- for(const x of [-9,9])block(4,14,4,0x8c7761,x,7,z);
- block(22,3,5,0x99826b,0,15,z);
- block(23,1.4,5.5,0x665344,0,17,z);
+ for(const x of [-9,9])block(6.5,16,9,0x8c7761,x,8,z);
+ block(25,4,11,0x99826b,0,17,z);
+ block(26,2,12,0x665344,0,20,z);
  block(12,10,.6,0x3b322c,0,5,z);
  for(let i=-5;i<=5;i++)block(.18,9,.4,0x9c927e,i,5,z-sign*.4);
  for(const x of [-12,12]){
