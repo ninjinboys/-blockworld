@@ -167,6 +167,22 @@ for(let i=0;i<archCount;i++){
   fire.position.set(x,40.5,z);scene.add(fire);
  }
 }
+// Continuous rear galleries and walkways give the arcade a real enclosed depth.
+for(const [radius,y] of [[76.2,14.05],[87.8,14.05],[76.2,26.05],[87.8,26.05]]){
+ const gallery=new THREE.Mesh(new THREE.RingGeometry(radius-1.6,radius+1.6,96),lightStone);
+ gallery.rotation.x=-Math.PI/2;gallery.position.y=y;gallery.receiveShadow=true;scene.add(gallery);
+}
+for(let i=0;i<archCount;i++){
+ const angle=(i+.5)*archSpan;
+ // Recessed back-wall piers create shadows while preserving the open arch silhouette.
+ for(const level of [14,26]){
+  radialBlock(5.5,5,1.3,mortar,arcadeRadius+7.4,angle,level+3.1);
+  radialBlock(5.8,1.1,1.5,lightStone,arcadeRadius+7.4,angle,level+6.2);
+ }
+}
+// Brighten the spectator bowl independently from the shaded arch interiors.
+const bowlFill=new THREE.DirectionalLight(0xffe1b6,1.3);
+bowlFill.position.set(25,32,-22);scene.add(bowlFill);
 // Crimson fabric canopies hung between high parapet posts.
 for(let i=0;i<archCount;i+=4){
  const angle=(i+2)*archSpan;
@@ -186,18 +202,35 @@ for(let i=0;i<1100;i++){
  audience.setMatrixAt(i,dummy.matrix);
 }
 audience.instanceMatrix.needsUpdate=true;audience.castShadow=false;scene.add(audience);
-// Raised imperial viewing gallery above the northern gate.
+// Monumental gate integrated into the seating wall, with a stone arch rather than a box.
 for(const sign of [-1,1]){
- const z=sign*54.8;
- for(const x of [-9,9])block(6.5,16,9,0x8c7761,x,8,z);
- block(25,4,11,0x99826b,0,17,z);
- block(26,2,12,0x665344,0,20,z);
- block(12,10,.6,0x3b322c,0,5,z);
- for(let i=-5;i<=5;i++)block(.18,9,.4,0x9c927e,i,5,z-sign*.4);
- for(const x of [-12,12]){
-  const statue=block(2.2,6,2.1,0xb7a38c,x,5,z-sign*2.2);
-  block(3.1,1.2,3.1,0x796553,x,1,z-sign*2.2);
+ const z=sign*55.2;
+ const gateStone=mat(0xa58d73),gateDark=mat(0x4a4039);
+ for(const x of [-8.2,8.2]){
+  block(4.1,12.5,6.5,0x8c7761,x,6.25,z);
+  block(5.4,1.4,7.4,0xb7a38c,x,12.6,z);
  }
+ const archRadius=7.3;
+ for(let i=0;i<=18;i++){
+  const t=Math.PI*i/18;
+  const x=Math.cos(t)*archRadius;
+  const y=12.6+Math.sin(t)*5.4;
+  const stone=new THREE.Mesh(new THREE.BoxGeometry(1.55,2.1,6.8),i%2?gateStone:lightStone);
+  stone.position.set(x,y,z);stone.rotation.z=-Math.cos(t)*.7;stone.castShadow=true;scene.add(stone);
+ }
+ block(20,2.1,7.4,0x9e8870,0,18.8,z);
+ block(21,1,8,0x5e4d3f,0,20.3,z);
+ // Deep iron gate set back under the arched opening.
+ block(14.1,10,.5,0x292927,0,5,z+sign*2.5);
+ for(let i=-6;i<=6;i++)block(.19,10,.65,0x8c8980,i,5,z-sign*1.1);
+ for(const x of [-11.8,11.8]){
+  block(3.2,1.5,3.3,0x746251,x,1,z-sign*2.4);
+  block(2,6.2,2,0xb7a38c,x,4.8,z-sign*2.4);
+ }
+ const royal=block(17,1.2,9,0x8b735e,0,22,z+sign*1.2);
+ for(const x of [-7,0,7])block(1.3,7,1.5,0xb7a38c,x,25,z+sign*1.2);
+ block(20,1.5,10,0x685242,0,29,z+sign*1.2);
+ const royalBanner=block(5.5,7,.2,0x9d2535,0,24,z-sign*4.2);
 }
 // Start close enough to see the opponent immediately in first-person view.
 const spawning=[new THREE.Vector3(-5,0,0),new THREE.Vector3(5,0,0)];
