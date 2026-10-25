@@ -369,23 +369,24 @@ function skinLink(a,b,r0,r1,mat=skinBlue){
 }
 // Muscular anatomy: bulky at chest and shoulder, tapering smoothly into a long tail.
 // Preserve every skeleton vertex; all new mass is a separate surface.
+// Major muscle masses are localized around actual shoulder and thorax,
+// not uniformly inflated along the serpentine spine.
 function muscleRadius(t){
  const bell=(m,w)=>Math.exp(-Math.pow((t-m)/w,2));
- const neck=.78+ .36*bell(.13,.11);
- const pectoral=.85*bell(.27,.115);
- const ribcage=.67*bell(.43,.18);
- const abdominal=.28*bell(.58,.13);
- const tail=t>.67?Math.pow(Math.max(.008,(1-t)/.33),.83):1;
- return (neck+pectoral+ribcage+abdominal)*tail;
+ const neck=.74+.28*bell(.10,.09);
+ const chest=.88*bell(.225,.095);
+ const thorax=.72*bell(.38,.14);
+ const abdomen=.33*bell(.54,.14);
+ const tail=t>.66?Math.pow(Math.max(.008,(1-t)/.34),.83):1;
+ return (neck+chest+thorax+abdomen)*tail;
 }
 function anatomyContour(t,angle){
  const bell=(m,w)=>Math.exp(-Math.pow((t-m)/w,2));
- // Longitudinal paired muscle bellies with distinct tendinous grooves.
- const dorsal= .14*bell(.36,.21)*Math.cos(2*angle);
- const oblique=.11*bell(.48,.20)*Math.sin(3*angle+2*t);
- const neckBands=.10*bell(.13,.11)*Math.cos(2*angle-.4);
- const ribSerration=.035*bell(.48,.23)*Math.cos(19*Math.PI*t)*Math.sin(angle);
- return 1+dorsal+oblique+neckBands+ribSerration;
+ const shoulder=.26*bell(.21,.085)*Math.pow(Math.max(0,Math.sin(angle)),2);
+ const back=.18*bell(.35,.18)*Math.cos(2*angle);
+ const obliques=.11*bell(.48,.15)*Math.cos(4*angle+.6);
+ const abdominalGroove=-.12*bell(.38,.18)*Math.pow(Math.max(0,-Math.cos(angle)),12);
+ return 1+shoulder+back+obliques+abdominalGroove;
 }
 const rings=[],indices=[],radial=16,steps=156;
 for(let i=0;i<=steps;i++){
@@ -477,6 +478,46 @@ for(const s of [-1,1]){
   skinLink(base,mid,.18,.14);
   skinLink(mid,tip,.14,.075);
  }
+}
+// Scapular and pectoral muscle bundles sweep into the two shoulders.
+// Each bundle is a tapered, oriented mesh following its insertion points.
+function anatomyBundle(points,widths,depth=.62){
+ const path=new THREE.CatmullRomCurve3(points.map(p=>P(...p)),false,'catmullrom',.45);
+ const v=[],ind=[],N=28,M=12;
+ for(let i=0;i<=N;i++){
+  const t=i/N,point=path.getPoint(t),tan=path.getTangent(t).normalize();
+  let lateral=P(0,0,1).cross(tan).normalize();
+  if(lateral.lengthSq()<.01)lateral=P(1,0,0);
+  const vertical=tan.clone().cross(lateral).normalize();
+  const section=t*(widths.length-1),k=Math.min(widths.length-2,Math.floor(section));
+  const u=section-k,blend=u*u*(3-2*u);
+  const radius=widths[k]*(1-blend)+widths[k+1]*blend;
+  for(let j=0;j<M;j++){
+   const ang=2*Math.PI*j/M;
+   const p=point.clone().addScaledVector(lateral,Math.cos(ang)*radius)
+    .addScaledVector(vertical,Math.sin(ang)*radius*depth);
+   v.push(p.x,p.y,p.z);
+  }
+ }
+ for(let i=0;i<N;i++)for(let j=0;j<M;j++){
+  const a=i*M+j,b=i*M+(j+1)%M,d=(i+1)*M+j,e=(i+1)*M+(j+1)%M;
+  ind.push(a,d,b,b,d,e);
+ }
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+ g.setIndex(ind);g.computeVertexNormals();
+ muscle.add(new THREE.Mesh(g,skinBlue));
+}
+for(const s of [-1,1]){
+ anatomyBundle([[-5.05,5.60,s*.65],[-6.15,5.45,s*1.45],
+  [-7.38,5.20,s*1.85],[-8.10,4.54,s*2.15]],
+  [.16,.74,.98,.21],.85);
+ anatomyBundle([[-5.00,4.28,s*.72],[-6.03,4.25,s*1.23],
+  [-7.14,4.45,s*1.75],[-7.75,4.86,s*2.05]],
+  [.12,.64,.80,.12],.72);
+ anatomyBundle([[-7.72,4.96,s*1.78],[-7.30,3.94,s*2.13],
+  [-6.78,3.05,s*2.65],[-6.40,2.52,s*3.00]],
+  [.18,.75,.68,.10],.77);
 }
 // Facial muscles use the SAME local coordinates as the original skull bones.
 // Do not worldToLocal() these points: the skull itself already transforms them.
@@ -611,7 +652,7 @@ function resize(){rend.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/
 addEventListener('resize',resize);resize();preset('threequarter');
 el('status').style.display='none';
 window.seiryuSkeletonReady=true;window.seiryuSkeletonMeshCount=modelMeshes;
-window.seiryuSkeletonRevision='R84_CONTINUOUS_HEAD_MUSCULATURE';
+window.seiryuSkeletonRevision='R85_SHOULDER_PECTORAL_BUNDLES';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
