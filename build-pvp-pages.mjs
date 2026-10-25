@@ -13,6 +13,8 @@ const out = 'dist-pvp';
 const dependencies = [
   'pvp-title.avif',
   'pvp.js',
+  'nexacraft-cloud.js',
+  'firebase-config.js',
   'job-system.js',
   'job-weapon-models.js',
   'reference-weapon-models.js',
