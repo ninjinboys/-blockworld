@@ -35,6 +35,7 @@ button[aria-pressed="true"]{background:#685039;color:#fff;border-color:#d6b88f}#
 <script type="module">
 import * as THREE from 'three';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const el=id=>document.getElementById(id),canvas=el('view');
 const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||innerWidth<750;
 const rend=new THREE.WebGLRenderer({canvas,antialias:!isMobile,powerPreference:'high-performance'});
@@ -607,7 +608,7 @@ window.seiryuSkeletonRevision='R87_MAJOR_SILHOUETTE_REBUILD';
 window.seiryuAnatomy={vertebrae:COUNT,ribs,legs:2,tails:1,oldRigReused:false,torsoGeometry:'connected basket keel v2'};
 el('export').onclick=()=>{
  const btn=el('export');btn.disabled=true;btn.textContent='GLB生成中…';
- new GLTFExporter().parse(root,buffer=>{
+ new GLTFExporter().parse(referenceObject || root,buffer=>{
   const blob=new Blob([buffer],{type:'model/gltf-binary'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download='NEXACRAFT_Seiryu_ZeroBase_Skeleton.glb';
@@ -629,7 +630,6 @@ document.body.appendChild(refBtn);
 refBtn.onclick=()=>refInput.click();
 let referenceObject=null;
 async function loadExactReference(data){
- const {GLTFLoader}=await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js');
  const gltf=await new Promise((resolve,reject)=>new GLTFLoader().parse(data,'',resolve,reject));
  if(referenceObject)scene.remove(referenceObject);
  root.visible=false;
@@ -637,8 +637,8 @@ async function loadExactReference(data){
  const bbox=new THREE.Box3().setFromObject(referenceObject);
  const size=bbox.getSize(new THREE.Vector3()),mid=bbox.getCenter(new THREE.Vector3());
  const scale=21/Math.max(size.x,size.y,size.z);
- referenceObject.position.sub(mid.multiplyScalar(scale));
  referenceObject.scale.multiplyScalar(scale);
+ referenceObject.position.sub(mid.multiplyScalar(scale));
  referenceObject.rotation.set(0,0,0);
  scene.add(referenceObject);
  referenceObject.updateMatrixWorld(true);
