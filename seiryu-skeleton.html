@@ -623,16 +623,19 @@ el('export').onclick=()=>{
 const refInput=document.createElement('input');refInput.type='file';
 refInput.accept='.glb,model/gltf-binary';refInput.style.display='none';
 document.body.appendChild(refInput);
+root.visible=false;
 const refBtn=document.createElement('button');
-refBtn.textContent='参考GLBをそのまま表示';
+refBtn.textContent='青龍GLBを開く';
 refBtn.style.cssText='position:fixed;top:12px;right:12px;z-index:1000;background:#175c80;color:white;border:1px solid #68b5d4;border-radius:8px;padding:10px;font-weight:bold';
 document.body.appendChild(refBtn);
 refBtn.onclick=()=>refInput.click();
+const notice=document.createElement('div');notice.textContent='参考GLBを読み込んでください。旧モデルは表示しません。';notice.style.cssText='position:fixed;top:47%;left:50%;transform:translate(-50%,-50%);z-index:10;text-align:center;color:#fff;background:#102536ee;padding:18px;border-radius:12px;max-width:80vw';document.body.appendChild(notice);
 let referenceObject=null;
 async function loadExactReference(data){
  const gltf=await new Promise((resolve,reject)=>new GLTFLoader().parse(data,'',resolve,reject));
  if(referenceObject)scene.remove(referenceObject);
  root.visible=false;
+ notice.remove();
  referenceObject=gltf.scene;
  const bbox=new THREE.Box3().setFromObject(referenceObject);
  const size=bbox.getSize(new THREE.Vector3()),mid=bbox.getCenter(new THREE.Vector3());
@@ -645,7 +648,7 @@ async function loadExactReference(data){
  const box=new THREE.Box3().setFromObject(referenceObject);
  target.copy(box.getCenter(new THREE.Vector3()));
  range=36;azimuth=-.33;altitude=.13;
- refBtn.textContent='参考GLB表示中（変更）';
+ refBtn.textContent='青龍GLB表示中（変更）';
 }
 refInput.onchange=async()=>{
  const file=refInput.files&&refInput.files[0];if(!file)return;
