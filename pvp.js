@@ -45,8 +45,8 @@ scene.fog=new THREE.FogExp2(0x0d1d2d,.020);
 const camera=new THREE.PerspectiveCamera(73,1,.1,130);
 camera.rotation.order='YXZ';
 camera.position.set(0,15,19);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.15));
+const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1));
 renderer.shadowMap.enabled=false;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -430,8 +430,20 @@ function makeFighter(job,x,z){
  const c=CLASSES[job]||CLASSES.sword;
  return {x,y:0,vy:0,grounded:true,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,guard:false,lastAttack:-100000};
 }
-function syncAvatars(){
- if(rival&&enemyAvatar){enemyAvatar.position.set(rival.x,rival.y||0,rival.z);enemyAvatar.rotation.y=rival.face+Math.PI;}
+let remoteVisualReady=false;
+function syncAvatars(dt=1/60){
+ if(!rival||!enemyAvatar)return;
+ const targetX=rival.x,targetY=rival.y||0,targetZ=rival.z;
+ const gap=Math.hypot(enemyAvatar.position.x-targetX,enemyAvatar.position.z-targetZ);
+ // Remote packets arrive at ~14Hz. Smooth only the visual avatar; retain
+ // authoritative network coordinates for combat and hit validation.
+ const blend=!remoteVisualReady||gap>12?1:1-Math.exp(-dt*16);
+ enemyAvatar.position.x+= (targetX-enemyAvatar.position.x)*blend;
+ enemyAvatar.position.y+= (targetY-enemyAvatar.position.y)*blend;
+ enemyAvatar.position.z+= (targetZ-enemyAvatar.position.z)*blend;
+ const yaw=rival.face+Math.PI;
+ enemyAvatar.rotation.y+=Math.atan2(Math.sin(yaw-enemyAvatar.rotation.y),Math.cos(yaw-enemyAvatar.rotation.y))*blend;
+ remoteVisualReady=true;
 }
 function resize(){
  const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
@@ -954,7 +966,7 @@ function update(dt,t){
   rival.x=0;rival.face=startSide>0?0:Math.PI;
   const gateLift=GATE_OPEN_HEIGHT*THREE.MathUtils.smoothstep(entryProgress,.02,.27);
   arenaGates.forEach(g=>g.position.y=gateLift);
-  remaining=roundLength;updateHud();syncAvatars();
+  remaining=roundLength;updateHud();syncAvatars(dt);
   if(entryProgress>.92&&!entranceFightAnnounced){
    entranceFightAnnounced=true;flash('FIGHT!');
   }
@@ -987,13 +999,13 @@ function update(dt,t){
   lastSync=t;
  }
  if(Math.floor(t/100)!==Math.floor((t-dt*1000)/100))updateHud();
- syncAvatars();
 }
 function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(clock.getDelta(),.04),t=performance.now();
  update(dt,t);
  if(state==='playing'&&me){
+  syncAvatars(dt);
   // Actual player eye height, view direction controlled by mouse / swipe.
   walkPhase+=dt*(walkMotion>0.1?9:0);
   camera.position.set(me.x,1.62+me.y+(me.grounded?Math.sin(walkPhase)*.018*Math.min(walkMotion/6,1):0),me.z);
