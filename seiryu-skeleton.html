@@ -452,17 +452,19 @@ for(const s of [-1,1]){
   loft(muscle,[base,mid,tip],[.18,.13,.035],skinBlue,10);
  }
 }
-// Rebuilt head: short, broad angular dragon cranium with a pronounced
-// brow, narrow nose, strong jaw hinge and wide-open mouth.
+// R91 head sculpt: broad wedge-shaped crown, deep flared cheeks,
+// sharp angular eye ridges and an articulated open dragon jaw.
 const face=new THREE.Group();head.add(face);
-const skullSurface=new THREE.MeshStandardMaterial({color:0x30759c,roughness:.87,flatShading:true,side:THREE.DoubleSide});
+const skullSurface=new THREE.MeshStandardMaterial({color:0x28709a,roughness:.87,flatShading:true,side:THREE.DoubleSide});
+const browSurface=new THREE.MeshStandardMaterial({color:0x184d77,roughness:.89,flatShading:true,side:THREE.DoubleSide});
 function headWedge(sections,material=skullSurface){
- const vertices=[],ids=[],M=8;
+ const vertices=[],ids=[],M=12;
  for(const [x,y,ry,rz] of sections){
   for(let j=0;j<M;j++){
-   const th=j*2*Math.PI/M;
-   const vertical=Math.cos(th),lateral=Math.sin(th);
-   vertices.push(x,y+vertical*ry,lateral*rz);
+   const th=j*2*Math.PI/M,cy=Math.cos(th),sz=Math.sin(th);
+   // Squared temples and sloping cheek planes, not a rounded tube.
+   const block=1+.21*Math.pow(Math.abs(sz),6);
+   vertices.push(x,y+cy*ry,sz*rz*block);
   }
  }
  for(let i=0;i<sections.length-1;i++)for(let j=0;j<M;j++){
@@ -471,31 +473,40 @@ function headWedge(sections,material=skullSurface){
  }
  const g=new THREE.BufferGeometry();
  g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
- g.setIndex(ids);g.computeVertexNormals();
- face.add(new THREE.Mesh(g,material));
+ g.setIndex(ids);g.computeVertexNormals();face.add(new THREE.Mesh(g,material));
 }
-// Nose is compact; head grows rapidly toward the brow and temples.
+// Broad skull and massive rear temples with a short, tapered muzzle.
 headWedge([
- [-16.75,9.78,.14,.36],[-16.43,9.85,.33,.63],
- [-15.90,9.96,.42,.77],[-15.22,10.16,.57,.95],
- [-14.67,10.39,.73,1.25],[-14.02,10.43,.87,1.53],
- [-13.42,10.35,.92,1.58],[-12.82,10.28,.85,1.39],
- [-12.20,10.20,.70,1.14],[-11.72,10.15,.22,.47]
+ [-17.15,9.72,.12,.26],[-16.77,9.82,.33,.61],
+ [-16.24,9.96,.43,.80],[-15.73,10.14,.54,.92],
+ [-15.23,10.35,.70,1.18],[-14.67,10.49,.92,1.55],
+ [-14.00,10.50,1.08,1.74],[-13.35,10.40,1.02,1.69],
+ [-12.73,10.28,.91,1.43],[-12.14,10.15,.71,1.14],
+ [-11.68,10.08,.20,.37]
 ]);
 for(const s of [-1,1]){
- // Heavy brow is angled over the eye rather than a circular cap.
- loft(face,[P(-15.00,10.62,s*1.00),P(-14.34,11.10,s*1.39),
-  P(-13.52,11.07,s*1.53),P(-12.91,10.68,s*1.39)],
- [.10,.35,.40,.10],muscleShade,10);
- ellipsoid(face,P(-14.08,10.37,s*1.59),[.27,.20,.13],eyeMat,2);
- ellipsoid(face,P(-14.13,10.37,s*1.71),[.068,.14,.045],pupilMat,2);
- // Bulging cheek connects the jaw hinge to the mouth.
- loft(face,[P(-12.48,9.88,s*1.22),P(-12.89,9.20,s*1.42),
-  P(-13.45,8.62,s*1.21)],[.18,.65,.17],skinBlue,12);
- // Open lower jaw slopes forward, leaving a deep visible mouth gap.
- loft(face,[P(-12.50,9.26,s*1.03),P(-13.03,8.37,s*1.04),
-  P(-13.92,7.56,s*.83),P(-14.88,7.18,s*.63),
-  P(-15.78,7.18,s*.45)],[.34,.48,.41,.28,.12],skinBlue,12);
+ // Projecting angular supraorbital arch, with an inset eye below.
+ loft(face,[P(-15.48,10.62,s*1.00),P(-14.92,11.23,s*1.45),
+  P(-14.17,11.38,s*1.78),P(-13.43,11.20,s*1.79),
+  P(-12.83,10.72,s*1.45)],
+ [.09,.37,.43,.34,.08],browSurface,8);
+ ellipsoid(face,P(-14.40,10.49,s*1.84),[.35,.25,.12],eyeMat,2);
+ ellipsoid(face,P(-14.49,10.48,s*1.96),[.09,.16,.06],pupilMat,2);
+ // Enlarged jaw adductor creates a prominent muscular cheek.
+ loft(face,[P(-12.50,10.12,s*1.18),P(-12.99,9.52,s*1.65),
+  P(-13.59,8.80,s*1.42),P(-14.08,8.29,s*1.01)],
+ [.14,.77,.59,.12],skinBlue,12);
+ // Continuous angular mandibular bar: deep open jaw, substantial chin.
+ loft(face,[P(-12.48,9.45,s*1.07),P(-12.91,8.46,s*1.18),
+  P(-13.65,7.54,s*.98),P(-14.58,7.03,s*.78),
+  P(-15.57,6.94,s*.53),P(-16.02,7.04,s*.31)],
+ [.35,.51,.49,.36,.26,.11],skullSurface,12);
+ // Upper lip and flared nasal ridges emphasize a dragon snout.
+ loft(face,[P(-14.90,9.72,s*1.07),P(-15.67,9.77,s*.96),
+  P(-16.48,9.66,s*.74),P(-17.03,9.56,s*.36)],
+ [.23,.27,.21,.05],browSurface,10);
+ // Nostril sits at the snout tip, not on top of the head.
+ ellipsoid(face,P(-16.63,9.96,s*.61),[.17,.10,.075],browSurface,1);
 }
 // Reference-driven first refinement: stronger cheek silhouette,
 // paired long flowing whiskers, substantial claws, and dorsal muscle ridges.
@@ -545,8 +556,8 @@ for(const obj of originalBones){
  const p=head.worldToLocal(box.getCenter(new THREE.Vector3()));
  if(p.y>11.5||p.x < -16.8||(p.y<9.35&&p.x< -13.9))obj.visible=true;
 }
-window.seiryuStage='R90_DRAGON_HEAD_RESHAPE';
-window.seiryuSkeletonRevision='R90_DRAGON_HEAD_RESHAPE';
+window.seiryuStage='R91_REFERENCE_HEAD_SCULPT';
+window.seiryuSkeletonRevision='R91_REFERENCE_HEAD_SCULPT';
 // Environment is not exported with the bones.
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(130,130),
  new THREE.MeshStandardMaterial({color:0x141923,roughness:1}));
