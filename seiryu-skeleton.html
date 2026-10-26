@@ -556,7 +556,7 @@ for(const obj of originalBones){
  if(p.y>11.5||p.x < -16.8||(p.y<9.35&&p.x< -13.9))obj.visible=true;
 }
 window.seiryuStage='R93_HEAD_SILHOUETTE';
-window.seiryuSkeletonRevision='R93_HEAD_SILHOUETTE';
+window.seiryuSkeletonRevision='R94_EXACT_GLB_IMPORT';
 // Environment is not exported with the bones.
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(130,130),
  new THREE.MeshStandardMaterial({color:0x141923,roughness:1}));
@@ -616,6 +616,53 @@ el('export').onclick=()=>{
   btn.disabled=false;btn.textContent='GLB保存';
  },e=>{console.error(e);btn.disabled=false;btn.textContent='GLB保存';},{binary:true});
 };
+
+// Direct GLB reference import: render the ACTUAL user-supplied geometry,
+// not an approximate procedural reconstruction. Stored locally in IndexedDB.
+const refInput=document.createElement('input');refInput.type='file';
+refInput.accept='.glb,model/gltf-binary';refInput.style.display='none';
+document.body.appendChild(refInput);
+const refBtn=document.createElement('button');
+refBtn.textContent='参考GLBをそのまま表示';
+refBtn.style.cssText='position:fixed;top:12px;right:12px;z-index:1000;background:#175c80;color:white;border:1px solid #68b5d4;border-radius:8px;padding:10px;font-weight:bold';
+document.body.appendChild(refBtn);
+refBtn.onclick=()=>refInput.click();
+let referenceObject=null;
+async function loadExactReference(data){
+ const {GLTFLoader}=await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js');
+ const gltf=await new Promise((resolve,reject)=>new GLTFLoader().parse(data,'',resolve,reject));
+ if(referenceObject)scene.remove(referenceObject);
+ root.visible=false;
+ referenceObject=gltf.scene;
+ const bbox=new THREE.Box3().setFromObject(referenceObject);
+ const size=bbox.getSize(new THREE.Vector3()),mid=bbox.getCenter(new THREE.Vector3());
+ const scale=21/Math.max(size.x,size.y,size.z);
+ referenceObject.position.sub(mid.multiplyScalar(scale));
+ referenceObject.scale.multiplyScalar(scale);
+ referenceObject.rotation.set(0,0,0);
+ scene.add(referenceObject);
+ referenceObject.updateMatrixWorld(true);
+ const box=new THREE.Box3().setFromObject(referenceObject);
+ target.copy(box.getCenter(new THREE.Vector3()));
+ range=36;azimuth=-.33;altitude=.13;
+ refBtn.textContent='参考GLB表示中（変更）';
+}
+refInput.onchange=async()=>{
+ const file=refInput.files&&refInput.files[0];if(!file)return;
+ const data=await file.arrayBuffer();
+ try{
+  await loadExactReference(data);
+  const db=await new Promise((ok,no)=>{const req=indexedDB.open('seiryu-reference',1);req.onupgradeneeded=()=>req.result.createObjectStore('files');req.onsuccess=()=>ok(req.result);req.onerror=()=>no(req.error)});
+  const tx=db.transaction('files','readwrite');tx.objectStore('files').put(data,'original-glb');
+ }catch(e){console.error(e);alert('GLB読込エラー: '+e.message)}
+};
+(async()=>{
+ try{
+  const db=await new Promise((ok,no)=>{const req=indexedDB.open('seiryu-reference',1);req.onupgradeneeded=()=>req.result.createObjectStore('files');req.onsuccess=()=>ok(req.result);req.onerror=()=>no(req.error)});
+  const tx=db.transaction('files','readonly'),req=tx.objectStore('files').get('original-glb');
+  req.onsuccess=()=>{if(req.result)loadExactReference(req.result).catch(console.error)};
+ }catch(e){console.warn(e)}
+})();
 let lastFrame=0;
 function animate(now=0){
  requestAnimationFrame(animate);
