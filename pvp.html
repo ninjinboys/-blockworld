@@ -145,6 +145,7 @@
 #pvpAuth h2{margin:0 0 16px;font-size:24px}#pvpAuth .auth-tabs{display:flex;gap:8px;margin-bottom:16px}#pvpAuth .auth-tabs button{flex:1;background:#29445c;color:#fff;border:1px solid #5c8299;border-radius:9px;padding:10px}#pvpAuth .auth-tabs button.active{background:#357b8c}
 #pvpAuth label{display:block;margin:12px 0;font-size:13px}#pvpAuth input{margin-top:5px;letter-spacing:normal;text-transform:none}#pvpAuth .auth-error{min-height:22px;color:#ff9d9d;font-size:13px;margin:10px 0}#pvpAuth .auth-info{font-size:12px;color:#b6d3e0;line-height:1.6}
 #pvpAccount{position:fixed;z-index:7;right:15px;top:12px;display:none;align-items:center;gap:8px;font-size:12px;background:#0c1d2bcc;padding:7px 10px;border-radius:10px}#pvpAccount button{border:0;border-radius:7px;background:#335873;color:white;padding:5px 9px}
+.evolution-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.evolution-options button{min-height:35px;padding:7px 10px;font-size:12px}.evolution-options .evo-selected{border:2px solid #8bf5d2;background:#245b50}
 </style>
 </head>
 <body>
@@ -173,6 +174,7 @@
 <button type="button" class="job" data-job="mage"><span>🔮</span><strong>魔術師</strong></button>
 </div>
 <div id="pvpLevelInfo" aria-live="polite" style="margin-top:12px;padding:10px 12px;border:1px solid #427d7b;border-radius:10px;background:#112c33;color:#a9f3df;font-size:13px;font-weight:700">剣士 Lv.1 / 250　EXP 0/100</div>
+<div id="pvpEvolution" style="margin-top:10px;padding:12px;background:#132c3b;border:1px solid #416d7d;border-radius:10px;font-size:13px"></div>
 <div class="lobby"><div class="column"><h2>⚡ 友達と対戦</h2><p>対戦ルームを作成して6文字のコードを送る</p><button id="hostBtn" class="primary wide">ルームを作成</button></div><div class="column"><h2>🔑 コードで参加</h2><p>友達の6文字のコードを入力</p><form id="joinForm" class="joinrow"><input id="joinCode" maxlength="6" minlength="6" pattern="[A-Za-z0-9]{6}" required placeholder="ABC123" aria-label="参加コード"><button type="submit" class="secondary">参加</button></form></div></div>
 <div class="roomline"><span>ROOM <strong id="roomCode">------</strong></span><span id="roomState">ルーム未接続</span></div>
 <div class="bottomline"><button id="practiceBtn" class="secondary">🤖 CPU練習</button><button id="startMatch" class="primary" disabled>2人そろったら対戦開始</button></div>
@@ -249,7 +251,7 @@
  requestAnimationFrame(pollGamepad);
 })();
 </script>
-<script type="module" src="./pvp.js?v=20261026xpfix02"></script>
+<script type="module" src="./pvp.js?v=20261026evolution01"></script>
 
 <script type="module">
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut} from './nexacraft-cloud.js';
