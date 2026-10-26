@@ -11,10 +11,65 @@ const CLASSES={
   archer:{name:'弓兵',hp:90,speed:7.5,range:13,damage:16,cooldown:900,arc:.78},
   mage:{name:'魔術師',hp:100,speed:6.9,range:7.3,damage:21,cooldown:1150,arc:.38}
 };
+
+// PvP progression: independent XP per job, levels 1–250.
+// Online victories award 100 XP; CPU practice does not grant XP.
+const MAX_PVP_LEVEL=250,WIN_XP=100;
+const xpToNext=level=>100+Math.floor((level-1)*20);
+const freshProgress=()=>Object.fromEntries(Object.keys(CLASSES).map(job=>[job,{level:1,xp:0,wins:0}]));
+let progress=freshProgress(),progressAccountKey='';
+function progressKey(key){return 'nexacraft_pvp_levels_v1:'+encodeURIComponent(key)}
+function loadProgress(){
+ const identity=window.NEXACRAFT_PVP_ACCOUNT;
+ const key=identity?.key||'';
+ if(key===progressAccountKey)return;
+ progressAccountKey=key;progress=freshProgress();
+ if(key){try{
+  const saved=JSON.parse(localStorage.getItem(progressKey(key))||'{}');
+  for(const job of Object.keys(CLASSES)){
+   const v=saved[job];if(!v)continue;
+   progress[job]={level:THREE.MathUtils.clamp(Math.floor(Number(v.level)||1),1,MAX_PVP_LEVEL),
+    xp:Math.max(0,Math.floor(Number(v.xp)||0)),wins:Math.max(0,Math.floor(Number(v.wins)||0))};
+   if(progress[job].level===MAX_PVP_LEVEL)progress[job].xp=0;
+   else progress[job].xp=Math.min(progress[job].xp,xpToNext(progress[job].level)-1);
+  }
+ }catch(e){console.warn('PvP progression restore failed',e)}}
+ renderProgress();
+}
+function saveProgress(){
+ if(!progressAccountKey)return;
+ try{localStorage.setItem(progressKey(progressAccountKey),JSON.stringify(progress))}
+ catch(e){console.warn('PvP progression save failed',e)}
+}
+function jobLevel(job){return progress[job]?.level||1}
+function fighterStats(job,level){
+ const c=CLASSES[job]||CLASSES.sword;
+ const lv=THREE.MathUtils.clamp(Math.floor(Number(level)||1),1,MAX_PVP_LEVEL);
+ return {hp:c.hp+2*(lv-1),damage:c.damage+Math.floor((lv-1)/5)};
+}
+function awardWin(){
+ if(!progressAccountKey)return '';
+ const p=progress[myClass],before=p.level;
+ p.wins++;p.xp+=WIN_XP;
+ while(p.level<MAX_PVP_LEVEL&&p.xp>=xpToNext(p.level)){p.xp-=xpToNext(p.level);p.level++;}
+ if(p.level===MAX_PVP_LEVEL)p.xp=0;
+ saveProgress();renderProgress();
+ return '  +'+WIN_XP+' EXP'+(p.level>before?'  LEVEL UP! Lv.'+p.level:'');
+}
+function renderProgress(){
+ const p=progress[myClass],el=document.getElementById('pvpLevelInfo');
+ if(!el||!p)return;
+ el.textContent=CLASSES[myClass].name+' Lv.'+p.level+' / '+MAX_PVP_LEVEL+
+  (p.level===MAX_PVP_LEVEL?'  MAX':'  EXP '+p.xp+'/'+xpToNext(p.level))+
+  '  勝利 '+p.wins;
+}
+window.addEventListener('nexacraft-pvp-account',loadProgress);
+
 const PEER_URL='https://cdn.jsdelivr.net/npm/peerjs@1.5.5/+esm';
 const PEER_PREFIX='nexacraft-pvp-arena-v1-';
 const roundLength=180;
 let myClass='sword',enemyClass='sword',role='',state='menu',roomCode='',peer=null,connection=null,peerLoader=null;
+let enemyLevel=1;
 let me=null,rival=null,myAvatar=null,enemyAvatar=null,roundEnd=0,remaining=roundLength,lastSync=0,lastClock=0;
 let keys=new Set(),clock=new THREE.Clock(),effects=[],noticeTimeout=0;
 // Analog mobile joystick: x = strafe (+right), y = backward (+down).
@@ -426,9 +481,9 @@ function replaceAvatars(){
  scene.add(enemyAvatar); // Previously missing: the rival model was never rendered.
  syncAvatars();
 }
-function makeFighter(job,x,z){
- const c=CLASSES[job]||CLASSES.sword;
- return {x,y:0,vy:0,grounded:true,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,guard:false,lastAttack:-100000};
+function makeFighter(job,x,z,level=1){
+ const c=fighterStats(job,level);
+ return {x,y:0,vy:0,grounded:true,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,damage:c.damage,guard:false,lastAttack:-100000};
 }
 let remoteVisualReady=false;
 function syncAvatars(dt=1/60){
@@ -468,7 +523,7 @@ function updateRoomStatus(){
 }
 function setClass(job){
  if(state!=='menu'||!CLASSES[job])return;
- myClass=job;
+ myClass=job;renderProgress();
  for(const b of $('jobs').querySelectorAll('.job'))b.classList.toggle('selected',b.dataset.job===job);
 }
 $('jobs').addEventListener('click',e=>{const b=e.target.closest('[data-job]');if(b)setClass(b.dataset.job)});
@@ -494,14 +549,14 @@ function showMenu(message=''){
  $('screen').style.display='flex';$('finish').style.display='none';$('top').classList.remove('show');
  $('mobileControls').classList.remove('show');$('controlsHelp').classList.remove('show');
  $('leaveButton').style.display='none';$('lookHelp').classList.remove('show');$('crosshair').classList.remove('show');$('weaponHud').classList.remove('show');
- $('backHome').style.display='block';updateRoomStatus();
+ $('backHome').style.display='block';loadProgress();renderProgress();updateRoomStatus();
  if(message)uiNotice(message,true);
 }
 function connectWire(conn,isHost){
  connection=conn;
  conn.on('open',()=>{
   state=isHost?'hosting':'joining';
-  conn.send({t:'hello',class:myClass,name:isHost?'HOST':'GUEST'});
+  conn.send({t:'hello',class:myClass,level:jobLevel(myClass),name:isHost?'HOST':'GUEST'});
   uiNotice(isHost?'対戦相手と接続しました。':'接続成功。ホストの開始を待っています。');
   updateRoomStatus();
  });
@@ -545,14 +600,14 @@ function receive(data){
  if(data.t==='reject'){showMenu('このルームは満員です。');return}
  if(data.t==='leave'){showMenu('相手が退出しました。');return}
  if(data.t==='hello'&&CLASSES[data.class]){
-  enemyClass=data.class;
+  enemyClass=data.class;enemyLevel=THREE.MathUtils.clamp(Math.floor(Number(data.level)||1),1,MAX_PVP_LEVEL);
   state='lobby';updateRoomStatus();
   uiNotice('相手のジョブ: '+CLASSES[enemyClass].name+'。'+(role==='host'?'「対戦開始」を押してください。':'開始を待っています。'));
-  if(role==='host'&&connection?.open)connection.send({t:'helloAck',class:myClass});
+  if(role==='host'&&connection?.open)connection.send({t:'helloAck',class:myClass,level:jobLevel(myClass)});
   return;
  }
  if(data.t==='helloAck'&&CLASSES[data.class]){
-  enemyClass=data.class;state='lobby';updateRoomStatus();uiNotice('準備完了。ホストの開始を待っています。');return;
+  enemyClass=data.class;enemyLevel=THREE.MathUtils.clamp(Math.floor(Number(data.level)||1),1,MAX_PVP_LEVEL);state='lobby';updateRoomStatus();uiNotice('準備完了。ホストの開始を待っています。');return;
  }
  if(data.t==='start'&&role==='guest'){beginMatch();return}
  if(data.t==='state'&&state==='playing'&&Number.isFinite(data.x)&&Number.isFinite(data.z)&&Number.isFinite(data.face)){
@@ -606,9 +661,9 @@ function beginMatch(){
  arenaGates.forEach(g=>g.position.y=0);
  const onLeft=role!=='guest';
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
- me=makeFighter(myClass,a.x,a.z);rival=makeFighter(enemyClass,b.x,b.z);
+ loadProgress();me=makeFighter(myClass,a.x,a.z,jobLevel(myClass));rival=makeFighter(enemyClass,b.x,b.z,role==='cpu'?1:enemyLevel);
  if(role==='cpu'){
-  rival=makeFighter(enemyClass,b.x,b.z);
+  rival=makeFighter(enemyClass,b.x,b.z,1);
   // The ranged CPU must spend time drawing its bow or preparing a spell.
   if(enemyClass==='archer'||enemyClass==='mage')rival.lastAttack=performance.now();
  }
@@ -627,8 +682,8 @@ function beginMatch(){
 }
 function updateHud(){
  if(!me||!rival)return;
- $('myName').textContent='YOU / '+CLASSES[myClass].name;
- $('enemyName').textContent=(role==='cpu'?'CPU':'RIVAL')+' / '+CLASSES[enemyClass].name;
+ $('myName').textContent='YOU / '+CLASSES[myClass].name+' Lv.'+jobLevel(myClass);
+ $('enemyName').textContent=(role==='cpu'?'CPU':'RIVAL')+' / '+CLASSES[enemyClass].name+' Lv.'+(role==='cpu'?1:enemyLevel);
  $('myHealth').textContent=Math.ceil(me.hp)+' / '+me.max;
  $('enemyHealth').textContent=Math.ceil(rival.hp)+' / '+rival.max;
  $('myBar').style.width=(100*me.hp/me.max)+'%';
@@ -664,7 +719,7 @@ function resolveAttack(attackerIsHost){
  if(dist>c.range||facing<c.arc)return;
  const targetJob=attackerIsHost?enemyClass:myClass;
  const block=target.guard?(CLASSES[targetJob].block||.42):0;
- const dealt=Math.max(1,Math.round(c.damage*(1-block)));
+ const dealt=Math.max(1,Math.round(attacker.damage*(1-block)));
  target.hp=Math.max(0,target.hp-dealt);
  effectLine(attacker,target,job);
  if(!attackerIsHost){flash('攻撃を受けた！');lastHurtUntil=now+280;}
@@ -690,7 +745,8 @@ function finishMatch(outcome,decidedLocally){
  const win=outcome==='win',draw=outcome==='draw';
  $('resultTitle').textContent=draw?'DRAW':win?'VICTORY':'DEFEAT';
  $('resultTitle').style.color=win?'#8df5c9':draw?'#a9e5ef':'#ffb1a0';
- $('resultText').textContent=draw?'引き分け！':win?'勝利！ 相手を倒した！':'敗北。次の試合でリベンジしよう。';
+ const xpNotice=win&&role!=='cpu'?awardWin():'';
+ $('resultText').textContent=(draw?'引き分け！':win?'勝利！ 相手を倒した！':'敗北。次の試合でリベンジしよう。')+xpNotice;
  $('againBtn').disabled=role==='guest';
  $('againBtn').textContent=role==='guest'?'ホストの再戦を待つ':'もう一度対戦';
  $('finish').style.display='flex';$('controlsHelp').classList.remove('show');$('mobileControls').classList.remove('show');
