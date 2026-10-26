@@ -13,7 +13,7 @@ const CLASSES={
 };
 
 // PvP progression: independent XP per job, levels 1–250.
-// Online victories award 100 XP; CPU practice does not grant XP.
+// Victories against both players and CPU award 100 XP.
 const MAX_PVP_LEVEL=250,WIN_XP=100;
 const xpToNext=level=>100+Math.floor((level-1)*20);
 const freshProgress=()=>Object.fromEntries(Object.keys(CLASSES).map(job=>[job,{level:1,xp:0,wins:0}]));
@@ -21,7 +21,7 @@ let progress=freshProgress(),progressAccountKey='';
 function progressKey(key){return 'nexacraft_pvp_levels_v1:'+encodeURIComponent(key)}
 function loadProgress(){
  const identity=window.NEXACRAFT_PVP_ACCOUNT;
- const key=identity?.key||'';
+ const key=identity?.uid||identity?.key||'local-player';
  if(key===progressAccountKey)return;
  progressAccountKey=key;progress=freshProgress();
  if(key){try{
@@ -745,7 +745,7 @@ function finishMatch(outcome,decidedLocally){
  const win=outcome==='win',draw=outcome==='draw';
  $('resultTitle').textContent=draw?'DRAW':win?'VICTORY':'DEFEAT';
  $('resultTitle').style.color=win?'#8df5c9':draw?'#a9e5ef':'#ffb1a0';
- const xpNotice=win&&role!=='cpu'?awardWin():'';
+ const xpNotice=win?awardWin():'';
  $('resultText').textContent=(draw?'引き分け！':win?'勝利！ 相手を倒した！':'敗北。次の試合でリベンジしよう。')+xpNotice;
  $('againBtn').disabled=role==='guest';
  $('againBtn').textContent=role==='guest'?'ホストの再戦を待つ':'もう一度対戦';
