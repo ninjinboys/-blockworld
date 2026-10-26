@@ -101,11 +101,10 @@ function saveProgress(){
  catch(e){console.warn('PvP progression save failed',e)}
 }
 function jobLevel(job){return progress[job]?.level||1}
-function fighterStats(job,level){
+function fighterStats(job,level,first=progress[job]?.evo1,second=progress[job]?.evo2){
  const c=CLASSES[job]||CLASSES.sword;
  const lv=THREE.MathUtils.clamp(Math.floor(Number(level)||1),1,MAX_PVP_LEVEL);
- const p=job===myClass?progress[job]:null;
- const e=evolutionFor(job,lv,p?.evo1,p?.evo2);
+ const e=evolutionFor(job,lv,first,second);
  return {hp:c.hp+2*(lv-1)+e.hp,damage:c.damage+Math.floor((lv-1)/5)+e.damage};
 }
 function awardWin(){
@@ -544,8 +543,7 @@ function replaceAvatars(){
  syncAvatars();
 }
 function makeFighter(job,x,z,level=1,first=null,second=null){
- const c=fighterStats(job,level);
- if(job!==myClass){const e=evolutionFor(job,level,first,second);c.hp+=e.hp;c.damage+=e.damage}
+ const c=fighterStats(job,level,first,second);
  return {x,y:0,vy:0,grounded:true,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,damage:c.damage,guard:false,lastAttack:-100000};
 }
 let remoteVisualReady=false;
@@ -724,7 +722,7 @@ function beginMatch(){
  arenaGates.forEach(g=>g.position.y=0);
  const onLeft=role!=='guest';
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
- loadProgress();me=makeFighter(myClass,a.x,a.z,jobLevel(myClass));rival=makeFighter(enemyClass,b.x,b.z,role==='cpu'?1:enemyLevel,enemyEvo1,enemyEvo2);
+ loadProgress();me=makeFighter(myClass,a.x,a.z,jobLevel(myClass),progress[myClass]?.evo1,progress[myClass]?.evo2);rival=makeFighter(enemyClass,b.x,b.z,role==='cpu'?1:enemyLevel,enemyEvo1,enemyEvo2);
  if(role==='cpu'){
   rival=makeFighter(enemyClass,b.x,b.z,1);
   // The ranged CPU must spend time drawing its bow or preparing a spell.
