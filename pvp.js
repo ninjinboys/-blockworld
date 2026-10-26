@@ -12,6 +12,64 @@ const CLASSES={
   mage:{name:'魔術師',hp:100,speed:6.9,range:7.3,damage:21,cooldown:1150,arc:.38}
 };
 
+
+// Evolution branches: first choice at Lv.50, specialization at Lv.100.
+// Evolutions retain the original job's XP and level.
+const EVOLUTIONS={
+ sword:[['戦士','槍使い','戦斧使い'],[['大剣士','狂戦士'],['槍騎士','竜騎士'],['破壊者','処刑人']]],
+ merc:[['双剣士','格闘家'],[['暗殺者','剣舞士'],['武闘家','拳聖']]],
+ shield:[['重装兵','タンク'],[['鉄壁兵','守護騎士'],['聖騎士','要塞兵']]],
+ archer:[['剛弓兵','速弓兵'],[['狙撃手','破甲射手'],['連射手','遊撃手']]],
+ mage:[['炎術師','氷術師','雷術師'],[['爆炎術師','灼熱術師'],['氷結術師','吹雪術師'],['雷撃術師','雷帝術師']]]
+};
+function evolutionName(job,first=progress[job]?.evo1,second=progress[job]?.evo2){
+ const tree=EVOLUTIONS[job];return second!=null&&first!=null?tree[1][first]?.[second]||CLASSES[job].name:first!=null?tree[0][first]||CLASSES[job].name:CLASSES[job].name;
+}
+function evolutionModifiers(job,first,second){
+ const names=EVOLUTIONS[job];if(!names||first==null)return {hp:0,damage:0,speed:1,range:1,cooldown:1};
+ const a=first,b=second??-1;
+ const base=[
+  {hp:12,damage:3,speed:.95,range:1,cooldown:1.08},
+  {hp:-5,damage:1,speed:1.12,range:1.18,cooldown:.94},
+  {hp:18,damage:4,speed:.90,range:1.08,cooldown:1.12}
+ ][a]||{hp:0,damage:0,speed:1,range:1,cooldown:1};
+ if(job==='shield')Object.assign(base,{hp:base.hp+20,damage:Math.max(0,base.damage-2),speed:base.speed*.96});
+ if(job==='archer')Object.assign(base,{hp:base.hp-8,range:base.range*1.18});
+ if(job==='mage')Object.assign(base,{hp:base.hp-6,damage:base.damage+2});
+ if(job==='merc')Object.assign(base,{hp:base.hp-8,speed:base.speed*1.08,cooldown:base.cooldown*.92});
+ if(b===0){base.hp+=22;base.damage+=3;base.speed*=.94;base.cooldown*=1.08}
+ if(b===1){base.hp-=8;base.damage+=1;base.speed*=1.10;base.cooldown*=.90}
+ return base;
+}
+function evolutionFor(job,level,first,second){
+ const lv=Math.max(1,Math.min(MAX_PVP_LEVEL,Number(level)||1));
+ return evolutionModifiers(job,lv>=50?first:null,lv>=100?second:null);
+}
+function renderEvolution(){
+ const root=document.getElementById('pvpEvolution');if(!root)return;
+ const p=progress[myClass],tree=EVOLUTIONS[myClass];
+ root.replaceChildren();
+ const title=document.createElement('div');title.textContent='進化：'+evolutionName(myClass)+'　（Lv.50 / Lv.100）';root.append(title);
+ function buttons(stage,options){
+  const row=document.createElement('div');row.className='evolution-options';
+  options.forEach((name,index)=>{
+   const btn=document.createElement('button');btn.type='button';btn.textContent=name;
+   const chosen=stage===1?p.evo1:p.evo2;
+   btn.className='secondary'+(chosen===index?' evo-selected':'');
+   btn.disabled=stage===1?p.level<50||p.evo1!=null:p.level<100||p.evo1==null||p.evo2!=null;
+   btn.onclick=()=>{
+    if(stage===1){if(p.level<50||p.evo1!=null)return;p.evo1=index}
+    else{if(p.level<100||p.evo1==null||p.evo2!=null)return;p.evo2=index}
+    saveProgress();renderProgress();
+   };
+   row.append(btn);
+  });root.append(row);
+ }
+ if(p.evo1==null)buttons(1,tree[0]);
+ else if(p.evo2==null)buttons(2,tree[1][p.evo1]);
+ else{const done=document.createElement('div');done.textContent='最終進化完了：'+evolutionName(myClass);root.append(done)}
+}
+
 // PvP progression: independent XP per job, levels 1–250.
 // Victories against both players and CPU award 100 XP.
 const MAX_PVP_LEVEL=250,WIN_XP=100;
@@ -29,7 +87,8 @@ function loadProgress(){
   for(const job of Object.keys(CLASSES)){
    const v=saved[job];if(!v)continue;
    progress[job]={level:THREE.MathUtils.clamp(Math.floor(Number(v.level)||1),1,MAX_PVP_LEVEL),
-    xp:Math.max(0,Math.floor(Number(v.xp)||0)),wins:Math.max(0,Math.floor(Number(v.wins)||0))};
+    xp:Math.max(0,Math.floor(Number(v.xp)||0)),wins:Math.max(0,Math.floor(Number(v.wins)||0)),evo1:Number.isInteger(v.evo1)&&v.evo1>=0&&v.evo1<EVOLUTIONS[job][0].length?v.evo1:null,evo2:null};
+   if(progress[job].evo1!=null&&Number.isInteger(v.evo2)&&v.evo2>=0&&v.evo2<EVOLUTIONS[job][1][progress[job].evo1].length)progress[job].evo2=v.evo2;
    if(progress[job].level===MAX_PVP_LEVEL)progress[job].xp=0;
    else progress[job].xp=Math.min(progress[job].xp,xpToNext(progress[job].level)-1);
   }
@@ -45,7 +104,9 @@ function jobLevel(job){return progress[job]?.level||1}
 function fighterStats(job,level){
  const c=CLASSES[job]||CLASSES.sword;
  const lv=THREE.MathUtils.clamp(Math.floor(Number(level)||1),1,MAX_PVP_LEVEL);
- return {hp:c.hp+2*(lv-1),damage:c.damage+Math.floor((lv-1)/5)};
+ const p=job===myClass?progress[job]:null;
+ const e=evolutionFor(job,lv,p?.evo1,p?.evo2);
+ return {hp:c.hp+2*(lv-1)+e.hp,damage:c.damage+Math.floor((lv-1)/5)+e.damage};
 }
 function awardWin(){
  if(!progressAccountKey)return '';
@@ -61,7 +122,8 @@ function renderProgress(){
  if(!el||!p)return;
  el.textContent=CLASSES[myClass].name+' Lv.'+p.level+' / '+MAX_PVP_LEVEL+
   (p.level===MAX_PVP_LEVEL?'  MAX':'  EXP '+p.xp+'/'+xpToNext(p.level))+
-  '  勝利 '+p.wins;
+  '  勝利 '+p.wins+'  /  '+evolutionName(myClass);
+ renderEvolution();
 }
 window.addEventListener('nexacraft-pvp-account',loadProgress);
 
@@ -69,7 +131,7 @@ const PEER_URL='https://cdn.jsdelivr.net/npm/peerjs@1.5.5/+esm';
 const PEER_PREFIX='nexacraft-pvp-arena-v1-';
 const roundLength=180;
 let myClass='sword',enemyClass='sword',role='',state='menu',roomCode='',peer=null,connection=null,peerLoader=null;
-let enemyLevel=1;
+let enemyLevel=1,enemyEvo1=null,enemyEvo2=null;
 let me=null,rival=null,myAvatar=null,enemyAvatar=null,roundEnd=0,remaining=roundLength,lastSync=0,lastClock=0;
 let keys=new Set(),clock=new THREE.Clock(),effects=[],noticeTimeout=0;
 // Analog mobile joystick: x = strafe (+right), y = backward (+down).
@@ -481,8 +543,9 @@ function replaceAvatars(){
  scene.add(enemyAvatar); // Previously missing: the rival model was never rendered.
  syncAvatars();
 }
-function makeFighter(job,x,z,level=1){
+function makeFighter(job,x,z,level=1,first=null,second=null){
  const c=fighterStats(job,level);
+ if(job!==myClass){const e=evolutionFor(job,level,first,second);c.hp+=e.hp;c.damage+=e.damage}
  return {x,y:0,vy:0,grounded:true,z,face:x<0?Math.PI/2:-Math.PI/2,hp:c.hp,max:c.hp,damage:c.damage,guard:false,lastAttack:-100000};
 }
 let remoteVisualReady=false;
@@ -556,7 +619,7 @@ function connectWire(conn,isHost){
  connection=conn;
  conn.on('open',()=>{
   state=isHost?'hosting':'joining';
-  conn.send({t:'hello',class:myClass,level:jobLevel(myClass),name:isHost?'HOST':'GUEST'});
+  conn.send({t:'hello',class:myClass,level:jobLevel(myClass),evo1:progress[myClass]?.evo1,evo2:progress[myClass]?.evo2,name:isHost?'HOST':'GUEST'});
   uiNotice(isHost?'対戦相手と接続しました。':'接続成功。ホストの開始を待っています。');
   updateRoomStatus();
  });
@@ -600,10 +663,10 @@ function receive(data){
  if(data.t==='reject'){showMenu('このルームは満員です。');return}
  if(data.t==='leave'){showMenu('相手が退出しました。');return}
  if(data.t==='hello'&&CLASSES[data.class]){
-  enemyClass=data.class;enemyLevel=THREE.MathUtils.clamp(Math.floor(Number(data.level)||1),1,MAX_PVP_LEVEL);
+  enemyClass=data.class;enemyLevel=THREE.MathUtils.clamp(Math.floor(Number(data.level)||1),1,MAX_PVP_LEVEL);enemyEvo1=Number.isInteger(data.evo1)?data.evo1:null;enemyEvo2=Number.isInteger(data.evo2)?data.evo2:null;
   state='lobby';updateRoomStatus();
   uiNotice('相手のジョブ: '+CLASSES[enemyClass].name+'。'+(role==='host'?'「対戦開始」を押してください。':'開始を待っています。'));
-  if(role==='host'&&connection?.open)connection.send({t:'helloAck',class:myClass,level:jobLevel(myClass)});
+  if(role==='host'&&connection?.open)connection.send({t:'helloAck',class:myClass,level:jobLevel(myClass),evo1:progress[myClass]?.evo1,evo2:progress[myClass]?.evo2});
   return;
  }
  if(data.t==='helloAck'&&CLASSES[data.class]){
@@ -661,7 +724,7 @@ function beginMatch(){
  arenaGates.forEach(g=>g.position.y=0);
  const onLeft=role!=='guest';
  const a=onLeft?spawning[0]:spawning[1],b=onLeft?spawning[1]:spawning[0];
- loadProgress();me=makeFighter(myClass,a.x,a.z,jobLevel(myClass));rival=makeFighter(enemyClass,b.x,b.z,role==='cpu'?1:enemyLevel);
+ loadProgress();me=makeFighter(myClass,a.x,a.z,jobLevel(myClass));rival=makeFighter(enemyClass,b.x,b.z,role==='cpu'?1:enemyLevel,enemyEvo1,enemyEvo2);
  if(role==='cpu'){
   rival=makeFighter(enemyClass,b.x,b.z,1);
   // The ranged CPU must spend time drawing its bow or preparing a spell.
@@ -682,8 +745,8 @@ function beginMatch(){
 }
 function updateHud(){
  if(!me||!rival)return;
- $('myName').textContent='YOU / '+CLASSES[myClass].name+' Lv.'+jobLevel(myClass);
- $('enemyName').textContent=(role==='cpu'?'CPU':'RIVAL')+' / '+CLASSES[enemyClass].name+' Lv.'+(role==='cpu'?1:enemyLevel);
+ $('myName').textContent='YOU / '+evolutionName(myClass)+' Lv.'+jobLevel(myClass);
+ $('enemyName').textContent=(role==='cpu'?'CPU':'RIVAL')+' / '+(role==='cpu'?CLASSES[enemyClass].name:evolutionName(enemyClass,enemyEvo1,enemyEvo2))+' Lv.'+(role==='cpu'?1:enemyLevel);
  $('myHealth').textContent=Math.ceil(me.hp)+' / '+me.max;
  $('enemyHealth').textContent=Math.ceil(rival.hp)+' / '+rival.max;
  $('myBar').style.width=(100*me.hp/me.max)+'%';
