@@ -452,61 +452,62 @@ for(const s of [-1,1]){
   loft(muscle,[base,mid,tip],[.18,.13,.035],skinBlue,10);
  }
 }
-// R91 head sculpt: broad wedge-shaped crown, deep flared cheeks,
-// sharp angular eye ridges and an articulated open dragon jaw.
+// R92: entire previous head sculpt discarded. Broad dragon head with
+// a strongly downturned muzzle, projecting mandible and cheek silhouette.
 const face=new THREE.Group();head.add(face);
-const skullSurface=new THREE.MeshStandardMaterial({color:0x28709a,roughness:.87,flatShading:true,side:THREE.DoubleSide});
-const browSurface=new THREE.MeshStandardMaterial({color:0x184d77,roughness:.89,flatShading:true,side:THREE.DoubleSide});
-function headWedge(sections,material=skullSurface){
- const vertices=[],ids=[],M=12;
- for(const [x,y,ry,rz] of sections){
+const crown=new THREE.MeshStandardMaterial({color:0x245f88,roughness:.88,flatShading:true,side:THREE.DoubleSide});
+const brow=new THREE.MeshStandardMaterial({color:0x16446c,roughness:.88,flatShading:true,side:THREE.DoubleSide});
+const lowerJaw=new THREE.MeshStandardMaterial({color:0x3e83a7,roughness:.90,flatShading:true,side:THREE.DoubleSide});
+function headShell(stations,material){
+ const pos=[],idx=[],M=12;
+ for(const [x,y,height,width] of stations){
   for(let j=0;j<M;j++){
-   const th=j*2*Math.PI/M,cy=Math.cos(th),sz=Math.sin(th);
-   // Squared temples and sloping cheek planes, not a rounded tube.
-   const block=1+.21*Math.pow(Math.abs(sz),6);
-   vertices.push(x,y+cy*ry,sz*rz*block);
+   const a=2*Math.PI*j/M,co=Math.cos(a),si=Math.sin(a);
+   const angular=Math.sign(si)*Math.pow(Math.abs(si),.70);
+   pos.push(x,y+height*co,width*angular);
   }
  }
- for(let i=0;i<sections.length-1;i++)for(let j=0;j<M;j++){
-  const a=i*M+j,b=i*M+(j+1)%M,d=(i+1)*M+j,e=(i+1)*M+(j+1)%M;
-  ids.push(a,d,b,b,d,e);
+ for(let i=0;i<stations.length-1;i++)for(let j=0;j<M;j++){
+  const v=i*M+j,w=i*M+(j+1)%M,n=(i+1)*M+j,k=(i+1)*M+(j+1)%M;
+  idx.push(v,n,w,w,n,k);
  }
- const g=new THREE.BufferGeometry();
- g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
- g.setIndex(ids);g.computeVertexNormals();face.add(new THREE.Mesh(g,material));
+ const geo=new THREE.BufferGeometry();
+ geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+ geo.setIndex(idx);geo.computeVertexNormals();
+ face.add(new THREE.Mesh(geo,material));
 }
-// Broad skull and massive rear temples with a short, tapered muzzle.
-headWedge([
- [-17.15,9.72,.12,.26],[-16.77,9.82,.33,.61],
- [-16.24,9.96,.43,.80],[-15.73,10.14,.54,.92],
- [-15.23,10.35,.70,1.18],[-14.67,10.49,.92,1.55],
- [-14.00,10.50,1.08,1.74],[-13.35,10.40,1.02,1.69],
- [-12.73,10.28,.91,1.43],[-12.14,10.15,.71,1.14],
- [-11.68,10.08,.20,.37]
-]);
+// One connected cranium, deliberately broad behind the eye.
+headShell([
+ [-17.25,9.53,.12,.34],[-16.95,9.70,.27,.61],
+ [-16.46,9.89,.42,.77],[-15.89,10.12,.53,.92],
+ [-15.36,10.42,.75,1.21],[-14.76,10.69,.98,1.59],
+ [-14.07,10.72,1.13,1.82],[-13.40,10.53,1.08,1.76],
+ [-12.82,10.34,.95,1.52],[-12.22,10.15,.76,1.17],
+ [-11.73,10.10,.18,.35]
+],crown);
 for(const s of [-1,1]){
- // Projecting angular supraorbital arch, with an inset eye below.
- loft(face,[P(-15.48,10.62,s*1.00),P(-14.92,11.23,s*1.45),
-  P(-14.17,11.38,s*1.78),P(-13.43,11.20,s*1.79),
-  P(-12.83,10.72,s*1.45)],
- [.09,.37,.43,.34,.08],browSurface,8);
- ellipsoid(face,P(-14.40,10.49,s*1.84),[.35,.25,.12],eyeMat,2);
- ellipsoid(face,P(-14.49,10.48,s*1.96),[.09,.16,.06],pupilMat,2);
- // Enlarged jaw adductor creates a prominent muscular cheek.
- loft(face,[P(-12.50,10.12,s*1.18),P(-12.99,9.52,s*1.65),
-  P(-13.59,8.80,s*1.42),P(-14.08,8.29,s*1.01)],
- [.14,.77,.59,.12],skinBlue,12);
- // Continuous angular mandibular bar: deep open jaw, substantial chin.
- loft(face,[P(-12.48,9.45,s*1.07),P(-12.91,8.46,s*1.18),
-  P(-13.65,7.54,s*.98),P(-14.58,7.03,s*.78),
-  P(-15.57,6.94,s*.53),P(-16.02,7.04,s*.31)],
- [.35,.51,.49,.36,.26,.11],skullSurface,12);
- // Upper lip and flared nasal ridges emphasize a dragon snout.
- loft(face,[P(-14.90,9.72,s*1.07),P(-15.67,9.77,s*.96),
-  P(-16.48,9.66,s*.74),P(-17.03,9.56,s*.36)],
- [.23,.27,.21,.05],browSurface,10);
- // Nostril sits at the snout tip, not on top of the head.
- ellipsoid(face,P(-16.63,9.96,s*.61),[.17,.10,.075],browSurface,1);
+ // Raised brow sweeping back from the eye.
+ loft(face,[P(-15.62,10.68,s*1.04),P(-14.93,11.38,s*1.42),
+  P(-14.20,11.61,s*1.85),P(-13.46,11.36,s*1.91),
+  P(-12.81,10.83,s*1.52)],[.10,.38,.45,.36,.09],brow,10);
+ // Recessed eye and eye-ring.
+ ellipsoid(face,P(-14.48,10.65,s*1.85),[.35,.25,.15],brow,1);
+ ellipsoid(face,P(-14.53,10.65,s*1.98),[.22,.17,.10],eyeMat,2);
+ ellipsoid(face,P(-14.61,10.65,s*2.08),[.07,.13,.04],pupilMat,2);
+ // Cheek musculature descends into the open lower jaw.
+ loft(face,[P(-12.51,10.20,s*1.18),P(-13.10,9.46,s*1.66),
+  P(-13.70,8.69,s*1.37),P(-14.10,8.11,s*.94)],
+ [.18,.82,.61,.10],lowerJaw,12);
+ // Jaw branches: long, open and visibly separate from upper snout.
+ loft(face,[P(-12.48,9.45,s*1.05),P(-12.88,8.48,s*1.17),
+  P(-13.70,7.52,s*.97),P(-14.67,6.96,s*.76),
+  P(-15.76,6.90,s*.52),P(-16.21,7.05,s*.32)],
+ [.34,.55,.49,.39,.27,.10],lowerJaw,12);
+ // Pointed, downturned nasal bridge and flared nostril plates.
+ loft(face,[P(-14.99,9.88,s*1.06),P(-15.81,9.89,s*.91),
+  P(-16.55,9.70,s*.68),P(-17.15,9.48,s*.32)],
+ [.25,.28,.22,.045],brow,10);
+ ellipsoid(face,P(-16.69,9.89,s*.65),[.17,.11,.07],brow,1);
 }
 // Reference-driven first refinement: stronger cheek silhouette,
 // paired long flowing whiskers, substantial claws, and dorsal muscle ridges.
@@ -556,8 +557,8 @@ for(const obj of originalBones){
  const p=head.worldToLocal(box.getCenter(new THREE.Vector3()));
  if(p.y>11.5||p.x < -16.8||(p.y<9.35&&p.x< -13.9))obj.visible=true;
 }
-window.seiryuStage='R91_REFERENCE_HEAD_SCULPT';
-window.seiryuSkeletonRevision='R91_REFERENCE_HEAD_SCULPT';
+window.seiryuStage='R92_NEW_HEAD_GEOMETRY';
+window.seiryuSkeletonRevision='R92_NEW_HEAD_GEOMETRY';
 // Environment is not exported with the bones.
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(130,130),
  new THREE.MeshStandardMaterial({color:0x141923,roughness:1}));
