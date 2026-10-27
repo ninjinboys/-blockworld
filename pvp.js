@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeJobWeaponModel,jobHeldBladeYaw,jobHeldWeaponScale,JOBS} from './job-system.js?v=20261027storyMesh04';
-import {PVP_WEAPONS} from './pvp-weapon-models.js?v=20261027storyMesh04';
+import {PVP_WEAPONS} from './pvp-weapon-models.js?v=20261027unique110';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261022pvpFirst01';
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261022pvpFirst01';
 
@@ -8,37 +8,8 @@ const $=id=>document.getElementById(id);
 
 // PvP equipment fallback: every registered class receives a visible 3D weapon.
 // These are existing weapon meshes; bespoke models can replace them later.
-const PVP_JOB_WEAPON_KEYS={"sword":"pvp_katana","merc":"pvp_dual","shield":"pvp_shield","archer":"pvp_bow","mage":"pvp_star","fighter":"pvp_claws","spear":"pvp_trident","alchemist":"pvp_potion","ninja":"pvp_katana","reaper":"pvp_scythe","gunner":"pvp_pistol","summoner":"pvp_summon","time":"pvp_wand","chain":"pvp_chains","hammer":"pvp_hammer","beast":"pvp_claws","barrier":"pvp_barrier","curse":"pvp_curse","katana":"pvp_katana","reflect":"pvp_shield","bomber":"pvp_bomb","gravity":"pvp_gravity","machine":"pvp_machine","phantom":"pvp_barrier","star":"pvp_star","mimic":"pvp_dice","swordsaint":"pvp_dimension","dragonking":"pvp_dragon","underking":"pvp_scythe","thundergod":"pvp_thunder","dimensionking":"pvp_dimension"};
-function pvpExclusiveWeapon(job){
- const name=CLASSES[job]?.name||'';
- let key=PVP_JOB_WEAPON_KEYS[job];
- if(!key){
-  if(/鎌|死霊|吸血|魂/.test(name))key='pvp_scythe';
-  else if(/召喚|使い|魔物|幻獣|精霊|人形|傀儡|蟲|鳥|竜/.test(name)&&!/剣|槍|鎌|鞭|鉄球|棒|斧|チャクラム|銃|盾|空間|虚空/.test(name))key='pvp_summon';
-  else if(/弓|狩人|連弩/.test(name))key='pvp_crossbow';
-  else if(/銃|機械|ドローン|電磁/.test(name))key='pvp_machine';
-  else if(/砲|投石/.test(name))key='pvp_cannon';
-  else if(/盾|騎士|守護|鎧|不動|重戦士|鉄騎/.test(name))key='pvp_shield';
-  else if(/槍|トライデント/.test(name))key='pvp_trident';
-  else if(/斧/.test(name))key='pvp_axe';
-  else if(/鞭/.test(name))key='pvp_whip';
-  else if(/鉄球/.test(name))key='pvp_flail';
-  else if(/チャクラム/.test(name))key='pvp_chakram';
-  else if(/料理|錬金|科学/.test(name))key='pvp_potion';
-  else if(/画家/.test(name))key='pvp_brush';
-  else if(/音楽|踊り/.test(name))key='pvp_lute';
-  else if(/賭博|道化/.test(name))key='pvp_dice';
-  else if(/爆破|爆弾/.test(name))key='pvp_bomb';
-  else if(/重力|虚空|混沌/.test(name))key='pvp_gravity';
-  else if(/時間|時渡|空間/.test(name))key='pvp_wand';
-  else if(/術師|天使|悪魔|霊媒|予言|星喰/.test(name))key='pvp_star';
-  else if(/格闘|夜叉|巨人/.test(name))key='pvp_claws';
-  else if(/二刀|盗賊|影武者|疾風/.test(name))key='pvp_dual';
-  else key='pvp_katana';
- }
- return PVP_WEAPONS.find(w=>w.id===key)?.weaponId||300;
-}
-
+const PVP_WEAPON_FOR_JOB=new Map(PVP_WEAPONS.map(w=>[w.id,w.weaponId]));
+function pvpExclusiveWeapon(job){return PVP_WEAPON_FOR_JOB.get(job)??300}
 const PVP_WEAPON_IDS={fighter:191,spear:199,alchemist:207,ninja:191,reaper:196,gunner:193,summoner:207,time:207,chain:199,hammer:198,beast:193,barrier:192,curse:207,katana:197,reflect:192,bomber:206,gravity:207,machine:200,phantom:191,star:206,mimic:190,swordsaint:197,dragonking:206,underking:196,thundergod:206,dimensionking:207};
 const PVP_WEAPON_GROUPS=['191','192','207','193','207','207','199','200','206','191'];
 function pvpWeapon(job){
