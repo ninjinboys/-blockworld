@@ -916,7 +916,7 @@ function shutdown(sendLeave=true){
  connection=null;peer=null;roomCode='';role='';
 }
 function showMenu(message=''){
- clearCpuProjectiles();
+ clearCpuProjectiles();removeSummons();
  resetJoystick();
  if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
  state='menu';keys.clear();touchLooks.clear();shutdown(false);
@@ -1036,7 +1036,7 @@ $('practiceBtn').addEventListener('click',()=>{
  beginMatch();
 });
 function beginMatch(){
- clearCpuProjectiles();
+ clearCpuProjectiles();removeSummons();
  resetJoystick();
  state='playing';abilityReadyAt=0;keys.clear();touchLooks.clear();lookPitch=0;walkMotion=0;walkPhase=0;
  entranceStart=performance.now();entranceFightAnnounced=false;
@@ -1101,7 +1101,7 @@ function resolveAttack(attackerIsHost){
  const facing=(Math.sin(attacker.face)*dx+Math.cos(attacker.face)*dz)/(dist||1);
  if(dist>c.range||facing<c.arc)return;
  const targetJob=attackerIsHost?enemyClass:myClass;
- const block=target.guard?(CLASSES[targetJob].block||.42):0;
+ const block=target.abilityGuardUntil>now?.72:target.guard?(CLASSES[targetJob].block||.42):0;
  const passive=pvpPassive(job);
  // 0 critical combo, 1 armor, 2 arcane burst, 3 precision, 4 lifesteal,
  // 5 regeneration, 6 knockback, 7 overload, 8 explosion, 9 adaptive.
@@ -1109,7 +1109,7 @@ function resolveAttack(attackerIsHost){
  const charged=!!attacker.abilityCharged;attacker.abilityCharged=false;
  const bonus=passive===0&&hits%3===0 ? .65 :passive===2 ? .18 :passive===3&&dist>c.range*.65 ? .28 :passive===7&&hits%4===0 ? .6 :passive===8 ? .22 :passive===9 ? .12 :0;
  const dealt=Math.max(1,Math.round(attacker.damage*(1+bonus+(charged?.8:0))*(1-block)*(pvpPassive(targetJob)===1 ? .87 : 1)));
- target.hp=Math.max(0,target.hp-dealt);
+ target.hp=Math.max(0,target.hp-Math.max(1,Math.round(dealt*(target.abilityCurseUntil>now?1.2:1))));
  if(passive===4)attacker.hp=Math.min(attacker.max,attacker.hp+Math.max(1,Math.round(dealt*.12)));
  if(passive===5)attacker.hp=Math.min(attacker.max,attacker.hp+2);
  if(passive===6&&dist>0){target.x+=dx/dist*.42;target.z+=dz/dist*.42;}
@@ -1157,13 +1157,76 @@ $('againBtn').addEventListener('click',()=>{
 $('menuBtn').addEventListener('click',()=>{shutdown();showMenu()});
 $('leaveButton').addEventListener('click',()=>{shutdown();showMenu()});
 
+
+const ACTIVE_ABILITY_OVERRIDES={
+ summoner:['召喚獣召喚','summon'],dragonking:['竜召喚','summon'],beast:['獣召喚','summon'],
+ ninja:['影分身','summon'],phantom:['幻影召喚','summon'],time:['時間停止','slow'],
+ gravity:['重力拘束','slow'],barrier:['結界','guard'],reflect:['反射障壁','guard'],
+ curse:['呪い','curse'],reaper:['魂狩り','drain'],underking:['冥界の鎌','drain'],
+ alchemist:['回復薬','heal'],hammer:['地砕き','blast'],chain:['鎖拘束','slow'],
+ bomber:['爆発','blast'],star:['流星','blast'],thundergod:['雷撃','blast'],
+ swordsaint:['剣気斬','blast'],dimensionking:['次元斬','blast']
+};
+function jobAbility(job){
+ const name=CLASSES[job]?.name||'';
+ if(ACTIVE_ABILITY_OVERRIDES[job])return ACTIVE_ABILITY_OVERRIDES[job];
+ if(/召喚|使い$|獣使い|傀儡|人形|ドローン|魔物|幻獣|精霊|植物|鳥使い|蟲使い/.test(name)&&!/(剣|鎌|鞭|鉄球|斧|槍|空間|時間|重力|虚空)/.test(name))return [name+'召喚','summon'];
+ if(/狙撃|弓|銃|砲|投石|連弩|クロスボウ|狩人/.test(name))return ['精密射撃','blast'];
+ if(/時間|時渡り|時空/.test(name))return ['時間停止','slow'];
+ if(/結界|盾|騎士|守護|鉄騎|鎧|不動|重戦士/.test(name))return ['防御結界','guard'];
+ if(/吸血|死霊|魂|呪|毒|闇|悪魔/.test(name))return ['生命吸収','drain'];
+ if(/治癒|料理|錬金|霊媒|天使/.test(name))return ['回復','heal'];
+ if(/風|疾風|盗賊|忍者|影|曲芸|追跡|踊り/.test(name))return ['疾風加速','dash'];
+ if(/水|土|光|火|星|太陽|月|雷|電磁|爆|魔|虚空|混沌/.test(name))return ['属性攻撃','blast'];
+ if(/鎖|重力|封印|空間/.test(name))return ['拘束','slow'];
+ return [name+'の一撃','blast'];
+}
+const activeSummons=[];
+function removeSummons(){
+ for(const a of activeSummons){scene.remove(a.mesh);a.mesh.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose?.()})}
+ activeSummons.length=0;
+}
+function spawnSummon(owner,job){
+ const body=new THREE.Group();
+ const color=/竜/.test(CLASSES[job].name)?0xff713d:/忍者|幻影/.test(CLASSES[job].name)?0x8471e9:0x67d9bc;
+ const material=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.25});
+ const torso=new THREE.Mesh(new THREE.BoxGeometry(.75,.65,.9),material);
+ torso.position.y=.75;body.add(torso);
+ const head=new THREE.Mesh(new THREE.BoxGeometry(.58,.48,.55),material);
+ head.position.set(0,1.28,-.3);body.add(head);
+ for(const side of [-1,1]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.19,.52,.22),material);leg.position.set(side*.26,.26,side*.25);body.add(leg)}
+ scene.add(body);
+ activeSummons.push({mesh:body,owner,job,until:performance.now()+9000,lastHit:0});
+}
+function updateSummons(dt){
+ const now=performance.now();
+ for(let i=activeSummons.length-1;i>=0;i--){
+  const a=activeSummons[i];
+  if(now>a.until||state!=='playing'){scene.remove(a.mesh);a.mesh.traverse(o=>{o.geometry?.dispose();o.material?.dispose?.()});activeSummons.splice(i,1);continue}
+  const actor=a.owner==='me'?me:rival,target=a.owner==='me'?rival:me;
+  if(!actor||!target)continue;
+  const dx=target.x-a.mesh.position.x,dz=target.z-a.mesh.position.z,d=Math.hypot(dx,dz)||1;
+  if(a.mesh.position.lengthSq()<.01)a.mesh.position.set(actor.x+1,0,actor.z+1);
+  if(d>1.7){a.mesh.position.x+=dx/d*dt*5;a.mesh.position.z+=dz/d*dt*5}
+  a.mesh.rotation.y=Math.atan2(-dx,-dz);
+  if(d<2.2&&now-a.lastHit>1300&&role!=='guest'){
+   a.lastHit=now;
+   target.hp=Math.max(0,target.hp-Math.max(2,Math.round(CLASSES[a.job].damage*.45)));
+   effectLine({x:a.mesh.position.x,z:a.mesh.position.z},target,a.job);
+   updateHud();
+   if(role==='host'&&connection?.open)connection.send({t:'hit',hostHp:me.hp,guestHp:rival.hp,attackFromHost:a.owner==='me'});
+   if(me.hp<=0||rival.hp<=0)endByHealth();
+  }
+ }
+}
+
 const ABILITY_COOLDOWN=14000;
 let abilityReadyAt=0,abilityCharged=false;
 const ABILITY_NAMES=['連撃','鉄壁','魔力解放','狙撃','吸収','再生','衝撃波','過負荷','爆裂','適応'];
 function updateAbilityButton(){
  const btn=document.getElementById('abilityBtn'),desktop=document.getElementById('abilityDesktop');
  const remaining=Math.max(0,Math.ceil((abilityReadyAt-performance.now())/1000));
- const label='✨ '+ABILITY_NAMES[pvpPassive(myClass)]+(remaining?' '+remaining+'秒':'');
+ const label='✨ '+jobAbility(myClass)[0]+(remaining?' '+remaining+'秒':'');
  for(const el of [btn,desktop])if(el){el.textContent=label;el.disabled=state!=='playing'||remaining>0;}
 }
 function activateAbility(remote=false){
@@ -1172,21 +1235,22 @@ function activateAbility(remote=false){
  if(!remote&&now<abilityReadyAt)return;
  if(!remote){abilityReadyAt=now+ABILITY_COOLDOWN;updateAbilityButton();}
  const job=remote?enemyClass:myClass,actor=remote?rival:me,enemy=remote?me:rival;
- const passive=pvpPassive(job);
- if(passive===1||passive===5){actor.hp=Math.min(actor.max,actor.hp+Math.round(actor.max*(passive===1?.24:.18)));}
- else if(passive===0||passive===6){actor.abilityCharged=true;}
- else if(passive===2||passive===3||passive===7||passive===8||passive===9){
-  const dist=Math.hypot(actor.x-enemy.x,actor.z-enemy.z);
-  if(dist<=Math.min(10,CLASSES[job].range+2)){
-   const damage=Math.round(actor.damage*(passive===8?1.2:.8));
-   enemy.hp=Math.max(0,enemy.hp-damage);
-   effectLine(actor,enemy,job);
-  }
- }else if(passive===4){actor.hp=Math.min(actor.max,actor.hp+Math.round(actor.max*.22));}
+ const [abilityName,abilityType]=jobAbility(job);
+ if(abilityType==='summon')spawnSummon(remote?'rival':'me',job);
+ else if(abilityType==='heal')actor.hp=Math.min(actor.max,actor.hp+Math.round(actor.max*.3));
+ else if(abilityType==='guard'){actor.abilityGuardUntil=now+6500;actor.hp=Math.min(actor.max,actor.hp+Math.round(actor.max*.08));}
+ else if(abilityType==='dash'){actor.abilitySpeedUntil=now+6500;actor.abilityCharged=true;}
+ else if(abilityType==='slow'){enemy.abilitySlowUntil=now+4200;enemy.hp=Math.max(0,enemy.hp-Math.round(actor.damage*.35));}
+ else if(abilityType==='drain'){const amount=Math.round(actor.damage*1.1);enemy.hp=Math.max(0,enemy.hp-amount);actor.hp=Math.min(actor.max,actor.hp+Math.round(amount*.65));effectLine(actor,enemy,job);}
+ else if(abilityType==='curse'){enemy.abilityCurseUntil=now+7000;enemy.hp=Math.max(0,enemy.hp-Math.round(actor.damage*.6));}
+ else if(abilityType==='blast'){
+  const distance=Math.hypot(actor.x-enemy.x,actor.z-enemy.z);
+  if(distance<=Math.max(8,CLASSES[job].range+2)){enemy.hp=Math.max(0,enemy.hp-Math.round(actor.damage*1.6));effectLine(actor,enemy,job);}
+ }
  if(!remote&&role==='guest'&&connection?.open)connection.send({t:'ability',class:myClass,seq:Math.floor(now)});
  if(!remote&&role==='host'&&connection?.open)connection.send({t:'abilityFx'});
  if(role==='host'&&connection?.open)connection.send({t:'hit',hostHp:me.hp,guestHp:rival.hp,attackFromHost:!remote});
- flash('✨ '+ABILITY_NAMES[passive]+'！');updateHud();
+ flash('✨ '+abilityName+'！');updateHud();
  if(me.hp<=0||rival.hp<=0)endByHealth();
 }
 
@@ -1319,7 +1383,7 @@ function moveLocal(dt){
  const x=keyX+joystick.x,z=keyZ+joystick.y;
  const len=Math.hypot(x,z),scale=len>1?1/len:1;
  const c=CLASSES[myClass];
- const speed=c.speed*(keys.has('ShiftLeft')||keys.has('ShiftRight')?1.4:1);
+ const speed=c.speed*(me.abilitySpeedUntil>performance.now()?1.65:1)*(me.abilitySlowUntil>performance.now()?.45:1)*(keys.has('ShiftLeft')||keys.has('ShiftRight')?1.4:1);
  const forward=-z*scale,strafe=x*scale;
  const yaw=me.face;
  // Analog motion is proportional to joystick tilt, including diagonals.
@@ -1371,6 +1435,7 @@ function fireCpuRanged(now){
   radius:archer?.56:.79
  });
 }
+// Summons are updated from the existing frame loop.
 function updateCpuProjectiles(dt){
  if(role!=='cpu'||state!=='playing')return;
  for(let i=cpuProjectiles.length-1;i>=0;i--){
@@ -1467,6 +1532,7 @@ function update(dt,t){
  moveLocal(dt);
  if(role==='cpu'){
   stepCPU(dt);
+  updateSummons(dt);
   updateCpuProjectiles(dt);
  }
  if(role==='host'||role==='cpu'){
