@@ -1,3 +1,4 @@
+import {makeDetailedJobWeapon} from './job-weapon-models.js?v=20261023bowFacingForward24';
 // PvP-exclusive armory. Separate from the NEXACRAFT story-mode weapons (190–207).
 // Models are real procedural Three.js meshes and can be exported to GLB.
 export const PVP_WEAPONS=[
@@ -39,6 +40,42 @@ const byKey=new Map(PVP_WEAPONS.map(w=>[w.id,w]));
 export function makePvpWeaponModel(T,key){
  const w=typeof key==='number'?PVP_WEAPON_BY_ID.get(key):byKey.get(key);
  if(!w)return null;
+ // Build PvP arms on the actual story-mode forged meshes, not an unrelated
+ // collection of primitives. The original silhouette and construction survive.
+ const storyFamily={
+  katana:['swordmaster','sword',30],greatsword:['warrior','greatsword',30],
+  dual:['berserker','dual',30],scythe:['warrior','greatsword',30],
+  gun:['powerArcher','bow',30],rifle:['powerArcher','bow',30],
+  cannon:['warrior','greatsword',30],crossbow:['powerArcher','bow',30],
+  bow:['powerArcher','bow',30],shield:['shieldElite','shield',30],
+  staff:['battleMage','staff',30],trident:['lancer','spear',30],
+  hammer:['axer','axe',30],axe:['axer','axe',30],
+  flail:['axer','axe',30],whip:['lancer','spear',30],
+  brush:['supportMage','staff',30],claw:['berserker','dual',30]
+ };
+ const family=storyFamily[w.kind];
+ if(family){
+  const [baseKey,baseKind,level]=family;
+  const root=makeDetailedJobWeapon(T,{key:baseKey,kind:baseKind,level,name:w.name,group:baseKind});
+  if(root){
+   root.name=w.name;root.userData.pvpWeaponId=w.weaponId;
+   // A distinct PvP forge finish while retaining the exact story-mode body.
+   const accent=new T.MeshStandardMaterial({color:w.color,metalness:.38,roughness:.24,emissive:w.color,emissiveIntensity:.18,side:T.DoubleSide});
+   const gold=new T.MeshStandardMaterial({color:0xcc9d5d,metalness:.82,roughness:.29,side:T.DoubleSide});
+   const mark=new T.Mesh(new T.OctahedronGeometry(.105,0),accent);
+   const bounds=new T.Box3().setFromObject(root);
+   const center=bounds.getCenter(new T.Vector3());
+   const size=bounds.getSize(new T.Vector3());
+   mark.position.set(center.x,center.y+size.y*.22,bounds.max.z+.08);
+   root.add(mark);
+   for(const sign of [-1,1]){
+    const gem=new T.Mesh(new T.OctahedronGeometry(.05,0),gold);
+    gem.position.set(center.x+sign*Math.min(.25,size.x*.25),center.y+size.y*.17,bounds.max.z+.07);
+    root.add(gem);
+   }
+   return root;
+  }
+ }
  const g=new T.Group();
  const metal=new T.MeshStandardMaterial({color:0x9aabb9,metalness:.82,roughness:.31,side:T.DoubleSide});
  const dark=new T.MeshStandardMaterial({color:0x343e49,metalness:.67,roughness:.42,side:T.DoubleSide});
