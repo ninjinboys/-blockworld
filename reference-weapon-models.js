@@ -308,6 +308,41 @@ export function makeReferenceWeapon(T,d){
     diamond(0,cy+.066,f*.315,.134,.183,'gild',.031);
     gem(0,cy+.066,f*.355,.094,.133,.047);
   }
+  // Reforge the starter sword's visible face: broad tapered silver cutting
+  // planes, deep central fuller, bronze swept quillons, and shaped ricasso.
+  // These are structural bevelled plates, not a box-shaped blade recolour.
+  for(const face of [-1,1]){
+    const z=face*.19;
+    for(const sign of [-1,1]){
+      P(mirror([[.14,1.08],[.40,1.10],[.45,1.34],[.45,2.76],
+        [.43,3.07],[.30,3.31],[.13,3.60]],sign),
+        .034,'silver',z,.008);
+      P(mirror([[.37,1.37],[.45,1.52],[.45,2.78],[.39,3.05],
+        [.30,3.31],[.18,3.49],[.27,3.16],[.35,2.85]],sign),
+        .020,'edge',z+face*.038,.004);
+      P(mirror([[.11,1.21],[.19,1.30],[.18,2.90],[.11,3.25]],sign),
+        .016,'graphite',z+face*.061,.004);
+      for(let n=0;n<5;n++){
+        const y=1.38+n*.35;
+        line([sign*.18,y],[sign*.28,y+.12],z+face*.086,'gild',.009);
+      }
+    }
+    P([[-.095,1.20],[0,1.08],[.095,1.20],[.095,2.95],
+      [0,3.42],[-.095,2.95]],.022,'inset',z+face*.089,.004);
+    for(let n=0;n<4;n++){
+      const y=1.47+n*.43;
+      diamond(0,y,z+face*.118,.045,.09,'gild',.018);
+      gem(0,y,z+face*.145,.035,.061,.023);
+    }
+    for(const sign of [-1,1]){
+      P(mirror([[.16,.38],[.42,.37],[.72,.53],[.89,.69],
+        [.67,.65],[.47,.59],[.25,.58]],sign),
+        .105,'bronze',face*.17,.012);
+      P(mirror([[.37,.45],[.67,.59],[.76,.65],[.49,.55]],sign),
+        .028,'gild',face*.242,.004);
+      gem(sign*.70,.63,face*.27,.045,.061,.035);
+    }
+  }
   g.userData.referenceSheet='Swordsman Sword: wider straight silver 3D wedge, black cyan fuller, acute tapered tip and bronze-wing guard';
   g.userData.swordReferenceV2=true;
  }
