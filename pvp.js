@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeJobWeaponModel,jobHeldBladeYaw,jobHeldWeaponScale,JOBS} from './job-system.js?v=20261027pvpArmory01';
-import {PVP_WEAPONS} from './pvp-weapon-models.js?v=20261027armory01';
+import {PVP_WEAPONS} from './pvp-weapon-models.js?v=20261027armoryDetail02';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261022pvpFirst01';
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261022pvpFirst01';
 
