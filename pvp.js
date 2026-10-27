@@ -997,6 +997,12 @@ function receive(data){
   rival.guard=!!data.guard;
   return;
  }
+ if(data.t==='ability'&&role==='host'&&state==='playing'){
+  if(data.class!==enemyClass||!Number.isFinite(data.seq))return;
+  const now=performance.now();if(now-(rival.lastAbility||0)<ABILITY_COOLDOWN)return;
+  rival.lastAbility=now;activateAbility(true);return;
+ }
+ if(data.t==='abilityFx'&&role==='guest'&&state==='playing'){flash('✨ 相手が能力を発動！');return;}
  if(data.t==='attack'&&role==='host'&&state==='playing'){
   if(data.class!==enemyClass||!Number.isFinite(data.seq))return;
   animateSwing(enemyAvatar);
@@ -1032,7 +1038,7 @@ $('practiceBtn').addEventListener('click',()=>{
 function beginMatch(){
  clearCpuProjectiles();
  resetJoystick();
- state='playing';keys.clear();touchLooks.clear();lookPitch=0;walkMotion=0;walkPhase=0;
+ state='playing';abilityReadyAt=0;keys.clear();touchLooks.clear();lookPitch=0;walkMotion=0;walkPhase=0;
  entranceStart=performance.now();entranceFightAnnounced=false;
  arenaGates.forEach(g=>g.position.y=0);
  const onLeft=role!=='guest';
@@ -1064,6 +1070,7 @@ function updateHud(){
  $('enemyHealth').textContent=Math.ceil(rival.hp)+' / '+rival.max;
  $('myBar').style.width=(100*me.hp/me.max)+'%';
  $('enemyBar').style.width=(100*rival.hp/rival.max)+'%';
+ updateAbilityButton();
  const time=Math.max(0,Math.ceil(remaining));
  $('clock').textContent=String(Math.floor(time/60)).padStart(2,'0')+':'+String(time%60).padStart(2,'0');
 }
@@ -1099,8 +1106,9 @@ function resolveAttack(attackerIsHost){
  // 0 critical combo, 1 armor, 2 arcane burst, 3 precision, 4 lifesteal,
  // 5 regeneration, 6 knockback, 7 overload, 8 explosion, 9 adaptive.
  const hits=attacker.comboHits=(attacker.comboHits||0)+1;
+ const charged=!!attacker.abilityCharged;attacker.abilityCharged=false;
  const bonus=passive===0&&hits%3===0 ? .65 :passive===2 ? .18 :passive===3&&dist>c.range*.65 ? .28 :passive===7&&hits%4===0 ? .6 :passive===8 ? .22 :passive===9 ? .12 :0;
- const dealt=Math.max(1,Math.round(attacker.damage*(1+bonus)*(1-block)*(pvpPassive(targetJob)===1 ? .87 : 1)));
+ const dealt=Math.max(1,Math.round(attacker.damage*(1+bonus+(charged?.8:0))*(1-block)*(pvpPassive(targetJob)===1 ? .87 : 1)));
  target.hp=Math.max(0,target.hp-dealt);
  if(passive===4)attacker.hp=Math.min(attacker.max,attacker.hp+Math.max(1,Math.round(dealt*.12)));
  if(passive===5)attacker.hp=Math.min(attacker.max,attacker.hp+2);
@@ -1148,6 +1156,40 @@ $('againBtn').addEventListener('click',()=>{
 });
 $('menuBtn').addEventListener('click',()=>{shutdown();showMenu()});
 $('leaveButton').addEventListener('click',()=>{shutdown();showMenu()});
+
+const ABILITY_COOLDOWN=14000;
+let abilityReadyAt=0,abilityCharged=false;
+const ABILITY_NAMES=['連撃','鉄壁','魔力解放','狙撃','吸収','再生','衝撃波','過負荷','爆裂','適応'];
+function updateAbilityButton(){
+ const btn=document.getElementById('abilityBtn'),desktop=document.getElementById('abilityDesktop');
+ const remaining=Math.max(0,Math.ceil((abilityReadyAt-performance.now())/1000));
+ const label='✨ '+ABILITY_NAMES[pvpPassive(myClass)]+(remaining?' '+remaining+'秒':'');
+ for(const el of [btn,desktop])if(el){el.textContent=label;el.disabled=state!=='playing'||remaining>0;}
+}
+function activateAbility(remote=false){
+ if(state!=='playing'||!me||!rival||performance.now()<entranceStart+entranceDuration)return;
+ const now=performance.now();
+ if(!remote&&now<abilityReadyAt)return;
+ if(!remote){abilityReadyAt=now+ABILITY_COOLDOWN;updateAbilityButton();}
+ const job=remote?enemyClass:myClass,actor=remote?rival:me,enemy=remote?me:rival;
+ const passive=pvpPassive(job);
+ if(passive===1||passive===5){actor.hp=Math.min(actor.max,actor.hp+Math.round(actor.max*(passive===1?.24:.18)));}
+ else if(passive===0||passive===6){actor.abilityCharged=true;}
+ else if(passive===2||passive===3||passive===7||passive===8||passive===9){
+  const dist=Math.hypot(actor.x-enemy.x,actor.z-enemy.z);
+  if(dist<=Math.min(10,CLASSES[job].range+2)){
+   const damage=Math.round(actor.damage*(passive===8?1.2:.8));
+   enemy.hp=Math.max(0,enemy.hp-damage);
+   effectLine(actor,enemy,job);
+  }
+ }else if(passive===4){actor.hp=Math.min(actor.max,actor.hp+Math.round(actor.max*.22));}
+ if(!remote&&role==='guest'&&connection?.open)connection.send({t:'ability',class:myClass,seq:Math.floor(now)});
+ if(!remote&&role==='host'&&connection?.open)connection.send({t:'abilityFx'});
+ if(role==='host'&&connection?.open)connection.send({t:'hit',hostHp:me.hp,guestHp:rival.hp,attackFromHost:!remote});
+ flash('✨ '+ABILITY_NAMES[passive]+'！');updateHud();
+ if(me.hp<=0||rival.hp<=0)endByHealth();
+}
+
 function requestAttack(){
  if(state!=='playing'||!me)return;
  const now=performance.now();
@@ -1164,12 +1206,14 @@ function requestAttack(){
   if(connection?.open)connection.send({t:'attack',class:myClass,seq:Math.floor(now)});
  }
 }
+document.getElementById('abilityDesktop')?.addEventListener('click',()=>activateAbility());
 window.addEventListener('keydown',e=>{
  if(state!=='playing')return;
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
  keys.add(e.code);
  if(e.code==='Space'&&!e.repeat)requestJump();
  if(e.code==='KeyF'&&!e.repeat)requestAttack();
+ if(e.code==='KeyR'&&!e.repeat)activateAbility();
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
 window.addEventListener('blur',()=>{keys.clear();resetJoystick();});
@@ -1262,6 +1306,7 @@ for(const b of document.querySelectorAll('#mobileControls button')){
   if(key)keys.add(key);
   else if(action==='jump')requestJump();
   else if(action==='attack')requestAttack();
+  else if(action==='ability')activateAbility();
  });
  b.addEventListener('pointerup',release);
  b.addEventListener('pointercancel',release);
