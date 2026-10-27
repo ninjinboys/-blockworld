@@ -1,274 +1,105 @@
-import {makeDetailedJobWeapon} from './job-weapon-models.js?v=20261023bowFacingForward24';
-// PvP-exclusive armory. Separate from the NEXACRAFT story-mode weapons (190–207).
-// Models are real procedural Three.js meshes and can be exported to GLB.
-export const PVP_WEAPONS=[
- ['pvp_katana','刀','katana',0x8e9bd5,'忍者・刀使い'],
- ['pvp_scythe','大鎌','scythe',0x9a62d7,'死神・魂狩り'],
- ['pvp_pistol','拳銃','gun',0x61c8ff,'銃士・魔銃士'],
- ['pvp_summon','魔導書','book',0x65d8a2,'召喚士・精霊使い'],
- ['pvp_chains','鎖','chain',0xc5a6f0,'鎖使い・封印師'],
- ['pvp_hammer','大槌','hammer',0xe9a766,'ハンマー使い'],
- ['pvp_claws','爪','claw',0xf2b86a,'獣使い・格闘家'],
- ['pvp_barrier','法環','ring',0x5ce7d9,'結界師・霊媒師'],
- ['pvp_curse','呪術杖','staff',0xc65be0,'呪術師・闇術師'],
- ['pvp_bomb','爆弾','bomb',0xff7954,'爆弾兵・爆破技師'],
- ['pvp_gravity','宝珠','orb',0x9470fa,'重力術師・虚空使い'],
- ['pvp_machine','機関銃','rifle',0x75d2dc,'機械兵・工兵'],
- ['pvp_star','魔法杖','staff',0xffd36e,'星術師・光術師'],
- ['pvp_dual','双剣','dual',0x69c9f0,'傭兵・二刀流剣士'],
- ['pvp_trident','三叉槍','trident',0x63d1d5,'槍兵・三叉槍兵'],
- ['pvp_bow','長弓','bow',0x9dc4ff,'弓兵・狩人'],
- ['pvp_shield','大盾','shield',0xc2a86d,'盾兵・守護者'],
- ['pvp_axe','戦斧','axe',0xf18a64,'戦斧使い・重戦士'],
- ['pvp_wand','時空杖','staff',0x7cb7ff,'時空使い・時間術師'],
- ['pvp_dragon','大剣','greatsword',0xf58e55,'竜王・魔剣士'],
- ['pvp_thunder','雷槌','hammer',0xf5e46e,'雷神・電磁兵'],
- ['pvp_dimension','次元剣','greatsword',0xb58dff,'次元王・空間術師'],
- ['pvp_puppet','操糸具','ring',0xeaa0b8,'傀儡師・人形使い'],
- ['pvp_flail','鉄球','flail',0xc5c7d0,'鉄球使い'],
- ['pvp_whip','鞭','whip',0xe57b91,'鞭使い'],
- ['pvp_chakram','円刃','chakram',0x80e4e8,'チャクラム使い'],
- ['pvp_crossbow','クロスボウ','crossbow',0xc3b48a,'クロスボウ兵・連弩兵'],
- ['pvp_cannon','大砲','cannon',0xf2aa70,'砲兵・投石兵'],
- ['pvp_potion','薬瓶','potion',0x7ce8aa,'錬金術師・科学者'],
- ['pvp_brush','絵筆','brush',0xeaa0f6,'画家'],
- ['pvp_lute','竪琴','lute',0xe7c18b,'音楽家・踊り子'],
- ['pvp_dice','サイコロ','dice',0xffd889,'賭博師・道化師']
-].map(([id,name,kind,color,forJobs],i)=>({id,name,kind,color,forJobs,weaponId:300+i}));
+// NEXACRAFT PvP: 110 individually forged weapon meshes.
+// All geometry is built here. No story-mode weapon is imported or cloned.
+// Material, bevels, grips, engraved edges and proportions follow the story-mode design language.
+export const PVP_WEAPONS=[{"id":"extra_001","name":"盗賊","kind":"dual","weaponId":300,"tier":2},{"id":"extra_002","name":"影武者","kind":"dual","weaponId":301,"tier":2},{"id":"extra_003","name":"疾風剣士","kind":"dual","weaponId":302,"tier":2},{"id":"extra_004","name":"曲芸師","kind":"dual","weaponId":303,"tier":2},{"id":"extra_005","name":"追跡者","kind":"sword","weaponId":304,"tier":2},{"id":"extra_006","name":"夜叉","kind":"dual","weaponId":305,"tier":2},{"id":"extra_007","name":"時渡り","kind":"staff","weaponId":306,"tier":3},{"id":"extra_008","name":"鉄騎士","kind":"shield","weaponId":307,"tier":2},{"id":"extra_009","name":"重戦士","kind":"hammer","weaponId":308,"tier":2},{"id":"extra_010","name":"不動兵","kind":"shield","weaponId":309,"tier":2},{"id":"extra_011","name":"岩石兵","kind":"shield","weaponId":310,"tier":2},{"id":"extra_012","name":"守護者","kind":"shield","weaponId":311,"tier":2},{"id":"extra_013","name":"鎧武者","kind":"shield","weaponId":312,"tier":2},{"id":"extra_014","name":"巨人兵","kind":"hammer","weaponId":313,"tier":2},{"id":"extra_015","name":"不死兵","kind":"sword","weaponId":314,"tier":3},{"id":"extra_016","name":"水術師","kind":"staff","weaponId":315,"tier":2},{"id":"extra_017","name":"風術師","kind":"staff","weaponId":316,"tier":2},{"id":"extra_018","name":"土術師","kind":"staff","weaponId":317,"tier":2},{"id":"extra_019","name":"光術師","kind":"staff","weaponId":318,"tier":2},{"id":"extra_020","name":"闇術師","kind":"staff","weaponId":319,"tier":2},{"id":"extra_021","name":"毒術師","kind":"staff","weaponId":320,"tier":2},{"id":"extra_022","name":"時間術師","kind":"staff","weaponId":321,"tier":2},{"id":"extra_023","name":"空間術師","kind":"staff","weaponId":322,"tier":3},{"id":"extra_024","name":"狙撃兵","kind":"bow","weaponId":323,"tier":2},{"id":"extra_025","name":"砲兵","kind":"gun","weaponId":324,"tier":2},{"id":"extra_026","name":"投槍兵","kind":"spear","weaponId":325,"tier":2},{"id":"extra_027","name":"クロスボウ兵","kind":"sword","weaponId":326,"tier":2},{"id":"extra_028","name":"投石兵","kind":"sword","weaponId":327,"tier":2},{"id":"extra_029","name":"連弩兵","kind":"bow","weaponId":328,"tier":2},{"id":"extra_030","name":"魔銃士","kind":"gun","weaponId":329,"tier":2},{"id":"extra_031","name":"狩人","kind":"bow","weaponId":330,"tier":2},{"id":"extra_032","name":"死霊術師","kind":"scythe","weaponId":331,"tier":2},{"id":"extra_033","name":"吸血鬼","kind":"claw","weaponId":332,"tier":2},{"id":"extra_034","name":"人形使い","kind":"book","weaponId":333,"tier":2},{"id":"extra_035","name":"夢幻師","kind":"staff","weaponId":334,"tier":2},{"id":"extra_036","name":"封印師","kind":"staff","weaponId":335,"tier":2},{"id":"extra_037","name":"魂狩り","kind":"scythe","weaponId":336,"tier":2},{"id":"extra_038","name":"魔剣士","kind":"staff","weaponId":337,"tier":2},{"id":"extra_039","name":"霊媒師","kind":"book","weaponId":338,"tier":2},{"id":"extra_040","name":"竜使い","kind":"book","weaponId":339,"tier":2},{"id":"extra_041","name":"蟲使い","kind":"book","weaponId":340,"tier":2},{"id":"extra_042","name":"鳥使い","kind":"book","weaponId":341,"tier":2},{"id":"extra_043","name":"魔物使い","kind":"book","weaponId":342,"tier":2},{"id":"extra_044","name":"精霊使い","kind":"book","weaponId":343,"tier":2},{"id":"extra_045","name":"傀儡師","kind":"book","weaponId":344,"tier":2},{"id":"extra_046","name":"植物使い","kind":"book","weaponId":345,"tier":2},{"id":"extra_047","name":"幻獣使い","kind":"claw","weaponId":346,"tier":3},{"id":"extra_048","name":"鎌使い","kind":"scythe","weaponId":347,"tier":2},{"id":"extra_049","name":"鞭使い","kind":"chain","weaponId":348,"tier":2},{"id":"extra_050","name":"鉄球使い","kind":"hammer","weaponId":349,"tier":2},{"id":"extra_051","name":"棒術師","kind":"staff","weaponId":350,"tier":2},{"id":"extra_052","name":"戦斧使い","kind":"axe","weaponId":351,"tier":2},{"id":"extra_053","name":"三叉槍兵","kind":"spear","weaponId":352,"tier":2},{"id":"extra_054","name":"チャクラム使い","kind":"sword","weaponId":353,"tier":2},{"id":"extra_055","name":"二刀流剣士","kind":"dual","weaponId":354,"tier":2},{"id":"extra_056","name":"工兵","kind":"gun","weaponId":355,"tier":2},{"id":"extra_057","name":"科学者","kind":"potion","weaponId":356,"tier":2},{"id":"extra_058","name":"蒸気騎士","kind":"shield","weaponId":357,"tier":2},{"id":"extra_059","name":"爆破技師","kind":"bomb","weaponId":358,"tier":2},{"id":"extra_060","name":"人造人間","kind":"sword","weaponId":359,"tier":2},{"id":"extra_061","name":"電磁兵","kind":"gun","weaponId":360,"tier":2},{"id":"extra_062","name":"ドローン使い","kind":"gun","weaponId":361,"tier":2},{"id":"extra_063","name":"機巧師","kind":"sword","weaponId":362,"tier":2},{"id":"extra_064","name":"月影騎士","kind":"shield","weaponId":363,"tier":2},{"id":"extra_065","name":"太陽騎士","kind":"shield","weaponId":364,"tier":2},{"id":"extra_066","name":"虚空使い","kind":"staff","weaponId":365,"tier":2},{"id":"extra_067","name":"天空兵","kind":"sword","weaponId":366,"tier":2},{"id":"extra_068","name":"混沌術師","kind":"staff","weaponId":367,"tier":2},{"id":"extra_069","name":"星喰い","kind":"staff","weaponId":368,"tier":3},{"id":"extra_070","name":"天使","kind":"staff","weaponId":369,"tier":2},{"id":"extra_071","name":"悪魔","kind":"claw","weaponId":370,"tier":2},{"id":"extra_072","name":"予言者","kind":"staff","weaponId":371,"tier":3},{"id":"extra_073","name":"道化師","kind":"bomb","weaponId":372,"tier":2},{"id":"extra_074","name":"賭博師","kind":"bomb","weaponId":373,"tier":2},{"id":"extra_075","name":"変身師","kind":"sword","weaponId":374,"tier":2},{"id":"extra_076","name":"音楽家","kind":"lute","weaponId":375,"tier":2},{"id":"extra_077","name":"踊り子","kind":"lute","weaponId":376,"tier":2},{"id":"extra_078","name":"料理人","kind":"potion","weaponId":377,"tier":2},{"id":"extra_079","name":"画家","kind":"brush","weaponId":378,"tier":3},{"id":"sword","name":"剣士","kind":"sword","weaponId":379,"tier":1},{"id":"merc","name":"傭兵","kind":"dual","weaponId":380,"tier":1},{"id":"shield","name":"盾兵","kind":"shield","weaponId":381,"tier":1},{"id":"archer","name":"弓兵","kind":"bow","weaponId":382,"tier":1},{"id":"mage","name":"魔術師","kind":"staff","weaponId":383,"tier":1},{"id":"fighter","name":"格闘家","kind":"claw","weaponId":384,"tier":1},{"id":"spear","name":"槍兵","kind":"spear","weaponId":385,"tier":1},{"id":"alchemist","name":"錬金術師","kind":"potion","weaponId":386,"tier":1},{"id":"ninja","name":"忍者","kind":"dual","weaponId":387,"tier":1},{"id":"reaper","name":"死神","kind":"scythe","weaponId":388,"tier":1},{"id":"gunner","name":"銃士","kind":"gun","weaponId":389,"tier":1},{"id":"summoner","name":"召喚士","kind":"book","weaponId":390,"tier":1},{"id":"time","name":"時空使い","kind":"staff","weaponId":391,"tier":1},{"id":"chain","name":"鎖使い","kind":"chain","weaponId":392,"tier":1},{"id":"hammer","name":"ハンマー使い","kind":"hammer","weaponId":393,"tier":1},{"id":"beast","name":"獣使い","kind":"claw","weaponId":394,"tier":1},{"id":"barrier","name":"結界師","kind":"shield","weaponId":395,"tier":1},{"id":"curse","name":"呪術師","kind":"staff","weaponId":396,"tier":1},{"id":"katana","name":"刀使い","kind":"katana","weaponId":397,"tier":1},{"id":"reflect","name":"反射騎士","kind":"shield","weaponId":398,"tier":1},{"id":"bomber","name":"爆弾兵","kind":"bomb","weaponId":399,"tier":1},{"id":"gravity","name":"重力術師","kind":"orb","weaponId":400,"tier":1},{"id":"machine","name":"機械兵","kind":"gun","weaponId":401,"tier":1},{"id":"phantom","name":"幻影師","kind":"staff","weaponId":402,"tier":1},{"id":"star","name":"星術師","kind":"staff","weaponId":403,"tier":1},{"id":"mimic","name":"模倣者","kind":"sword","weaponId":404,"tier":1},{"id":"swordsaint","name":"剣聖","kind":"sword","weaponId":405,"tier":3},{"id":"dragonking","name":"竜王","kind":"greatsword","weaponId":406,"tier":3},{"id":"underking","name":"冥王","kind":"scythe","weaponId":407,"tier":3},{"id":"thundergod","name":"雷神","kind":"hammer","weaponId":408,"tier":3},{"id":"dimensionking","name":"次元王","kind":"greatsword","weaponId":409,"tier":3}];
 export const PVP_WEAPON_BY_ID=new Map(PVP_WEAPONS.map(w=>[w.weaponId,w]));
 const byKey=new Map(PVP_WEAPONS.map(w=>[w.id,w]));
-export function makePvpWeaponModel(T,key){
- const w=typeof key==='number'?PVP_WEAPON_BY_ID.get(key):byKey.get(key);
+export function makePvpWeaponModel(T,id){
+ const w=typeof id==='number'?PVP_WEAPON_BY_ID.get(id):byKey.get(id);
  if(!w)return null;
- // Build PvP arms on the actual story-mode forged meshes, not an unrelated
- // collection of primitives. The original silhouette and construction survive.
- const storyFamily={
-  katana:['swordmaster','sword',30],greatsword:['warrior','greatsword',30],
-  dual:['berserker','dual',30],scythe:['warrior','greatsword',30],
-  gun:['powerArcher','bow',30],rifle:['powerArcher','bow',30],
-  cannon:['warrior','greatsword',30],crossbow:['powerArcher','bow',30],
-  bow:['powerArcher','bow',30],shield:['shieldElite','shield',30],
-  staff:['battleMage','staff',30],trident:['lancer','spear',30],
-  hammer:['axer','axe',30],axe:['axer','axe',30],
-  flail:['axer','axe',30],whip:['lancer','spear',30],
-  brush:['supportMage','staff',30],claw:['berserker','dual',30]
- };
- const family=storyFamily[w.kind];
- if(family){
-  const [baseKey,baseKind,level]=family;
-  const root=makeDetailedJobWeapon(T,{key:baseKey,kind:baseKind,level,name:w.name,group:baseKind});
-  if(root){
-   root.name=w.name;root.userData.pvpWeaponId=w.weaponId;
-   // A distinct PvP forge finish while retaining the exact story-mode body.
-   const accent=new T.MeshStandardMaterial({color:w.color,metalness:.38,roughness:.24,emissive:w.color,emissiveIntensity:.18,side:T.DoubleSide});
-   const gold=new T.MeshStandardMaterial({color:0xcc9d5d,metalness:.82,roughness:.29,side:T.DoubleSide});
-   const mark=new T.Mesh(new T.OctahedronGeometry(.105,0),accent);
-   const bounds=new T.Box3().setFromObject(root);
-   const center=bounds.getCenter(new T.Vector3());
-   const size=bounds.getSize(new T.Vector3());
-   mark.position.set(center.x,center.y+size.y*.22,bounds.max.z+.08);
-   root.add(mark);
-   for(const sign of [-1,1]){
-    const gem=new T.Mesh(new T.OctahedronGeometry(.05,0),gold);
-    gem.position.set(center.x+sign*Math.min(.25,size.x*.25),center.y+size.y*.17,bounds.max.z+.07);
-    root.add(gem);
-   }
-   return root;
-  }
- }
+ const n=w.weaponId-300,k=w.kind;
  const g=new T.Group();
- const metal=new T.MeshStandardMaterial({color:0x9aabb9,metalness:.82,roughness:.31,side:T.DoubleSide});
- const dark=new T.MeshStandardMaterial({color:0x343e49,metalness:.67,roughness:.42,side:T.DoubleSide});
- const gold=new T.MeshStandardMaterial({color:0xcc9d5d,metalness:.82,roughness:.29,side:T.DoubleSide});
- const glow=new T.MeshStandardMaterial({color:w.color,emissive:w.color,emissiveIntensity:.24,metalness:.32,roughness:.2,side:T.DoubleSide});
- const wood=new T.MeshStandardMaterial({color:0x493829,roughness:.89,side:T.DoubleSide});
- const add=(geometry,material,x=0,y=0,z=0)=>{const m=new T.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;g.add(m);return m};
- const box=(x,y,z,a,b,c,m=metal)=>add(new T.BoxGeometry(a,b,c),m,x,y,z);
- const rod=(x,y,z,r,h,m=metal)=>add(new T.CylinderGeometry(r,r,h,12),m,x,y,z);
- const ball=(x,y,z,r,m=glow)=>add(new T.IcosahedronGeometry(r,1),m,x,y,z);
- const blade=(x,y,h,width=.23,m=metal)=>{box(x,y,0,width,h,.09,m);add(new T.ConeGeometry(width*.68,.35,4),m,x,y+h/2+.17,0).rotation.y=Math.PI/4};
- const shaft=(h=2.4)=>{rod(0,h/2,0,.065,h,wood);rod(0,.19,0,.095,.28,gold)};
- // Match the main game's forged weapon design language: bevelled plates,
- // layered metal edges, restrained runes and leather/bronze fittings.
- const plate=(points,depth,mat=metal,z=0)=>{
-  const shape=new T.Shape();shape.moveTo(points[0][0],points[0][1]);
-  for(let i=1;i<points.length;i++)shape.lineTo(points[i][0],points[i][1]);
-  shape.closePath();
-  return add(new T.ExtrudeGeometry(shape,{depth,steps:1,bevelEnabled:true,bevelThickness:.012,bevelSize:.012,bevelSegments:2}),mat,0,0,z-depth/2);
+ const hue=(n*137.508)%360;
+ const accentColor=new T.Color().setHSL(hue/360,.43,w.tier===3?.60:.50);
+ const steel=new T.MeshStandardMaterial({color:0xaab9c5,metalness:.86,roughness:.27,side:T.DoubleSide});
+ const edge=new T.MeshStandardMaterial({color:0xe1e8e9,metalness:.91,roughness:.21,side:T.DoubleSide});
+ const black=new T.MeshStandardMaterial({color:0x28343d,metalness:.72,roughness:.40,side:T.DoubleSide});
+ const brass=new T.MeshStandardMaterial({color:0xc49e63,metalness:.82,roughness:.28,side:T.DoubleSide});
+ const leather=new T.MeshStandardMaterial({color:0x48382e,roughness:.84,side:T.DoubleSide});
+ const rune=new T.MeshStandardMaterial({color:accentColor,emissive:accentColor,emissiveIntensity:.27,metalness:.40,roughness:.23,side:T.DoubleSide});
+ const add=(geo,mat,x=0,y=0,z=0)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;g.add(m);return m};
+ const box=(x,y,z,a,b,c,m=steel)=>add(new T.BoxGeometry(a,b,c),m,x,y,z);
+ const rod=(x,y,z,r,h,m=brass)=>add(new T.CylinderGeometry(r,r,h,12),m,x,y,z);
+ const gem=(x,y,z,r=.1,m=rune)=>add(new T.OctahedronGeometry(r,0),m,x,y,z);
+ const poly=(pts,depth,mat=steel,z=0)=>{const sh=new T.Shape();sh.moveTo(...pts[0]);for(let j=1;j<pts.length;j++)sh.lineTo(...pts[j]);sh.closePath();return add(new T.ExtrudeGeometry(sh,{depth,steps:1,bevelEnabled:true,bevelSize:.012,bevelThickness:.012,bevelSegments:2}),mat,0,0,z-depth/2)};
+ const line=(points,r=.026,mat=brass)=>add(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(16,points.length*8),r,8,false),mat);
+ const length=2.0+(n%7)*.10+(w.tier===3?.28:0);
+ const width=.18+(n%5)*.045;
+ const detail=3+(n%4);
+ const grip=(x=0,y=.46,h=.72)=>{rod(x,y,0,.075,h,leather);for(let j=0;j<6;j++){const r=add(new T.TorusGeometry(.079,.012,5,12),j%2?brass:black,x,y-h*.42+j*h*.16,0);r.rotation.x=Math.PI/2}};
+ const crest=(x,y,z=.17)=>{gem(x,y,z,.09+(n%3)*.018);for(const side of [-1,1])gem(x+side*.15,y,z-.02,.038,brass)};
+ const blade=(x=0,variant=k)=>{const l=length;grip(x);box(x,.85,.0,.62+(n%3)*.09,.12,.23,brass);
+  const wdt=variant==='greatsword'?width*2.0:width;
+  const skew=variant==='katana'?.16:0;
+  poly([[x-wdt, .94],[x+wdt,.94],[x+wdt+skew,l+.48],[x+skew*.55,l+.76],[x-wdt+skew,l+.48]],.13,steel);
+  poly([[x-.028,.99],[x+.028,.99],[x+.028+skew*.5,l+.47],[x+skew*.5,l+.68],[x-.028+skew*.5,l+.47]],.025,edge,.08);
+  for(let j=0;j<detail;j++)gem(x+(j%2?-.085:.085),1.16+j*(l-.75)/detail,.10,.035);
+  crest(x,.86,.15);
  };
- const diamond=(x,y,width,height,mat=glow,z=.12)=>plate([[x,y+height],[x+width,y],[x,y-height],[x-width,y]],.035,mat,z);
- const k=w.kind;
- if(['katana','greatsword','dual'].includes(k)){
-  const makeSword=(x=0,scale=1)=>{const b=new T.Group();g.add(b);b.position.x=x;b.scale.setScalar(scale);
-   const m=new T.Mesh(new T.BoxGeometry(k==='greatsword'?.45:.19,1.85,.09),metal);m.position.y=1.75;b.add(m);
-   const tip=new T.Mesh(new T.ConeGeometry(k==='greatsword'?.3:.135,.48,4),glow);tip.position.y=2.92;tip.rotation.y=Math.PI/4;b.add(tip);
-   const grip=new T.Mesh(new T.CylinderGeometry(.075,.08,.65,10),dark);grip.position.y=.47;b.add(grip);
-   const guard=new T.Mesh(new T.BoxGeometry(k==='greatsword'?1.12:.68,.11,.22),gold);guard.position.y=.83;b.add(guard);
-   for(let i=0;i<5;i++){const wrap=new T.Mesh(new T.TorusGeometry(.081,.013,5,12),glow);wrap.position.y=.25+i*.1;wrap.rotation.x=Math.PI/2;b.add(wrap)}
-  };makeSword(k==='dual'?-.4:0,k==='dual'?.82:1);if(k==='dual')makeSword(.4,.82);
- }else if(k==='scythe'){
-  shaft(2.7);const curve=new T.CatmullRomCurve3([new T.Vector3(0,2.65,0),new T.Vector3(.5,2.95,0),new T.Vector3(1.15,2.88,0),new T.Vector3(1.55,2.35,0)]);
-  add(new T.TubeGeometry(curve,22,.10,7,false),glow);ball(.13,2.7,0,.18);
- }else if(['gun','rifle','cannon','crossbow'].includes(k)){
-  const length=k==='gun'?1.05:k==='cannon'?2.4:1.8;
-  box(0,1.4,0,.34,.42,length,dark);const barrel=rod(0,1.45,-length*.47,.16,k==='cannon'?1.5:1.0,metal);barrel.rotation.x=Math.PI/2;
-  rod(0,1.45,-length*.93,.19,.13,gold).rotation.x=Math.PI/2;
-  box(0,.8,.36,.19,.9,.23,wood);box(0,1.7,.24,.32,.18,.3,glow);
-  if(k==='crossbow'){box(0,1.5,-.6,1.6,.14,.13,gold);rod(0,1.55,-.6,.025,1.6,glow).rotation.z=Math.PI/2}
- }else if(k==='bow'){
-  const curve=new T.CatmullRomCurve3([new T.Vector3(0,.1,0),new T.Vector3(-.35,.55,0),new T.Vector3(-.52,1.45,0),new T.Vector3(-.35,2.3,0),new T.Vector3(0,2.9,0)]);
-  add(new T.TubeGeometry(curve,32,.075,8,false),wood);
-  const string=rod(0,1.5,0,.016,2.8,glow);string.position.x=.03;
-  ball(-.45,1.5,0,.11,gold);
- }else if(['staff','trident','hammer','axe','flail','whip','brush'].includes(k)){
-  shaft(k==='whip'?1.3:2.5);
-  if(k==='staff'){ball(0,2.72,0,.32);add(new T.TorusGeometry(.37,.035,8,30),gold,0,2.72,0);ball(0,2.72,0,.12,gold)}
-  if(k==='trident'){for(const x of [-.35,0,.35]){rod(x,2.78,0,.06,.65,metal);add(new T.ConeGeometry(.13,.4,6),glow,x,3.29,0)}box(0,2.55,0,.85,.12,.12,gold)}
-  if(k==='hammer'){box(0,2.48,0,1.45,.65,.66,dark);box(-.73,2.48,0,.18,.75,.72,glow);box(.73,2.48,0,.18,.75,.72,glow)}
-  if(k==='axe'){box(.35,2.48,0,.7,.83,.17,glow);add(new T.ConeGeometry(.4,.8,4),metal,.72,2.5,0).rotation.z=-Math.PI/2}
-  if(k==='flail'){const chain=new T.CatmullRomCurve3([new T.Vector3(0,2.5,0),new T.Vector3(.3,2.85,0),new T.Vector3(.55,3.1,0)]);add(new T.TubeGeometry(chain,16,.04,6,false),gold);ball(.55,3.1,0,.36,dark);for(let i=0;i<7;i++){const a=i*Math.PI*2/7;ball(.55+Math.cos(a)*.37,3.1+Math.sin(a)*.37,0,.10,metal)}}
-  if(k==='whip'){const curve=new T.CatmullRomCurve3([new T.Vector3(0,1.3,0),new T.Vector3(.65,2,0),new T.Vector3(1.25,1.55,0),new T.Vector3(1.65,2.4,0),new T.Vector3(2.1,2.15,0)]);add(new T.TubeGeometry(curve,35,.055,7,false),glow)}
-  if(k==='brush'){add(new T.ConeGeometry(.26,.5,10),glow,0,2.78,0);rod(0,2.35,0,.17,.2,gold)}
- }else if(k==='claw'){
-  for(let i=-1;i<=1;i++){box(i*.25,.65,0,.15,.65,.18,dark);const claw=add(new T.ConeGeometry(.12,.9,6),glow,i*.25,1.48,-.15);claw.rotation.z=-.16*i}box(0,.3,.13,.85,.4,.32,gold);
- }else if(['ring','chakram'].includes(k)){
-  add(new T.TorusGeometry(.85,k==='chakram'?.12:.07,10,50),k==='chakram'?metal:glow,0,1.5,0);
-  add(new T.TorusGeometry(.57,.045,8,45),gold,0,1.5,.03);
-  for(let i=0;i<8;i++){const a=i*Math.PI/4;ball(Math.cos(a)*.85,1.5+Math.sin(a)*.85,0,.12)}
-  rod(0,.43,0,.075,.7,dark);
- }else if(k==='book'){
-  box(-.32,1.35,0,.65,1.25,.14,dark);box(.32,1.35,0,.65,1.25,.14,dark);
-  box(0,1.35,-.12,1.3,1.2,.08,glow);box(0,1.35,.14,1.3,1.2,.08,gold);
-  ball(0,1.35,.2,.23);
- }else if(k==='shield'){
-  const shape=new T.Shape();shape.moveTo(-.75,2.3);shape.lineTo(.75,2.3);shape.lineTo(.72,1.0);shape.lineTo(0,.4);shape.lineTo(-.72,1.0);shape.closePath();
-  add(new T.ExtrudeGeometry(shape,{depth:.16,bevelEnabled:true,bevelSize:.06,bevelThickness:.05,bevelSegments:2}),dark,0,0,0);
-  box(0,1.65,.24,.16,1.2,.12,gold);box(0,1.65,.25,1.05,.13,.12,gold);ball(0,1.65,.32,.23);
- }else if(k==='bomb'||k==='orb'||k==='potion'||k==='dice'){
-  if(k==='dice'){box(0,1.4,0,1.05,1.05,1.05,glow);for(let i=0;i<3;i++)ball(-.26+i*.26,1.4,.54,.07,dark)}
-  else if(k==='potion'){rod(0,.9,0,.15,.7,gold);ball(0,1.65,0,.55,glow);rod(0,2.28,0,.16,.45,wood)}
-  else{ball(0,1.4,0,.66,k==='bomb'?dark:glow);for(let i=0;i<3;i++){const a=i*Math.PI/3;const hoop=add(new T.TorusGeometry(.7,.045,7,42),gold,0,1.4,0);hoop.rotation.y=a}if(k==='bomb')rod(0,2.17,0,.08,.42,glow)}
- }else if(k==='lute'){
-  ball(0,1.0,0,.62,wood);box(0,1.85,0,.3,1.3,.2,wood);
-  for(let i=-2;i<=2;i++)rod(i*.1,1.25,.55,.013,1.6,gold);
+ if(['sword','katana','greatsword','dual'].includes(k)){if(k==='dual'){blade(-.43);blade(.43)}else blade(0,k)}
+ else if(k==='shield'){
+  const half=.63+(n%4)*.08;
+  poly([[-half,2.3],[half,2.3],[half*.96,1.05],[0,.35],[-half*.96,1.05]],.18,black);
+  poly([[-half*.88,2.18],[half*.88,2.18],[half*.8,1.12],[0,.56],[-half*.8,1.12]],.05,steel,.18);
+  poly([[0,2.10],[.15,1.57],[0,.92],[-.15,1.57]],.055,brass,.25);
+  crest(0,1.55,.31);
+  for(const sign of [-1,1])for(let j=0;j<3;j++)gem(sign*half*.68,1.15+j*.4,.26,.037,brass);
+  rod(0,1.3,-.20,.08,.7,leather);
  }
-
- // PvP workshop finish pass: physical edge bevels, rivets, wraps, recessed panels
- // and class-specific silhouettes. These are real 3D components, not sprites.
- const trim=new T.MeshStandardMaterial({color:0xcedde5,metalness:.85,roughness:.22,side:T.DoubleSide});
- const inset=new T.MeshStandardMaterial({color:0x1a252d,metalness:.46,roughness:.5,side:T.DoubleSide});
- const ringAt=(x,y,z,r=.13,t=.018,m=gold)=>add(new T.TorusGeometry(r,t,8,20),m,x,y,z);
- const rivet=(x,y,z,r=.035)=>ball(x,y,z,r,gold);
- const cord=(points,r=.024,m=glow)=>add(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,7,false),m);
- if(['katana','greatsword','dual'].includes(k)){
-  const count=k==='dual'?2:1;
-  for(let n=0;n<count;n++){
-   const x=count===2?(n?-.4:.4):0;
-   const sc=count===2?.82:1;
-   const bladeLength=1.85*sc;
-   const ridge=box(x,1.75*sc, .055,.025,bladeLength,.022,trim);
-   const fuller=box(x,1.78*sc,-.055,.032,bladeLength*.72,.018,inset);
-   for(let j=0;j<6;j++)ringAt(x,.23*sc+j*.09*sc,.09,.074*sc,.008,glow);
-   if(k==='katana'){
-    const curve=new T.CatmullRomCurve3([new T.Vector3(x-.1,1.04,0),new T.Vector3(x-.16,1.75,0),new T.Vector3(x-.09,2.35,0),new T.Vector3(x,2.8,0)]);
-    add(new T.TubeGeometry(curve,22,.024,6,false),trim);
-   }
-   rivet(x-.17*sc,.84*sc,.11,.034);rivet(x+.17*sc,.84*sc,.11,.034);
-  }
+ else if(k==='bow'){
+  const b=.40+(n%4)*.08;
+  line([[0,.12,0],[-b,.7,0],[-b*1.12,1.5,0],[-b,2.28,0],[0,2.95,0]],.075,leather);
+  line([[0,.12,.02],[-b*.93,.7,.02],[-b,1.5,.02],[-b*.93,2.28,.02],[0,2.95,.02]],.023,brass);
+  line([[0,.12,0],[.06,1.5,0],[0,2.95,0]],.015,edge);
+  box(-b,1.48,.04,.18,.46,.19,black);crest(-b,1.48,.17);
+  for(const y of [.23,2.82])gem(-.08,y,.04,.10,brass);
  }
- if(k==='scythe'){
-  // Long tapered cutting edge and a structural spine (not a bent tube).
-  const shape=new T.Shape();
-  shape.moveTo(.06,2.7);shape.bezierCurveTo(.4,3.32,1.23,3.35,1.85,2.42);
-  shape.bezierCurveTo(1.46,2.75,.85,2.91,.35,2.77);shape.closePath();
-  add(new T.ExtrudeGeometry(shape,{depth:.085,bevelEnabled:true,bevelThickness:.02,bevelSize:.018,bevelSegments:2}),metal,0,0,-.045);
-  for(let j=0;j<8;j++)ringAt(0,.35+j*.24,.075,.075,.012,dark);
+ else if(k==='gun'){
+  const l=1.2+(n%5)*.22;
+  box(0,1.50,-.15,.34,.43,l,black);
+  box(0,1.69,-.15,.25,.13,l*.72,steel);
+  const barrel=rod(0,1.48,-l*.53,.125,l*.8,steel);barrel.rotation.x=Math.PI/2;
+  const muzzle=rod(0,1.48,-l*.92,.17,.16,brass);muzzle.rotation.x=Math.PI/2;
+  box(0,.91,.20,.21,.82,.27,leather);box(0,1.12,-.20,.17,.42,.26,steel);
+  for(let j=0;j<detail;j++)box(0,1.78,-.05-j*.17,.22,.035,.07,brass);
+  crest(0,1.78,.09);
  }
- if(['gun','rifle','cannon','crossbow'].includes(k)){
-  const len=k==='gun'?1.05:k==='cannon'?2.4:1.8;
-  box(0,1.41,-len*.38,.23,.22,len*.6,trim);
-  box(0,1.39,-len*.38,.13,.12,len*.64,inset);
-  for(let j=0;j<4;j++)box(0,1.65,-len*.24-j*.18,.25,.045,.06,gold);
-  box(0,.96,-.12,.16,.5,.34,inset);
-  if(k==='rifle'||k==='cannon'){box(0,1.93,.1,.18,.17,.54,metal);ball(0,1.96,-.21,.095,glow)}
-  if(k==='crossbow'){
-   cord([[-.78,1.53,-.6],[0,1.55,-.48],[.78,1.53,-.6]],.015,trim);
-   rod(0,1.58,-.45,.025,1.15,glow).rotation.x=Math.PI/2;
-  }
+ else if(['spear','scythe','axe','hammer','chain','staff','brush'].includes(k)){
+  rod(0,length*.52,0,.065,length,leather);
+  for(let j=0;j<9;j++){const ring=add(new T.TorusGeometry(.068,.014,6,14),j%2?brass:black,0,.35+j*.17,0);ring.rotation.x=Math.PI/2}
+  if(k==='spear')poly([[-.18,length-.24],[.18,length-.24],[.24,length+.22],[0,length+.75],[-.24,length+.22]],.12,steel);
+  if(k==='scythe'){poly([[0,length-.13],[.25,length+.24],[1.0,length+.29],[1.58,length-.31],[1.12,length-.02],[.46,length+.02]],.13,steel);line([[0,length-.18,.10],[.52,length+.15,.10],[1.16,length+.08,.10]],.03,rune)}
+  if(k==='axe'){for(const sign of [-1,1])poly([[0,length-.44],[sign*.55,length-.49],[sign*.91,length+.08],[sign*.54,length+.49],[0,length+.39]],.14,steel)}
+  if(k==='hammer'){box(0,length,0,1.1+(n%4)*.13,.62,.57,black);for(const sign of [-1,1])box(sign*.59,length,0,.15,.72,.62,steel)}
+  if(k==='chain'){line([[0,length,0],[.33,length+.28,0],[.74,length+.06,0],[1.1,length+.32,0]],.045,steel);gem(1.1,length+.32,0,.25,black)}
+  if(k==='staff'||k==='brush'){gem(0,length+.23,0,k==='brush'?.22:.32);const hoop=add(new T.TorusGeometry(.38,.035,8,36),brass,0,length+.23,0);hoop.rotation.y=(n%5)*.2}
+  crest(0,length-.1,.13);
  }
- if(k==='bow'){
-  cord([[0,.12,.025],[-.43,.9,.025],[-.5,1.55,.025],[-.36,2.35,.025],[0,2.87,.025]],.02,gold);
-  for(const y of [.32,2.67]){ringAt(-.13,y,.04,.12,.018,metal)}
-  box(-.48,1.5,0,.18,.5,.24,dark);
-  for(let j=0;j<6;j++)ringAt(-.48,1.31+j*.07,.12,.095,.009,glow);
+ else if(k==='claw'){
+  box(0,.44,0,.9,.48,.32,black);
+  for(let j=-1;j<=1;j++){poly([[j*.27-.11,.61],[j*.27+.11,.61],[j*.27+.12,1.46+(n%3)*.14],[j*.27+.03,1.91+(n%3)*.13],[j*.27-.11,1.35]],.13,steel);gem(j*.27,.55,.22,.055,brass)}
  }
- if(k==='shield'){
-  const border=new T.Shape();border.moveTo(-.82,2.36);border.lineTo(.82,2.36);border.lineTo(.79,.96);border.lineTo(0,.27);border.lineTo(-.79,.96);border.closePath();
-  const hole=new T.Path();hole.moveTo(-.65,2.19);hole.lineTo(-.62,1.06);hole.lineTo(0,.53);hole.lineTo(.62,1.06);hole.lineTo(.65,2.19);hole.closePath();border.holes.push(hole);
-  add(new T.ExtrudeGeometry(border,{depth:.07,bevelEnabled:true,bevelSize:.015,bevelThickness:.015,bevelSegments:2}),gold,0,0,.17);
-  for(const x of [-.57,.57])for(const y of [1.15,1.65,2.08])rivet(x,y,.27);
-  ringAt(0,1.65,.34,.3,.035,glow);
+ else if(k==='book'){
+  poly([[-.66,.77],[0,.86],[0,2.05],[-.66,1.91]],.12,black);
+  poly([[0,.86],[.66,.77],[.66,1.91],[0,2.05]],.12,black);
+  for(let j=0;j<7;j++){const y=.96+j*.14;line([[-.58,y,.12],[0,y+.05,.12],[.58,y,.12]],.014,brass)}
+  crest(0,1.48,.19);
  }
- if(['staff','trident','hammer','axe','flail','whip','brush'].includes(k)){
-  for(let j=0;j<9;j++){const y=.3+j*.15;ringAt(0,y,.055,.07,.012,j%2?gold:dark)}
-  if(k==='staff'){for(let i=0;i<6;i++){const a=i*Math.PI/3;ball(Math.cos(a)*.31,2.72+Math.sin(a)*.31,.04,.055,gold)}}
-  if(k==='hammer'){for(const x of [-.7,.7])for(const z of [-.25,.25])rivet(x,2.48,z,.07)}
-  if(k==='axe'){for(const y of [2.2,2.5,2.78])rivet(.4,y,.1,.045)}
-  if(k==='trident'){for(const x of [-.35,0,.35])cord([[x,2.64,.07],[x,3.06,.07],[x,3.42,.07]],.022,glow)}
-  if(k==='flail'){for(let j=0;j<4;j++){const x=j*.16;ringAt(x,2.52+j*.18,.04,.07,.017,metal)}}
+ else if(k==='potion'||k==='orb'||k==='bomb'){
+  const radius=.48+(n%4)*.06;
+  gem(0,1.45,0,radius,k==='bomb'?black:rune);
+  for(let j=0;j<3;j++){const hoop=add(new T.TorusGeometry(radius*1.12,.045,8,40),brass,0,1.45,0);hoop.rotation.y=j*Math.PI/3}
+  rod(0,2.02,0,.11,.37,black);crest(0,2.23,.09);
  }
- if(k==='book'){
-  for(const x of [-.28,.28])for(let j=0;j<6;j++)box(x,1.03+j*.115,.19,.48,.014,.025,metal);
-  ringAt(0,1.42,.25,.29,.032,gold);
-  for(let j=0;j<5;j++)rivet(-.45+j*.22,.87,.18,.025);
+ else if(k==='lute'){gem(0,1.05,0,.62,leather);box(0,1.86,0,.28,1.26,.21,leather);for(let j=-2;j<=2;j++)line([[j*.1,.69,.4],[j*.1,2.37,.13]],.012,brass);crest(0,1.04,.53)}
+ else{grip();blade()}
+ // Unique structural crest: each job gets its own numbered arrangement of forged plates.
+ const y=.22+(n%3)*.06;
+ for(let j=0;j<detail;j++){
+  const x=(j-(detail-1)/2)*.12;
+  const piece=add(new T.OctahedronGeometry(.038+(n%3)*.008,0),j%2?brass:rune,x,y,.12);
+  piece.rotation.y=n*.21;
  }
- if(k==='claw'){
-  for(const x of [-.25,0,.25]){
-   const shape=new T.Shape();shape.moveTo(x-.08,1.12);shape.lineTo(x-.06,1.9);shape.lineTo(x+.13,2.3);shape.lineTo(x+.08,1.18);shape.closePath();
-   add(new T.ExtrudeGeometry(shape,{depth:.11,bevelEnabled:true,bevelSize:.012,bevelThickness:.012}),metal,0,0,-.18);
-  }
-  for(const x of [-.3,0,.3])rivet(x,.58,.3);
- }
- if(['ring','chakram'].includes(k)){
-  for(let j=0;j<8;j++){const a=j*Math.PI/4;const x=Math.cos(a)*.86,y=1.5+Math.sin(a)*.86;
-   const spike=add(new T.ConeGeometry(.11,.3,5),metal,x+Math.cos(a)*.16,y+Math.sin(a)*.16,0);
-   spike.rotation.z=-a-Math.PI/2;
-  }
- }
- if(['bomb','orb','potion','dice'].includes(k)){
-  if(k==='potion'){ringAt(0,1.63,.48,.3,.03,gold);for(let j=0;j<4;j++)rivet(Math.cos(j*Math.PI/2)*.38,1.65+Math.sin(j*Math.PI/2)*.38,.32)}
-  if(k==='bomb'){for(let j=0;j<6;j++){const a=j*Math.PI/3;rivet(Math.cos(a)*.59,1.4+Math.sin(a)*.59,.25,.05)}}
-  if(k==='orb')for(let j=0;j<6;j++){const a=j*Math.PI/3;ball(Math.cos(a)*.8,1.4+Math.sin(a)*.8,0,.085,gold)}
-  if(k==='dice')for(let j=0;j<4;j++)rivet(-.33+j*.22,1.04,.52,.045);
- }
- if(k==='lute'){
-  ringAt(0,1.05,.57,.28,.04,gold);
-  for(let j=0;j<6;j++)rivet(-.13+j*.052,2.38,.1,.032);
- }
-
- // Structural armour language shared with the main-game workshop.
- if(['katana','greatsword','dual'].includes(k)){
-  const count=k==='dual'?2:1;
-  for(let n=0;n<count;n++){
-   const x=count===2?(n?-.4:.4):0,scale=count===2?.82:1;
-   plate([[x-.13*scale,.99*scale],[x+.13*scale,.99*scale],[x+.15*scale,2.49*scale],[x,2.89*scale],[x-.15*scale,2.49*scale]],.025,trim,.075);
-   diamond(x,1.07*scale,.09*scale,.13*scale,gold,.13);
-   for(const side of [-1,1])diamond(x+side*.18*scale,.83*scale,.08*scale,.10*scale,glow,.14);
-  }
- }else if(k==='shield'){
-  for(const side of [-1,1])plate([[side*.18,2.04],[side*.56,2.11],[side*.55,1.24],[side*.18,.89]],.045,metal,.28);
-  diamond(0,1.65,.28,.46,glow,.32);
- }else if(['staff','trident','hammer','axe','flail','brush'].includes(k)){
-  plate([[-.13,2.25],[.13,2.25],[.19,2.49],[0,2.65],[-.19,2.49]],.09,dark,.11);
-  diamond(0,2.46,.12,.17,glow,.2);
- }else if(['gun','rifle','cannon','crossbow'].includes(k)){
-  for(const side of [-1,1]){box(side*.15,1.43,-.14,.045,.23,.74,metal);rivet(side*.17,1.43,.24,.035)}
-  diamond(0,1.73,.09,.11,glow,.22);
- }else if(k==='book'){
-  plate([[-.59,.79],[.59,.79],[.59,1.91],[-.59,1.91]],.035,dark,.25);
-  diamond(0,1.38,.22,.32,glow,.32);
- }else if(['ring','chakram'].includes(k)){
-  for(let j=0;j<4;j++){const a=j*Math.PI/2;diamond(Math.cos(a)*.83,1.5+Math.sin(a)*.83,.08,.15,gold,.11)}
- }
- g.name=w.name;g.userData.pvpWeaponId=w.weaponId;return g;
+ g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;
+ return g;
 }
