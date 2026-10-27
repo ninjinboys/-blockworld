@@ -1122,7 +1122,9 @@ function resolveAttack(attackerIsHost){
  const hits=attacker.comboHits=(attacker.comboHits||0)+1;
  const charged=!!attacker.abilityCharged;attacker.abilityCharged=false;
  const bonus=passive===0&&hits%3===0 ? .65 :passive===2 ? .18 :passive===3&&dist>c.range*.65 ? .28 :passive===7&&hits%4===0 ? .6 :passive===8 ? .22 :passive===9 ? .12 :0;
- const dealt=Math.max(1,Math.round(attacker.damage*(1+bonus+(charged?.8:0))*(1-block)*(pvpPassive(targetJob)===1 ? .87 : 1)));
+ const bowClass=job==='archer'||['extra_024','extra_027','extra_029','extra_031'].includes(job);
+ const bowBalance=bowClass?.78:1; // 22% lower bow/crossbow damage; range and fire rate unchanged.
+ const dealt=Math.max(1,Math.round(attacker.damage*bowBalance*(1+bonus+(charged?.8:0))*(1-block)*(pvpPassive(targetJob)===1 ? .87 : 1)));
  target.hp=Math.max(0,target.hp-Math.max(1,Math.round(dealt*(target.abilityCurseUntil>now?1.2:1))));
  if(passive===4)attacker.hp=Math.min(attacker.max,attacker.hp+Math.max(1,Math.round(dealt*.12)));
  if(passive===5)attacker.hp=Math.min(attacker.max,attacker.hp+2);
