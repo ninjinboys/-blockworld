@@ -17,6 +17,8 @@ const dependencies = [
   'firebase-config.js',
   'job-system.js',
   'job-weapon-models.js',
+  'pvp-weapon-models.js',
+  'job-weapons.html',
   'reference-weapon-models.js',
   'first-person-hand.js',
   'avatar-held-items.js',
