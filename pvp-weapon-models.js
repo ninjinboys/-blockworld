@@ -27,14 +27,18 @@ export function makePvpWeaponModel(T,id){
  if(!w)return null;
  const n=w.weaponId-300,k=w.kind;
  const g=new T.Group();
- const hue=(n*137.508)%360;
- const accentColor=new T.Color().setHSL(hue/360,.43,w.tier===3?.60:.50);
- const steel=new T.MeshStandardMaterial({color:0xaab9c5,metalness:.86,roughness:.27,side:T.DoubleSide});
- const edge=new T.MeshStandardMaterial({color:0xe1e8e9,metalness:.91,roughness:.21,side:T.DoubleSide});
- const black=new T.MeshStandardMaterial({color:0x28343d,metalness:.72,roughness:.40,side:T.DoubleSide});
- const brass=new T.MeshStandardMaterial({color:0xc49e63,metalness:.82,roughness:.28,side:T.DoubleSide});
- const leather=new T.MeshStandardMaterial({color:0x48382e,roughness:.84,side:T.DoubleSide});
- const rune=new T.MeshStandardMaterial({color:accentColor,emissive:accentColor,emissiveIntensity:.27,metalness:.40,roughness:.23,side:T.DoubleSide});
+ // Reuse the *visual language*, not any original finished meshes:
+ // the story weapons' forged graphite, weathered bronze, silver facets,
+ // dark leather, and vivid cyan/red/purple emissive crystal inlays.
+ const magic=/staff|orb|clock|time|hourglass|portal|rift|void|oracle|astro|grimoire|spell|spirit|shadow|sunrod|comet|water|wind|earth|chaos|gravity|seal|mirror|palette|vial|venom|summon|voodoo|soul|lantern|swarm|phantom|underworld|holy|seraph|dimension|chronoblade/.test(k);
+ const violent=/infernal|bone|underworld|dragonmaw|dragonhorn|venom|blood|soul|void|skull|mimic|grenade|thunder|flail|scythe/.test(k);
+ const accentColor=violent?0xff304e:magic?0x9974ff:0x36ead6;
+ const steel=new T.MeshStandardMaterial({color:0xbcc7cc,metalness:.85,roughness:.28,side:T.DoubleSide});
+ const edge=new T.MeshStandardMaterial({color:0xe4e9e6,metalness:.88,roughness:.25,side:T.DoubleSide});
+ const black=new T.MeshStandardMaterial({color:0x30383c,metalness:.78,roughness:.39,side:T.DoubleSide});
+ const brass=new T.MeshStandardMaterial({color:0x987450,metalness:.82,roughness:.33,side:T.DoubleSide});
+ const leather=new T.MeshStandardMaterial({color:0x342721,roughness:.91,side:T.DoubleSide});
+ const rune=new T.MeshStandardMaterial({color:accentColor,emissive:accentColor,emissiveIntensity:.84,metalness:.36,roughness:.19,side:T.DoubleSide});
  const add=(geo,mat,x=0,y=0,z=0)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;g.add(m);return m};
  const box=(x,y,z,a,b,c,m=steel)=>add(new T.BoxGeometry(a,b,c),m,x,y,z);
  const rod=(x,y,z,r,h,m=brass)=>add(new T.CylinderGeometry(r,r,h,12),m,x,y,z);
@@ -44,7 +48,12 @@ export function makePvpWeaponModel(T,id){
  const length=2.0+(n%7)*.10+(w.tier===3?.28:0);
  const width=.18+(n%5)*.045;
  const detail=3+(n%4);
- const grip=(x=0,y=.46,h=.72)=>{rod(x,y,0,.075,h,leather);for(let j=0;j<6;j++){const r=add(new T.TorusGeometry(.079,.012,5,12),j%2?brass:black,x,y-h*.42+j*h*.16,0);r.rotation.x=Math.PI/2}};
+ const grip=(x=0,y=.46,h=.72)=>{
+   rod(x,y,0,.09,h,leather);
+   const pts=[];for(let i=0;i<=72;i++){const a=i/72*Math.PI*18;pts.push([x+Math.sin(a)*.096,y-h*.48+i/72*h*.96,Math.cos(a)*.096]);}
+   line(pts,.011,brass);
+   for(const yy of [y-h*.48,y+h*.48]){rod(x,yy,0,.125,.075,brass);gem(x,yy,.14,.05,rune)}
+ };
  const crest=(x,y,z=.17)=>{gem(x,y,z,.09+(n%3)*.018);for(const side of [-1,1])gem(x+side*.15,y,z-.02,.038,brass)};
  const blade=(x=0,variant=k)=>{const l=length;grip(x);
   // Main-story forging language: bronze swept wing guard, sculpted pommel,
@@ -262,6 +271,24 @@ export function makePvpWeaponModel(T,id){
  }
  else if(k==='lute'){gem(0,1.05,0,.62,leather);box(0,1.86,0,.28,1.26,.21,leather);for(let j=-2;j<=2;j++)line([[j*.1,.69,.4],[j*.1,2.37,.13]],.012,brass);crest(0,1.04,.53)}
  else{grip();blade()}
+ // Individual engraved identity: relief, rivets and structural inlay on every extra job.
+ if(w.id.startsWith('extra_')){
+  const identity=n+1;
+  const ringCount=2+(identity%4);
+  for(let j=0;j<ringCount;j++){
+   const xx=(j-(ringCount-1)/2)*.18;
+   const yy=.14+(identity%5)*.035;
+   const rivet=add(new T.SphereGeometry(.032,9,7),j%2?brass:rune,xx,yy,.16);
+   rivet.scale.z=.60;
+  }
+  // Different forged heraldry for each job, independent of base weapon family.
+  const cx=(identity%3-1)*.055,cy=1.0+(identity%7)*.11;
+  const em=identity%4;
+  if(em===0){poly([[cx-.11,cy],[cx,cy+.20],[cx+.11,cy],[cx,cy-.20]],.026,brass,.28)}
+  else if(em===1){poly([[cx-.14,cy-.10],[cx,cy+.19],[cx+.14,cy-.10]],.026,brass,.28)}
+  else if(em===2){const loop=add(new T.TorusGeometry(.15,.022,6,24),brass,cx,cy,.28);loop.rotation.z=.22}
+  else{for(const sign of [-1,1])poly([[cx,cy-.12],[cx+sign*.17,cy+.09],[cx+sign*.08,cy+.19]],.026,brass,.28)}
+ }
  // Unique structural crest: each job gets its own numbered arrangement of forged plates.
  const y=.22+(n%3)*.06;
  for(let j=0;j<detail;j++){
