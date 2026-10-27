@@ -4,6 +4,35 @@ import {makeFirstPersonHand} from './first-person-hand.js?v=20261022pvpFirst01';
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261022pvpFirst01';
 
 const $=id=>document.getElementById(id);
+
+// PvP equipment fallback: every registered class receives a visible 3D weapon.
+// These are existing weapon meshes; bespoke models can replace them later.
+const PVP_WEAPON_IDS={fighter:191,spear:199,alchemist:207,ninja:191,reaper:196,gunner:193,summoner:207,time:207,chain:199,hammer:198,beast:193,barrier:192,curse:207,katana:197,reflect:192,bomber:206,gravity:207,machine:200,phantom:191,star:206,mimic:190,swordsaint:197,dragonking:206,underking:196,thundergod:206,dimensionking:207};
+const PVP_WEAPON_GROUPS=['191','192','207','193','207','207','199','200','206','191'];
+function pvpWeapon(job){
+ if(JOBS[job]?.weapon!=null)return JOBS[job].weapon;
+ if(PVP_WEAPON_IDS[job]!=null)return PVP_WEAPON_IDS[job];
+ if(job.startsWith('extra_'))return Number(PVP_WEAPON_GROUPS[Math.min(9,Math.floor((Number(job.slice(6))-1)/8))]);
+ return 190;
+}
+function pvpWeaponKind(job){
+ const id=pvpWeapon(job);
+ if(id===193||id===204||id===205)return 'bow';
+ if(id===207||id===206||id===194)return 'staff';
+ if(id===192||id===201||id===202)return 'shield';
+ if(id===191||id===200)return 'dual';
+ if(id===199)return 'spear';
+ return 'sword';
+}
+// A shared set of distinct combat passives, assigned by job archetype.
+// Passive damage, healing and crowd-control are calculated by the match host.
+function pvpPassive(job){
+ const id=job.startsWith('extra_')?Math.min(9,Math.floor((Number(job.slice(6))-1)/8)):({
+ fighter:0,spear:6,alchemist:4,ninja:0,reaper:4,gunner:3,summoner:5,time:2,chain:6,hammer:1,beast:5,barrier:1,curse:4,katana:6,reflect:1,bomber:8,gravity:2,machine:7,phantom:0,star:8,mimic:9,swordsaint:6,dragonking:5,underking:4,thundergod:8,dimensionking:9
+ }[job]??(job==='merc'?0:job==='shield'?1:job==='archer'?3:job==='mage'?2:6));
+ return id;
+}
+
 const CLASSES={
   extra_001:{name:'盗賊',hp:95,speed:9.1,range:2.7,damage:13,cooldown:390,arc:0.09},
   extra_002:{name:'影武者',hp:98,speed:9.1,range:2.7,damage:13,cooldown:390,arc:0.09},
@@ -454,7 +483,7 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;
 $('stage').append(renderer.domElement);
 const firstPersonHand=makeFirstPersonHand(THREE,{
  scene,camera,drawItemIcon:()=>{},
- getHeld:()=>state==='playing'?{id:JOBS[myClass]?.weapon,qty:1}:null,
+ getHeld:()=>state==='playing'?{id:pvpWeapon(myClass),qty:1}:null,
  getOffhand:()=>null,
  isGuarding:()=>state==='playing'&&!!me?.guard,
  isVisible:()=>state==='playing',
@@ -815,7 +844,7 @@ function createAvatar(team,job){
   // Only the horizontal axis is scaled; height and animation remain unchanged.
   g.scale.x=.72;
   g.scale.z=.88;
-  avatarItems.sync(g,JOBS[job]?.weapon,null);
+  avatarItems.sync(g,pvpWeapon(job),null);
   return g;
 }
 function replaceAvatars(){
@@ -1024,7 +1053,7 @@ function beginMatch(){
  window.setTimeout(()=>$('lookHelp').classList.remove('show'),4400);
  $('crosshair').classList.add('show');
  $('weaponHud').classList.add('show');
- $('weaponName').textContent=CLASSES[myClass].name+' / '+(JOBS[myClass]?.kind==='dual'?'双剣':JOBS[myClass]?.kind==='bow'?'弓':JOBS[myClass]?.kind==='staff'?'魔法の杖':JOBS[myClass]?.kind==='shield'?'盾':'剣');
+ $('weaponName').textContent=CLASSES[myClass].name+' / '+(pvpWeaponKind(myClass)==='dual'?'双剣':pvpWeaponKind(myClass)==='bow'?'弓':pvpWeaponKind(myClass)==='staff'?'魔法の杖':pvpWeaponKind(myClass)==='shield'?'盾':pvpWeaponKind(myClass)==='spear'?'槍':'剣');
  updateHud();flash('門が開く… 出陣！');
 }
 function updateHud(){
@@ -1066,8 +1095,17 @@ function resolveAttack(attackerIsHost){
  if(dist>c.range||facing<c.arc)return;
  const targetJob=attackerIsHost?enemyClass:myClass;
  const block=target.guard?(CLASSES[targetJob].block||.42):0;
- const dealt=Math.max(1,Math.round(attacker.damage*(1-block)));
+ const passive=pvpPassive(job);
+ // 0 critical combo, 1 armor, 2 arcane burst, 3 precision, 4 lifesteal,
+ // 5 regeneration, 6 knockback, 7 overload, 8 explosion, 9 adaptive.
+ const hits=attacker.comboHits=(attacker.comboHits||0)+1;
+ const bonus=passive===0&&hits%3===0?.65:passive===2?.18:passive===3&&dist>c.range*.65?.28:passive===7&&hits%4===0?.6:passive===8?.22:passive===9?.12:0;
+ const dealt=Math.max(1,Math.round(attacker.damage*(1+bonus)*(1-block)*(pvpPassive(targetJob)===1?.87:1)));
  target.hp=Math.max(0,target.hp-dealt);
+ if(passive===4)attacker.hp=Math.min(attacker.max,attacker.hp+Math.max(1,Math.round(dealt*.12)));
+ if(passive===5)attacker.hp=Math.min(attacker.max,attacker.hp+2);
+ if(passive===6&&dist>0){target.x+=dx/dist*.42;target.z+=dz/dist*.42;}
+ if(passive===8&&hits%3===0)target.hp=Math.max(0,target.hp-Math.max(1,Math.round(dealt*.18)));
  effectLine(attacker,target,job);
  if(!attackerIsHost){flash('攻撃を受けた！');lastHurtUntil=now+280;}
  else flash('HIT! -'+dealt);
@@ -1116,7 +1154,7 @@ function requestAttack(){
  if(now-me.lastAttack<CLASSES[myClass].cooldown)return;
  if(keys.has('KeyG'))return;
  // Unlike the top-down prototype, attacks follow actual first-person aim.
- const kind=JOBS[myClass]?.kind;
+ const kind=pvpWeaponKind(myClass);
  firstPersonHand.swing(1,kind==='spear'?'thrust':'swing');
  attackVisualAt=now;
  if(role==='host'&&connection?.open)connection.send({t:'swing'});
