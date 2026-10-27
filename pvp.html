@@ -146,6 +146,7 @@
 #pvpAuth label{display:block;margin:12px 0;font-size:13px}#pvpAuth input{margin-top:5px;letter-spacing:normal;text-transform:none}#pvpAuth .auth-error{min-height:22px;color:#ff9d9d;font-size:13px;margin:10px 0}#pvpAuth .auth-info{font-size:12px;color:#b6d3e0;line-height:1.6}
 #pvpAccount{position:fixed;z-index:7;right:15px;top:12px;display:none;align-items:center;gap:8px;font-size:12px;background:#0c1d2bcc;padding:7px 10px;border-radius:10px}#pvpAccount button{border:0;border-radius:7px;background:#335873;color:white;padding:5px 9px}
 .evolution-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.evolution-options button{min-height:35px;padding:7px 10px;font-size:12px}.evolution-options .evo-selected{border:2px solid #8bf5d2;background:#245b50}
+.job-group-title{width:100%;margin:18px 0 6px;font-size:15px;color:#b8f8e8;text-align:left}.job-locked{filter:brightness(.53) grayscale(.65);border-color:#39424d!important;background:#20242d!important}.job-secret{background:#08090e!important;border:1px solid #20232e!important;filter:none;color:#a0a1b1}.job-secret span{font-size:27px}.job-unlock-hint{display:block;width:100%;font-size:10px;line-height:1.4;margin-top:5px;color:#f0cb8e}.job-secret .job-unlock-hint{color:#777985}#jobs .job{min-height:78px;flex-wrap:wrap;align-content:center}#jobs .job strong{font-size:12px}
 </style>
 </head>
 <body>
@@ -173,6 +174,7 @@
 <button type="button" class="job" data-job="archer"><span>🏹</span><strong>弓兵</strong></button>
 <button type="button" class="job" data-job="mage"><span>🔮</span><strong>魔術師</strong></button>
 </div>
+<div id="pvpJobHint" aria-live="polite" style="margin-top:8px;color:#ffd98c;font-size:13px"></div>
 <div id="pvpLevelInfo" aria-live="polite" style="margin-top:12px;padding:10px 12px;border:1px solid #427d7b;border-radius:10px;background:#112c33;color:#a9f3df;font-size:13px;font-weight:700">剣士 Lv.1 / 250　EXP 0/100</div>
 <div id="pvpEvolution" style="margin-top:10px;padding:12px;background:#132c3b;border:1px solid #416d7d;border-radius:10px;font-size:13px"></div>
 <div class="lobby"><div class="column"><h2>⚡ 友達と対戦</h2><p>対戦ルームを作成して6文字のコードを送る</p><button id="hostBtn" class="primary wide">ルームを作成</button></div><div class="column"><h2>🔑 コードで参加</h2><p>友達の6文字のコードを入力</p><form id="joinForm" class="joinrow"><input id="joinCode" maxlength="6" minlength="6" pattern="[A-Za-z0-9]{6}" required placeholder="ABC123" aria-label="参加コード"><button type="submit" class="secondary">参加</button></form></div></div>
@@ -251,7 +253,7 @@
  requestAnimationFrame(pollGamepad);
 })();
 </script>
-<script type="module" src="./pvp.js?v=20261026evolution01"></script>
+<script type="module" src="./pvp.js?v=20261027jobs01"></script>
 
 <script type="module">
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut} from './nexacraft-cloud.js';
