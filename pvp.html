@@ -148,6 +148,7 @@
 .evolution-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.evolution-options button{min-height:35px;padding:7px 10px;font-size:12px}.evolution-options .evo-selected{border:2px solid #8bf5d2;background:#245b50}
 .job-group-title{width:100%;margin:18px 0 6px;font-size:15px;color:#b8f8e8;text-align:left}.job-locked{filter:brightness(.53) grayscale(.65);border-color:#39424d!important;background:#20242d!important}.job-secret{background:#08090e!important;border:1px solid #20232e!important;filter:none;color:#a0a1b1}.job-secret span{font-size:27px}.job-unlock-hint{display:block;width:100%;font-size:10px;line-height:1.4;margin-top:5px;color:#f0cb8e}.job-secret .job-unlock-hint{color:#777985}#jobs .job{min-height:78px;flex-wrap:wrap;align-content:center}#jobs .job strong{font-size:12px}
 #jobs .job-group-title{grid-column:1/-1;display:block;clear:both;width:100%;margin:26px 0 10px;padding:12px 8px 8px;border-top:2px solid #427d7b}#jobs .job-group-title:first-child{margin-top:4px;border-top:0}#jobs{align-content:start}#jobs .job{min-width:0}#jobs .job-unlock-hint{overflow-wrap:anywhere}
+.combat{grid-template-columns:70px 84px;grid-template-rows:68px 74px 56px}.combat .ability{grid-column:1/3;grid-row:3;background:#564b98e8;border-color:#b5a8ff;font-size:13px;height:54px}#abilityDesktop{position:fixed;right:22px;bottom:72px;z-index:4;min-height:45px;padding:9px 17px;background:#564b98ed;border:2px solid #b5a8ff;border-radius:12px;color:white;font-weight:800;display:none}#abilityDesktop:disabled,.combat .ability:disabled{opacity:.6}@media(hover:hover) and (pointer:fine){#abilityDesktop{display:block}}@media(max-width:650px){.combat{grid-template-columns:65px 76px;grid-template-rows:60px 68px 54px}.combat .ability{height:52px}}#abilityDesktop{visibility:hidden}body:has(#mobileControls.show) #abilityDesktop{visibility:hidden}body:has(#controlsHelp.show) #abilityDesktop{visibility:visible}@media(hover:none),(pointer:coarse){#abilityDesktop{display:none!important}}
 </style>
 </head>
 <body>
@@ -196,8 +197,10 @@
     <button class="jump" type="button" data-action="jump" aria-label="ジャンプ">ジャンプ</button>
     <button class="guard" type="button" data-key="KeyG">ガード</button>
     <button class="attack" type="button" data-action="attack">攻撃</button>
+    <button class="ability" id="abilityBtn" type="button" data-action="ability">✨ 能力</button>
   </div>
 </div>
+<button id="abilityDesktop" type="button" aria-label="能力発動 Rキー">✨ 能力（R）</button>
 <button id="leaveButton" class="secondary">退出</button>
 <script>
 // Show the splash only on initial entry; the existing PvP menu remains intact.
@@ -255,7 +258,7 @@
  requestAnimationFrame(pollGamepad);
 })();
 </script>
-<script type="module" src="./pvp.js?v=20261027weaponsPassives01"></script>
+<script type="module" src="./pvp.js?v=20261027ability01"></script>
 
 <script type="module">
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut} from './nexacraft-cloud.js';
