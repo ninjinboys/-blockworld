@@ -17,9 +17,9 @@ function pvpExclusiveWeapon(job){return PVP_WEAPON_FOR_JOB.get(job)??300}
 const PVP_WEAPON_IDS={fighter:191,spear:199,alchemist:207,ninja:191,reaper:196,gunner:193,summoner:207,time:207,chain:199,hammer:198,beast:193,barrier:192,curse:207,katana:197,reflect:192,bomber:206,gravity:207,machine:200,phantom:191,star:206,mimic:190,swordsaint:197,dragonking:206,underking:196,thundergod:206,dimensionking:207};
 const PVP_WEAPON_GROUPS=['191','192','207','193','207','207','199','200','206','191'];
 function pvpWeapon(job){
- // The original PvP classes retain their original 190–207 equipment.
- // Only newly added extra_* jobs may use the new 300–378 weapons.
- if(!job.startsWith('extra_')){
+ // Preserve ONLY the five original starter PvP jobs' completed weapons.
+ // All other 105 PvP jobs use their individually designed PvP models.
+ if(['sword','merc','shield','archer','mage'].includes(job)){
   if(JOBS[job]?.weapon!=null)return JOBS[job].weapon;
   if(PVP_WEAPON_IDS[job]!=null)return PVP_WEAPON_IDS[job];
  }
