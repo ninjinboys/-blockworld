@@ -1158,29 +1158,9 @@ $('menuBtn').addEventListener('click',()=>{shutdown();showMenu()});
 $('leaveButton').addEventListener('click',()=>{shutdown();showMenu()});
 
 
-const ACTIVE_ABILITY_OVERRIDES={
- summoner:['召喚獣召喚','summon'],dragonking:['竜召喚','summon'],beast:['獣召喚','summon'],
- ninja:['影分身','summon'],phantom:['幻影召喚','summon'],time:['時間停止','slow'],
- gravity:['重力拘束','slow'],barrier:['結界','guard'],reflect:['反射障壁','guard'],
- curse:['呪い','curse'],reaper:['魂狩り','drain'],underking:['冥界の鎌','drain'],
- alchemist:['回復薬','heal'],hammer:['地砕き','blast'],chain:['鎖拘束','slow'],
- bomber:['爆発','blast'],star:['流星','blast'],thundergod:['雷撃','blast'],
- swordsaint:['剣気斬','blast'],dimensionking:['次元斬','blast']
-};
-function jobAbility(job){
- const name=CLASSES[job]?.name||'';
- if(ACTIVE_ABILITY_OVERRIDES[job])return ACTIVE_ABILITY_OVERRIDES[job];
- if(/召喚|使い$|獣使い|傀儡|人形|ドローン|魔物|幻獣|精霊|植物|鳥使い|蟲使い/.test(name)&&!/(剣|鎌|鞭|鉄球|斧|槍|空間|時間|重力|虚空)/.test(name))return [name+'召喚','summon'];
- if(/狙撃|弓|銃|砲|投石|連弩|クロスボウ|狩人/.test(name))return ['精密射撃','blast'];
- if(/時間|時渡り|時空/.test(name))return ['時間停止','slow'];
- if(/結界|盾|騎士|守護|鉄騎|鎧|不動|重戦士/.test(name))return ['防御結界','guard'];
- if(/吸血|死霊|魂|呪|毒|闇|悪魔/.test(name))return ['生命吸収','drain'];
- if(/治癒|料理|錬金|霊媒|天使/.test(name))return ['回復','heal'];
- if(/風|疾風|盗賊|忍者|影|曲芸|追跡|踊り/.test(name))return ['疾風加速','dash'];
- if(/水|土|光|火|星|太陽|月|雷|電磁|爆|魔|虚空|混沌/.test(name))return ['属性攻撃','blast'];
- if(/鎖|重力|封印|空間/.test(name))return ['拘束','slow'];
- return [name+'の一撃','blast'];
-}
+// Explicit job-by-job ability mapping. No name-based runtime guessing.
+const ACTIVE_ABILITY_OVERRIDES={"extra_001":["盗賊加速","dash"],"extra_002":["影武者加速","dash"],"extra_003":["疾風剣士加速","dash"],"extra_004":["曲芸師加速","dash"],"extra_005":["追跡者加速","dash"],"extra_006":["夜叉の一撃","blast"],"extra_007":["時渡り拘束","slow"],"extra_008":["鉄騎士防御","guard"],"extra_009":["重戦士防御","guard"],"extra_010":["不動兵防御","guard"],"extra_011":["岩石兵の一撃","blast"],"extra_012":["守護者防御","guard"],"extra_013":["鎧武者防御","guard"],"extra_014":["巨人兵の一撃","blast"],"extra_015":["不死兵の一撃","blast"],"extra_016":["水術師攻撃","blast"],"extra_017":["風術師加速","dash"],"extra_018":["土術師攻撃","blast"],"extra_019":["光術師攻撃","blast"],"extra_020":["闇術師攻撃","blast"],"extra_021":["毒術師呪縛","curse"],"extra_022":["時間術師拘束","slow"],"extra_023":["空間術師の一撃","blast"],"extra_024":["狙撃兵攻撃","blast"],"extra_025":["砲兵攻撃","blast"],"extra_026":["投槍兵攻撃","blast"],"extra_027":["クロスボウ兵の一撃","blast"],"extra_028":["投石兵の一撃","blast"],"extra_029":["連弩兵の一撃","blast"],"extra_030":["魔銃士攻撃","blast"],"extra_031":["狩人の一撃","blast"],"extra_032":["死霊術師吸収","drain"],"extra_033":["吸血鬼吸収","drain"],"extra_034":["人形使い召喚","summon"],"extra_035":["夢幻師の一撃","blast"],"extra_036":["封印師拘束","slow"],"extra_037":["魂狩り吸収","drain"],"extra_038":["魔剣士攻撃","blast"],"extra_039":["霊媒師回復","heal"],"extra_040":["竜使い召喚","summon"],"extra_041":["蟲使い召喚","summon"],"extra_042":["鳥使い召喚","summon"],"extra_043":["魔物使い召喚","summon"],"extra_044":["精霊使い召喚","summon"],"extra_045":["傀儡師召喚","summon"],"extra_046":["植物使い召喚","summon"],"extra_047":["幻獣使い召喚","summon"],"extra_048":["鎌使い攻撃","blast"],"extra_049":["鞭使いの一撃","blast"],"extra_050":["鉄球使いの一撃","blast"],"extra_051":["棒術師の一撃","blast"],"extra_052":["戦斧使い攻撃","blast"],"extra_053":["三叉槍兵攻撃","blast"],"extra_054":["チャクラム使い召喚","summon"],"extra_055":["二刀流剣士攻撃","blast"],"extra_056":["工兵の一撃","blast"],"extra_057":["科学者の一撃","blast"],"extra_058":["蒸気騎士防御","guard"],"extra_059":["爆破技師攻撃","blast"],"extra_060":["人造人間の一撃","blast"],"extra_061":["電磁兵攻撃","blast"],"extra_062":["ドローン使い召喚","summon"],"extra_063":["機巧師の一撃","blast"],"extra_064":["月影騎士防御","guard"],"extra_065":["太陽騎士防御","guard"],"extra_066":["虚空使い攻撃","blast"],"extra_067":["天空兵の一撃","blast"],"extra_068":["混沌術師攻撃","blast"],"extra_069":["星喰い攻撃","blast"],"extra_070":["天使回復","heal"],"extra_071":["悪魔攻撃","blast"],"extra_072":["予言者の一撃","blast"],"extra_073":["道化師の一撃","blast"],"extra_074":["賭博師の一撃","blast"],"extra_075":["変身師の一撃","blast"],"extra_076":["音楽家の一撃","blast"],"extra_077":["踊り子加速","dash"],"extra_078":["料理人回復","heal"],"extra_079":["画家の一撃","blast"],"sword":["剣士攻撃","blast"],"merc":["傭兵の一撃","blast"],"shield":["盾兵防御","guard"],"archer":["弓兵攻撃","blast"],"mage":["魔術師攻撃","blast"],"fighter":["格闘家の一撃","blast"],"spear":["槍兵攻撃","blast"],"alchemist":["回復薬","heal"],"ninja":["影分身","summon"],"reaper":["死神吸収","drain"],"gunner":["銃士攻撃","blast"],"summoner":["召喚獣召喚","summon"],"time":["時間停止","slow"],"chain":["鎖使い拘束","slow"],"hammer":["ハンマー使い召喚","summon"],"beast":["獣使い召喚","summon"],"barrier":["結界","guard"],"curse":["呪い","curse"],"katana":["刀使い召喚","summon"],"reflect":["反射騎士防御","guard"],"bomber":["爆弾兵攻撃","blast"],"gravity":["重力術師拘束","slow"],"machine":["機械兵の一撃","blast"],"phantom":["幻影召喚","summon"],"star":["星術師攻撃","blast"],"mimic":["模倣者の一撃","blast"],"swordsaint":["剣気斬","blast"],"dragonking":["竜召喚","summon"],"underking":["冥王吸収","drain"],"thundergod":["雷神攻撃","blast"],"dimensionking":["次元斬","blast"]};
+function jobAbility(job){return ACTIVE_ABILITY_OVERRIDES[job]||['通常攻撃','blast']}
 const activeSummons=[];
 function removeSummons(){
  for(const a of activeSummons){scene.remove(a.mesh);a.mesh.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose?.()})}
