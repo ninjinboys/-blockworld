@@ -175,6 +175,7 @@
 <button type="button" class="job" data-job="archer"><span>🏹</span><strong>弓兵</strong></button>
 <button type="button" class="job" data-job="mage"><span>🔮</span><strong>魔術師</strong></button>
 </div>
+<form id="pvpTrialForm" style="display:flex;gap:8px;align-items:center;margin-top:15px"><input id="pvpTrialCode" type="text" placeholder="特別解放コード" autocomplete="off" aria-label="特別解放コード" style="flex:1;min-width:0"><button class="secondary" type="submit">解放</button></form><div id="pvpCodeNotice" aria-live="polite" style="font-size:12px;color:#9ff3cd;margin-top:5px"></div>
 <div id="pvpJobHint" aria-live="polite" style="margin-top:8px;color:#ffd98c;font-size:13px"></div>
 <div id="pvpLevelInfo" aria-live="polite" style="margin-top:12px;padding:10px 12px;border:1px solid #427d7b;border-radius:10px;background:#112c33;color:#a9f3df;font-size:13px;font-weight:700">剣士 Lv.1 / 250　EXP 0/100</div>
 <div id="pvpEvolution" style="margin-top:10px;padding:12px;background:#132c3b;border:1px solid #416d7d;border-radius:10px;font-size:13px"></div>
@@ -254,7 +255,7 @@
  requestAnimationFrame(pollGamepad);
 })();
 </script>
-<script type="module" src="./pvp.js?v=20261027jobs110"></script>
+<script type="module" src="./pvp.js?v=20261027trial01"></script>
 
 <script type="module">
 import {cloudEnabled,cloudRegister,cloudLogin,cloudRestore,cloudSignOut} from './nexacraft-cloud.js';
