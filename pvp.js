@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeJobWeaponModel,jobHeldBladeYaw,jobHeldWeaponScale,JOBS} from './job-system.js?v=20261027storyMesh04';
-import {PVP_WEAPONS} from './pvp-weapon-models.js?v=20261027unique110';
+import {PVP_WEAPONS,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261027isolated110';
 import {makeFirstPersonHand} from './first-person-hand.js?v=20261022pvpFirst01';
 import {makeAvatarHeldItems} from './avatar-held-items.js?v=20261022pvpFirst01';
 
@@ -8,6 +8,10 @@ const $=id=>document.getElementById(id);
 
 // PvP equipment fallback: every registered class receives a visible 3D weapon.
 // These are existing weapon meshes; bespoke models can replace them later.
+// PvP-only 3D weapon factory. Story-mode job-system.js is untouched.
+function pvpModel(T,id){return id>=300&&id<410?makePvpWeaponModel(T,id):makeJobWeaponModel(T,id)}
+function pvpScale(id,view='third'){return id>=300&&id<410?(view==='first'?.48:.40):jobHeldWeaponScale(id,view)}
+function pvpYaw(id){return id>=300&&id<410?0:jobHeldBladeYaw(id)}
 const PVP_WEAPON_FOR_JOB=new Map(PVP_WEAPONS.map(w=>[w.id,w.weaponId]));
 function pvpExclusiveWeapon(job){return PVP_WEAPON_FOR_JOB.get(job)??300}
 const PVP_WEAPON_IDS={fighter:191,spear:199,alchemist:207,ninja:191,reaper:196,gunner:193,summoner:207,time:207,chain:199,hammer:198,beast:193,barrier:192,curse:207,katana:197,reflect:192,bomber:206,gravity:207,machine:200,phantom:191,star:206,mimic:190,swordsaint:197,dragonking:206,underking:196,thundergod:206,dimensionking:207};
