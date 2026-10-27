@@ -40,17 +40,26 @@ export function makePvpWeaponModel(T,key){
  const w=typeof key==='number'?PVP_WEAPON_BY_ID.get(key):byKey.get(key);
  if(!w)return null;
  const g=new T.Group();
- const metal=new T.MeshStandardMaterial({color:0xaab9c6,metalness:.83,roughness:.25});
- const dark=new T.MeshStandardMaterial({color:0x293342,metalness:.74,roughness:.3});
- const gold=new T.MeshStandardMaterial({color:0xd8a957,metalness:.77,roughness:.26});
- const glow=new T.MeshStandardMaterial({color:w.color,emissive:w.color,emissiveIntensity:.36,metalness:.4,roughness:.24});
- const wood=new T.MeshStandardMaterial({color:0x6b4833,roughness:.77});
+ const metal=new T.MeshStandardMaterial({color:0x9aabb9,metalness:.82,roughness:.31,side:T.DoubleSide});
+ const dark=new T.MeshStandardMaterial({color:0x343e49,metalness:.67,roughness:.42,side:T.DoubleSide});
+ const gold=new T.MeshStandardMaterial({color:0xcc9d5d,metalness:.82,roughness:.29,side:T.DoubleSide});
+ const glow=new T.MeshStandardMaterial({color:w.color,emissive:w.color,emissiveIntensity:.24,metalness:.32,roughness:.2,side:T.DoubleSide});
+ const wood=new T.MeshStandardMaterial({color:0x493829,roughness:.89,side:T.DoubleSide});
  const add=(geometry,material,x=0,y=0,z=0)=>{const m=new T.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;g.add(m);return m};
  const box=(x,y,z,a,b,c,m=metal)=>add(new T.BoxGeometry(a,b,c),m,x,y,z);
  const rod=(x,y,z,r,h,m=metal)=>add(new T.CylinderGeometry(r,r,h,12),m,x,y,z);
  const ball=(x,y,z,r,m=glow)=>add(new T.IcosahedronGeometry(r,1),m,x,y,z);
  const blade=(x,y,h,width=.23,m=metal)=>{box(x,y,0,width,h,.09,m);add(new T.ConeGeometry(width*.68,.35,4),m,x,y+h/2+.17,0).rotation.y=Math.PI/4};
  const shaft=(h=2.4)=>{rod(0,h/2,0,.065,h,wood);rod(0,.19,0,.095,.28,gold)};
+ // Match the main game's forged weapon design language: bevelled plates,
+ // layered metal edges, restrained runes and leather/bronze fittings.
+ const plate=(points,depth,mat=metal,z=0)=>{
+  const shape=new T.Shape();shape.moveTo(points[0][0],points[0][1]);
+  for(let i=1;i<points.length;i++)shape.lineTo(points[i][0],points[i][1]);
+  shape.closePath();
+  return add(new T.ExtrudeGeometry(shape,{depth,steps:1,bevelEnabled:true,bevelThickness:.012,bevelSize:.012,bevelSegments:2}),mat,0,0,z-depth/2);
+ };
+ const diamond=(x,y,width,height,mat=glow,z=.12)=>plate([[x,y+height],[x+width,y],[x,y-height],[x-width,y]],.035,mat,z);
  const k=w.kind;
  if(['katana','greatsword','dual'].includes(k)){
   const makeSword=(x=0,scale=1)=>{const b=new T.Group();g.add(b);b.position.x=x;b.scale.setScalar(scale);
@@ -109,8 +118,8 @@ export function makePvpWeaponModel(T,key){
 
  // PvP workshop finish pass: physical edge bevels, rivets, wraps, recessed panels
  // and class-specific silhouettes. These are real 3D components, not sprites.
- const trim=new T.MeshStandardMaterial({color:0x788997,metalness:.9,roughness:.24});
- const inset=new T.MeshStandardMaterial({color:0x111b26,metalness:.62,roughness:.38});
+ const trim=new T.MeshStandardMaterial({color:0xcedde5,metalness:.85,roughness:.22,side:T.DoubleSide});
+ const inset=new T.MeshStandardMaterial({color:0x1a252d,metalness:.46,roughness:.5,side:T.DoubleSide});
  const ringAt=(x,y,z,r=.13,t=.018,m=gold)=>add(new T.TorusGeometry(r,t,8,20),m,x,y,z);
  const rivet=(x,y,z,r=.035)=>ball(x,y,z,r,gold);
  const cord=(points,r=.024,m=glow)=>add(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,7,false),m);
@@ -200,5 +209,29 @@ export function makePvpWeaponModel(T,key){
   for(let j=0;j<6;j++)rivet(-.13+j*.052,2.38,.1,.032);
  }
 
+ // Structural armour language shared with the main-game workshop.
+ if(['katana','greatsword','dual'].includes(k)){
+  const count=k==='dual'?2:1;
+  for(let n=0;n<count;n++){
+   const x=count===2?(n?-.4:.4):0,scale=count===2?.82:1;
+   plate([[x-.13*scale,.99*scale],[x+.13*scale,.99*scale],[x+.15*scale,2.49*scale],[x,2.89*scale],[x-.15*scale,2.49*scale]],.025,trim,.075);
+   diamond(x,1.07*scale,.09*scale,.13*scale,gold,.13);
+   for(const side of [-1,1])diamond(x+side*.18*scale,.83*scale,.08*scale,.10*scale,glow,.14);
+  }
+ }else if(k==='shield'){
+  for(const side of [-1,1])plate([[side*.18,2.04],[side*.56,2.11],[side*.55,1.24],[side*.18,.89]],.045,metal,.28);
+  diamond(0,1.65,.28,.46,glow,.32);
+ }else if(['staff','trident','hammer','axe','flail','brush'].includes(k)){
+  plate([[-.13,2.25],[.13,2.25],[.19,2.49],[0,2.65],[-.19,2.49]],.09,dark,.11);
+  diamond(0,2.46,.12,.17,glow,.2);
+ }else if(['gun','rifle','cannon','crossbow'].includes(k)){
+  for(const side of [-1,1]){box(side*.15,1.43,-.14,.045,.23,.74,metal);rivet(side*.17,1.43,.24,.035)}
+  diamond(0,1.73,.09,.11,glow,.22);
+ }else if(k==='book'){
+  plate([[-.59,.79],[.59,.79],[.59,1.91],[-.59,1.91]],.035,dark,.25);
+  diamond(0,1.38,.22,.32,glow,.32);
+ }else if(['ring','chakram'].includes(k)){
+  for(let j=0;j<4;j++){const a=j*Math.PI/2;diamond(Math.cos(a)*.83,1.5+Math.sin(a)*.83,.08,.15,gold,.11)}
+ }
  g.name=w.name;g.userData.pvpWeaponId=w.weaponId;return g;
 }
