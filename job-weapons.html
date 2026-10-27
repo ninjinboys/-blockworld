@@ -74,7 +74,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {JOBS,JOB_WEAPON_IDS,makeJobWeaponModel} from './job-system.js?v=20261027storyRestore';
-import {PVP_WEAPONS,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261027isolated110';
+import {PVP_WEAPONS,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261027roleOriginal02';
 const list=document.querySelector('#weapons'),canvas=document.querySelector('#view'),
   title=document.querySelector('#weaponName'),info=document.querySelector('#weaponInfo'),
   status=document.querySelector('#status');
@@ -108,7 +108,7 @@ function makeEntry(key,data){
   return btn;
 }
 for(const [key,data] of definitions)list.append(makeEntry(key,data));
-for(const weapon of PVP_WEAPONS){const btn=document.createElement('button');btn.type='button';btn.className='entry';btn.dataset.job=weapon.id;btn.dataset.source='pvp';const strong=document.createElement('span');strong.textContent=weapon.name;const small=document.createElement('small');small.textContent=weapon.name+'専用 · PvP';btn.append(strong,small);btn.addEventListener('click',()=>select(weapon.id,'pvp'));document.querySelector('#pvpWeapons').append(btn)}
+for(const weapon of PVP_WEAPONS){const btn=document.createElement('button');btn.type='button';btn.className='entry';btn.dataset.job=weapon.id;btn.dataset.source='pvp';const strong=document.createElement('span');strong.textContent=weapon.name;const small=document.createElement('small');small.textContent='PvPジョブ';btn.append(strong,small);btn.addEventListener('click',()=>select(weapon.id,'pvp'));document.querySelector('#pvpWeapons').append(btn)}
 list.querySelector('p')?.remove();
 function cameraAt(mode){
   const d=dist,offset=mode==='front'?[0,.15,d]:
@@ -151,8 +151,8 @@ function select(key,source='story'){
   dist=Math.max(2.5,v.length()*1.33+1);
   controls.maxDistance=Math.max(12,dist*4);
   cameraAt('threeQuarter');
-  title.textContent=data.name+' — '+(pvp?'PvP専用武器':data.level>1?'進化専用武器':'初期ジョブ武器');
-  info.textContent=pvp?'PvP専用 · '+data.name+' · 武器ID '+data.weaponId:'解放 LV '+data.level+'　·　'+data.desc+'　·　武器ID '+data.weapon;
+  title.textContent=data.name+' — '+(pvp?'PvPジョブ':data.level>1?'進化専用武器':'初期ジョブ武器');
+  info.textContent=pvp?'ジョブ：'+data.name+'　·　専用装備':'解放 LV '+data.level+'　·　'+data.desc+'　·　武器ID '+data.weapon;
   for(const el of document.querySelectorAll('#weapons button,#pvpWeapons button'))el.classList.toggle('active',el.dataset.job===key&&el.dataset.source===source);
   status.textContent='3Dメッシュ読み込み完了：'+current.children.length+'パーツ';
   buttons.forEach(b=>b.disabled=false);
