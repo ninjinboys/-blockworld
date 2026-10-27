@@ -45,13 +45,40 @@ export function makePvpWeaponModel(T,id){
  const detail=3+(n%4);
  const grip=(x=0,y=.46,h=.72)=>{rod(x,y,0,.075,h,leather);for(let j=0;j<6;j++){const r=add(new T.TorusGeometry(.079,.012,5,12),j%2?brass:black,x,y-h*.42+j*h*.16,0);r.rotation.x=Math.PI/2}};
  const crest=(x,y,z=.17)=>{gem(x,y,z,.09+(n%3)*.018);for(const side of [-1,1])gem(x+side*.15,y,z-.02,.038,brass)};
- const blade=(x=0,variant=k)=>{const l=length;grip(x);box(x,.85,.0,.62+(n%3)*.09,.12,.23,brass);
+ const blade=(x=0,variant=k)=>{const l=length;grip(x);
+  // Main-story forging language: bronze swept wing guard, sculpted pommel,
+  // full-width steel bevels, graphite recessed fuller and raised runes.
+  poly([[x-.54,.80],[x-.81,.99],[x-.58,.97],[x-.28,.90],[x,.99],
+    [x+.28,.90],[x+.58,.97],[x+.81,.99],[x+.54,.80],[x+.24,.79],
+    [x,.68],[x-.24,.79]],.23,brass,.02);
+  for(const face of [-1,1]){
+    poly([[x-.18,.78],[x,.99],[x+.18,.78],[x,.66]],.06,black,face*.16);
+    gem(x,.82,face*.23,.095,rune);
+    for(const side of [-1,1])gem(x+side*.66,.96,face*.14,.045,brass);
+  }
+  poly([[x-.15,.07],[x+.15,.07],[x+.20,-.09],[x,-.26],[x-.20,-.09]],.17,brass);
+  gem(x,-.08,.14,.09,rune);
   const wdt=variant==='greatsword'?width*2.0:width;
   const skew=variant==='katana'?.16:0;
   poly([[x-wdt, .94],[x+wdt,.94],[x+wdt+skew,l+.48],[x+skew*.55,l+.76],[x-wdt+skew,l+.48]],.13,steel);
-  poly([[x-.028,.99],[x+.028,.99],[x+.028+skew*.5,l+.47],[x+skew*.5,l+.68],[x-.028+skew*.5,l+.47]],.025,edge,.08);
-  for(let j=0;j<detail;j++)gem(x+(j%2?-.085:.085),1.16+j*(l-.75)/detail,.10,.035);
-  crest(x,.86,.15);
+  for(const face of [-1,1]){
+    const z=face*.105;
+    for(const side of [-1,1]){
+      const a=side*wdt;
+      poly([[x+side*.07,1.04],[x+a*.88,1.10],[x+a*.97,l+.42],
+        [x+side*.10+skew*.52,l+.66],[x+side*.18+skew*.4,l+.35],
+        [x+side*.17,1.22]],.025,edge,z);
+      poly([[x+side*.045,1.12],[x+side*.17,1.26],[x+side*.17,l+.23],
+        [x+side*.06+skew*.4,l+.52]],.018,black,z+face*.039);
+    }
+    poly([[x-.055,1.13],[x+.055,1.13],[x+.06+skew*.4,l+.23],
+      [x+skew*.5,l+.51],[x-.06+skew*.4,l+.23]],.018,black,z+face*.063);
+    for(let j=0;j<detail;j++){
+      const yy=1.25+j*(l-.80)/detail;
+      gem(x,yy,z+face*.088,.045,j%2?rune:brass);
+    }
+  }
+  crest(x,.86,.25);
  };
  // Original silhouettes for roles that should not carry generic swords or staves.
  const ring=(x,y,r,mat=brass,t=.045)=>add(new T.TorusGeometry(r,t,10,48),mat,x,y,.04);
