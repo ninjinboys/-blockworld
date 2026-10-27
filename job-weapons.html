@@ -96,7 +96,7 @@ let current=null,selectedKey=null,center=new THREE.Vector3(),dist=4,spin=false;
 const buttons=[...document.querySelectorAll('.actions button')];
 function makeEntry(key,data){
   const btn=document.createElement('button');btn.type='button';
-  btn.className='entry';btn.dataset.job=key;
+  btn.className='entry';btn.dataset.job=key;btn.dataset.source='story';
   const strong=document.createElement('span');strong.textContent=data.name;
   const small=document.createElement('small');small.textContent=
     data.kind==='greatsword'?'大剣':data.kind==='sword'?'剣':
@@ -104,11 +104,11 @@ function makeEntry(key,data){
     data.kind==='spear'?'槍':data.kind==='axe'?'戦斧':
     data.kind==='bow'?'弓':'杖';
   btn.append(strong,small);
-  btn.addEventListener('click',()=>select(key));
+  btn.addEventListener('click',()=>select(key,'story'));
   return btn;
 }
 for(const [key,data] of definitions)list.append(makeEntry(key,data));
-for(const weapon of PVP_WEAPONS){const btn=document.createElement('button');btn.type='button';btn.className='entry';btn.dataset.job=weapon.id;const strong=document.createElement('span');strong.textContent=weapon.name;const small=document.createElement('small');small.textContent=weapon.name+'専用 · PvP';btn.append(strong,small);btn.addEventListener('click',()=>select(weapon.id));document.querySelector('#pvpWeapons').append(btn)}
+for(const weapon of PVP_WEAPONS){const btn=document.createElement('button');btn.type='button';btn.className='entry';btn.dataset.job=weapon.id;btn.dataset.source='pvp';const strong=document.createElement('span');strong.textContent=weapon.name;const small=document.createElement('small');small.textContent=weapon.name+'専用 · PvP';btn.append(strong,small);btn.addEventListener('click',()=>select(weapon.id,'pvp'));document.querySelector('#pvpWeapons').append(btn)}
 list.querySelector('p')?.remove();
 function cameraAt(mode){
   const d=dist,offset=mode==='front'?[0,.15,d]:
@@ -119,9 +119,11 @@ function cameraAt(mode){
   camera.updateProjectionMatrix();
   controls.target.copy(center);controls.update();
 }
-function select(key){
-  const pvp=PVP_WEAPONS.find(w=>w.id===key);
-  const data=pvp||JOBS[key];if(!data||(!pvp&&!Number.isInteger(data.weapon)))return;
+function select(key,source='story'){
+  // Story and PvP class keys overlap (e.g. sword, merc, shield).
+  // Resolve within the explicitly selected section, never across both.
+  const pvp=source==='pvp'?PVP_WEAPONS.find(w=>w.id===key):null;
+  const data=source==='pvp'?pvp:JOBS[key];if(!data||(!pvp&&!Number.isInteger(data.weapon)))return;
   selectedKey=key;
   if(current)scene.remove(current);
   // This is the EXACT exported game mesh, not a picture, sprite, or raster.
@@ -151,7 +153,7 @@ function select(key){
   cameraAt('threeQuarter');
   title.textContent=data.name+' — '+(pvp?'PvP専用武器':data.level>1?'進化専用武器':'初期ジョブ武器');
   info.textContent=pvp?'PvP専用 · '+data.name+' · 武器ID '+data.weaponId:'解放 LV '+data.level+'　·　'+data.desc+'　·　武器ID '+data.weapon;
-  for(const el of document.querySelectorAll('#weapons button,#pvpWeapons button'))el.classList.toggle('active',el.dataset.job===key);
+  for(const el of document.querySelectorAll('#weapons button,#pvpWeapons button'))el.classList.toggle('active',el.dataset.job===key&&el.dataset.source===source);
   status.textContent='3Dメッシュ読み込み完了：'+current.children.length+'パーツ';
   buttons.forEach(b=>b.disabled=false);
 }
@@ -187,8 +189,13 @@ let animation=0;
 function frame(){
   animation=requestAnimationFrame(frame);controls.update();renderer.render(scene,camera);
 }
-const wanted=new URLSearchParams(location.search).get('job');
-select(PVP_WEAPONS.some(w=>w.id===wanted)||JOBS[wanted]?.weapon?wanted:'sword');
+const params=new URLSearchParams(location.search);
+const storyKey=params.get('story'),pvpKey=params.get('pvp'),wanted=params.get('job');
+if(storyKey&&JOBS[storyKey]?.weapon)select(storyKey,'story');
+else if(pvpKey&&PVP_WEAPONS.some(w=>w.id===pvpKey))select(pvpKey,'pvp');
+else if(wanted&&JOBS[wanted]?.weapon)select(wanted,'story');
+else if(wanted&&PVP_WEAPONS.some(w=>w.id===wanted))select(wanted,'pvp');
+else select('sword','story');
 frame();
 window.addEventListener('pagehide',()=>{
   cancelAnimationFrame(animation);observer.disconnect();controls.dispose();renderer.dispose();
