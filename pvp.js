@@ -9,13 +9,65 @@ const CLASSES={
   merc:{name:'傭兵',hp:105,speed:8.6,range:2.65,damage:10,cooldown:300,arc:.05},
   shield:{name:'盾兵',hp:155,speed:5.7,range:2.6,damage:13,cooldown:850,arc:.05,block:.70},
   archer:{name:'弓兵',hp:90,speed:7.5,range:13,damage:16,cooldown:900,arc:.78},
-  mage:{name:'魔術師',hp:100,speed:6.9,range:7.3,damage:21,cooldown:1150,arc:.38}
+  mage:{name:'魔術師',hp:100,speed:6.9,range:7.3,damage:21,cooldown:1150,arc:.38},
+  fighter:{name:'格闘家',hp:125,speed:9,range:2.1,damage:9,cooldown:260,arc:0.07},
+  spear:{name:'槍兵',hp:110,speed:7,range:4.3,damage:15,cooldown:680,arc:0.09},
+  alchemist:{name:'錬金術師',hp:95,speed:7,range:8,damage:14,cooldown:850,arc:0.38},
+  ninja:{name:'忍者',hp:90,speed:10,range:2.6,damage:12,cooldown:340,arc:0.08},
+  reaper:{name:'死神',hp:115,speed:7.3,range:3.6,damage:22,cooldown:880,arc:0.22},
+  gunner:{name:'銃士',hp:95,speed:7.6,range:12,damage:13,cooldown:480,arc:0.5},
+  summoner:{name:'召喚士',hp:100,speed:6.9,range:7.2,damage:17,cooldown:920,arc:0.38},
+  time:{name:'時空使い',hp:90,speed:8,range:7.2,damage:17,cooldown:870,arc:0.3},
+  chain:{name:'鎖使い',hp:110,speed:7.6,range:5,damage:13,cooldown:590,arc:0.18},
+  hammer:{name:'ハンマー使い',hp:145,speed:5.8,range:3,damage:25,cooldown:1150,arc:0.18},
+  beast:{name:'獣使い',hp:110,speed:7.5,range:8,damage:16,cooldown:830,arc:0.4},
+  barrier:{name:'結界師',hp:130,speed:6.1,range:6.5,damage:13,cooldown:900,arc:0.32},
+  curse:{name:'呪術師',hp:95,speed:7.1,range:7,damage:18,cooldown:920,arc:0.4},
+  katana:{name:'刀使い',hp:108,speed:8.1,range:3,damage:19,cooldown:670,arc:0.12},
+  reflect:{name:'反射騎士',hp:160,speed:5.6,range:2.7,damage:12,cooldown:880,arc:0.09},
+  bomber:{name:'爆弾兵',hp:105,speed:7,range:8,damage:20,cooldown:1100,arc:0.55},
+  gravity:{name:'重力術師',hp:100,speed:6.8,range:7.5,damage:19,cooldown:1020,arc:0.45},
+  machine:{name:'機械兵',hp:125,speed:7.4,range:3,damage:17,cooldown:610,arc:0.14},
+  phantom:{name:'幻影師',hp:95,speed:9.1,range:3,damage:14,cooldown:470,arc:0.12},
+  star:{name:'星術師',hp:90,speed:6.6,range:8,damage:23,cooldown:1200,arc:0.5},
+  mimic:{name:'模倣者',hp:110,speed:7.5,range:4,damage:17,cooldown:680,arc:0.2},
+  swordsaint:{name:'剣聖',hp:135,speed:8.4,range:3.3,damage:22,cooldown:570,arc:0.16},
+  dragonking:{name:'竜王',hp:155,speed:6.9,range:8,damage:22,cooldown:1050,arc:0.45},
+  underking:{name:'冥王',hp:150,speed:7.1,range:4,damage:24,cooldown:880,arc:0.24},
+  thundergod:{name:'雷神',hp:115,speed:8,range:9,damage:23,cooldown:950,arc:0.45},
+  dimensionking:{name:'次元王',hp:125,speed:8.7,range:8,damage:23,cooldown:920,arc:0.45}
 };
 
 
 // Evolution branches: first choice at Lv.50, specialization at Lv.100.
 // Evolutions retain the original job's XP and level.
 const EVOLUTIONS={
+ fighter:[['格闘家・技巧','格闘家・剛力'],[['格闘家・達人','格闘家・神速'],['格闘家・覇者','格闘家・守護']]],
+ spear:[['槍兵・技巧','槍兵・剛力'],[['槍兵・達人','槍兵・神速'],['槍兵・覇者','槍兵・守護']]],
+ alchemist:[['錬金術師・技巧','錬金術師・剛力'],[['錬金術師・達人','錬金術師・神速'],['錬金術師・覇者','錬金術師・守護']]],
+ ninja:[['忍者・技巧','忍者・剛力'],[['忍者・達人','忍者・神速'],['忍者・覇者','忍者・守護']]],
+ reaper:[['死神・技巧','死神・剛力'],[['死神・達人','死神・神速'],['死神・覇者','死神・守護']]],
+ gunner:[['銃士・技巧','銃士・剛力'],[['銃士・達人','銃士・神速'],['銃士・覇者','銃士・守護']]],
+ summoner:[['召喚士・技巧','召喚士・剛力'],[['召喚士・達人','召喚士・神速'],['召喚士・覇者','召喚士・守護']]],
+ time:[['時空使い・技巧','時空使い・剛力'],[['時空使い・達人','時空使い・神速'],['時空使い・覇者','時空使い・守護']]],
+ chain:[['鎖使い・技巧','鎖使い・剛力'],[['鎖使い・達人','鎖使い・神速'],['鎖使い・覇者','鎖使い・守護']]],
+ hammer:[['ハンマー使い・技巧','ハンマー使い・剛力'],[['ハンマー使い・達人','ハンマー使い・神速'],['ハンマー使い・覇者','ハンマー使い・守護']]],
+ beast:[['獣使い・技巧','獣使い・剛力'],[['獣使い・達人','獣使い・神速'],['獣使い・覇者','獣使い・守護']]],
+ barrier:[['結界師・技巧','結界師・剛力'],[['結界師・達人','結界師・神速'],['結界師・覇者','結界師・守護']]],
+ curse:[['呪術師・技巧','呪術師・剛力'],[['呪術師・達人','呪術師・神速'],['呪術師・覇者','呪術師・守護']]],
+ katana:[['刀使い・技巧','刀使い・剛力'],[['刀使い・達人','刀使い・神速'],['刀使い・覇者','刀使い・守護']]],
+ reflect:[['反射騎士・技巧','反射騎士・剛力'],[['反射騎士・達人','反射騎士・神速'],['反射騎士・覇者','反射騎士・守護']]],
+ bomber:[['爆弾兵・技巧','爆弾兵・剛力'],[['爆弾兵・達人','爆弾兵・神速'],['爆弾兵・覇者','爆弾兵・守護']]],
+ gravity:[['重力術師・技巧','重力術師・剛力'],[['重力術師・達人','重力術師・神速'],['重力術師・覇者','重力術師・守護']]],
+ machine:[['機械兵・技巧','機械兵・剛力'],[['機械兵・達人','機械兵・神速'],['機械兵・覇者','機械兵・守護']]],
+ phantom:[['幻影師・技巧','幻影師・剛力'],[['幻影師・達人','幻影師・神速'],['幻影師・覇者','幻影師・守護']]],
+ star:[['星術師・技巧','星術師・剛力'],[['星術師・達人','星術師・神速'],['星術師・覇者','星術師・守護']]],
+ mimic:[['模倣者・技巧','模倣者・剛力'],[['模倣者・達人','模倣者・神速'],['模倣者・覇者','模倣者・守護']]],
+ swordsaint:[['剣聖・技巧','剣聖・剛力'],[['剣聖・達人','剣聖・神速'],['剣聖・覇者','剣聖・守護']]],
+ dragonking:[['竜王・技巧','竜王・剛力'],[['竜王・達人','竜王・神速'],['竜王・覇者','竜王・守護']]],
+ underking:[['冥王・技巧','冥王・剛力'],[['冥王・達人','冥王・神速'],['冥王・覇者','冥王・守護']]],
+ thundergod:[['雷神・技巧','雷神・剛力'],[['雷神・達人','雷神・神速'],['雷神・覇者','雷神・守護']]],
+ dimensionking:[['次元王・技巧','次元王・剛力'],[['次元王・達人','次元王・神速'],['次元王・覇者','次元王・守護']]],
  sword:[['戦士','槍使い','戦斧使い'],[['大剣士','狂戦士'],['槍騎士','竜騎士'],['破壊者','処刑人']]],
  merc:[['双剣士','格闘家'],[['暗殺者','剣舞士'],['武闘家','拳聖']]],
  shield:[['重装兵','タンク'],[['鉄壁兵','守護騎士'],['聖騎士','要塞兵']]],
@@ -70,6 +122,65 @@ function renderEvolution(){
  else{const done=document.createElement('div');done.textContent='最終進化完了：'+evolutionName(myClass);root.append(done)}
 }
 
+
+// Eight starter jobs, unlockable jobs and five secret jobs.
+const STARTER_JOBS=new Set(['sword','merc','shield','archer','mage','fighter','spear','alchemist']);
+const SECRET_JOBS=new Set(['swordsaint','dragonking','underking','thundergod','dimensionking']);
+const JOB_ICONS={"fighter":"👊","spear":"🔱","alchemist":"⚗️","ninja":"🥷","reaper":"💀","gunner":"🔫","summoner":"🐉","time":"⏳","chain":"⛓️","hammer":"🔨","beast":"🐺","barrier":"🌀","curse":"👻","katana":"⚔️","reflect":"🛡️","bomber":"💣","gravity":"🌌","machine":"🤖","phantom":"👤","star":"🌠","mimic":"🃏","swordsaint":"👑","dragonking":"🐉","underking":"💀","thundergod":"⚡","dimensionking":"🌌"};
+const UNLOCK_HINTS={"ninja":"傭兵Lv.30 ＋ 累計20勝","reaper":"剣士Lv.100 ＋ 累計100勝","gunner":"弓兵Lv.25","summoner":"魔術師Lv.50 ＋ 累計30勝","time":"魔術師Lv.150 ＋ 累計200勝","chain":"傭兵Lv.40","hammer":"盾兵Lv.35","beast":"弓兵Lv.50 ＋ 累計40勝","barrier":"盾兵Lv.75 ＋ 魔術師Lv.50","curse":"魔術師Lv.60","katana":"剣士Lv.40","reflect":"盾兵Lv.100","bomber":"銃士Lv.50","gravity":"魔術師Lv.100","machine":"銃士Lv.75","phantom":"忍者Lv.100","star":"魔術師Lv.125","mimic":"基本5職すべてLv.100"};
+function totalWins(){return Object.values(progress).reduce((sum,p)=>sum+(p?.wins||0),0)}
+function unlocked(job){
+ if(STARTER_JOBS.has(job))return true;
+ const lv=j=>progress[j]?.level||1,w=totalWins();
+ switch(job){
+ case 'ninja':return lv('merc')>=30&&w>=20;
+ case 'reaper':return lv('sword')>=100&&w>=100;
+ case 'gunner':return lv('archer')>=25;
+ case 'summoner':return lv('mage')>=50&&w>=30;
+ case 'time':return lv('mage')>=150&&w>=200;
+ case 'chain':return lv('merc')>=40;
+ case 'hammer':return lv('shield')>=35;
+ case 'beast':return lv('archer')>=50&&w>=40;
+ case 'barrier':return lv('shield')>=75&&lv('mage')>=50;
+ case 'curse':return lv('mage')>=60;
+ case 'katana':return lv('sword')>=40;
+ case 'reflect':return lv('shield')>=100;
+ case 'bomber':return lv('gunner')>=50;
+ case 'gravity':return lv('mage')>=100;
+ case 'machine':return lv('gunner')>=75;
+ case 'phantom':return lv('ninja')>=100;
+ case 'star':return lv('mage')>=125;
+ case 'mimic':return ['sword','merc','shield','archer','mage'].every(j=>lv(j)>=100);
+ case 'swordsaint':return lv('sword')>=250&&w>=300;
+ case 'dragonking':return lv('summoner')>=250&&w>=500;
+ case 'underking':return lv('reaper')>=250&&w>=500;
+ case 'thundergod':return lv('mage')>=250&&progress.mage?.evo1===2&&progress.mage?.evo2===1&&w>=300;
+ case 'dimensionking':return lv('time')>=250&&w>=1000;
+ default:return false;
+ }
+}
+function renderJobs(){
+ const root=document.getElementById('jobs');if(!root)return;
+ root.replaceChildren();
+ const labels=[['基本ジョブ',Object.keys(CLASSES).filter(j=>STARTER_JOBS.has(j))],['解放ジョブ',Object.keys(CLASSES).filter(j=>!STARTER_JOBS.has(j)&&!SECRET_JOBS.has(j))],['隠しジョブ',Object.keys(CLASSES).filter(j=>SECRET_JOBS.has(j))]];
+ for(const [label,jobs] of labels){
+  const heading=document.createElement('h3');heading.className='job-group-title';heading.textContent=label;root.append(heading);
+  for(const job of jobs){
+   const ok=unlocked(job),secret=SECRET_JOBS.has(job),button=document.createElement('button');
+   button.type='button';button.dataset.job=job;button.className='job'+(myClass===job?' selected':'')+(ok?'':' job-locked')+(secret&&!ok?' job-secret':'');
+   const icon=document.createElement('span');icon.textContent=secret&&!ok?'❔':ok?(JOB_ICONS[job]||({sword:'⚔️',merc:'🗡️',shield:'🛡️',archer:'🏹',mage:'🔮'}[job])):'🔒';
+   const name=document.createElement('strong');name.textContent=secret&&!ok?'？？？':CLASSES[job].name;
+   button.append(icon,name);
+   if(!ok){
+    const hint=document.createElement('small');hint.className='job-unlock-hint';
+    hint.textContent=secret?'条件：？？？':UNLOCK_HINTS[job]||'条件未達成';button.append(hint);
+    button.title=secret?'隠しジョブ：条件は秘密':hint.textContent;
+   }
+   root.append(button);
+  }
+ }
+}
+
 // PvP progression: independent XP per job, levels 1–250.
 // Victories against both players and CPU award 100 XP.
 const MAX_PVP_LEVEL=250,WIN_XP=100;
@@ -93,7 +204,7 @@ function loadProgress(){
    else progress[job].xp=Math.min(progress[job].xp,xpToNext(progress[job].level)-1);
   }
  }catch(e){console.warn('PvP progression restore failed',e)}}
- renderProgress();
+ renderProgress();renderJobs();
 }
 function saveProgress(){
  if(!progressAccountKey)return;
@@ -113,7 +224,7 @@ function awardWin(){
  p.wins++;p.xp+=WIN_XP;
  while(p.level<MAX_PVP_LEVEL&&p.xp>=xpToNext(p.level)){p.xp-=xpToNext(p.level);p.level++;}
  if(p.level===MAX_PVP_LEVEL)p.xp=0;
- saveProgress();renderProgress();
+ saveProgress();renderProgress();renderJobs();
  return '  +'+WIN_XP+' EXP'+(p.level>before?'  LEVEL UP! Lv.'+p.level:'');
 }
 function renderProgress(){
@@ -584,7 +695,8 @@ function updateRoomStatus(){
 }
 function setClass(job){
  if(state!=='menu'||!CLASSES[job])return;
- myClass=job;renderProgress();
+ if(!unlocked(job)){const hint=SECRET_JOBS.has(job)?'隠しジョブ：解放条件は？？？':UNLOCK_HINTS[job];const el=document.getElementById('pvpJobHint');if(el)el.textContent='🔒 '+(hint||'未解放');return;}
+ myClass=job;renderProgress();renderJobs();const hint=document.getElementById('pvpJobHint');if(hint)hint.textContent='';
  for(const b of $('jobs').querySelectorAll('.job'))b.classList.toggle('selected',b.dataset.job===job);
 }
 $('jobs').addEventListener('click',e=>{const b=e.target.closest('[data-job]');if(b)setClass(b.dataset.job)});
