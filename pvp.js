@@ -112,7 +112,7 @@ function renderEvolution(){
    btn.onclick=()=>{
     if(stage===1){if(p.level<50||p.evo1!=null)return;p.evo1=index}
     else{if(p.level<100||p.evo1==null||p.evo2!=null)return;p.evo2=index}
-    saveProgress();renderProgress();
+    saveProgress();renderProgress();renderJobs();
    };
    row.append(btn);
   });root.append(row);
@@ -1264,4 +1264,5 @@ function animate(){
  renderer.render(scene,camera);
 }
 animate();
+loadProgress();renderJobs();
 uiNotice('ジョブを選んでルームを作成するか、CPUと練習しよう。');
