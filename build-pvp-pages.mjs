@@ -21,6 +21,8 @@ const dependencies = [
   'job-weapons.html',
   'reference-weapon-models.js',
   'first-person-hand.js',
+  'pvp-first-person-hand.js',
+  'pvp-avatar-held-items.js',
   'avatar-held-items.js',
   'item-held-models.js',
 ];
