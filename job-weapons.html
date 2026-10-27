@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>NEXACRAFT | ジョブ専用武器 3Dモデル</title>
-<meta name="description" content="NEXACRAFT本編17種類とPvP専用32種類の武器を360度回転して確認し、GLB形式の本物の3Dモデルとしてダウンロードできます。">
+<meta name="description" content="NEXACRAFT本編17種類とPvP専用110種類の武器を360度回転して確認し、GLB形式の本物の3Dモデルとしてダウンロードできます。">
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:#0b121d;color:#e5ebf1}
 *{box-sizing:border-box}
@@ -52,7 +52,7 @@ footer{font-size:12px;color:#728699;margin:0 3px}
 <body>
 <header><h1>⚔ NEXACRAFT — 3D武器工房</h1><p>画像ではなく、実際の立体メッシュです。回転・拡大・角度切替・GLB書き出し対応。</p></header>
 <main>
-<aside><h2>本編武器 — 17モデル</h2><div id="weapons" class="list"><p>モデル読み込み中…</p></div><h2 style="margin-top:24px;color:#b7a6ff">⚔ PvP武器 — 32モデル</h2><div id="pvpWeapons" class="list"></div></aside>
+<aside><h2>本編武器 — 17モデル</h2><div id="weapons" class="list"><p>モデル読み込み中…</p></div><h2 style="margin-top:24px;color:#b7a6ff">⚔ PvP武器 — 110モデル</h2><div id="pvpWeapons" class="list"></div></aside>
 <section class="viewer-area">
 <div class="viewer-head"><div><h2 id="weaponName">3Dモデル読み込み中</h2><p id="weaponInfo">模型の立体形状をそのまま確認できます。</p></div><a href="./" style="font-size:12px;color:#9cdbc8">ゲームに戻る ↗</a></div>
 <div class="stage"><canvas id="view" aria-label="3D武器モデルビューア。指で回転できます。"></canvas><div class="badge">REAL 3D GEOMETRY · THREE.JS</div></div>
@@ -74,7 +74,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {JOBS,JOB_WEAPON_IDS,makeJobWeaponModel} from './job-system.js?v=20261027storyMesh04';
-import {PVP_WEAPONS,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261027storyMesh04';
+import {PVP_WEAPONS,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261027unique110';
 const list=document.querySelector('#weapons'),canvas=document.querySelector('#view'),
   title=document.querySelector('#weaponName'),info=document.querySelector('#weaponInfo'),
   status=document.querySelector('#status');
@@ -108,7 +108,7 @@ function makeEntry(key,data){
   return btn;
 }
 for(const [key,data] of definitions)list.append(makeEntry(key,data));
-for(const weapon of PVP_WEAPONS){const btn=document.createElement('button');btn.type='button';btn.className='entry';btn.dataset.job=weapon.id;const strong=document.createElement('span');strong.textContent=weapon.name;const small=document.createElement('small');small.textContent=weapon.kind+' · PvP';btn.append(strong,small);btn.addEventListener('click',()=>select(weapon.id));document.querySelector('#pvpWeapons').append(btn)}
+for(const weapon of PVP_WEAPONS){const btn=document.createElement('button');btn.type='button';btn.className='entry';btn.dataset.job=weapon.id;const strong=document.createElement('span');strong.textContent=weapon.name;const small=document.createElement('small');small.textContent=weapon.name+'専用 · PvP';btn.append(strong,small);btn.addEventListener('click',()=>select(weapon.id));document.querySelector('#pvpWeapons').append(btn)}
 list.querySelector('p')?.remove();
 function cameraAt(mode){
   const d=dist,offset=mode==='front'?[0,.15,d]:
@@ -150,7 +150,7 @@ function select(key){
   controls.maxDistance=Math.max(12,dist*4);
   cameraAt('threeQuarter');
   title.textContent=data.name+' — '+(pvp?'PvP専用武器':data.level>1?'進化専用武器':'初期ジョブ武器');
-  info.textContent=pvp?'PvP専用 · '+data.forJobs+' · 武器ID '+data.weaponId:'解放 LV '+data.level+'　·　'+data.desc+'　·　武器ID '+data.weapon;
+  info.textContent=pvp?'PvP専用 · '+data.name+' · 武器ID '+data.weaponId:'解放 LV '+data.level+'　·　'+data.desc+'　·　武器ID '+data.weapon;
   for(const el of document.querySelectorAll('#weapons button,#pvpWeapons button'))el.classList.toggle('active',el.dataset.job===key);
   status.textContent='3Dメッシュ読み込み完了：'+current.children.length+'パーツ';
   buttons.forEach(b=>b.disabled=false);
@@ -188,7 +188,7 @@ function frame(){
   animation=requestAnimationFrame(frame);controls.update();renderer.render(scene,camera);
 }
 const wanted=new URLSearchParams(location.search).get('job');
-select(PVP_WEAPONS.some(w=>w.id===wanted)||JOBS[wanted]?.weapon?wanted:'pvp_katana');
+select(PVP_WEAPONS.some(w=>w.id===wanted)||JOBS[wanted]?.weapon?wanted:'sword');
 frame();
 window.addEventListener('pagehide',()=>{
   cancelAnimationFrame(animation);observer.disconnect();controls.dispose();renderer.dispose();
