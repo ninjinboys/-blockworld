@@ -282,6 +282,20 @@ function renderEvolution(){
 
 
 // Eight starter jobs, unlockable jobs and five secret jobs.
+const TRIAL_CODE='nexa13';
+const TRIAL_DURATION_MS=24*60*60*1000;
+let trialExpires=0;
+function trialKey(){return 'nexacraft_pvp_trial_v1:'+encodeURIComponent(progressAccountKey||'local-player')}
+function trialActive(){return trialExpires>Date.now()}
+function loadTrial(){try{trialExpires=Math.max(0,Number(localStorage.getItem(trialKey()))||0)}catch{trialExpires=0}}
+function redeemTrialCode(code){
+ const notice=document.getElementById('pvpCodeNotice');
+ if(code.trim()!==TRIAL_CODE){if(notice)notice.textContent='コードが違います';return}
+ trialExpires=Date.now()+TRIAL_DURATION_MS;
+ try{localStorage.setItem(trialKey(),String(trialExpires))}catch{}
+ if(notice)notice.textContent='🔓 全ジョブを24時間使用できます';
+ renderJobs();
+}
 const STARTER_JOBS=new Set(['sword','merc','shield','archer','mage','fighter','spear','alchemist']);
 const SECRET_JOBS=new Set(['swordsaint','dragonking','underking','thundergod','dimensionking','extra_007','extra_015','extra_023','extra_047','extra_069','extra_072','extra_079']);
 const JOB_ICONS={"extra_001":"🥷","extra_002":"🥷","extra_003":"🥷","extra_004":"🥷","extra_005":"🥷","extra_006":"🥷","extra_007":"🥷","extra_008":"🛡️","extra_009":"🛡️","extra_010":"🛡️","extra_011":"🛡️","extra_012":"🛡️","extra_013":"🛡️","extra_014":"🛡️","extra_015":"🛡️","extra_016":"🔮","extra_017":"🔮","extra_018":"🔮","extra_019":"🔮","extra_020":"🔮","extra_021":"🔮","extra_022":"🔮","extra_023":"🔮","extra_024":"🏹","extra_025":"🏹","extra_026":"🏹","extra_027":"🏹","extra_028":"🏹","extra_029":"🏹","extra_030":"🏹","extra_031":"🏹","extra_032":"💀","extra_033":"💀","extra_034":"💀","extra_035":"💀","extra_036":"💀","extra_037":"💀","extra_038":"💀","extra_039":"💀","extra_040":"🐉","extra_041":"🐉","extra_042":"🐉","extra_043":"🐉","extra_044":"🐉","extra_045":"🐉","extra_046":"🐉","extra_047":"🐉","extra_048":"⚔️","extra_049":"⚔️","extra_050":"⚔️","extra_051":"⚔️","extra_052":"⚔️","extra_053":"⚔️","extra_054":"⚔️","extra_055":"⚔️","extra_056":"⚙️","extra_057":"⚙️","extra_058":"⚙️","extra_059":"⚙️","extra_060":"⚙️","extra_061":"⚙️","extra_062":"⚙️","extra_063":"⚙️","extra_064":"🌌","extra_065":"🌌","extra_066":"🌌","extra_067":"🌌","extra_068":"🌌","extra_069":"🌌","extra_070":"🌌","extra_071":"🌌","extra_072":"🌌","extra_073":"🃏","extra_074":"🃏","extra_075":"🃏","extra_076":"🃏","extra_077":"🃏","extra_078":"🃏","extra_079":"🃏","fighter":"👊","spear":"🔱","alchemist":"⚗️","ninja":"🥷","reaper":"💀","gunner":"🔫","summoner":"🐉","time":"⏳","chain":"⛓️","hammer":"🔨","beast":"🐺","barrier":"🌀","curse":"👻","katana":"⚔️","reflect":"🛡️","bomber":"💣","gravity":"🌌","machine":"🤖","phantom":"👤","star":"🌠","mimic":"🃏","swordsaint":"👑","dragonking":"🐉","underking":"💀","thundergod":"⚡","dimensionking":"🌌"};
@@ -289,7 +303,7 @@ const UNLOCK_HINTS={"extra_001":"傭兵Lv.20 ＋ 累計5勝","extra_002":"傭兵
 const EXTRA_UNLOCK_RULES={"extra_001":["merc",20,5],"extra_002":["merc",35,20],"extra_003":["merc",50,35],"extra_004":["merc",65,50],"extra_005":["merc",80,65],"extra_006":["merc",95,80],"extra_007":["merc",110,95],"extra_008":["shield",125,5],"extra_009":["shield",140,20],"extra_010":["shield",20,35],"extra_011":["shield",35,50],"extra_012":["shield",50,65],"extra_013":["shield",65,80],"extra_014":["shield",80,95],"extra_015":["shield",95,5],"extra_016":["mage",110,20],"extra_017":["mage",125,35],"extra_018":["mage",140,50],"extra_019":["mage",20,65],"extra_020":["mage",35,80],"extra_021":["mage",50,95],"extra_022":["mage",65,5],"extra_023":["mage",80,20],"extra_024":["archer",95,35],"extra_025":["archer",110,50],"extra_026":["archer",125,65],"extra_027":["archer",140,80],"extra_028":["archer",20,95],"extra_029":["archer",35,5],"extra_030":["archer",50,20],"extra_031":["archer",65,35],"extra_032":["mage",80,50],"extra_033":["mage",95,65],"extra_034":["mage",110,80],"extra_035":["mage",125,95],"extra_036":["mage",140,5],"extra_037":["mage",20,20],"extra_038":["mage",35,35],"extra_039":["mage",50,50],"extra_040":["summoner",65,65],"extra_041":["summoner",80,80],"extra_042":["summoner",95,95],"extra_043":["summoner",110,5],"extra_044":["summoner",125,20],"extra_045":["summoner",140,35],"extra_046":["summoner",20,50],"extra_047":["summoner",35,65],"extra_048":["sword",50,80],"extra_049":["sword",65,95],"extra_050":["sword",80,5],"extra_051":["sword",95,20],"extra_052":["sword",110,35],"extra_053":["sword",125,50],"extra_054":["sword",140,65],"extra_055":["sword",20,80],"extra_056":["gunner",35,95],"extra_057":["gunner",50,5],"extra_058":["gunner",65,20],"extra_059":["gunner",80,35],"extra_060":["gunner",95,50],"extra_061":["gunner",110,65],"extra_062":["gunner",125,80],"extra_063":["gunner",140,95],"extra_064":["mage",20,5],"extra_065":["mage",35,20],"extra_066":["mage",50,35],"extra_067":["mage",65,50],"extra_068":["mage",80,65],"extra_069":["mage",95,80],"extra_070":["mage",110,95],"extra_071":["mage",125,5],"extra_072":["mage",140,20],"extra_073":["alchemist",20,35],"extra_074":["alchemist",35,50],"extra_075":["alchemist",50,65],"extra_076":["alchemist",65,80],"extra_077":["alchemist",80,95],"extra_078":["alchemist",95,5],"extra_079":["alchemist",110,20]};
 function totalWins(){return Object.values(progress).reduce((sum,p)=>sum+(p?.wins||0),0)}
 function unlocked(job){
- if(STARTER_JOBS.has(job))return true;
+ if(trialActive()||STARTER_JOBS.has(job))return true;
  if(EXTRA_UNLOCK_RULES[job]){const [base,level,wins]=EXTRA_UNLOCK_RULES[job];return (progress[base]?.level||1)>=level&&totalWins()>=wins;}
  const lv=j=>progress[j]?.level||1,w=totalWins();
  switch(job){
@@ -352,7 +366,7 @@ function loadProgress(){
  const identity=window.NEXACRAFT_PVP_ACCOUNT;
  const key=identity?.uid||identity?.key||'local-player';
  if(key===progressAccountKey)return;
- progressAccountKey=key;progress=freshProgress();
+ progressAccountKey=key;progress=freshProgress();loadTrial();
  if(key){try{
   const saved=JSON.parse(localStorage.getItem(progressKey(key))||'{}');
   for(const job of Object.keys(CLASSES)){
@@ -1425,4 +1439,7 @@ function animate(){
 }
 animate();
 loadProgress();renderJobs();
+const trialForm=document.getElementById('pvpTrialForm');
+trialForm?.addEventListener('submit',e=>{e.preventDefault();redeemTrialCode(document.getElementById('pvpTrialCode').value);document.getElementById('pvpTrialCode').value='';});
+setInterval(()=>{if(trialExpires&&trialExpires<=Date.now()){trialExpires=0;if(!STARTER_JOBS.has(myClass)&&!unlocked(myClass)&&state==='menu')myClass='sword';renderJobs();renderProgress();const notice=document.getElementById('pvpCodeNotice');if(notice)notice.textContent='体験コードの有効期限が切れました';}},30000);
 uiNotice('ジョブを選んでルームを作成するか、CPUと練習しよう。');
