@@ -19,7 +19,8 @@ const ROLE_KINDS={
  ninja:'shuriken',reaper:'scythe',gunner:'gun',summoner:'summon',time:'hourglass',chain:'chain',hammer:'hammer',beast:'beast',barrier:'seal',curse:'doll',katana:'katana',reflect:'shield',bomber:'bomb',gravity:'orb',machine:'gatling',phantom:'mirror',star:'star',mimic:'mask',
  swordsaint:'katana',dragonking:'dragon',underking:'skull',thundergod:'coil',dimensionking:'portal'
 };
-for(const weapon of PVP_WEAPONS){weapon.kind=ROLE_KINDS[weapon.id]||weapon.kind;}
+const DISTINCT_ROLE_KINDS={"extra_002":"kusarigama","extra_003":"twinblade","extra_004":"cards","extra_005":"trackerbow","extra_006":"nodachi","extra_007":"chronoblade","extra_010":"tower","extra_011":"stonefist","extra_012":"aegis","extra_013":"naginata","extra_015":"boneblade","extra_016":"waterwheel","extra_017":"windfan","extra_018":"earthmace","extra_019":"sunrod","extra_020":"shadowlamp","extra_021":"venomfang","extra_022":"clockwork","extra_023":"riftkey","extra_024":"sniper","extra_025":"mortar","extra_027":"arbalest","extra_029":"repeater","extra_031":"huntingbow","extra_032":"soulcage","extra_034":"marionette","extra_038":"spellblade","extra_040":"dragonhorn","extra_041":"swarm","extra_044":"spiritbell","extra_047":"chimera","extra_050":"morningstar","extra_051":"bo","extra_056":"wrench","extra_058":"steamhammer","extra_060":"armcannon","extra_063":"gearmace","extra_064":"moonblade","extra_065":"sunblade","extra_066":"voidscythe","extra_067":"skyhalberd","extra_068":"chaosstaff","extra_069":"astrolabe","extra_070":"seraph","extra_071":"infernal","extra_072":"oracle","extra_073":"jackbox","extra_074":"roulette","extra_075":"shapeshift","extra_076":"harp","extra_077":"ribbon","extra_078":"cleaver","extra_079":"palette","fighter":"knuckles","summoner":"grimoire","chain":"chainblade","hammer":"warhammer","curse":"voodoo","bomber":"grenade","gravity":"gravitywell","machine":"rotary","phantom":"phantomblade","star":"comet","mimic":"mimicblade","swordsaint":"holyblade","dragonking":"dragonmaw","underking":"underworld","thundergod":"thunderaxe","dimensionking":"dimensionblade"};
+for(const weapon of PVP_WEAPONS){weapon.kind=DISTINCT_ROLE_KINDS[weapon.id]||ROLE_KINDS[weapon.id]||weapon.kind;}
 const byKey=new Map(PVP_WEAPONS.map(w=>[w.id,w]));
 export function makePvpWeaponModel(T,id){
  const w=typeof id==='number'?PVP_WEAPON_BY_ID.get(id):byKey.get(id);
@@ -80,6 +81,80 @@ export function makePvpWeaponModel(T,id){
   }
   crest(x,.86,.25);
  };
+ // New distinct PvP weapon families: structural differences, not just gem colors.
+ const special=(kind)=>{
+   const circle=(x,y,r,mat=brass)=>add(new T.TorusGeometry(r,.065,8,36),mat,x,y,.08);
+   const spikes=(x,y,count=6,r=.45)=>{for(let j=0;j<count;j++){const a=j*Math.PI*2/count;const px=x+Math.sin(a)*r,py=y+Math.cos(a)*r;const p=add(new T.ConeGeometry(.12,.35,5),edge,px,py,.10);p.rotation.z=-a;}};
+   const shaft=(h=2.5)=>{rod(0,h/2,0,.075,h,leather);for(let j=0;j<9;j++){const rr=circle(0,.32+j*.19,.09,j%2?brass:black);rr.rotation.x=Math.PI/2;}};
+   const plate=(points,m=steel,z=.08)=>poly(points,.15,m,z);
+   const longblade=(width=.3,top=3.1)=>{shaft(.98);plate([[-width,.96],[width,.96],[width*.84,top-.43],[0,top],[-width*.84,top-.43]],steel);plate([[-.04,1.08],[.04,1.08],[.07,top-.43],[0,top-.11],[-.07,top-.43]],black,.21);plate([[-.65,.85],[-.26,.91],[0,.78],[.26,.91],[.65,.85],[.43,.68],[0,.61],[-.43,.68]],brass,.13);gem(0,.79,.3,.10,rune)};
+   if(['twinblade','nodachi','boneblade','spellblade','moonblade','sunblade','holyblade','mimicblade','dimensionblade','phantomblade','shapeshift'].includes(kind)){
+     longblade(kind==='nodachi'?.22:kind==='boneblade'?.54:.35,kind==='nodachi'?3.65:3.15);
+     if(kind==='twinblade'){const p=plate([[-.21,-.16],[.21,-.16],[.25,-.81],[0,-1.22],[-.25,-.81]],edge,.09);gem(0,-.2,.23,.12,rune)}
+     if(kind==='moonblade'||kind==='sunblade'){circle(0,1.68,.48,kind==='sunblade'?brass:rune);spikes(0,1.68,kind==='sunblade'?12:6,.51)}
+     if(kind==='boneblade')for(let j=0;j<5;j++){for(const side of [-1,1]){const p=plate([[side*.24,1.25+j*.32],[side*.64,1.4+j*.32],[side*.23,1.55+j*.32]],edge,.11)}}
+     if(kind==='dimensionblade'){circle(0,2.0,.56,rune);circle(0,2.0,.38,black)}
+     if(kind==='spellblade'||kind==='holyblade'){circle(0,1.2,.3,brass);gem(0,1.2,.27,.18,rune)}
+     if(kind==='mimicblade'||kind==='shapeshift'){for(const side of [-1,1]){gem(side*.16,1.7,.26,.11,black);plate([[side*.08,2.2],[side*.46,2.52],[side*.2,2.35]],rune,.18)}}
+     return true;
+   }
+   if(['kusarigama','chainblade','morningstar','warhammer','steamhammer','gearmace','earthmace','thunderaxe','skyhalberd','naginata','bo','infernal','voidscythe','underworld','dragonmaw','dragonhorn'].includes(kind)){
+     shaft(kind==='bo'?3.3:2.35);
+     if(kind==='bo'){for(const y of [.17,3.13]){box(0,y,0,.21,.31,.21,brass);gem(0,y,.17,.1,rune)}return true;}
+     if(['kusarigama','chainblade','voidscythe','underworld'].includes(kind)){
+       plate([[0,2.08],[.3,2.42],[1.32,2.54],[1.70,1.90],[1.15,2.25],[.47,2.22]],edge);
+       line([[0,2.12,.15],[.4,2.34,.15],[1.1,2.42,.15]],.034,rune);
+       if(kind==='kusarigama'||kind==='chainblade'){line([[0,.4,0],[.43,.15,0],[.75,-.16,0],[1.05,-.38,0]],.045,brass);gem(1.05,-.38,0,.24,steel)}
+     }else if(['naginata','skyhalberd','dragonhorn','dragonmaw'].includes(kind)){
+       plate([[-.22,2.0],[.27,2.0],[.43,2.64],[.1,3.32],[-.15,2.8]],edge);
+       if(kind!=='naginata')for(const side of [-1,1])plate([[0,2.26],[side*.82,2.65],[side*.62,2.1]],brass);
+     }else{box(0,2.37,0,1.24,.66,.60,black);for(const side of [-1,1]){box(side*.56,2.37,0,.19,.79,.66,steel);gem(side*.62,2.37,.42,.15,rune)}
+       if(kind==='morningstar')spikes(0,2.37,10,.63);
+       if(kind==='gearmace'||kind==='steamhammer')for(const y of [2.13,2.61])circle(0,y,.37,brass);
+       if(kind==='thunderaxe')for(const side of [-1,1])plate([[0,2.05],[side*.75,2.1],[side*1.06,2.45],[side*.76,2.85],[0,2.77]],edge);
+     }return true;
+   }
+   if(['waterwheel','windfan','clockwork','astrolabe','oracle','gravitywell','riftkey','sunrod','chaosstaff','spiritbell','shadowlamp','soulcage','swarm','venomfang','chronoblade','comet'].includes(kind)){
+     shaft(2.1);const y=2.4;
+     if(['waterwheel','clockwork','astrolabe','gravitywell','riftkey','oracle','comet'].includes(kind)){
+       circle(0,y,.65,steel);circle(0,y,.43,brass);spikes(0,y,kind==='clockwork'?12:8,.66);
+       if(kind==='astrolabe'||kind==='gravitywell'){const a=circle(0,y,.53,rune);a.rotation.y=Math.PI/3}
+       if(kind==='riftkey')plate([[-.14,2.55],[.14,2.55],[.14,3.1],[.48,3.1],[.48,3.29],[-.14,3.29]],edge);
+     }else if(kind==='windfan'){for(let j=-4;j<=4;j++){const a=j*.17;line([[0,1.58,0],[Math.sin(a)*1.1,2.35+Math.cos(a)*.7,0]],.07,j%2?steel:brass)}}
+     else if(kind==='soulcage'||kind==='swarm'||kind==='spiritbell'||kind==='shadowlamp'){for(const side of [-1,1])box(side*.34,y,0,.07,.85,.11,brass);box(0,y+.43,0,.76,.08,.2,steel);box(0,y-.43,0,.76,.08,.2,steel)}
+     else if(kind==='venomfang'){for(const side of [-1,1])plate([[0,2.12],[side*.4,2.52],[side*.35,3.21],[side*.15,2.68]],rune)}
+     else if(kind==='chronoblade')plate([[-.3,2.06],[.3,2.06],[.1,2.66],[0,3.24],[-.1,2.66]],edge);
+     else if(kind==='sunrod')spikes(0,y,12,.58);
+     else if(kind==='chaosstaff')for(let j=0;j<5;j++){const a=j*Math.PI*2/5;gem(Math.sin(a)*.5,y+Math.cos(a)*.5,.21,rune)}
+     gem(0,y,.18,.26,rune);return true;
+   }
+   if(['sniper','mortar','arbalest','repeater','trackerbow','huntingbow','armcannon','rotary','wrench','knuckles','stonefist','aegis','tower'].includes(kind)){
+     if(['trackerbow','huntingbow','arbalest','repeater'].includes(kind)){
+       line([[-.82,.72,0],[-.55,1.35,0],[-.80,2.2,0]],.10,steel);line([[-.82,.72,.07],[-.1,1.46,.07],[-.80,2.2,.07]],.025,edge);
+       box(-.3,1.48,.0,.19,.65,.25,leather);
+       if(kind==='arbalest'||kind==='repeater'){box(0,1.45,0,.84,.22,.24,black);for(let j=0;j<(kind==='repeater'?4:1);j++)box(.16,1.49+j*.11,.10,.54,.04,.05,brass)}
+     }else if(['sniper','mortar','armcannon','rotary'].includes(kind)){
+       box(0,1.25,0,.44,.48,1.52,black);for(let j=0;j<(kind==='rotary'?8:kind==='mortar'?2:1);j++){const a=j*Math.PI*2/(kind==='rotary'?8:2);const b=rod(Math.sin(a)*.18,1.25+Math.cos(a)*.18,-.86,.09,1.4,steel);b.rotation.x=Math.PI/2}box(0,.74,.41,.23,.72,.28,leather);
+       if(kind==='sniper'){box(0,1.58,.12,.13,.17,.86,brass);gem(0,1.67,.4,.12,rune)}
+     }else if(kind==='tower'||kind==='aegis'){plate([[-.68,.35],[.68,.35],[.76,2.55],[0,2.98],[-.76,2.55]],black);plate([[-.55,.52],[.55,.52],[.61,2.46],[0,2.78],[-.61,2.46]],steel,.22);circle(0,1.52,.38,brass);gem(0,1.52,.35,.2,rune)}
+     else if(kind==='wrench'){shaft(1.8);plate([[-.45,1.7],[-.6,2.2],[-.22,2.65],[.22,2.65],[.6,2.2],[.45,1.7],[.2,2.05],[-.2,2.05]],steel)}
+     else{box(0,1.05,0,.95,.83,.58,black);for(let j=-1;j<=1;j++)plate([[j*.26-.09,1.26],[j*.26+.09,1.26],[j*.26+.1,2.08],[j*.26,2.31],[j*.26-.1,2.08]],edge,.38)}
+     return true;
+   }
+   if(['cards','marionette','chimera','jackbox','roulette','harp','ribbon','cleaver','palette','grimoire','voodoo','grenade'].includes(kind)){
+     if(kind==='cards'||kind==='roulette'){for(let j=-2;j<=2;j++){const m=box(j*.22,1.3+Math.abs(j)*.15,j*.06,.38,.75,.06,j%2?steel:black);m.rotation.z=j*.20;gem(j*.22,1.42+Math.abs(j)*.15,.15,.10,rune)}}
+     else if(kind==='harp'){line([[-.5,.35,0],[-.65,2.38,0],[.53,2.57,0],[.50,.35,0]],.10,brass);for(let j=-3;j<=3;j++)line([[j*.13,.52,.1],[j*.13,2.27,.1]],.014,edge)}
+     else if(kind==='ribbon'){shaft(1.3);line([[0,1.05,0],[.75,1.54,0],[-.66,2.13,0],[.73,2.74,0],[-.21,3.08,0]],.075,rune)}
+     else if(kind==='cleaver'){shaft(.9);plate([[-.45,.9],[.56,.9],[.62,2.63],[-.45,2.63]],steel);plate([[-.4,1.04],[-.24,1.04],[-.24,2.44],[-.4,2.44]],edge,.22)}
+     else if(kind==='palette'){plate([[-.66,.78],[.58,.78],[.8,1.72],[.31,2.2],[-.62,2.07]],leather);for(let j=0;j<6;j++)gem((j%3-1)*.35,1.18+Math.floor(j/3)*.47,.2,.12,j%2?rune:brass)}
+     else if(kind==='grimoire'||kind==='voodoo'){plate([[-.65,.63],[0,.81],[0,2.17],[-.65,2.03]],black);plate([[0,.81],[.65,.63],[.65,2.03],[0,2.17]],steel);circle(0,1.45,.31,rune)}
+     else if(kind==='grenade'){gem(0,1.36,0,.58,black);spikes(0,1.36,8,.56);circle(0,2.03,.22,brass)}
+     else{box(0,1.34,0,.87,1.1,.54,black);for(const side of [-1,1]){gem(side*.29,1.58,.36,.15,rune);plate([[side*.14,.89],[side*.48,1.14],[side*.2,1.4]],brass,.30)}}
+     return true;
+   }
+   return false;
+ };
+ if(special(k)){g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;return g;}
  // Original silhouettes for roles that should not carry generic swords or staves.
  const ring=(x,y,r,mat=brass,t=.045)=>add(new T.TorusGeometry(r,t,10,48),mat,x,y,.04);
  const prism=(x,y,r,mat=rune)=>gem(x,y,0,r,mat);
