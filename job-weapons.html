@@ -127,7 +127,18 @@ function select(key,source='story'){
   selectedKey=key;
   if(current)scene.remove(current);
   // This is the EXACT exported game mesh, not a picture, sprite, or raster.
-  if(pvp){current=makePvpWeaponModel(THREE,pvp.id)}else if(data.kind==='dual'){
+  if(pvp){
+    // The five original PvP starter jobs must show their existing story weapon
+    // mesh, not an extra weapon sharing the same job name.
+    const starter=['sword','merc','shield','archer','mage'].includes(pvp.id);
+    if(starter&&Number.isInteger(JOBS[pvp.id]?.weapon)){
+      current=makeJobWeaponModel(THREE,JOBS[pvp.id].weapon);
+    }else{
+      try{current=makePvpWeaponModel(THREE,pvp.id)}
+      catch(error){console.error('PvP weapon render failed',pvp.id,error);status.textContent='武器生成エラー：'+pvp.name+' / '+String(error.message||error);return;}
+    }
+    if(!current||!current.children.length){status.textContent='武器データがありません：'+pvp.name;return;}
+  }else if(data.kind==='dual'){
     // Reference sheet: exhibit both separately modeled Berserker blades.
     // Game equipment still constructs one blade for each player's hand.
     const pair=new THREE.Group();
