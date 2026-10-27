@@ -3,7 +3,6 @@
  * restricted to their job (except the weaker all-rounder).
  */
 import {makeDetailedJobWeapon} from './job-weapon-models.js?v=20261023bowFacingForward24';
-import {PVP_WEAPON_BY_ID,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261027unique110';
 export const JOBS={
   sword:{name:'剣士',group:'sword',level:1,weapon:190,kind:'sword',damage:3,cooldown:630,range:4.5,desc:'標準的な片手剣。LV30で4方向に進化',next:['warrior','swordmaster','axer','lancer']},
   merc:{name:'傭兵',group:'merc',level:1,weapon:191,kind:'dual',damage:2,cooldown:360,range:4.2,desc:'双剣で素早く攻撃',next:['berserker']},
@@ -28,7 +27,7 @@ export const STARTING_JOBS=['sword','merc','shield','archer','mage','all'];
 export const JOB_WEAPON_IDS=Object.values(JOBS).map(j=>j.weapon).filter(Number.isInteger);
 const byWeapon=new Map(Object.entries(JOBS).filter(([,j])=>Number.isInteger(j.weapon))
   .map(([key,j])=>[j.weapon,{...j,key}]));
-export const jobWeapon=id=>byWeapon.get(id)||PVP_WEAPON_BY_ID.get(id)||null;
+export const jobWeapon=id=>byWeapon.get(id)||null;
 
 /**
  * Visual size of the 17 job weapons while EQUIPPED.
@@ -58,7 +57,7 @@ export const JOB_HELD_WEAPON_SCALES=Object.freeze({
 });
 export function jobHeldWeaponScale(id,view='third'){
   const profile=JOB_HELD_WEAPON_SCALES[id];
-  return profile ? (view==='first'?profile.first:profile.third) : PVP_WEAPON_BY_ID.has(id)?(view==='first'?.48:.40):1;
+  return profile ? (view==='first'?profile.first:profile.third) : 1;
 }
 
 /**
@@ -136,5 +135,5 @@ export function drawJobWeaponIcon(g,id){
 }
 export function makeJobWeaponModel(T,id){
   const d=jobWeapon(id);
-  return PVP_WEAPON_BY_ID.has(id)?makePvpWeaponModel(T,id):d?makeDetailedJobWeapon(T,d):null;
+  return d?makeDetailedJobWeapon(T,d):null;
 }
