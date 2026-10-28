@@ -175,6 +175,88 @@ export function makePvpWeaponModel(T,id){
   }
   crest(x,.86,.25);
  };
+ // Full replacement geometry for ALL 79 extra jobs. This path intentionally
+ // bypasses the legacy special()/generic weapon and all decorative finishers.
+ if(w.id.startsWith('extra_')){
+   const role=k,idx=n+1;
+   const core=(h=2.5,r=.075)=>{rod(0,h*.50,0,r,h,leather);rod(0,.23,0,r*1.45,.12,black)};
+   const form=(pts,thick=.20,mat=steel)=>poly(pts,thick,mat,0);
+   const swordShape=(type)=>{
+     grip(0,.44,.80);
+     const great=/great|bone|nodachi|sunblade|spellblade|chronoblade/.test(type);
+     const curve=/katana|moonblade|nodachi/.test(type);
+     const wid=great?.46:.26,top=great?3.50:2.92,shift=curve?.28:0;
+     forgedBlade([[.93,wid*.75,0,.15],[1.16,wid,0,.20],[top*.70,wid*.85,shift*.38,.14],[top-.30,wid*.48,shift,.09],[top,.009,shift,.008]]);
+     forgeGuard(great?.68:.48,.88);
+     if(type==='twinblade'||type==='dual'){const second=add(new T.Group());const children=g.children.splice(0);children.forEach(c=>second.add(c));second.position.x=-.34;g.add(second);const twin=second.clone();twin.position.x=.34;twin.rotation.z=Math.PI;g.add(twin)}
+   };
+   const pole=(type)=>{
+     const h=type==='bo'?3.2:2.35;core(h);
+     if(type==='bo')return;
+     if(/scythe|kusarigama|soul|void/.test(type))form([[0,h-.30],[.30,h+.15],[1.18,h+.30],[1.55,h-.35],[1.06,h-.04],[.32,h-.08]],.16);
+     else if(/axe|halberd|earthmace/.test(type)){for(const side of [-1,1])form([[0,h-.46],[side*.56,h-.42],[side*.94,h+.12],[side*.55,h+.55],[0,h+.38]],.20)}
+     else if(/hammer|mace|morningstar|flail/.test(type)){box(0,h,0,1.15,.72,.64,black);for(const side of [-1,1])box(side*.55,h,0,.19,.77,.69,steel)}
+     else if(/trident/.test(type)){for(const j of [-1,0,1])form([[j*.32-.10,h-.12],[j*.32+.10,h-.12],[j*.32+.10,h+.58],[j*.32,h+.85],[j*.32-.10,h+.58]],.13)}
+     else form([[-.21,h-.24],[.21,h-.24],[.29,h+.32],[0,h+.98],[-.29,h+.32]],.17);
+   };
+   const ranged=(type)=>{
+     if(/crossbow|arbalest|repeater|trackerbow|huntingbow/.test(type)){
+       const cross=/crossbow|arbalest|repeater/.test(type);
+       if(cross){
+         box(0,1.25,0,.28,.25,2.2,leather);box(0,1.43,-.35,.19,.12,1.45,black);
+         line([[-1.05,1.36,-.82],[-.65,1.53,-1.02],[0,1.42,-1.12],[.65,1.53,-1.02],[1.05,1.36,-.82]],.11,steel);
+         line([[-1.05,1.36,-.82],[0,1.47,.20],[1.05,1.36,-.82]],.017,edge);
+         box(0,.84,.56,.18,.67,.23,leather);
+         if(type==='repeater')box(0,1.68,-.2,.37,.36,.78,black);
+       }else{
+         const w=.65+(idx%3)*.10;
+         line([[0,.10,0],[-w,.55,0],[-w*.9,1.4,0],[-w,2.32,0],[0,2.92,0]],.11,steel);
+         line([[0,.10,.04],[.04,1.43,.04],[0,2.92,.04]],.017,edge);
+         box(-w*.90,1.45,0,.21,.67,.25,leather);
+       }
+     }else{
+       const heavy=/cannon|mortar|turret|rotary|armcannon/.test(type);
+       box(0,1.25,0,heavy?.64:.34,heavy?.58:.35,heavy?1.95:1.70,black);
+       const count=type==='rotary'?6:1;
+       for(let j=0;j<count;j++){const a=j*2*Math.PI/count;const barrel=rod(Math.cos(a)*.17,1.28+Math.sin(a)*.17,-.90,heavy?.11:.075,heavy?1.65:1.42,steel);barrel.rotation.x=Math.PI/2}
+       box(0,.76,.49,.23,.72,.27,leather);
+       if(type==='sniper')box(0,1.66,.10,.15,.16,.87,black);
+     }
+   };
+   const shieldShape=(type)=>{
+     const tower=/tower|stone|iron/.test(type),round=/aegis|sun|moon/.test(type);
+     const pts=tower?[[-.85,.25],[.85,.25],[.85,2.68],[.62,2.94],[-.62,2.94],[-.85,2.68]]:round?[[-.85,1.12],[-.65,2.37],[0,2.88],[.65,2.37],[.85,1.12],[0,.28]]:[[-.79,2.52],[.79,2.52],[.83,1.17],[0,.25],[-.83,1.17]];
+     form(pts,.28,black);
+     form(pts.map(([x,y])=>[x*.83,1.53+(y-1.53)*.84]),.12,steel);
+     rod(0,1.36,-.27,.10,.76,leather);
+   };
+   const focus=(type)=>{
+     core(2.22,.085);
+     if(/fan|wing/.test(type)){for(let j=-4;j<=4;j++){const x=j*.21;form([[0,1.85],[x*.70,2.48],[x,2.94],[x*.34,2.55]],.06,j%2?steel:brass)}}
+     else if(/hourglass|clockwork|oracle/.test(type)){for(const y of [2.02,2.85]){const hoop=add(new T.TorusGeometry(.44,.075,8,28),brass,0,y,0);hoop.rotation.x=.1}form([[-.38,2.03],[.38,2.03],[.10,2.45],[.38,2.85],[-.38,2.85],[-.10,2.45]],.20,steel)}
+     else if(/portal|rift|astrolabe|waterwheel|star/.test(type)){const ring=add(new T.TorusGeometry(.58,.10,10,36),steel,0,2.58,0);ring.rotation.y=.32;gem(0,2.58,0,.30,rune)}
+     else if(/lamp|lantern|cage|swarm|bell/.test(type)){box(0,2.46,0,.72,.85,.54,black);for(const side of [-1,1])rod(side*.30,2.46,.28,.045,.9,brass);gem(0,2.46,.30,.23,rune)}
+     else if(/vial|venom|crystal/.test(type)){const orb=add(new T.IcosahedronGeometry(.43,1),rune,0,2.55,0);orb.scale.y=1.35}
+     else{const head=add(new T.IcosahedronGeometry(.49,1),steel,0,2.55,0);head.rotation.z=idx*.17;gem(0,2.55,.40,.21,rune)}
+   };
+   const handheld=(type)=>{
+     if(/claw|gauntlet|knuckles|stonefist/.test(type)){box(0,.95,0,.85,.65,.54,black);for(let j=-1;j<=1;j++)form([[j*.25-.11,1.05],[j*.25+.11,1.05],[j*.25+.10,1.86],[j*.25,2.25],[j*.25-.11,1.86]],.18,steel)}
+     else if(/book|grimoire|puppet|marionette|voodoo/.test(type)){form([[-.72,.67],[0,.85],[0,2.22],[-.72,2.02]],.20,black);form([[0,.85],[.72,.67],[.72,2.02],[0,2.22]],.20,steel)}
+     else if(/chakram|cards|roulette|dice/.test(type)){const ring=add(new T.TorusGeometry(.82,.16,8,32),steel,0,1.54,0);ring.rotation.z=idx*.08;for(let j=0;j<5;j++){const a=j*Math.PI*2/5;gem(Math.sin(a)*.76,1.54+Math.cos(a)*.76,0,.15,brass)}}
+     else if(/lute|harp|ribbon/.test(type)){line([[-.52,.34,0],[-.62,2.36,0],[.52,2.56,0],[.52,.34,0]],.11,leather);for(let j=-3;j<=3;j++)line([[j*.12,.52,.08],[j*.12,2.28,.08]],.014,brass)}
+     else if(/whip|chain|flail/.test(type)){core(1.15);line([[0,1.04,0],[.48,1.43,0],[-.42,1.92,0],[.74,2.38,0],[1.18,2.75,0]],.065,steel);if(/flail/.test(type))gem(1.18,2.75,0,.36,black)}
+     else if(/pan|cleaver|brush|palette/.test(type)){grip();if(type==='cleaver')form([[-.46,.89],[.62,.89],[.62,2.57],[-.46,2.57]],.25);else if(type==='pan')add(new T.CylinderGeometry(.66,.55,.23,20),black,0,1.84,0);else form([[-.55,1.25],[.57,1.25],[.73,2.17],[-.52,2.39]],.19)}
+     else{core(1.3);const obj=add(new T.DodecahedronGeometry(.62,0),black,0,1.75,0);obj.rotation.y=idx*.25}
+   };
+   if(/sword|blade|katana|nodachi|naginata|holy|shapeshift|mimic|bone/.test(role))swordShape(role);
+   else if(/shield|tower|aegis/.test(role))shieldShape(role);
+   else if(/bow|arbalest|repeater|rifle|sniper|gun|cannon|mortar|rotary|turret|armcannon/.test(role))ranged(role);
+   else if(/spear|trident|halberd|scythe|axe|hammer|mace|kusarigama|bo|earthmace/.test(role))pole(role);
+   else if(/staff|fan|hourglass|clock|oracle|portal|rift|astro|waterwheel|sunrod|chaos|shadow|soul|swarm|venom|crystal|bell|wing|star|mirror|seal/.test(role))focus(role);
+   else handheld(role);
+   g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;
+   return g;
+ }
  // New distinct PvP weapon families: structural differences, not just gem colors.
  const special=(kind)=>{
    const circle=(x,y,r,mat=brass)=>add(new T.TorusGeometry(r,.065,8,36),mat,x,y,.08);
