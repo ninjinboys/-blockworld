@@ -1133,29 +1133,39 @@ function resolveAttack(attackerIsHost,remotePitch=0){
  if(attacker.guard)return;
  const dx=target.x-attacker.x,dz=target.z-attacker.z;
  const dist=Math.hypot(dx,dz);
- const facing=(Math.sin(attacker.face)*dx+Math.cos(attacker.face)*dz)/(dist||1);
- if(dist>c.range||facing<c.arc)return;
- // Bows and crossbows must intersect the actual central reticle ray.
- // A target merely somewhere in the field of view is not a hit.
  const aimedBow=job==='archer'||['extra_024','extra_027','extra_029','extra_031'].includes(job);
  if(aimedBow){
+   // Ray through the centre crosshair versus the rival's full-body capsule.
+   // The old torso-centre sphere rejected valid shots at head, legs and edges.
    const pitch=attackerIsHost?lookPitch:remotePitch;
    const cp=Math.cos(pitch),sp=Math.sin(pitch);
-   const rayX=Math.sin(attacker.face)*cp,rayY=sp,rayZ=Math.cos(attacker.face)*cp;
-   const originY=1.62+(attacker.y||0);
-   // Hit the opponent's visible body capsule (feet to head), not an
-   // invisible tiny sphere around the waist. This allows head and leg hits.
+   const rx=Math.sin(attacker.face)*cp,ry=sp,rz=Math.cos(attacker.face)*cp;
+   const oy=1.62+(attacker.y||0);
+   const targetBase=target.y||0;
+   const minY=targetBase+.25,maxY=targetBase+1.87;
    const vx=target.x-attacker.x,vz=target.z-attacker.z;
-   const horizontalSq=rayX*rayX+rayZ*rayZ;
-   if(horizontalSq<.001)return;
-   const along=(vx*rayX+vz*rayZ)/horizontalSq;
-   if(along<=0||along>c.range)return;
-   const horizontalMissSq=(vx-rayX*along)**2+(vz-rayZ*along)**2;
-   const targetBottom=.12+(target.y||0),targetTop=1.95+(target.y||0);
-   const rayHeight=originY+rayY*along;
-   const verticalMiss=Math.max(targetBottom-rayHeight,0,rayHeight-targetTop);
-   // A 0.55-unit collision radius matches the avatar silhouette.
-   if(horizontalMissSq+verticalMiss*verticalMiss>.55*.55)return;
+   const horizontal=rx*rx+rz*rz;
+   // Closest point of the crosshair ray to the target's vertical body axis.
+   let t=horizontal>1e-5?(vx*rx+vz*rz)/horizontal:0;
+   t=THREE.MathUtils.clamp(t,0,c.range);
+   // Check torso, head and feet with their real vertical positions.
+   const samples=[t];
+   if(Math.abs(ry)>1e-5){
+     samples.push(THREE.MathUtils.clamp((minY-oy)/ry,0,c.range));
+     samples.push(THREE.MathUtils.clamp((maxY-oy)/ry,0,c.range));
+   }
+   let best=Infinity;
+   for(const at of samples){
+     const x=attacker.x+rx*at,z=attacker.z+rz*at;
+     const y=THREE.MathUtils.clamp(oy+ry*at,minY,maxY);
+     const dy=oy+ry*at-y;
+     const d2=(x-target.x)**2+(z-target.z)**2+dy*dy;
+     if(at>0&&d2<best)best=d2;
+   }
+   if(best>.63*.63)return;
+ }else{
+   const facing=(Math.sin(attacker.face)*dx+Math.cos(attacker.face)*dz)/(dist||1);
+   if(dist>c.range||facing<c.arc)return;
  }
  const targetJob=attackerIsHost?enemyClass:myClass;
  const block=target.abilityGuardUntil>now?.72:target.guard?(CLASSES[targetJob].block||.42):0;
