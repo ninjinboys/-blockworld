@@ -1,3 +1,4 @@
+import {makeReferenceWeapon} from './reference-weapon-models.js?v=20261023bowFacingForward24';
 // NEXACRAFT PvP: 110 individually forged weapon meshes.
 // All geometry is built here. No story-mode weapon is imported or cloned.
 // Material, bevels, grips, engraved edges and proportions follow the story-mode design language.
@@ -26,6 +27,34 @@ export function makePvpWeaponModel(T,id){
  const w=typeof id==='number'?PVP_WEAPON_BY_ID.get(id):byKey.get(id);
  if(!w)return null;
  const n=w.weaponId-300,k=w.kind;
+ // Every non-starter now shares the ACTUAL story-mode reference mesh geometry.
+ // This replaces the unrelated PvP silhouettes, rather than decorating them.
+ const referenceKind=()=>{
+   const kind=w.kind,base=w.id;
+   if(/shield|tower|aegis|barrier|reflect|stonefist/.test(kind))return 'heavy';
+   if(/bow|arbalest|repeater|crossbow|sling|falcon/.test(kind))return 'archer';
+   if(/axe|hammer|mace|flail|thunder|wrench|pan/.test(kind))return 'axer';
+   if(/spear|naginata|halberd|trident|bo|scythe|kusarigama|whip|chain|vine/.test(kind))return 'lancer';
+   if(/staff|rod|oracle|hourglass|clock|portal|rift|gravity|water|wind|sun|shadow|astro|comet|star|crystal|lantern|bell|swarm|seal|vial|venom|grimoire|voodoo|mirror|palette|brush/.test(kind))return 'mage';
+   if(/dual|twin|dagger|claw|knuckles|shuriken|cards|chakram|fan/.test(kind))return 'berserker';
+   if(/greatsword|boneblade|nodachi|dragon|infernal|underworld|cleaver|cannon|mortar|gun|rifle|rotary|turret|armcannon/.test(kind))return 'warrior';
+   if(/katana|blade|sword/.test(kind))return 'sword';
+   return ['sword','warrior','lancer','axer','mage','berserker'][w.weaponId%6];
+ };
+ if(!['sword','merc','shield','archer','mage'].includes(w.id)){
+   const ref=referenceKind();
+   const model=makeReferenceWeapon(T,{key:ref,name:w.name});
+   if(model&&model.children.length){
+     // Keep the complete original geometry and its material language.
+     // Avoid overlay geometry, which caused the previous mesh corruption.
+     model.name=w.name+' PvP reference-derived weapon';
+     model.userData.pvpWeaponId=w.weaponId;
+     model.userData.pvpJob=w.id;
+     model.userData.referenceWeapon=ref;
+     return model;
+   }
+ }
+
  const g=new T.Group();
  // Reuse the *visual language*, not any original finished meshes:
  // the story weapons' forged graphite, weathered bronze, silver facets,
