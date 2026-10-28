@@ -27,19 +27,42 @@ export function makePvpWeaponModel(T,id){
  // New original PvP meshes. Story-mode models are only proportion/style references:
  // no makeReferenceWeapon, makeDetailedJobWeapon, clones, or copied geometry.
  const v=(n%7-3)/6,scale=1+(n%5)*.038;
- const aura=/shadow|under|infernal|void|soul|curse|phantom|moon|dark/.test(k)?0x9b7eff:
-            /fire|sun|dragon|thunder|light|steam/.test(k)?0xffa94e:0x4de9d8;
+ // Curated material families: each element changes metal, trim, leather
+ // and crystal together, instead of tinting a generic grey weapon.
+ const paletteIndex=
+   /venom|poison|vine|swarm|beast|chimera|water|hunting|tracker/.test(k)?2:
+   /sun|holy|seraph|oracle|star|celestial|light|wing/.test(k)?3:
+   /shadow|moon|void|rift|dimension|phantom|under|curse|soul|necrom|infernal/.test(k)?4:
+   /dragon|fire|steam|bomb|mortar|cannon|thunder|storm|earth|hammer/.test(k)?1:
+   /ice|clock|chrono|time|gravity|wind|sky|astrolabe/.test(k)?5:
+   n%6;
+ const palettes=[
+  {iron:0x465765,steel:0xa6bdce,edge:0xf0f9ff,bronze:0x8e6846,gold:0xe6ba74,dark:0x1d2836,recess:0x0a1824,leather:0x312520,wrap:0x8b6346,glow:0x51f0da},
+  {iron:0x514d55,steel:0xc1b4ae,edge:0xffeee3,bronze:0x956043,gold:0xf6bc68,dark:0x30232b,recess:0x211621,leather:0x453022,wrap:0x9a603c,glow:0xff8d4b},
+  {iron:0x345e56,steel:0x9fc1b3,edge:0xe1ffe7,bronze:0x687c49,gold:0xc4c57d,dark:0x1d3630,recess:0x0c241e,leather:0x303c27,wrap:0x69845f,glow:0x53f6a5},
+  {iron:0x64707f,steel:0xd1d9e6,edge:0xffffff,bronze:0x987951,gold:0xffd991,dark:0x343343,recess:0x171d30,leather:0x47372b,wrap:0xa3855b,glow:0xffdf81},
+  {iron:0x454361,steel:0xb6adce,edge:0xeee2ff,bronze:0x705777,gold:0xd7a9c5,dark:0x232039,recess:0x110f29,leather:0x322837,wrap:0x795a81,glow:0xb787ff},
+  {iron:0x3a5968,steel:0xa1c8dd,edge:0xe3f9ff,bronze:0x6c8c91,gold:0xc0d9d9,dark:0x172c3b,recess:0x0b1b2e,leather:0x283e47,wrap:0x60869d,glow:0x6bdcff}
+ ];
+ const pal=palettes[paletteIndex];
+ const aura=pal.glow;
+ const metal=(color,roughness,metalness=.86)=>new T.MeshPhysicalMaterial({
+   color,metalness,roughness,clearcoat:.32,clearcoatRoughness:.23,
+   side:T.DoubleSide
+ });
  const M={
-  iron:new T.MeshStandardMaterial({color:0x657782,metalness:.83,roughness:.35,side:T.DoubleSide}),
-  steel:new T.MeshStandardMaterial({color:0xb3c2c9,metalness:.86,roughness:.27,side:T.DoubleSide}),
-  edge:new T.MeshStandardMaterial({color:0xe2ebeb,metalness:.91,roughness:.24,side:T.DoubleSide}),
-  bronze:new T.MeshStandardMaterial({color:0x90704b,metalness:.82,roughness:.32,side:T.DoubleSide}),
-  gold:new T.MeshStandardMaterial({color:0xd0a878,metalness:.85,roughness:.25,side:T.DoubleSide}),
-  dark:new T.MeshStandardMaterial({color:0x27343e,metalness:.63,roughness:.44,side:T.DoubleSide}),
-  recess:new T.MeshStandardMaterial({color:0x15242e,metalness:.50,roughness:.45,side:T.DoubleSide}),
-  leather:new T.MeshStandardMaterial({color:0x3f3129,roughness:.85,side:T.DoubleSide}),
-  wrap:new T.MeshStandardMaterial({color:0x705442,roughness:.78,side:T.DoubleSide}),
-  crystal:new T.MeshStandardMaterial({color:aura,metalness:.24,roughness:.20,emissive:aura,emissiveIntensity:.55,side:T.DoubleSide})
+  iron:metal(pal.iron,.31),
+  steel:metal(pal.steel,.24),
+  edge:metal(pal.edge,.17,.94),
+  bronze:metal(pal.bronze,.29),
+  gold:metal(pal.gold,.20,.90),
+  dark:metal(pal.dark,.37,.74),
+  recess:metal(pal.recess,.44,.52),
+  leather:new T.MeshStandardMaterial({color:pal.leather,roughness:.87,side:T.DoubleSide}),
+  wrap:new T.MeshStandardMaterial({color:pal.wrap,roughness:.78,side:T.DoubleSide}),
+  crystal:new T.MeshPhysicalMaterial({color:aura,metalness:.18,roughness:.12,
+    clearcoat:1,clearcoatRoughness:.04,emissive:aura,emissiveIntensity:.82,side:T.DoubleSide}),
+  glow:new T.MeshBasicMaterial({color:aura,side:T.DoubleSide})
  };
  let target=g;
  function mesh(geometry,material,x=0,y=0,z=0){
@@ -52,7 +75,7 @@ export function makePvpWeaponModel(T,id){
    shape.moveTo(p[0][0],p[0][1]);
    for(let i=1;i<p.length;i++)shape.lineTo(p[i][0],p[i][1]);
    shape.closePath();
-   const bevel=Math.min(.014,Math.max(.003,th*.11));
+   const bevel=Math.min(.023,Math.max(.004,th*.16));
    return mesh(new T.ExtrudeGeometry(shape,{depth:th,steps:1,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:2}),mat,0,0,z-th/2);
  }
  function cube(x,y,z,sx,sy,sz,mat='iron'){return mesh(new T.BoxGeometry(sx,sy,sz),mat,x,y,z)}
@@ -69,7 +92,12 @@ export function makePvpWeaponModel(T,id){
  }
  function torus(x,y,z,r,t=.045,mat='bronze'){return mesh(new T.TorusGeometry(r,t,10,40),mat,x,y,z)}
  function gem(x,y,z,sx=.11,sy=.20,sz=.055){
-   const o=mesh(new T.OctahedronGeometry(1,0),'crystal',x,y,z);o.scale.set(sx,sy,sz);return o;
+   // Physically faceted stone with a separately visible luminous core.
+   const mount=mesh(new T.OctahedronGeometry(1,0),'gold',x,y,z-.013);
+   mount.scale.set(sx*1.18,sy*1.13,sz*.82);
+   const o=mesh(new T.OctahedronGeometry(1,0),'crystal',x,y,z+.016);
+   o.scale.set(sx,sy,sz);
+   return o;
  }
  function handgrip(x=0,y=.08,h=.68,r=.094){
    cyl(x,y,0,r,h,'leather');
@@ -79,11 +107,40 @@ export function makePvpWeaponModel(T,id){
    }
    for(const sign of [-1,1])cyl(x,y+sign*h*.48,0,r*1.2,.065,'bronze');
  }
- function bladeShape(width=.32,len=2.55,offset=0){
-   // A continuous forged blade with a chamfered shoulder and tapering tip.
-   return [[-width*.73,.62],[width*.73,.62],[width,.84],
-     [width*.93,len*.68],[width*.65,len-.24],[offset,len],
-     [-width*.65,len-.24],[-width*.92,len*.68],[-width,.84]];
+ function forgedBlade(wd,len,bend=0){
+   // All faces are true 3D diamond-section steel. No detached triangle
+   // decorations: four welded planes span each blade station.
+   const stations=[
+     [.62,wd*.73,0,.093],
+     [.84,wd,0,.145],
+     [len*.67,wd*.92,bend*.50,.126],
+     [len-.27,wd*.65,bend*.84,.082],
+     [len,.006,bend,.005]
+   ];
+   const faces=[
+     ['iron',0,1],['edge',1,2],['steel',2,3],['iron',3,0]
+   ];
+   const geo=new T.BufferGeometry(),points=[];
+   function triangle(a,b,c){points.push(...a,...b,...c)}
+   const ring=([y,w,x,t])=>[
+     [x-w,y,0],[x,y,t],[x+w,y,0],[x,y,-t]
+   ];
+   for(let i=0;i<stations.length-1;i++){
+     const lo=ring(stations[i]),hi=ring(stations[i+1]);
+     for(let side=0;side<4;side++){
+       const [material,a,b]=faces[side],first=points.length/3;
+       triangle(lo[a],hi[a],hi[b]);triangle(lo[a],hi[b],lo[b]);
+       geo.addGroup(first,6,side);
+     }
+   }
+   // Lower tang closes the blade; the tip is a narrow manufactured point.
+   const foot=ring(stations[0]),start=points.length/3;
+   triangle(foot[0],foot[3],foot[1]);
+   triangle(foot[1],foot[3],foot[2]);
+   geo.addGroup(start,6,0);
+   geo.setAttribute('position',new T.Float32BufferAttribute(points,3));
+   geo.computeVertexNormals();
+   return mesh(geo,[M.iron,M.edge,M.steel,M.iron]);
  }
  function swordModel(variant=k,offsetX=0){
    const long=/nodachi|great|dragon|holy|bone|dimension|infernal|under|swordsaint/.test(variant);
@@ -95,14 +152,12 @@ export function makePvpWeaponModel(T,id){
    const single=new T.Group();g.add(single);target=single;
    single.position.x=offsetX;
    handgrip(0,.02,long?.78:.72);
-   let shape=bladeShape(wd,len,curved?wd*.45:0);
-   if(curved){shape=shape.map(([x,y])=>[x+Math.max(0,y-.65)*.11,y]);}
-   plate(shape,.22,'steel',0);
-   // Shaped spine and slender fullers, inset into the blade face.
+   forgedBlade(wd,len,curved?.23:0);
+   // Polished tang engraving follows the raised ridge without crossing it.
    for(const face of [-1,1]){
-     const z=face*.131;
-     if(!curved)plate([[-.047,.95],[.047,.95],[.038,len-.50],[0,len-.32],[-.038,len-.50]],.019,'recess',z);
-     else curve([[.03,.88,z],[.13,len*.56,z],[.17,len-.34,z]],.017,'edge');
+     const z=face*.155;
+     if(!curved)curve([[0,1.06,z],[0,len*.48,z],[0,len-.57,z]],.010,'crystal');
+     else curve([[.055,1.00,z],[.10,len*.55,z],[.18,len-.47,z]],.010,'gold');
    }
    const guardWidth=long?.59:.44;
    if(/katana|nodachi/.test(variant)){
