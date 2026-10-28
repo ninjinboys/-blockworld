@@ -106,14 +106,9 @@ export function makePvpWeaponModel(T,id){
      forgedBlade([[.92,width*.77,0,.16],[1.08,width,0,.17],
        [top*.58,width*.93,offset,.15],[top-.48,width*.80,offset*2,.11],
        [top-.23,width*.52,offset*2.4,.065],[top,.008,offset*2.8,.006]]);
-     for(const face of [-1,1]){
-       poly([[-.043,1.08],[.043,1.08],[.048,top-.48],
-         [0,top-.23],[-.048,top-.48]],.024,black,face*.17);
-       for(let i=0;i<4;i++){
-         const yy=1.28+i*(top-1.8)/3;
-         gem(0,yy,face*.207,.042,i===3?brass:rune);
-       }
-     }
+     // Recessed fuller: keep the main blade readable without floating overlays.
+     const fuller=add(new T.BoxGeometry(.055,Math.max(.30,top-1.68),.028),black,0,(top+1.12)/2,.125);
+     fuller.castShadow=false;
      forgeGuard(.53+(n%3)*.08,.88);
      poly([[-.16,-.10],[0,-.29],[.16,-.10],[.13,.09],
        [0,.18],[-.13,.09]],.20,brass);
@@ -122,11 +117,14 @@ export function makePvpWeaponModel(T,id){
    if(['twinblade','nodachi','boneblade','spellblade','moonblade','sunblade','holyblade','mimicblade','dimensionblade','phantomblade','shapeshift'].includes(kind)){
      longblade(kind==='nodachi'?.22:kind==='boneblade'?.54:.35,kind==='nodachi'?3.65:3.15);
      if(kind==='twinblade'){const p=plate([[-.21,-.16],[.21,-.16],[.25,-.81],[0,-1.22],[-.25,-.81]],edge,.09);gem(0,-.2,.23,.12,rune)}
-     if(kind==='moonblade'||kind==='sunblade'){circle(0,1.68,.48,kind==='sunblade'?brass:rune);spikes(0,1.68,kind==='sunblade'?12:6,.51)}
-     if(kind==='boneblade')for(let j=0;j<5;j++){for(const side of [-1,1]){const p=plate([[side*.24,1.25+j*.32],[side*.64,1.4+j*.32],[side*.23,1.55+j*.32]],edge,.11)}}
-     if(kind==='dimensionblade'){circle(0,2.0,.56,rune);circle(0,2.0,.38,black)}
+     if(kind==='moonblade'||kind==='sunblade'){
+       // Change blade silhouette rather than cover it with a floating ring.
+       for(const side of [-1,1])plate([[side*.25,1.78],[side*.43,2.22],[side*.27,2.74],[side*.18,2.35]],kind==='sunblade'?brass:edge,.025);
+     }
+     if(kind==='boneblade')for(const side of [-1,1])plate([[side*.33,1.42],[side*.52,1.92],[side*.42,2.45],[side*.32,2.83]],edge,.04);
+     if(kind==='dimensionblade')for(const side of [-1,1])plate([[side*.32,1.72],[side*.57,2.04],[side*.31,2.46]],rune,.02);
      if(kind==='spellblade'||kind==='holyblade'){circle(0,1.2,.3,brass);gem(0,1.2,.27,.18,rune)}
-     if(kind==='mimicblade'||kind==='shapeshift'){for(const side of [-1,1]){gem(side*.16,1.7,.26,.11,black);plate([[side*.08,2.2],[side*.46,2.52],[side*.2,2.35]],rune,.18)}}
+     if(kind==='mimicblade'||kind==='shapeshift')for(const side of [-1,1])plate([[side*.29,1.25],[side*.49,1.65],[side*.29,2.16],[side*.51,2.47],[side*.25,2.68]],black,.01);
      return true;
    }
    if(['kusarigama','chainblade','morningstar','warhammer','steamhammer','gearmace','earthmace','thunderaxe','skyhalberd','naginata','bo','infernal','voidscythe','underworld','dragonmaw','dragonhorn'].includes(kind)){
