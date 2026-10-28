@@ -567,6 +567,166 @@ export function makePvpWeaponModel(T,id){
      [-.17,1.38]],.05,'steel',.14);
    gem(0,.91,.24,.13,.25,.055);
  }
+ // Secondary forging pass. Each archetype receives real socket/edge/relief
+ // craftsmanship, not free-floating ornament applied indiscriminately.
+ function forgeFinish(){
+   const isShield=/shield|tower|aegis|barrier/.test(k)||w.id==='reflect';
+   const isBow=/bow|arbalest|repeater|crossbow|tracker/.test(k);
+   const isGun=/gun|rifle|sniper|cannon|mortar|rotary|turret|armcannon|gatling|coil|drone/.test(k);
+   const isBlade=/sword|blade|katana|nodachi|great|cleaver|twin|dual|mimic|shapeshift|phantom/.test(k);
+   const isPole=/spear|naginata|halberd|trident|bo|scythe|axe|hammer|mace|kusarigama|chain|flail|whip|earth|thunder|underworld|dragonhorn|dragonmaw|morningstar|sky|infernal/.test(k);
+   const isMagic=/staff|rod|hourglass|clock|oracle|chrono|portal|rift|gravity|astro|star|comet|waterwheel|sun|wind|chaos|venom|crystal|seal|mirror|bell|lantern|cage|swarm|wing|seraph|fan|harp|lute|ribbon/.test(k);
+   if(isBlade){
+     // The sword head lives in its own grip/steel assembly so the details
+     // follow its position (including both independent blades of twin swords).
+     for(const assembly of g.children){
+       if(!assembly.isGroup && !assembly.children?.length)continue;
+       const old=target;target=assembly;
+       const cx=0;
+       for(const sign of [-1,1]){
+         // Steel pins through the crossguard, front and back.
+         const x=sign*(.26+(n%3)*.018);
+         const rivet=mesh(new T.SphereGeometry(.040,10,8),'gold',x,.675,.175);
+         rivet.scale.z=.38;
+         const rear=mesh(new T.SphereGeometry(.035,10,8),'bronze',x,.675,-.175);
+         rear.scale.z=.34;
+       }
+       // Pommel crown and tangible metal edges (not flat stickers).
+       cyl(cx,-.39,0,.115,.085,'gold');
+       torus(cx,-.34,0,.087,.022,'dark');
+       if(n%3===0){
+         for(const sign of [-1,1])
+           rod([sign*.12,.58,.075],[sign*.29,.75,.075],.027,'gold');
+       }
+       target=old;
+     }
+   }else if(isShield){
+     // Cathedral crown + elongated armour seam and multi-height studs.
+     for(const sign of [-1,1]){
+       const s=sign;
+       plate([[s*.19,1.01],[s*.44,1.22],[s*.61,1.09],
+         [s*.48,.91],[s*.27,.85]],.095,'gold',.37);
+       plate([[s*.30,.71],[s*.50,.82],[s*.53,.41],[s*.43,.19],
+         [s*.28,.31]],.042,'dark',.40);
+       curve([[s*.24,.72,.45],[s*.30,.32,.45],
+         [s*.27,-.32,.45],[s*.15,-1.05,.44]],.019,'edge');
+       for(const y of [.58,-.17,-.73]){
+         const stud=mesh(new T.SphereGeometry(.037,10,8),'gold',s*.64,y,.44);
+         stud.scale.z=.38;
+       }
+     }
+     plate([[-.17,1.11],[0,1.39],[.17,1.11],
+       [.13,.92],[0,.86],[-.13,.92]],.11,'gold',.40);
+     gem(0,1.03,.50,.08,.13,.049);
+     for(const y of [-.46,-.87]){
+       const bead=mesh(new T.SphereGeometry(.037,10,8),'steel',0,y,.43);
+       bead.scale.z=.38;
+     }
+   }else if(isBow){
+     if(/arbalest|repeater|crossbow/.test(k)){
+       // Bow-limb sockets, cheek plates, cocking latch and brass nocks.
+       for(const sign of [-1,1]){
+         cube(sign*.54,.22,-1.00,.24,.18,.21,'bronze');
+         cube(sign*.54,.24,-1.11,.11,.070,.23,'gold');
+       }
+       cube(0,.34,-.28,.27,.13,.60,'iron');
+       cube(0,.43,.36,.34,.12,.23,'bronze');
+       torus(0,-.06,.36,.17,.029,'gold').rotation.x=Math.PI/2;
+       for(let j=0;j<4;j++)cube(0,.42,-.57+j*.25,.18,.045,.068,'gold');
+       gem(0,.44,-.73,.07,.095,.04);
+     }else{
+       // A double-braced limb with real polished channels and a tightly
+       // bound handgrip, without touching the single taut bowstring.
+       for(const sign of [-1,1]){
+         const y=sign;
+         curve([[-.19,y*.43,.23],[-.32,y*.79,.23],
+           [-.46,y*1.11,.22],[-.59,y*1.38,.19]],.020,'gold');
+         curve([[-.18,y*.45,-.17],[-.31,y*.76,-.17],
+           [-.46,y*1.10,-.16]],.018,'steel');
+         cube(0,y*.315,.0,.21,.075,.19,'gold');
+       }
+       for(let j=0;j<6;j++){
+         const y=-.20+j*.08;
+         rod([-.086,y,.076],[.085,y+.043,.076],.013,'gold');
+       }
+     }
+   }else if(isGun){
+     // Layered receiver, cheek stock, muzzle shroud and brass heat fins.
+     cube(0,.52,.32,.43,.40,.83,'iron');
+     cube(0,.69,-.36,.39,.16,.83,'dark');
+     cube(0,.74,.16,.27,.09,.65,'gold');
+     cube(0,.01,.68,.33,.30,.23,'bronze');
+     cube(0,-.18,.44,.13,.48,.20,'leather');
+     const rifle=/sniper|rifle/.test(k),cannon=/cannon|mortar|armcannon/.test(k);
+     if(rifle){
+       rod([0,1.04,.20],[0,1.04,-.75],.065,'bronze');
+       torus(0,1.04,-.68,.11,.020,'crystal');
+       for(const sign of [-1,1])
+         cube(sign*.22,.68,.07,.055,.09,.56,'gold');
+     }else{
+       const z=cannon?-1.58:-1.62;
+       torus(0,.53,z,.18,.038,'bronze');
+       for(let j=0;j<4;j++){
+         cube(0,.82,-.53+j*.15,.37,.07,.049,'gold');
+       }
+     }
+     if(/rotary|gatling|coil/.test(k))
+       torus(0,.50,-1.26,.28,.043,'gold');
+     gem(0,.77,.46,.075,.11,.052);
+   }else if(isPole){
+     // Cross-wrapped long haft and socket collars reinforce the metal head.
+     for(let i=0;i<10;i++){
+       const y=.18+i*.155;
+       rod([-.07,y,.06],[.07,y+.055,.06],.016,i%3===0?'gold':'wrap');
+     }
+     for(const y of [1.80,2.01])
+       cyl(0,y,0,.119,.062,'gold');
+     if(/spear|trident|naginata|halberd|sky|dragonhorn/.test(k)){
+       plate([[-.045,2.41],[.046,2.41],[.05,2.90],
+         [0,3.16],[-.05,2.90]],.022,'gold',.14);
+     }else if(/hammer|mace|gear|steam|earth|warhammer/.test(k)){
+       for(const sign of [-1,1]){
+         cube(sign*.49,2.07,.33,.12,.15,.049,'gold');
+         cube(sign*.49,2.39,.33,.12,.15,.049,'gold');
+       }
+       gem(0,2.26,.38,.12,.16,.05);
+     }else if(/axe|thunder/.test(k)){
+       for(const sign of [-1,1])curve([[0,1.91,.16],[sign*.43,2.10,.16],
+         [sign*.66,2.42,.16]],.019,'gold');
+     }
+   }else if(isMagic){
+     // A machined core, rune seams and balanced metal ferrule on each stave.
+     for(const y of [.18,.57,1.08,1.58]){
+       cyl(0,y,0,.113,.075,'bronze');
+       cyl(0,y+.039,0,.118,.014,'gold');
+     }
+     for(const side of [-1,1])curve([[side*.071,.38,.08],
+       [side*.089,.74,.08],[side*.077,1.11,.08],
+       [side*.04,1.53,.08]],.015,'crystal');
+     if(!/fan|harp|lute|ribbon/.test(k)){
+       plate([[-.17,1.91],[0,2.11],[.17,1.91],
+         [.13,1.72],[-.13,1.72]],.105,'bronze',.08);
+       gem(0,1.94,.18,.08,.135,.04);
+     }
+   }else{
+     // The unusual gadgets receive small, functional-looking fittings only.
+     if(/grimoire|puppet|marionette|voodoo|doll/.test(k)){
+       for(const sign of [-1,1]){
+         cube(sign*.57,1.00,.13,.067,1.23,.043,'gold');
+         gem(sign*.41,1.37,.21,.055,.082,.027);
+       }
+     }else if(/bomb|grenade|vial|potion/.test(k)){
+       for(const sign of [-1,1])cube(sign*.25,.88,.31,.075,.17,.073,'gold');
+       gem(0,1.25,.44,.08,.10,.06);
+     }else if(/claw|knuckle|gauntlet|stonefist|chimera|beast/.test(k)){
+       for(const sign of [-1,1]){
+         plate([[sign*.18,.87],[sign*.49,1.04],
+           [sign*.43,1.24],[sign*.18,1.15]],.08,'bronze',.26);
+         gem(sign*.34,1.04,.33,.07,.10,.04);
+       }
+     }
+   }
+ }
  // Every nonstarter class gets a unique, native mesh — even if it belongs
  // to the same weapon family. Starter meshes can be generated here too but
  // existing first five remain selected from the story branch in the viewer.
@@ -580,6 +740,7 @@ export function makePvpWeaponModel(T,id){
  else if(/spear|naginata|halberd|trident|bo|scythe|axe|hammer|mace|kusarigama|chain|flail|whip|earth|thunder|underworld|dragonhorn|dragonmaw|morningstar|sky|infernal/.test(k))poleModel(k);
  else if(/staff|rod|hourglass|clock|oracle|chrono|portal|rift|gravity|astro|star|comet|waterwheel|sun|wind|chaos|venom|crystal|seal|mirror|bell|lantern|cage|swarm|wing|seraph|fan|harp|lute|ribbon/.test(k))arcaneModel(k);
  else specialModel(k);
+ forgeFinish();
  // Job-based signatures are small structural changes, never floating gem
  // decals over the primary surface. Geometry is original for every ID.
  if(/shield|tower|aegis|barrier/.test(k)){
