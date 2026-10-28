@@ -45,6 +45,41 @@ export function makePvpWeaponModel(T,id){
  const gem=(x,y,z,r=.1,m=rune)=>add(new T.OctahedronGeometry(r,0),m,x,y,z);
  const poly=(pts,depth,mat=steel,z=0)=>{const sh=new T.Shape();sh.moveTo(...pts[0]);for(let j=1;j<pts.length;j++)sh.lineTo(...pts[j]);sh.closePath();return add(new T.ExtrudeGeometry(sh,{depth,steps:1,bevelEnabled:true,bevelSize:.012,bevelThickness:.012,bevelSegments:2}),mat,0,0,z-depth/2)};
  const line=(points,r=.026,mat=brass)=>add(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(16,points.length*8),r,8,false),mat);
+ // Forged 3D blade: real diamond-section steel, rather than flat stacked
+ // polygons. Both faces converge into a cutting edge, with a tapered point.
+ const forgedBlade=(stations,material=steel)=>{
+   const vertices=[],indices=[];
+   // Each station: [height,halfWidth,centreX,halfThickness].
+   for(const [y,w,x,t] of stations){
+     vertices.push(x-w,y,0, x,y,t, x+w,y,0, x,y,-t);
+   }
+   for(let i=0;i<stations.length-1;i++){
+     for(let f=0;f<4;f++){
+       const a=i*4+f,b=i*4+(f+1)%4,c=(i+1)*4+f,d=(i+1)*4+(f+1)%4;
+       indices.push(a,b,c,b,d,c);
+     }
+   }
+   indices.push(0,3,2,0,2,1);
+   const end=(stations.length-1)*4;
+   indices.push(end,end+1,end+2,end,end+2,end+3);
+   const geo=new T.BufferGeometry();
+   geo.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
+   geo.setIndex(indices);geo.computeVertexNormals();
+   return add(geo,material);
+ };
+ const forgeGuard=(span=.55,y=.86)=>{
+   // Cast bronze quillons are thick and raised on both sides of the blade.
+   for(const sign of [-1,1]){
+     const pts=[[0,y],[sign*.18,y+.08],[sign*span*.79,y+.17],
+       [sign*span,y+.34],[sign*span*1.1,y+.22],
+       [sign*span*.85,y-.05],[sign*.22,y-.11]];
+     poly(pts,.17,brass,.02);
+     poly(pts.map(([x,yy])=>[x*.83, y+(yy-y)*.68]),.04,edge,.13);
+     gem(sign*span*.82,y+.18,.19,.055,rune);
+   }
+   poly([[-.19,y-.18],[0,y+.19],[.19,y-.18],[0,y-.33]],.22,black,.05);
+   gem(0,y-.05,.20,.12,rune);
+ };
  const length=2.0+(n%7)*.10+(w.tier===3?.28:0);
  const width=.18+(n%5)*.045;
  const detail=3+(n%4);
@@ -70,7 +105,7 @@ export function makePvpWeaponModel(T,id){
   gem(x,-.08,.14,.09,rune);
   const wdt=variant==='greatsword'?width*2.0:width;
   const skew=variant==='katana'?.16:0;
-  poly([[x-wdt, .94],[x+wdt,.94],[x+wdt+skew,l+.48],[x+skew*.55,l+.76],[x-wdt+skew,l+.48]],.13,steel);
+  forgedBlade([[.94,wdt*.85,x,.15],[1.12,wdt,x,.17],[l*.73,wdt*.94,x+skew*.30,.13],[l+.43,wdt*.73,x+skew*.8,.10],[l+.76,.007,x+skew*.55,.006]]);
   for(const face of [-1,1]){
     const z=face*.105;
     for(const side of [-1,1]){
@@ -96,7 +131,27 @@ export function makePvpWeaponModel(T,id){
    const spikes=(x,y,count=6,r=.45)=>{for(let j=0;j<count;j++){const a=j*Math.PI*2/count;const px=x+Math.sin(a)*r,py=y+Math.cos(a)*r;const p=add(new T.ConeGeometry(.12,.35,5),edge,px,py,.10);p.rotation.z=-a;}};
    const shaft=(h=2.5)=>{rod(0,h/2,0,.075,h,leather);for(let j=0;j<9;j++){const rr=circle(0,.32+j*.19,.09,j%2?brass:black);rr.rotation.x=Math.PI/2;}};
    const plate=(points,m=steel,z=.08)=>poly(points,.15,m,z);
-   const longblade=(width=.3,top=3.1)=>{shaft(.98);plate([[-width,.96],[width,.96],[width*.84,top-.43],[0,top],[-width*.84,top-.43]],steel);plate([[-.04,1.08],[.04,1.08],[.07,top-.43],[0,top-.11],[-.07,top-.43]],black,.21);plate([[-.65,.85],[-.26,.91],[0,.78],[.26,.91],[.65,.85],[.43,.68],[0,.61],[-.43,.68]],brass,.13);gem(0,.79,.3,.10,rune)};
+   const longblade=(width=.3,top=3.1)=>{
+     // One solid bevelled blade with proper cross-section, shaped shoulders
+     // and a forged point. Unlike the old flat cut-out, this reads in profile.
+     grip(0,.43,.82);
+     const offset=(n%5-2)*.018;
+     forgedBlade([[.92,width*.77,0,.16],[1.08,width,0,.17],
+       [top*.58,width*.93,offset,.15],[top-.48,width*.80,offset*2,.11],
+       [top-.23,width*.52,offset*2.4,.065],[top,.008,offset*2.8,.006]]);
+     for(const face of [-1,1]){
+       poly([[-.043,1.08],[.043,1.08],[.048,top-.48],
+         [0,top-.23],[-.048,top-.48]],.024,black,face*.17);
+       for(let i=0;i<4;i++){
+         const yy=1.28+i*(top-1.8)/3;
+         gem(0,yy,face*.207,.042,i===3?brass:rune);
+       }
+     }
+     forgeGuard(.53+(n%3)*.08,.88);
+     poly([[-.16,-.10],[0,-.29],[.16,-.10],[.13,.09],
+       [0,.18],[-.13,.09]],.20,brass);
+     gem(0,-.06,.16,.09,rune);
+   };
    if(['twinblade','nodachi','boneblade','spellblade','moonblade','sunblade','holyblade','mimicblade','dimensionblade','phantomblade','shapeshift'].includes(kind)){
      longblade(kind==='nodachi'?.22:kind==='boneblade'?.54:.35,kind==='nodachi'?3.65:3.15);
      if(kind==='twinblade'){const p=plate([[-.21,-.16],[.21,-.16],[.25,-.81],[0,-1.22],[-.25,-.81]],edge,.09);gem(0,-.2,.23,.12,rune)}
