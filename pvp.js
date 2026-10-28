@@ -1143,13 +1143,19 @@ function resolveAttack(attackerIsHost,remotePitch=0){
    const cp=Math.cos(pitch),sp=Math.sin(pitch);
    const rayX=Math.sin(attacker.face)*cp,rayY=sp,rayZ=Math.cos(attacker.face)*cp;
    const originY=1.62+(attacker.y||0);
-   const targetY=.98+(target.y||0);
-   const vx=target.x-attacker.x,vy=targetY-originY,vz=target.z-attacker.z;
-   const along=vx*rayX+vy*rayY+vz*rayZ;
+   // Hit the opponent's visible body capsule (feet to head), not an
+   // invisible tiny sphere around the waist. This allows head and leg hits.
+   const vx=target.x-attacker.x,vz=target.z-attacker.z;
+   const horizontalSq=rayX*rayX+rayZ*rayZ;
+   if(horizontalSq<.001)return;
+   const along=(vx*rayX+vz*rayZ)/horizontalSq;
    if(along<=0||along>c.range)return;
-   const missSq=vx*vx+vy*vy+vz*vz-along*along;
-   // Approximate the rival's torso as a narrow sphere.
-   if(missSq>.48*.48)return;
+   const horizontalMissSq=(vx-rayX*along)**2+(vz-rayZ*along)**2;
+   const targetBottom=.12+(target.y||0),targetTop=1.95+(target.y||0);
+   const rayHeight=originY+rayY*along;
+   const verticalMiss=Math.max(targetBottom-rayHeight,0,rayHeight-targetTop);
+   // A 0.55-unit collision radius matches the avatar silhouette.
+   if(horizontalMissSq+verticalMiss*verticalMiss>.55*.55)return;
  }
  const targetJob=attackerIsHost?enemyClass:myClass;
  const block=target.abilityGuardUntil>now?.72:target.guard?(CLASSES[targetJob].block||.42):0;
