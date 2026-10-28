@@ -417,6 +417,21 @@ export function makePvpWeaponModel(T,id){
      [sign*.16,hh+.09]],.12,'gold');
  }
  function firearmModel(variant=k){
+   if(/drone/.test(variant)){
+     // Quadrotor machine: independent airframe, arms and protected rotors.
+     cube(0,1.04,0,.90,.32,.80,'iron');
+     cube(0,1.26,0,.61,.16,.55,'dark');
+     cube(0,.90,.42,.40,.25,.16,'bronze');
+     gem(0,1.04,.52,.14,.15,.066);
+     for(const x of [-.78,.78])for(const z of [-.64,.64]){
+       rod([x/2,1.06,z/2],[x,1.06,z],.067,'bronze');
+       cyl(x,1.12,z,.17,.20,'steel');
+       const rotor=torus(x,1.27,z,.30,.032,'edge');rotor.rotation.x=Math.PI/2;
+       cube(x,1.29,z,.51,.045,.075,'dark');
+     }
+     cube(0,.69,0,.24,.29,.23,'leather');
+     return;
+   }
    const cannon=/cannon|mortar|armcannon/.test(variant);
    const rifle=/sniper|rifle/.test(variant);
    const rotary=/rotary|gatling/.test(variant);
@@ -441,6 +456,15 @@ export function makePvpWeaponModel(T,id){
      for(const sign of [-1,1])cube(sign*.44,.47,.10,.37,.16,.46,'iron');
    }
    if(rotary)cyl(0,.50,-.93,.26,.14,'bronze');
+   if(/coil/.test(variant)){
+     // Exposed insulated electromagnetic windings.
+     for(let i=0;i<5;i++){
+       const z=-.52-i*.20;
+       torus(0,.53,z,.27,.028,i%2?'gold':'crystal');
+     }
+     for(const side of [-1,1])
+       rod([side*.17,.60,-.38],[side*.17,.60,-1.45],.028,'crystal');
+   }
  }
  function specialModel(variant=k){
    const isBook=/book|grimoire|summon|voodoo|doll|marionette|puppet/.test(variant);
@@ -502,6 +526,41 @@ export function makePvpWeaponModel(T,id){
    }
    const isThrown=/bomb|grenade|vial|potion|palette/.test(variant);
    const isHands=/claw|gauntlet|knuckle|stonefist/.test(variant);
+   if(/jackbox/.test(variant)){
+     cube(0,.59,0,1.05,.92,.76,'dark');
+     cube(0,1.06,0,1.16,.16,.87,'bronze');
+     for(const sign of [-1,1]){
+       cube(sign*.48,.63,.33,.10,.77,.075,'gold');
+       cube(sign*.28,.59,.41,.17,.12,.068,'gold');
+     }
+     for(let i=0;i<5;i++){
+       const y=1.12+i*.23,a=i*Math.PI*.78;
+       const coil=torus(Math.sin(a)*.10,y,.02,.20,.040,'steel');
+       coil.rotation.x=Math.PI/2;
+     }
+     const head=mesh(new T.IcosahedronGeometry(.30,1),'bronze',0,2.38,0);
+     head.scale.y=1.18;
+     for(const side of [-1,1]){
+       plate([[0,2.50],[side*.43,2.79],[side*.27,2.35]],.11,'crystal');
+       gem(side*.11,2.41,.26,.055,.065,.04);
+     }
+     gem(0,.52,.43,.14,.18,.060);
+     return;
+   }
+   if(/roulette/.test(variant)){
+     const cy=1.17,radius=.68;
+     torus(0,cy,0,radius,.11,'bronze');
+     torus(0,cy,.10,radius*.79,.042,'gold');
+     for(let j=0;j<10;j++){
+       const a=j*Math.PI/5,b=a+Math.PI/5;
+       plate([[0,cy],[Math.sin(a)*.57,cy+Math.cos(a)*.57],
+         [Math.sin(b)*.57,cy+Math.cos(b)*.57]],.10,j%2?'dark':'iron',.02);
+       rod([0,cy,.13],[Math.sin(a)*radius*.75,cy+Math.cos(a)*radius*.75,.13],.021,'gold');
+     }
+     gem(0,cy,.25,.17,.17,.067);
+     handgrip(0,-.03,.38);
+     return;
+   }
    if(isBook){
      plate([[-.75,.11],[0,.26],[0,1.92],[-.75,1.77]],.22,'dark');
      plate([[0,.26],[.75,.11],[.75,1.77],[0,1.92]],.22,'iron');
@@ -651,6 +710,13 @@ export function makePvpWeaponModel(T,id){
        }
      }
    }else if(isGun){
+     if(/drone/.test(k)){
+       for(const sign of [-1,1]){
+         cube(sign*.22,1.24,.15,.21,.06,.41,'gold');
+         gem(sign*.34,1.25,.40,.068,.069,.03);
+       }
+       return;
+     }
      // Layered receiver, cheek stock, muzzle shroud and brass heat fins.
      cube(0,.52,.32,.43,.40,.83,'iron');
      cube(0,.69,-.36,.39,.16,.83,'dark');
