@@ -1,0 +1,87 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"><title>NEXACRAFT 青龍 3D V10</title><style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071321;color:#f0fbff;font-family:system-ui,-apple-system,sans-serif}canvas{width:100vw;height:100dvh;display:block;touch-action:none;background:#081625}header{position:absolute;left:15px;top:15px;pointer-events:none;text-shadow:0 2px 4px #04101b}header small{display:block;color:#85d9ef;letter-spacing:.15em;font-size:10px}header b{font-size:22px;display:block;margin-top:5px}header span{font-size:11px;color:#bed8e1}#status{position:absolute;bottom:19px;left:14px;color:#9fb8c4;font-size:11px;pointer-events:none}.buttons{position:absolute;right:12px;bottom:14px;display:flex;gap:7px}.buttons button{background:#13435b;color:#fff;border:1px solid #4b91a8;border-radius:9px;width:45px;height:45px;font-size:21px}#error{display:none;position:absolute;top:44%;left:8%;right:8%;padding:20px;border-radius:8px;background:#4a1b2e;color:#fff}</style></head><body><canvas id="cv"></canvas><header><small>NEXACRAFT / GUARDIAN BEAST</small><b>青龍 SEIRYU · V10</b><span>指で回転 · 2本指で拡大縮小</span></header><div id="status">立体モデルを構築中…</div><div id="error"></div><div class="buttons"><button id="minus">−</button><button id="reset">↻</button><button id="plus">＋</button></div><script>
+(function(){"use strict";
+const canvas=document.getElementById("cv"),status=document.getElementById("status"),error=document.getElementById("error");
+const P=[],N=[],C=[],faces=[];
+const deep=[.018,.105,.29],blue=[.015,.23,.55],royal=[.02,.34,.70],azure=[.045,.55,.80],cyan=[.11,.77,.81],jade=[.29,.86,.78],ivory=[.91,.84,.71],bone=[.70,.59,.42],dark=[.008,.028,.059],white=[.97,.93,.78],glow=[.12,.98,1.0];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],sum=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],mul=(a,s)=>a.map(x=>x*s),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=a=>mul(a,1/(Math.hypot(...a)||1));
+let seed=121;function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
+function triangle(a,b,c,color){const n=norm(cross(sub(b,a),sub(c,a)));let at=P.length/3;for(const q of [a,b,c]){P.push(...q);N.push(...n);C.push(...color)}faces.push(at)}
+function quad(a,b,c,d,color){triangle(a,b,c,color);triangle(a,c,d,color)}
+function ellipsoid(pos,dim,color,ns=10,nt=16){for(let i=0;i<ns;i++)for(let j=0;j<nt;j++){const p=(u,v)=>[pos[0]+dim[0]*Math.sin(u)*Math.cos(v),pos[1]+dim[1]*Math.cos(u),pos[2]+dim[2]*Math.sin(u)*Math.sin(v)];const a=i*Math.PI/ns,b=(i+1)*Math.PI/ns,c=j*2*Math.PI/nt,d=(j+1)*2*Math.PI/nt;quad(p(a,c),p(a,d),p(b,d),p(b,c),color)}}
+function tube(points,radii,color,sides=7){for(let i=0;i<points.length-1;i++){let a=points[i],b=points[i+1],dir=norm(sub(b,a)),s=norm(cross(dir,Math.abs(dir[1])>.88?[1,0,0]:[0,1,0])),u=norm(cross(dir,s)),ra=Array.isArray(radii)?radii[i]:radii,rb=Array.isArray(radii)?radii[i+1]:radii;let pt=(p,r,t)=>sum(p,sum(mul(s,r*Math.cos(t)),mul(u,r*Math.sin(t))));for(let j=0;j<sides;j++){let x=j*2*Math.PI/sides,y=(j+1)*2*Math.PI/sides;quad(pt(a,ra,x),pt(a,ra,y),pt(b,rb,y),pt(b,rb,x),color)}}}
+function fin(a,b,width,depth,color){let d=norm(sub(b,a)),side=norm(cross(d,[0,0,1])),up=norm(cross(d,side));let l=sum(a,mul(side,width*.5)),r=sub(a,mul(side,width*.5)),peak=sum(b,mul(up,depth));triangle(l,r,peak,color);triangle(sum(l,mul(up,-depth*.55)),peak,r,color.map(x=>x*.77));triangle(l,peak,sum(r,mul(up,-depth*.4)),color.map(x=>x*.90))}
+function spline(pts,t){let k=Math.min(pts.length-2,Math.floor(t*(pts.length-1))),f=t*(pts.length-1)-k,a=pts[Math.max(0,k-1)],b=pts[k],c=pts[k+1],d=pts[Math.min(pts.length-1,k+2)];return [0,1,2].map(j=>.5*(2*b[j]+(-a[j]+c[j])*f+(2*a[j]-5*b[j]+4*c[j]-d[j])*f*f+(-a[j]+3*b[j]-3*c[j]+d[j])*f*f*f))}
+const spine=[[-4.80,3.3,.4],[-3.85,2.5,.3],[-2.92,1.15,.25],[-1.35,.64,0],[.05,1.15,-.32],[.40,3.0,-.72],[1.25,4.0,-1.3],[2.40,3.8,-1.45],[3.00,2.40,-1.02],[2.58,.88,-.53],[3.85,.66,-.10],[4.95,1.65,.24],[5.08,3.3,.50],[6.03,4.18,.80],[7.13,3.78,1.08]];
+function frame(t){let p=spline(spine,t),tan=norm(sub(spline(spine,Math.min(1,t+.001)),spline(spine,Math.max(0,t-.001)))),s=norm(cross(tan,[0,1,0])),up=norm(cross(s,tan));if(up[1]<0){up=mul(up,-1);s=mul(s,-1)}return {p,tan,s,up}}
+function radius(t){return (.82+.20*Math.sin(3*t))*(1-.77*Math.max(0,(t-.75)/.25))*(t<.05?.72+t*5.6:1)}
+const rings=112,sections=16;
+for(let i=0;i<rings;i++){let fa=frame(i/rings),fb=frame((i+1)/rings),ra=radius(i/rings),rb=radius((i+1)/rings);let pos=(f,r,t)=>sum(f.p,sum(mul(f.s,r*Math.cos(t)),mul(f.up,r*Math.sin(t))));for(let j=0;j<sections;j++){let a=j*2*Math.PI/sections,b=(j+1)*2*Math.PI/sections,col=Math.sin((a+b)/2)<-.40?(i%5===0?white:ivory):[deep,blue,royal,azure,cyan][(j+Math.floor(i/8))%5];quad(pos(fa,ra,a),pos(fa,ra,b),pos(fb,rb,b),pos(fb,rb,a),col)}}
+for(let i=2;i<rings-3;i+=3){let t=i/rings,f=frame(t),r=radius(t),pts=[];for(let j=0;j<7;j++){let phi=Math.PI*1.17+(j/6)*Math.PI*.70;pts.push(sum(f.p,mul(sum(mul(f.s,Math.cos(phi)),mul(f.up,Math.sin(phi))),r*1.025))}tube(pts,.027,white,4)}
+for(let i=5;i<rings-5;i+=2){let t=i/rings,f=frame(t),r=radius(t);for(let j=0;j<13;j++){let angle=(j+(i%4===0?.5:0))*2*Math.PI/13;if(Math.sin(angle)<-.40)continue;let out=norm(sum(mul(f.s,Math.cos(angle)),mul(f.up,Math.sin(angle)))),across=norm(sum(mul(f.s,-Math.sin(angle)),mul(f.up,Math.cos(angle))),p=sum(f.p,mul(out,r*1.012)),w=r*.20,l=.19+r*.09,lift=.06+r*.018,color=[deep,blue,royal,azure,cyan,jade][(i*2+j*3)%6],fwd=f.tan;let a=sum(p,sum(mul(across,-w),mul(fwd,-l))),b=sum(p,sum(mul(across,w),mul(fwd,-l))),c=sum(p,sum(mul(across,w*.78),mul(fwd,l))),d=sum(p,sum(mul(across,-w*.78),mul(fwd,l))),h=mul(out,lift);quad(a,b,sum(c,h),sum(d,h),color);triangle(a,sum(d,h),d,color.map(x=>x*.70));triangle(b,c,sum(c,h),color.map(x=>x*.8))}}
+for(let i=6;i<rings-4;i+=6){let t=i/rings,f=frame(t),r=radius(t),root=sum(f.p,mul(f.up,r));fin(sum(root,mul(f.tan,-.12)),sum(root,sum(mul(f.up,.24*(1-t)+.13),mul(f.tan,.28))),.23,.12,i%3?cyan:jade)}
+// Massive cranium and bared open jaws: each jaw is a separate solid 3D form.
+ellipsoid([-5.47,3.45,.65],[1.50,1.04,1.02],royal,14,21);
+ellipsoid([-6.41,3.31,1.05],[1.15,.42,.75],azure,11,18);
+ellipsoid([-7.13,3.10,1.11],[.66,.31,.64],blue,9,15);
+ellipsoid([-6.52,2.55,1.11],[1.24,.56,.72],dark,9,16);
+ellipsoid([-6.57,1.94,1.13],[1.26,.21,.72],blue,9,16);
+ellipsoid([-6.82,2.02,1.16],[.93,.09,.71],ivory,6,12);
+ellipsoid([-6.50,2.18,1.19],[.47,.08,.47],[.04,.38,.43],5,10);
+for(const sign of [-1,1]){
+ const z=.65+sign*.78;
+ ellipsoid([-5.67,3.31,z],[.63,.46,.39],azure,8,12);
+ ellipsoid([-6.00,3.93,z],[.78,.25,.40],deep,7,12);
+ ellipsoid([-6.23,3.75,z+sign*.32],[.24,.16,.07],dark,7,9);
+ ellipsoid([-6.25,3.76,z+sign*.39],[.14,.11,.06],glow,7,9);
+ ellipsoid([-6.29,3.78,z+sign*.44],[.037,.084,.024],deep,5,6);
+ ellipsoid([-7.47,3.12,1.11+sign*.40],[.14,.07,.09],dark,5,8);
+ for(let j=0;j<5;j++){let x=-7.21+j*.34,z2=1.11+sign*(.57-j*.04);tube([[x,2.87,z2],[x-.07,2.53,z2+sign*.04],[x-.14,2.21,z2+sign*.08]],[.105,.075,.005],white,6);tube([[x,2.03,z2],[x-.02,2.35,z2],[x-.07,2.47,z2]],[.08,.05,.005],white,5)}
+ for(let j=0;j<7;j++){let x=-6.10+j*.22;fin([x,3.83,.65+sign*.82],[x+.35,4.29,.65+sign*(1.1+j*.055)],.25,.11,[royal,azure,cyan,jade][j%4])}
+ // Extra-large branching horns.
+ let horn=[[-5.36,4.17,.65+sign*.48],[-5.28,4.65,.65+sign*.61],[-5.09,5.24,.65+sign*.73],[-4.85,5.78,.65+sign*.83],[-4.60,6.08,.65+sign*.90]];
+ tube(horn,[.22,.19,.14,.09,.005],bone,7);
+ for(let j=1;j<4;j++){let q=horn[j];tube([q,[q[0]-.26,q[1]+.15,q[2]+sign*.21],[q[0]-.45,q[1]+.49,q[2]+sign*.30]],[.12,.06,.002],bone,6)}
+ for(let j=0;j<3;j++){let p=horn[j+1];tube([p,[p[0]+.33,p[1]+.23,p[2]+sign*.18],[p[0]+.58,p[1]+.52,p[2]+sign*.25]],[.10,.05,.002],bone,6)}
+ tube([[-7.18,2.92,1.11+sign*.61],[-7.93,3.01,1.11+sign*1.05],[-8.42,3.57,1.11+sign*1.37],[-8.72,4.07,1.11+sign*1.56],[-8.48,4.43,1.11+sign*1.72]],[.059,.05,.037,.023,.002],cyan,6);
+ tube([[-6.83,2.30,1.11+sign*.65],[-7.40,1.70,1.11+sign*1.02],[-7.88,1.38,1.11+sign*1.40]],[.054,.037,.002],jade,5);
+ for(let j=0;j<7;j++){let x=-5.82+j*.25;fin([x,3.24-j*.04,.65+sign*.83],[x+.47+j*.03,2.81-j*.10,.65+sign*(1.15+j*.06)],.16,.09,[azure,cyan,jade][j%3])}
+}
+for(let j=0;j<10;j++){let x=-5.83+j*.18;fin([x,4.03,.65],[x+.36,4.57+(j%2)*.12,.65+(j-5)*.12],.21,.13,[royal,azure,cyan][j%3])}
+for(const [t,side,back] of [[.18,1,false],[.23,-1,false],[.73,1,true],[.79,-1,true]]){let f=frame(t),r=radius(t),shoulder=sum(f.p,sum(mul(f.s,side*r*.89),mul(f.up,-r*.12))),elbow=sum(shoulder,[back?.15:-.40,-.52,side*.43]),wrist=sum(elbow,[back?-.15:-.36,-.53,side*.19]),paw=sum(wrist,[-.27,-.07,side*.13]);ellipsoid(shoulder,[.42,.42,.42],deep,9,11);tube([shoulder,elbow,wrist],[.35,.28,.18],royal,10);ellipsoid(paw,[.35,.17,.31],blue,8,10);for(let j=0;j<4;j++){let p=sum(paw,[-.22,-.02,side*(j-1.5)*.16]),q=sum(p,[-.20,-.12,0]);tube([p,q,sum(q,[-.14,-.15,0])],[.085,.06,.003],white,6)}}
+// A flaring broad aquatic tail built from layered jade leaves, not needle spikes.
+for(let i=0;i<18;i++){let t=.85+i*.008,f=frame(t),root=sum(f.p,mul(f.up,radius(t)*.62));for(let k=-2;k<=2;k++){let begin=sum(root,mul(f.s,k*.085)),tip=sum(begin,sum(mul(f.tan,.55+i*.025),sum(mul(f.up,.45+i*.022),mul(f.s,k*(.10+i*.012)))));fin(begin,tip,.22+i*.015,.12,[royal,azure,cyan,jade][(i+k+8)%4])}}
+for(let j=0;j<6;j++){let x=-2+j*1.6,y=.55+(j%2)*.45,z=2.1;for(let k=0;k<5;k++)ellipsoid([x+(k%3)*.25,y+Math.floor(k/3)*.15,z+.06*k],[.25,.14,.19],[azure,cyan,jade][(j+k)%3],3,5)}
+function draw(){
+const dpr=Math.min(devicePixelRatio||1,1.5),w=Math.max(2,Math.floor(innerWidth*dpr)),h=Math.max(2,Math.floor(innerHeight*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
+render(w,h);
+}
+let yaw=-.36,pitch=-.12,zoom=1.0,render=()=>{},queued=false;
+function request(){if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;draw()})}}
+try{
+ let gl=canvas.getContext("webgl",{depth:true,antialias:true,alpha:false})||canvas.getContext("experimental-webgl");
+ if(gl){
+ const vert="attribute vec3 p;attribute vec3 n;attribute vec3 c;uniform vec2 camera;uniform vec2 scale;varying vec3 color;void main(){vec3 q=p-vec3(-.15,2.55,.35);float cy=cos(camera.x),sy=sin(camera.x),cp=cos(camera.y),sp=sin(camera.y);float x=cy*q.x+sy*q.z,z=-sy*q.x+cy*q.z,y=cp*q.y-sp*z;gl_Position=vec4(x*scale.x,y*scale.y,-(sp*q.y+cp*z)/19.,1.);vec3 nn=normalize(n);float nx=cy*nn.x+sy*nn.z,nz=-sy*nn.x+cy*nn.z,ny=cp*nn.y-sp*nz;float light=.62+.38*max(0.,dot(normalize(vec3(nx,ny,sp*nn.y+cp*nz)),normalize(vec3(-.4,.79,.45))));color=c*light;}";
+ const frag="precision mediump float;varying vec3 color;void main(){gl_FragColor=vec4(color,1.);}";
+ function shader(type,code){let a=gl.createShader(type);gl.shaderSource(a,code);gl.compileShader(a);if(!gl.getShaderParameter(a,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(a));return a}
+ let program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vert));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));gl.useProgram(program);
+ function attribute(name,array){let b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(array),gl.STATIC_DRAW);let loc=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,0,0)}
+ attribute("p",P);attribute("n",N);attribute("c",C);let ucam=gl.getUniformLocation(program,"camera"),uscale=gl.getUniformLocation(program,"scale");gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(.035,.075,.135,1);
+ render=(w,h)=>{gl.viewport(0,0,w,h);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniform2f(ucam,yaw,pitch);let scale=Math.min(w/19.4,h/10.1)*zoom;gl.uniform2f(uscale,scale*2/w,scale*2/h);gl.drawArrays(gl.TRIANGLES,0,P.length/3)};
+ status.textContent="3D表示中 · "+faces.length.toLocaleString()+"面 · 全身形状を新設計";
+ }else{
+ let ctx=canvas.getContext("2d");if(!ctx)throw Error("Canvas2D unavailable");
+ const reduced=[];for(let i=0;i<faces.length;i++){if(i%3===0)reduced.push(i)}
+ render=(w,h)=>{ctx.fillStyle="#071321";ctx.fillRect(0,0,w,h);let scale=Math.min(w/19.4,h/10.1)*zoom,cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);let drawlist=[];for(const i of reduced){let loc=i*9,pts=[],depth=0;for(let j=0;j<3;j++){let x=P[loc+j*3]+.15,y=P[loc+j*3+1]-2.55,z=P[loc+j*3+2]-.35;let xx=x*cy+z*sy,zz=-x*sy+z*cy;depth+=y*sp+zz*cp;pts.push([w*.5+xx*scale,h*.5-(y*cp-zz*sp)*scale])}drawlist.push([depth/3,pts,C.slice(loc,loc+3)])}drawlist.sort((a,b)=>a[0]-b[0]);for(const o of drawlist){ctx.beginPath();ctx.moveTo(...o[1][0]);ctx.lineTo(...o[1][1]);ctx.lineTo(...o[1][2]);ctx.closePath();const c=o[2];ctx.fillStyle="rgb("+Math.floor(c[0]*255)+","+Math.floor(c[1]*255)+","+Math.floor(c[2]*255)+")";ctx.fill()}};status.textContent="3D表示中 · 互換描画モード";
+ }
+ const pointer=new Map();let pinch=0;
+ canvas.addEventListener("pointerdown",e=>{canvas.setPointerCapture(e.pointerId);pointer.set(e.pointerId,[e.clientX,e.clientY]);pinch=0});
+ canvas.addEventListener("pointermove",e=>{if(!pointer.has(e.pointerId))return;let old=pointer.get(e.pointerId);pointer.set(e.pointerId,[e.clientX,e.clientY]);if(pointer.size===1){yaw+=(e.clientX-old[0])*.007;pitch=Math.max(-1.0,Math.min(1.0,pitch+(e.clientY-old[1])*.006));request()}else if(pointer.size===2){let p=[...pointer.values()],d=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);if(pinch)zoom=Math.max(.50,Math.min(2.5,zoom*d/pinch));pinch=d;request()}});
+ for(const event of ["pointerup","pointercancel","lostpointercapture"])canvas.addEventListener(event,e=>{pointer.delete(e.pointerId);pinch=0});
+ canvas.addEventListener("wheel",e=>{e.preventDefault();zoom=Math.max(.5,Math.min(2.5,zoom*Math.exp(-.002*e.deltaY)));request()},{passive:false});
+ document.getElementById("minus").onclick=()=>{zoom=Math.max(.5,zoom*.83);request()};
+ document.getElementById("plus").onclick=()=>{zoom=Math.min(2.5,zoom*1.2);request()};
+ document.getElementById("reset").onclick=()=>{yaw=-.36;pitch=-.12;zoom=1;request()};
+ window.addEventListener("resize",request);request();
+}catch(ex){status.textContent="3D表示エラー";error.style.display="block";error.textContent=String(ex&&ex.message||ex);console.error(ex)}
+})();
+</script></body></html>
