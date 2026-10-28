@@ -170,11 +170,11 @@ for(const [job,stats] of Object.entries(CLASSES)){
   const weapon=PVP_WEAPONS.find(w=>w.id===job);
   const kind=weapon?.kind||pvpWeaponKind(job);
   if(SHIELD_SPEED_JOBS.has(job)||kind==='shield'){
-    stats.speed=Math.min(stats.speed,5.1);
+    stats.speed=job==='shield'?4.5:Math.min(stats.speed,5.1);
   }else if(HEAVY_SPEED_JOBS.has(job)){
     stats.speed=Math.min(stats.speed,5.5);
   }else if(kind==='bow'||kind==='crossbow'||['archer','gunner','extra_027'].includes(job)){
-    stats.speed=Math.min(stats.speed,5.7);
+    stats.speed=job==='archer'?5.5:Math.min(stats.speed,5.7);
   }else if(stats.range>=6.0){
     // Staff, magic, firearm and other ranged jobs: slower than melee.
     stats.speed=Math.min(stats.speed,6.1);
