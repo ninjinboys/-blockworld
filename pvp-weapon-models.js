@@ -239,7 +239,15 @@ export function makePvpWeaponModel(T,id){
    const blade=/spear|trident|halberd|naginata|dragonhorn|sky/.test(variant);
    const scythe=/scythe|kusarigama|void|chainblade|under/.test(variant);
    const axe=/axe|thunder|warhammer|hammer|mace|earth|gear|steam|infernal|dragonmaw|morningstar/.test(variant);
-   if(blade){
+   if(/morningstar/.test(variant)){
+     const ball=mesh(new T.IcosahedronGeometry(.48,1),'iron',0,h-.25,0);
+     for(let j=0;j<10;j++){
+       const a=j*Math.PI*2/10;
+       const spike=mesh(new T.ConeGeometry(.12,.29,6),'steel',Math.sin(a)*.49,h-.25+Math.cos(a)*.49,0);
+       spike.rotation.z=-a;
+     }
+     cyl(0,h-.75,0,.16,.28,'bronze');
+   }else if(blade){
      const half=/naginata/.test(variant)?.25:.19;
      plate([[-half,h-.65],[half,h-.65],[half*1.35,h-.15],
        [.035,h+.43],[-half*1.25,h-.11]],.19,'steel');
@@ -287,7 +295,15 @@ export function makePvpWeaponModel(T,id){
     /sunrod|seraph|wing/.test(variant)?'sun':
     /chaos|venom|crystal|seal|mirror/.test(variant)?'crystal':'staff';
    if(type==='fan'){
-     if(/harp|lute/.test(variant)){
+     if(/ribbon/.test(variant)){
+       handgrip(0,.05,.63);
+       curve([[0,.32,0],[.54,.79,0],[-.45,1.30,0],[.55,1.86,0],
+         [-.18,2.32,0],[.38,2.79,0]],.065,'crystal');
+       for(let i=0;i<5;i++){
+         const y=.57+i*.49, x=i%2?.23:-.19;
+         plate([[x-.12,y-.12],[x+.14,y],[x+.07,y+.26],[x-.21,y+.12]],.035,'bronze');
+       }
+     }else if(/harp|lute/.test(variant)){
        curve([[-.48,.0,0],[-.62,1.77,0],[.0,2.33,0],[.48,1.82,0],[.40,0,0]],.105,'bronze');
        for(let j=-3;j<=3;j++)rod([j*.11,.20,.04],[j*.07,1.88,.04],.010,'edge');
      }else{
@@ -373,6 +389,62 @@ export function makePvpWeaponModel(T,id){
  }
  function specialModel(variant=k){
    const isBook=/book|grimoire|summon|voodoo|doll|marionette|puppet/.test(variant);
+   if(/dagger/.test(variant)){
+     for(const side of [-1,1]){
+       const x=side*.39;
+       handgrip(x,-.12,.47,.071);
+       plate([[x-.15,.23],[x+.15,.23],[x+.18,.41],[x+.14,1.03],
+         [x,1.43],[x-.14,1.03],[x-.18,.41]],.14,'steel');
+       plate([[x-.25,.23],[x+.25,.23],[x+.22,.33],[x-.22,.33]],.12,'bronze');
+       plate([[x-.023,.47],[x+.023,.47],[x,1.19]],.019,'recess',.086);
+     }
+     return;
+   }
+   if(/sling/.test(variant)){
+     handgrip(0,-.11,.64);
+     curve([[0,.14,0],[-.22,.52,0],[-.45,1.10,0],[-.54,1.50,0]],.085,'bronze');
+     curve([[0,.14,0],[.23,.48,0],[.47,1.08,0],[.55,1.50,0]],.085,'bronze');
+     curve([[-.54,1.50,.05],[-.19,.77,.15],[0,.67,.21],[.18,.77,.15],[.55,1.50,.05]],.022,'wrap');
+     plate([[-.23,.61],[.23,.61],[.32,.85],[-.32,.85]],.08,'leather',.19);
+     return;
+   }
+   if(/wrench/.test(variant)){
+     rod([0,-.33,0],[0,1.61,0],.113,'dark');
+     plate([[-.29,1.32],[-.57,1.66],[-.50,2.09],[-.25,2.32],
+       [-.25,1.95],[.25,1.95],[.25,2.32],[.50,2.09],
+       [.57,1.66],[.29,1.32]],.26,'steel');
+     plate([[-.10,-.23],[.10,-.23],[.14,.39],[-.14,.39]],.13,'bronze',.13);
+     return;
+   }
+   if(/falcon/.test(variant)){
+     handgrip(0,-.12,.62);
+     rod([0,.13,0],[0,1.62,0],.083,'leather');
+     for(const side of [-1,1])plate([[0,1.43],[side*.24,1.77],
+       [side*.85,2.08],[side*.66,2.27],[side*.28,2.13]],.16,'steel');
+     plate([[-.19,1.73],[0,2.23],[.19,1.73]],.11,'bronze',.12);
+     gem(0,1.90,.22,.14,.16,.06);
+     return;
+   }
+   if(/vine|whip/.test(variant)){
+     handgrip(0,-.23,.62);
+     curve([[0,.03,0],[.20,.49,0],[.50,.92,0],[.21,1.55,0],
+       [-.42,2.08,0],[-.48,2.61,0],[.08,3.08,0]],.062,'bronze');
+     for(let i=1;i<5;i++){
+       const y=.57+i*.48;
+       plate([[-.11,y],[.03,y+.19],[.28,y+.14]],.05,'steel',.045);
+     }
+     return;
+   }
+   if(/beast|chimera/.test(variant)){
+     for(const side of [-1,1]){
+       const x=side*.43;
+       cube(x,.83,0,.54,.55,.38,'dark');
+       plate([[x-.21,1.03],[x+.23,1.03],[x+.24,1.58],
+         [x+.05,2.18],[x-.22,1.63]],.16,'steel');
+       plate([[x-.14,1.12],[x+.09,1.12],[x+.05,1.51]],.030,'bronze',.125);
+     }
+     return;
+   }
    const isThrown=/bomb|grenade|vial|potion|palette/.test(variant);
    const isHands=/claw|gauntlet|knuckle|stonefist/.test(variant);
    if(isBook){
@@ -412,11 +484,16 @@ export function makePvpWeaponModel(T,id){
    }
    if(/cards|roulette|dice|jackbox|box|chakram|shuriken/.test(variant)){
      if(/chakram|shuriken/.test(variant)){
-       for(let j=0;j<(/shuriken/.test(variant)?4:2);j++){
-         const a=j*Math.PI/2;
-         const o=torus(0,1.10,j*.08,.57,.11,'steel');o.rotation.y=a*.30;
-         plate([[-.20,1.25],[0,1.74],[.20,1.25]],.13,'bronze',j*.09);
+       const star=/shuriken/.test(variant);
+       const p=[];
+       for(let j=0;j<(star?8:16);j++){
+         const a=Math.PI*2*j/(star?8:16);
+         const radius=star?(j%2?.25:.78):.66+(j%2?.035:-.035);
+         p.push([Math.sin(a)*radius,1.16+Math.cos(a)*radius]);
        }
+       plate(p,.18,'steel');
+       torus(0,1.16,.14,.21,.045,'bronze');
+       gem(0,1.16,.22,.12,.12,.055);
      }else{
        for(let j=-2;j<=2;j++){
          const card=cube(j*.26,1.0+Math.abs(j)*.13,j*.04,.40,.77,.08,'dark');
@@ -438,10 +515,10 @@ export function makePvpWeaponModel(T,id){
  // Every nonstarter class gets a unique, native mesh — even if it belongs
  // to the same weapon family. Starter meshes can be generated here too but
  // existing first five remain selected from the story branch in the viewer.
- if(/shield|tower|aegis|barrier/.test(k)||['reflect','extra_008','extra_011'].includes(w.id))shieldModel(k);
+ if(/shield|tower|aegis|barrier/.test(k)||['reflect','extra_008'].includes(w.id))shieldModel(k);
  else if(/bow|arbalest|repeater|crossbow|tracker/.test(k))bowModel(k);
  else if(/gun|rifle|sniper|cannon|mortar|rotary|turret|armcannon|gatling|coil|drone/.test(k))firearmModel(k);
- else if(/sword|blade|katana|nodachi|great|cleaver|twin|mimic|shapeshift|phantom/.test(k)){
+ else if(/sword|blade|katana|nodachi|great|cleaver|twin|dual|mimic|shapeshift|phantom/.test(k)){
    if(/twin|dual/.test(k)){swordModel('dual',-.46);swordModel('dual',.46);}
    else swordModel(k);
  }
