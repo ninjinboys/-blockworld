@@ -244,13 +244,36 @@ export function makePvpWeaponModel(T,id){
    }
    if(['sniper','mortar','arbalest','repeater','trackerbow','huntingbow','armcannon','rotary','wrench','knuckles','stonefist','aegis','tower'].includes(kind)){
      if(['trackerbow','huntingbow','arbalest','repeater'].includes(kind)){
-       line([[-.82,.72,0],[-.55,1.35,0],[-.80,2.2,0]],.10,steel);line([[-.82,.72,.07],[-.1,1.46,.07],[-.80,2.2,.07]],.025,edge);
-       box(-.3,1.48,.0,.19,.65,.25,leather);
-       if(kind==='arbalest'||kind==='repeater'){box(0,1.45,0,.84,.22,.24,black);for(let j=0;j<(kind==='repeater'?4:1);j++)box(.16,1.49+j*.11,.10,.54,.04,.05,brass)}
+       // Full weapon silhouette rebuilt: bow limbs, central riser, taut string,
+       // and an actual longitudinal crossbow stock instead of a vertical stick.
+       const cross=kind==='arbalest'||kind==='repeater';
+       if(cross){
+         box(0,1.25,.0,.25,.24,2.25,leather);
+         box(0,1.39,-.30,.19,.12,1.45,black);
+         line([[-1.08,1.36,-.84],[-.70,1.49,-1.02],[0,1.42,-1.12],[.70,1.49,-1.02],[1.08,1.36,-.84]],.105,steel);
+         line([[-1.08,1.36,-.84],[0,1.45,.14],[1.08,1.36,-.84]],.018,edge);
+         const bolt=rod(0,1.49,-.35,.027,1.55,edge);bolt.rotation.x=Math.PI/2;
+         box(0,.85,.58,.17,.70,.22,leather);
+         if(kind==='repeater')box(0,1.65,-.15,.34,.38,.73,black);
+       }else{
+         const width=kind==='trackerbow'?.76:.60;
+         line([[0,.12,0],[-width*.78,.50,0],[-width,1.00,0],[-width*.72,1.50,0],[-width,2.05,0],[-width*.78,2.53,0],[0,2.91,0]],.095,steel);
+         line([[0,.12,.04],[.04,1.50,.04],[0,2.91,.04]],.014,edge);
+         box(-width*.72,1.50,0,.19,.65,.28,leather);
+         for(const y of [.60,2.40])poly([[-width*.85,y-.16],[-width*.65,y],[-width*.85,y+.16]],.10,black,.03);
+       }
      }else if(['sniper','mortar','armcannon','rotary'].includes(kind)){
        box(0,1.25,0,.44,.48,1.52,black);for(let j=0;j<(kind==='rotary'?8:kind==='mortar'?2:1);j++){const a=j*Math.PI*2/(kind==='rotary'?8:2);const b=rod(Math.sin(a)*.18,1.25+Math.cos(a)*.18,-.86,.09,1.4,steel);b.rotation.x=Math.PI/2}box(0,.74,.41,.23,.72,.28,leather);
        if(kind==='sniper'){box(0,1.58,.12,.13,.17,.86,brass);gem(0,1.67,.4,.12,rune)}
-     }else if(kind==='tower'||kind==='aegis'){plate([[-.68,.35],[.68,.35],[.76,2.55],[0,2.98],[-.76,2.55]],black);plate([[-.55,.52],[.55,.52],[.61,2.46],[0,2.78],[-.61,2.46]],steel,.22);circle(0,1.52,.38,brass);gem(0,1.52,.35,.2,rune)}
+     }else if(kind==='tower'||kind==='aegis'){
+       // Tower: tall rectangular wall shield. Aegis: broad tapered kite shield.
+       const tower=kind==='tower';
+       const outline=tower?[[-.85,.22],[.85,.22],[.85,2.72],[.65,2.92],[-.65,2.92],[-.85,2.72]]:[[-.92,2.32],[-.70,2.70],[.70,2.70],[.92,2.32],[.76,1.10],[0,.18],[-.76,1.10]];
+       plate(outline,black,.03);
+       plate(outline.map(([x,y])=>[x*.83,1.48+(y-1.48)*.87]),steel,.24);
+       for(const side of [-1,1])plate([[0,1.46],[side*.42,2.37],[side*.27,1.12]],brass,.34);
+       rod(0,1.46,-.27,.11,.85,leather);
+     }
      else if(kind==='wrench'){shaft(1.8);plate([[-.45,1.7],[-.6,2.2],[-.22,2.65],[.22,2.65],[.6,2.2],[.45,1.7],[.2,2.05],[-.2,2.05]],steel)}
      else{box(0,1.05,0,.95,.83,.58,black);for(let j=-1;j<=1;j++)plate([[j*.26-.09,1.26],[j*.26+.09,1.26],[j*.26+.1,2.08],[j*.26,2.31],[j*.26-.1,2.08]],edge,.38)}
      return true;
