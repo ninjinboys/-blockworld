@@ -93,6 +93,58 @@ export function makePvpWeaponModel(T,id){
    poly([[x-.42,.78],[x+.42,.78],[x+.38,.96],[x-.38,.96]],.19,brass);
  };
  // New distinct PvP weapon families: structural differences, not just gem colors.
+ // Upgrade every non-starter class using the actual weapon family, not
+ // decorative overlays. These are structural silhouettes with clean solids.
+ const upgradeSilhouette=()=>{
+   if(['sword','merc','shield','archer','mage'].includes(w.id))return;
+   const pole=/spear|halberd|naginata|trident|bo|scythe|kusarigama|chainblade|axe|hammer|mace|staff|rod|brush|lance|flail|whip|ribbon/.test(k);
+   const bladeType=/sword|blade|katana|nodachi|cleaver|dagger|shuriken|twin/.test(k);
+   const shieldType=/shield|aegis|tower|barrier/.test(k);
+   const bowType=/bow|arbalest|repeater/.test(k);
+   const firearm=/rifle|sniper|gun|cannon|mortar|rotary|turret/.test(k);
+   const focus=/portal|rift|clock|hourglass|astro|orb|gravity|seal|star|comet|waterwheel|sunrod|oracle|crystal|mirror|lantern|bell|cage|chaos|venom|swarm/.test(k);
+   const weaponBody=new T.Group();
+   // The legacy mesh is retained as the foundation. Reshape its proportions
+   // instead of attaching detached, intersecting decorations.
+   for(const child of g.children.splice(0))weaponBody.add(child);
+   g.add(weaponBody);
+   const variation=(n%5-2)*.035;
+   if(bladeType){
+     weaponBody.scale.set(1.06+variation,1.07,1.10);
+   }else if(shieldType){
+     weaponBody.scale.set(1.16+variation,1.04,1.18);
+   }else if(bowType){
+     weaponBody.scale.set(1.12+variation,1.10,1.07);
+   }else if(firearm){
+     weaponBody.scale.set(1.06,1.08,1.17+variation);
+   }else if(pole){
+     weaponBody.scale.set(1.08+variation,1.13,1.10);
+   }else if(focus){
+     weaponBody.scale.set(1.10+variation,1.08,1.13);
+   }else{
+     weaponBody.scale.set(1.12+variation,1.09,1.12);
+   }
+   // One meaningful family-specific structural improvement, no floating gems.
+   if(bladeType){
+     const cross=box(0,.88,0,.52+(n%4)*.07,.16,.24,brass);
+     cross.rotation.z=variation*.3;
+   }else if(shieldType){
+     box(0,1.42,-.26,.22,1.13,.18,black);
+   }else if(bowType){
+     // Reinforced central riser, rather than random edge ornament.
+     box(-.25,1.45,0,.18,.62,.28,leather);
+   }else if(firearm){
+     box(0,1.26,-.42,.28,.22,.87,black);
+   }else if(pole){
+     // A defined solid socket joining shaft and weapon head.
+     rod(0,2.03,0,.14,.29,brass);
+   }else if(focus){
+     rod(0,1.72,0,.13,.40,black);
+   }else{
+     // Larger grip/body volume for utility weapons.
+     box(0,.83,-.08,.30,.32,.26,leather);
+   }
+ };
  const special=(kind)=>{
    const circle=(x,y,r,mat=brass)=>add(new T.TorusGeometry(r,.065,8,36),mat,x,y,.08);
    const spikes=(x,y,count=6,r=.45)=>{for(let j=0;j<count;j++){const a=j*Math.PI*2/count;const px=x+Math.sin(a)*r,py=y+Math.cos(a)*r;const p=add(new T.ConeGeometry(.12,.35,5),edge,px,py,.10);p.rotation.z=-a;}};
@@ -209,6 +261,7 @@ export function makePvpWeaponModel(T,id){
  if(special(k)){
    // Keep the weapon's original structural mesh unobscured by ornamental
    // medallions, repeated rivets, and overlapping plates.
+   upgradeSilhouette();
    g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;
    return g;
  }
@@ -319,6 +372,7 @@ export function makePvpWeaponModel(T,id){
  }
  else if(k==='lute'){gem(0,1.05,0,.62,leather);box(0,1.86,0,.28,1.26,.21,leather);for(let j=-2;j<=2;j++)line([[j*.1,.69,.4],[j*.1,2.37,.13]],.012,brass);crest(0,1.04,.53)}
  else{grip();blade()}
+ upgradeSilhouette();
  g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;
  return g;
 }
