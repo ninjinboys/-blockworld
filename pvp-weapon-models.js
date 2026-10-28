@@ -47,25 +47,46 @@ export function makePvpWeaponModel(T,id){
  const line=(points,r=.026,mat=brass)=>add(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(16,points.length*8),r,8,false),mat);
  // Forged 3D blade: real diamond-section steel, rather than flat stacked
  // polygons. Both faces converge into a cutting edge, with a tapered point.
+ // Match the original story sword's triangular front-facing steel facets.
+ // Each station is [y, halfWidth, centreX, halfThickness].
  const forgedBlade=(stations,material=steel)=>{
-   const vertices=[],indices=[];
-   // Each station: [height,halfWidth,centreX,halfThickness].
-   for(const [y,w,x,t] of stations){
-     vertices.push(x-w,y,0, x,y,t, x+w,y,0, x,y,-t);
-   }
+   const g0=g.children.length;
+   const outline=[...stations.map(([y,w,x])=>[x-w,y]),...stations.slice().reverse().map(([y,w,x])=>[x+w,y])];
+   poly(outline,.15,black,0);
+   // Bright left/right bevels are triangular faces pointing to a raised ridge.
+   // These use explicit 3D triangles, not broad flat box-like rectangles.
+   const tri=(a,b,c,mat)=>{
+     const geom=new T.BufferGeometry();
+     geom.setAttribute('position',new T.Float32BufferAttribute([...a,...b,...c],3));
+     geom.computeVertexNormals();
+     const faceMat=mat.clone();faceMat.side=T.DoubleSide;
+     add(geom,faceMat);
+   };
    for(let i=0;i<stations.length-1;i++){
-     for(let f=0;f<4;f++){
-       const a=i*4+f,b=i*4+(f+1)%4,c=(i+1)*4+f,d=(i+1)*4+(f+1)%4;
-       indices.push(a,b,c,b,d,c);
+     const [y0,w0,x0,t0]=stations[i],[y1,w1,x1,t1]=stations[i+1];
+     for(const face of [-1,1]){
+       const z0=face*(.078+t0),z1=face*(.078+t1);
+       const a=[x0-w0,y0,face*.077],b=[x0+w0,y0,face*.077];
+       const c=[x1-w1,y1,face*.077],d=[x1+w1,y1,face*.077];
+       const ridge0=[x0,y0,z0],ridge1=[x1,y1,z1];
+       // Four clear triangular facets per segment form a diamond section.
+       tri(a,c,ridge1,edge);tri(a,ridge1,ridge0,steel);
+       tri(b,ridge0,ridge1,steel);tri(b,ridge1,d,edge);
      }
    }
-   indices.push(0,3,2,0,2,1);
-   const end=(stations.length-1)*4;
-   indices.push(end,end+1,end+2,end,end+2,end+3);
-   const geo=new T.BufferGeometry();
-   geo.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
-   geo.setIndex(indices);geo.computeVertexNormals();
-   return add(geo,material);
+   // Engraved centre channel and story-style inlaid gemstone trail.
+   const base=stations[0][0],tip=stations[stations.length-1][0];
+   for(const face of [-1,1]){
+     const z=face*.29;
+     const p0=stations[0][2],p1=stations[stations.length-1][2];
+     line([[p0,base+.15,z],[p0,base+(tip-base)*.48,z],[p1,tip-.25,z]],.009,rune);
+     for(const frac of [.27,.51,.73]){
+       const y=base+(tip-base)*frac;
+       const gemMesh=add(new T.OctahedronGeometry(1),rune,p0+(p1-p0)*frac,y,z);
+       gemMesh.scale.set(.042,frac===.51?.083:.056,.028);
+     }
+   }
+   return g.children[g0];
  };
  const forgeGuard=(span=.55,y=.86)=>{
    // Cast bronze quillons are thick and raised on both sides of the blade.
