@@ -161,6 +161,27 @@ const CLASSES={
 };
 
 
+// Per-job movement balance. Heavy shields are slowest; long-range jobs
+// trade mobility for reach. Agile melee jobs keep their existing speed.
+// Applied to CLASSES so keyboard, touch joystick and sprint all use it.
+const SHIELD_SPEED_JOBS=new Set(['shield','reflect','barrier','extra_008','extra_010','extra_011','extra_012','extra_013']);
+const HEAVY_SPEED_JOBS=new Set(['hammer','extra_009','extra_014','extra_050']);
+for(const [job,stats] of Object.entries(CLASSES)){
+  const weapon=PVP_WEAPONS.find(w=>w.id===job);
+  const kind=weapon?.kind||pvpWeaponKind(job);
+  if(SHIELD_SPEED_JOBS.has(job)||kind==='shield'){
+    stats.speed=Math.min(stats.speed,5.1);
+  }else if(HEAVY_SPEED_JOBS.has(job)){
+    stats.speed=Math.min(stats.speed,5.5);
+  }else if(kind==='bow'||kind==='crossbow'||['archer','gunner','extra_027'].includes(job)){
+    stats.speed=Math.min(stats.speed,5.7);
+  }else if(stats.range>=6.0){
+    // Staff, magic, firearm and other ranged jobs: slower than melee.
+    stats.speed=Math.min(stats.speed,6.1);
+  }
+}
+
+
 // Evolution branches: first choice at Lv.50, specialization at Lv.100.
 // Evolutions retain the original job's XP and level.
 const EVOLUTIONS={
