@@ -175,9 +175,9 @@ export function makePvpWeaponModel(T,id){
   }
   crest(x,.86,.25);
  };
- // Full replacement geometry for ALL 79 extra jobs. This path intentionally
+ // Full replacement geometry for ALL 105 non-starter PvP jobs. This path intentionally
  // bypasses the legacy special()/generic weapon and all decorative finishers.
- if(w.id.startsWith('extra_')){
+ if(!new Set(['sword','merc','shield','archer','mage']).has(w.id)){
    const role=k,idx=n+1;
    const core=(h=2.5,r=.075)=>{rod(0,h*.50,0,r,h,leather);rod(0,.23,0,r*1.45,.12,black)};
    const form=(pts,thick=.20,mat=steel)=>poly(pts,thick,mat,0);
