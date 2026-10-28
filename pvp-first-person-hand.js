@@ -4,7 +4,7 @@
  */
 import {makeNewHeldItemModel} from './item-held-models.js?v=20261020spearBlade03';
 import {makeJobWeaponModel,jobWeapon,jobHeldWeaponScale,jobHeldBladeYaw} from './job-system.js?v=20261023bowFacingForward24';
-import {PVP_WEAPON_BY_ID,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261028solidBlade15';
+import {PVP_WEAPON_BY_ID,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261028quality16';
 const baseJobWeapon=jobWeapon,baseMakeJobWeaponModel=makeJobWeaponModel,baseScale=jobHeldWeaponScale,baseYaw=jobHeldBladeYaw;
 const pvpJobWeapon=id=>PVP_WEAPON_BY_ID.get(id)||baseJobWeapon(id);
 const pvpMakeWeapon=(T,id)=>PVP_WEAPON_BY_ID.has(id)?makePvpWeaponModel(T,id):baseMakeJobWeaponModel(T,id);
