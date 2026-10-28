@@ -536,6 +536,10 @@ const ambient=new THREE.HemisphereLight(0xc2d4e7,0x342a23,1.05);scene.add(ambien
 const sun=new THREE.DirectionalLight(0xffd09b,3.15);
 sun.position.set(-35,60,35);sun.castShadow=true;sun.shadow.mapSize.set(512,512);
 sun.shadow.camera.left=-75;sun.shadow.camera.right=75;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75;scene.add(sun);
+// Cool directional fill restores specular definition on PvP forged metal
+// without changing attack mechanics or enabling costly shadow maps.
+const weaponFill=new THREE.DirectionalLight(0xb6e8ff,1.18);
+weaponFill.position.set(28,36,-40);scene.add(weaponFill);
 const mat=(color,metalness=0,roughness=.92)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
 function block(w,h,d,color,x,y,z){
  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);
