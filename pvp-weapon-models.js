@@ -66,7 +66,7 @@ export function makePvpWeaponModel(T,id){
  };
  let target=g;
  function mesh(geometry,material,x=0,y=0,z=0){
-   const o=new T.Mesh(geometry,M[material]||M.iron);
+   const o=new T.Mesh(geometry,Array.isArray(material)?material:(M[material]||M.iron));
    o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;target.add(o);return o;
  }
  function plate(p,th=.14,mat='iron',z=0){
@@ -695,6 +695,23 @@ export function makePvpWeaponModel(T,id){
          [sign*.66,2.42,.16]],.019,'gold');
      }
    }else if(isMagic){
+     // Fans, ribbons, and harps are NOT staves; detail their own structures.
+     if(/fan|harp|lute|ribbon/.test(k)){
+       if(/fan/.test(k)){
+         for(const sign of [-1,1])
+           gem(sign*.38,1.98,.105,.065,.084,.035);
+         cyl(0,.25,0,.105,.10,'gold');
+       }else if(/harp|lute/.test(k)){
+         for(const sign of [-1,1]){
+           gem(sign*.39,.46,.13,.055,.085,.031);
+           rod([sign*.39,.65,.09],[sign*.39,1.42,.09],.012,'crystal');
+         }
+       }else{
+         cyl(0,.14,0,.12,.11,'gold');
+         gem(0,.36,.13,.085,.12,.042);
+       }
+       return;
+     }
      // A machined core, rune seams and balanced metal ferrule on each stave.
      for(const y of [.18,.57,1.08,1.58]){
        cyl(0,y,0,.113,.075,'bronze');
@@ -709,7 +726,7 @@ export function makePvpWeaponModel(T,id){
        gem(0,1.94,.18,.08,.135,.04);
      }
    }else{
-     // The unusual gadgets receive small, functional-looking fittings only.
+     // Uncommon hand-built gadgets get material and function-specific fittings.
      if(/grimoire|puppet|marionette|voodoo|doll/.test(k)){
        for(const sign of [-1,1]){
          cube(sign*.57,1.00,.13,.067,1.23,.043,'gold');
