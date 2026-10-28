@@ -58,43 +58,10 @@ export function makePvpWeaponModel(T,id){
  // Match the original story sword's triangular front-facing steel facets.
  // Each station is [y, halfWidth, centreX, halfThickness].
  const forgedBlade=(stations,material=steel)=>{
-   const g0=g.children.length;
-   const outline=[...stations.map(([y,w,x])=>[x-w,y]),...stations.slice().reverse().map(([y,w,x])=>[x+w,y])];
-   poly(outline,.15,black,0);
-   // Bright left/right bevels are triangular faces pointing to a raised ridge.
-   // These use explicit 3D triangles, not broad flat box-like rectangles.
-   const tri=(a,b,c,mat)=>{
-     const geom=new T.BufferGeometry();
-     geom.setAttribute('position',new T.Float32BufferAttribute([...a,...b,...c],3));
-     geom.computeVertexNormals();
-     const faceMat=mat.clone();faceMat.side=T.DoubleSide;
-     add(geom,faceMat);
-   };
-   for(let i=0;i<stations.length-1;i++){
-     const [y0,w0,x0,t0]=stations[i],[y1,w1,x1,t1]=stations[i+1];
-     for(const face of [-1,1]){
-       const z0=face*(.078+t0),z1=face*(.078+t1);
-       const a=[x0-w0,y0,face*.077],b=[x0+w0,y0,face*.077];
-       const c=[x1-w1,y1,face*.077],d=[x1+w1,y1,face*.077];
-       const ridge0=[x0,y0,z0],ridge1=[x1,y1,z1];
-       // Four clear triangular facets per segment form a diamond section.
-       tri(a,c,ridge1,edge);tri(a,ridge1,ridge0,steel);
-       tri(b,ridge0,ridge1,steel);tri(b,ridge1,d,edge);
-     }
-   }
-   // Engraved centre channel and story-style inlaid gemstone trail.
-   const base=stations[0][0],tip=stations[stations.length-1][0];
-   for(const face of [-1,1]){
-     const z=face*.29;
-     const p0=stations[0][2],p1=stations[stations.length-1][2];
-     line([[p0,base+.15,z],[p0,base+(tip-base)*.48,z],[p1,tip-.25,z]],.009,rune);
-     for(const frac of [.27,.51,.73]){
-       const y=base+(tip-base)*frac;
-       const gemMesh=add(new T.OctahedronGeometry(1),rune,p0+(p1-p0)*frac,y,z);
-       gemMesh.scale.set(.042,frac===.51?.083:.056,.028);
-     }
-   }
-   return g.children[g0];
+   // Continuous solid blade, no detached intersecting triangle surfaces.
+   const left=stations.map(([y,w,x])=>[x-w,y]);
+   const right=stations.slice().reverse().map(([y,w,x])=>[x+w,y]);
+   return poly([...left,...right],.22,material,0);
  };
  const forgeGuard=(span=.55,y=.86)=>{
    // Cast bronze quillons are thick and raised on both sides of the blade.
@@ -119,40 +86,11 @@ export function makePvpWeaponModel(T,id){
    for(const yy of [y-h*.48,y+h*.48]){rod(x,yy,0,.125,.075,brass);gem(x,yy,.14,.05,rune)}
  };
  const crest=(x,y,z=.17)=>{gem(x,y,z,.09+(n%3)*.018);for(const side of [-1,1])gem(x+side*.15,y,z-.02,.038,brass)};
- const blade=(x=0,variant=k)=>{const l=length;grip(x);
-  // Main-story forging language: bronze swept wing guard, sculpted pommel,
-  // full-width steel bevels, graphite recessed fuller and raised runes.
-  poly([[x-.54,.80],[x-.81,.99],[x-.58,.97],[x-.28,.90],[x,.99],
-    [x+.28,.90],[x+.58,.97],[x+.81,.99],[x+.54,.80],[x+.24,.79],
-    [x,.68],[x-.24,.79]],.23,brass,.02);
-  for(const face of [-1,1]){
-    poly([[x-.18,.78],[x,.99],[x+.18,.78],[x,.66]],.06,black,face*.16);
-    gem(x,.82,face*.23,.095,rune);
-    for(const side of [-1,1])gem(x+side*.66,.96,face*.14,.045,brass);
-  }
-  poly([[x-.15,.07],[x+.15,.07],[x+.20,-.09],[x,-.26],[x-.20,-.09]],.17,brass);
-  gem(x,-.08,.14,.09,rune);
-  const wdt=variant==='greatsword'?width*2.0:width;
-  const skew=variant==='katana'?.16:0;
-  forgedBlade([[.94,wdt*.85,x,.15],[1.12,wdt,x,.17],[l*.73,wdt*.94,x+skew*.30,.13],[l+.43,wdt*.73,x+skew*.8,.10],[l+.76,.007,x+skew*.55,.006]]);
-  for(const face of [-1,1]){
-    const z=face*.105;
-    for(const side of [-1,1]){
-      const a=side*wdt;
-      poly([[x+side*.07,1.04],[x+a*.88,1.10],[x+a*.97,l+.42],
-        [x+side*.10+skew*.52,l+.66],[x+side*.18+skew*.4,l+.35],
-        [x+side*.17,1.22]],.025,edge,z);
-      poly([[x+side*.045,1.12],[x+side*.17,1.26],[x+side*.17,l+.23],
-        [x+side*.06+skew*.4,l+.52]],.018,black,z+face*.039);
-    }
-    poly([[x-.055,1.13],[x+.055,1.13],[x+.06+skew*.4,l+.23],
-      [x+skew*.5,l+.51],[x-.06+skew*.4,l+.23]],.018,black,z+face*.063);
-    for(let j=0;j<detail;j++){
-      const yy=1.25+j*(l-.80)/detail;
-      gem(x,yy,z+face*.088,.045,j%2?rune:brass);
-    }
-  }
-  crest(x,.86,.25);
+ const blade=(x=0,variant=k)=>{
+   const l=length,wdt=variant==='greatsword'?width*1.85:width;
+   grip(x);
+   forgedBlade([[.90,wdt*.78,x,.12],[1.13,wdt,x,.13],[l*.77,wdt*.88,x,.11],[l+.38,wdt*.62,x,.07],[l+.73,.006,x,.005]]);
+   poly([[x-.42,.78],[x+.42,.78],[x+.38,.96],[x-.38,.96]],.19,brass);
  };
  // New distinct PvP weapon families: structural differences, not just gem colors.
  const special=(kind)=>{
