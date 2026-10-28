@@ -1041,7 +1041,7 @@ function receive(data){
  if(data.t==='attack'&&role==='host'&&state==='playing'){
   if(data.class!==enemyClass||!Number.isFinite(data.seq))return;
   animateSwing(enemyAvatar);
-  resolveAttack(false);
+  resolveAttack(false,Number.isFinite(data.pitch)?THREE.MathUtils.clamp(data.pitch,-1.28,1.28):0);
   return;
  }
  if(data.t==='swing'&&role==='guest'&&state==='playing'){animateSwing(enemyAvatar);return}
@@ -1121,7 +1121,7 @@ function effectLine(from,to,job){
  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());
  scene.add(mesh);effects.push({mesh,life:.23});
 }
-function resolveAttack(attackerIsHost){
+function resolveAttack(attackerIsHost,remotePitch=0){
  if(performance.now()<entranceStart+entranceDuration)return;
  if(state!=='playing'||!me||!rival)return;
  if(!attackerIsHost)animateSwing(enemyAvatar);
@@ -1135,6 +1135,22 @@ function resolveAttack(attackerIsHost){
  const dist=Math.hypot(dx,dz);
  const facing=(Math.sin(attacker.face)*dx+Math.cos(attacker.face)*dz)/(dist||1);
  if(dist>c.range||facing<c.arc)return;
+ // Bows and crossbows must intersect the actual central reticle ray.
+ // A target merely somewhere in the field of view is not a hit.
+ const aimedBow=job==='archer'||['extra_024','extra_027','extra_029','extra_031'].includes(job);
+ if(aimedBow){
+   const pitch=attackerIsHost?lookPitch:remotePitch;
+   const cp=Math.cos(pitch),sp=Math.sin(pitch);
+   const rayX=Math.sin(attacker.face)*cp,rayY=sp,rayZ=Math.cos(attacker.face)*cp;
+   const originY=1.62+(attacker.y||0);
+   const targetY=.98+(target.y||0);
+   const vx=target.x-attacker.x,vy=targetY-originY,vz=target.z-attacker.z;
+   const along=vx*rayX+vy*rayY+vz*rayZ;
+   if(along<=0||along>c.range)return;
+   const missSq=vx*vx+vy*vy+vz*vz-along*along;
+   // Approximate the rival's torso as a narrow sphere.
+   if(missSq>.48*.48)return;
+ }
  const targetJob=attackerIsHost?enemyClass:myClass;
  const block=target.abilityGuardUntil>now?.72:target.guard?(CLASSES[targetJob].block||.42):0;
  const passive=pvpPassive(job);
@@ -1284,7 +1300,7 @@ function requestAttack(){
  if(role==='host'||role==='cpu')resolveAttack(true);
  else {
   me.lastAttack=now;
-  if(connection?.open)connection.send({t:'attack',class:myClass,seq:Math.floor(now)});
+  if(connection?.open)connection.send({t:'attack',class:myClass,seq:Math.floor(now),pitch:lookPitch});
  }
 }
 document.getElementById('abilityDesktop')?.addEventListener('click',()=>activateAbility());
