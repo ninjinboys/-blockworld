@@ -163,7 +163,63 @@ export function makePvpWeaponModel(T,id){
    }
    return false;
  };
- if(special(k)){g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;return g;}
+ if(special(k)){
+   // The previous early return skipped the finish work on most original
+   // silhouettes. Finish every surface in the same forged story-mode style.
+   const before=g.children.length;
+   const raised=(pts,material=brass,z=.27)=>poly(pts,.036,material,z);
+   const medallion=(x,y,scale=.13)=>{
+     raised([[x,y+scale*1.5],[x+scale,y],[x,y-scale*1.5],[x-scale,y]],brass,.27);
+     const stone=add(new T.OctahedronGeometry(1),rune,x,y,.36);
+     stone.scale.set(scale*.48,scale*.77,.045);
+     for(const side of [-1,1]){
+       const pin=add(new T.SphereGeometry(.024,8,6),edge,x+side*scale*.76,y,.33);
+       pin.scale.z=.45;
+     }
+   };
+   // Relief detailing is structural and attached to the actual weapon.
+   // Keep embellishments on the existing silhouette instead of replacing it.
+   const isSword=/blade|nodachi|twin|katana|holy|dimension|mimic|spell/.test(k);
+   const isStaff=/staff|clock|oracle|water|wind|earth|sunrod|gravity|astro|rift|chaos|spirit|shadow|soul|comet/.test(k);
+   const isMachine=/sniper|mortar|arbalest|repeater|armcannon|rotary|wrench/.test(k);
+   if(isSword){
+     for(const face of [-1,1]){
+       raised([[-.085,1.08],[.085,1.08],[.09,2.28],[0,2.65],[-.09,2.28]],black,face*.24);
+       for(let j=0;j<4;j++){
+         const y=1.3+j*.30;
+         const stone=add(new T.OctahedronGeometry(1),rune,0,y,face*.34);
+         stone.scale.set(.035,.070,.025);
+       }
+     }
+     medallion(0,.76,.12);
+   }else if(isStaff){
+     medallion(0,2.4,.19);
+     for(const side of [-1,1]){
+       raised([[0,2.03],[side*.30,2.30],[side*.22,2.68],[0,2.51]],brass,side*.10);
+     }
+   }else if(isMachine){
+     for(const side of [-1,1]){
+       raised([[side*.14,1.02],[side*.37,1.10],[side*.39,1.50],[side*.14,1.62]],steel,.40);
+       const rivet=add(new T.SphereGeometry(.038,8,6),brass,side*.25,1.27,.50);
+       rivet.scale.z=.4;
+     }
+   }else{
+     medallion(0,1.26,.13);
+   }
+   // A uniquely shaped heraldic inlay on each PvP job's model.
+   const seed=w.weaponId;
+   const marks=2+seed%4;
+   for(let j=0;j<marks;j++){
+     const x=(j-(marks-1)/2)*.13;
+     const y=.16+(seed%3)*.08;
+     const rivet=add(new T.SphereGeometry(.026,8,6),j%2?brass:rune,x,y,.20);
+     rivet.scale.z=.5;
+   }
+   // Safety: no empty or invalid models can silently enter the armory.
+   if(g.children.length===0)throw new Error('Empty PvP weapon mesh: '+w.id);
+   g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;
+   return g;
+ }
  // Original silhouettes for roles that should not carry generic swords or staves.
  const ring=(x,y,r,mat=brass,t=.045)=>add(new T.TorusGeometry(r,t,10,48),mat,x,y,.04);
  const prism=(x,y,r,mat=rune)=>gem(x,y,0,r,mat);
