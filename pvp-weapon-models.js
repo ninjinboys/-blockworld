@@ -44,34 +44,13 @@ export function makePvpWeaponModel(T,id){
  const rod=(x,y,z,r,h,m=brass)=>add(new T.CylinderGeometry(r,r,h,12),m,x,y,z);
  const gem=(x,y,z,r=.1,m=rune)=>add(new T.OctahedronGeometry(r,0),m,x,y,z);
  const poly=(pts,depth,mat=steel,z=0)=>{
-  const sh=new T.Shape();sh.moveTo(...pts[0]);for(let j=1;j<pts.length;j++)sh.lineTo(...pts[j]);sh.closePath();
-  const metal=mat===steel||mat===edge||mat===brass||mat===black;
-  const bevel=metal?Math.min(.035,Math.max(.013,depth*.17)):.012;
-  const body=add(new T.ExtrudeGeometry(sh,{depth,steps:1,bevelEnabled:true,bevelSize:bevel,bevelThickness:bevel*.72,bevelSegments:2}),mat,0,0,z-depth/2);
-  // Faceted forged surface: each triangulated steel plate has a genuine
-  // raised centre, so lighting follows angular planes rather than a flat decal.
-  if(metal&&pts.length>=3){
-    const vertices=pts.map(([x,y])=>new T.Vector2(x,y));
-    const triangles=T.ShapeUtils.triangulateShape(vertices,[]);
-    const front=z+depth/2+bevel*.74;
-    const facets=[];
-    for(const [ia,ib,ic] of triangles){
-      const a=pts[ia],b=pts[ib],c=pts[ic];
-      const cx=(a[0]+b[0]+c[0])/3,cy=(a[1]+b[1]+c[1])/3;
-      const rise=Math.min(.065,Math.max(.024,depth*.22));
-      for(const [p,q] of [[a,b],[b,c],[c,a]]){
-        facets.push(p[0],p[1],front,q[0],q[1],front,cx,cy,front+rise);
-      }
-    }
-    if(facets.length){
-      const geo=new T.BufferGeometry();
-      geo.setAttribute('position',new T.Float32BufferAttribute(facets,3));
-      geo.computeVertexNormals();
-      const facetMaterial=mat===black?steel:mat===steel?edge:mat;
-      add(geo,facetMaterial);
-    }
-  }
-  return body;
+  // Single watertight extrusion: no overlapping floating triangles or raised
+  // overlays that distort the silhouette and produce z-fighting.
+  const sh=new T.Shape();sh.moveTo(...pts[0]);
+  for(let j=1;j<pts.length;j++)sh.lineTo(...pts[j]);
+  sh.closePath();
+  const bevel=Math.min(.014,depth*.10);
+  return add(new T.ExtrudeGeometry(sh,{depth,steps:1,bevelEnabled:true,bevelSize:bevel,bevelThickness:bevel,bevelSegments:1}),mat,0,0,z-depth/2);
 };
  const line=(points,r=.026,mat=brass)=>add(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(16,points.length*8),r,8,false),mat);
  // Forged 3D blade: real diamond-section steel, rather than flat stacked
@@ -292,59 +271,8 @@ export function makePvpWeaponModel(T,id){
    return false;
  };
  if(special(k)){
-   // The previous early return skipped the finish work on most original
-   // silhouettes. Finish every surface in the same forged story-mode style.
-   const before=g.children.length;
-   const raised=(pts,material=brass,z=.27)=>poly(pts,.036,material,z);
-   const medallion=(x,y,scale=.13)=>{
-     raised([[x,y+scale*1.5],[x+scale,y],[x,y-scale*1.5],[x-scale,y]],brass,.27);
-     const stone=add(new T.OctahedronGeometry(1),rune,x,y,.36);
-     stone.scale.set(scale*.48,scale*.77,.045);
-     for(const side of [-1,1]){
-       const pin=add(new T.SphereGeometry(.024,8,6),edge,x+side*scale*.76,y,.33);
-       pin.scale.z=.45;
-     }
-   };
-   // Relief detailing is structural and attached to the actual weapon.
-   // Keep embellishments on the existing silhouette instead of replacing it.
-   const isSword=/blade|nodachi|twin|katana|holy|dimension|mimic|spell/.test(k);
-   const isStaff=/staff|clock|oracle|water|wind|earth|sunrod|gravity|astro|rift|chaos|spirit|shadow|soul|comet/.test(k);
-   const isMachine=/sniper|mortar|arbalest|repeater|armcannon|rotary|wrench/.test(k);
-   if(isSword){
-     for(const face of [-1,1]){
-       raised([[-.085,1.08],[.085,1.08],[.09,2.28],[0,2.65],[-.09,2.28]],black,face*.24);
-       for(let j=0;j<4;j++){
-         const y=1.3+j*.30;
-         const stone=add(new T.OctahedronGeometry(1),rune,0,y,face*.34);
-         stone.scale.set(.035,.070,.025);
-       }
-     }
-     medallion(0,.76,.12);
-   }else if(isStaff){
-     medallion(0,2.4,.19);
-     for(const side of [-1,1]){
-       raised([[0,2.03],[side*.30,2.30],[side*.22,2.68],[0,2.51]],brass,side*.10);
-     }
-   }else if(isMachine){
-     for(const side of [-1,1]){
-       raised([[side*.14,1.02],[side*.37,1.10],[side*.39,1.50],[side*.14,1.62]],steel,.40);
-       const rivet=add(new T.SphereGeometry(.038,8,6),brass,side*.25,1.27,.50);
-       rivet.scale.z=.4;
-     }
-   }else{
-     medallion(0,1.26,.13);
-   }
-   // A uniquely shaped heraldic inlay on each PvP job's model.
-   const seed=w.weaponId;
-   const marks=2+seed%4;
-   for(let j=0;j<marks;j++){
-     const x=(j-(marks-1)/2)*.13;
-     const y=.16+(seed%3)*.08;
-     const rivet=add(new T.SphereGeometry(.026,8,6),j%2?brass:rune,x,y,.20);
-     rivet.scale.z=.5;
-   }
-   // Safety: no empty or invalid models can silently enter the armory.
-   if(g.children.length===0)throw new Error('Empty PvP weapon mesh: '+w.id);
+   // Keep the weapon's original structural mesh unobscured by ornamental
+   // medallions, repeated rivets, and overlapping plates.
    g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;
    return g;
  }
@@ -455,31 +383,6 @@ export function makePvpWeaponModel(T,id){
  }
  else if(k==='lute'){gem(0,1.05,0,.62,leather);box(0,1.86,0,.28,1.26,.21,leather);for(let j=-2;j<=2;j++)line([[j*.1,.69,.4],[j*.1,2.37,.13]],.012,brass);crest(0,1.04,.53)}
  else{grip();blade()}
- // Individual engraved identity: relief, rivets and structural inlay on every extra job.
- if(w.id.startsWith('extra_')){
-  const identity=n+1;
-  const ringCount=2+(identity%4);
-  for(let j=0;j<ringCount;j++){
-   const xx=(j-(ringCount-1)/2)*.18;
-   const yy=.14+(identity%5)*.035;
-   const rivet=add(new T.SphereGeometry(.032,9,7),j%2?brass:rune,xx,yy,.16);
-   rivet.scale.z=.60;
-  }
-  // Different forged heraldry for each job, independent of base weapon family.
-  const cx=(identity%3-1)*.055,cy=1.0+(identity%7)*.11;
-  const em=identity%4;
-  if(em===0){poly([[cx-.11,cy],[cx,cy+.20],[cx+.11,cy],[cx,cy-.20]],.026,brass,.28)}
-  else if(em===1){poly([[cx-.14,cy-.10],[cx,cy+.19],[cx+.14,cy-.10]],.026,brass,.28)}
-  else if(em===2){const loop=add(new T.TorusGeometry(.15,.022,6,24),brass,cx,cy,.28);loop.rotation.z=.22}
-  else{for(const sign of [-1,1])poly([[cx,cy-.12],[cx+sign*.17,cy+.09],[cx+sign*.08,cy+.19]],.026,brass,.28)}
- }
- // Unique structural crest: each job gets its own numbered arrangement of forged plates.
- const y=.22+(n%3)*.06;
- for(let j=0;j<detail;j++){
-  const x=(j-(detail-1)/2)*.12;
-  const piece=add(new T.OctahedronGeometry(.038+(n%3)*.008,0),j%2?brass:rune,x,y,.12);
-  piece.rotation.y=n*.21;
- }
  g.name=w.name+'専用武器';g.userData.pvpWeaponId=w.weaponId;g.userData.pvpJob=w.id;
  return g;
 }
