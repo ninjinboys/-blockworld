@@ -43,7 +43,36 @@ export function makePvpWeaponModel(T,id){
  const box=(x,y,z,a,b,c,m=steel)=>add(new T.BoxGeometry(a,b,c),m,x,y,z);
  const rod=(x,y,z,r,h,m=brass)=>add(new T.CylinderGeometry(r,r,h,12),m,x,y,z);
  const gem=(x,y,z,r=.1,m=rune)=>add(new T.OctahedronGeometry(r,0),m,x,y,z);
- const poly=(pts,depth,mat=steel,z=0)=>{const sh=new T.Shape();sh.moveTo(...pts[0]);for(let j=1;j<pts.length;j++)sh.lineTo(...pts[j]);sh.closePath();return add(new T.ExtrudeGeometry(sh,{depth,steps:1,bevelEnabled:true,bevelSize:.012,bevelThickness:.012,bevelSegments:2}),mat,0,0,z-depth/2)};
+ const poly=(pts,depth,mat=steel,z=0)=>{
+  const sh=new T.Shape();sh.moveTo(...pts[0]);for(let j=1;j<pts.length;j++)sh.lineTo(...pts[j]);sh.closePath();
+  const metal=mat===steel||mat===edge||mat===brass||mat===black;
+  const bevel=metal?Math.min(.035,Math.max(.013,depth*.17)):.012;
+  const body=add(new T.ExtrudeGeometry(sh,{depth,steps:1,bevelEnabled:true,bevelSize:bevel,bevelThickness:bevel*.72,bevelSegments:2}),mat,0,0,z-depth/2);
+  // Faceted forged surface: each triangulated steel plate has a genuine
+  // raised centre, so lighting follows angular planes rather than a flat decal.
+  if(metal&&pts.length>=3){
+    const vertices=pts.map(([x,y])=>new T.Vector2(x,y));
+    const triangles=T.ShapeUtils.triangulateShape(vertices,[]);
+    const front=z+depth/2+bevel*.74;
+    const facets=[];
+    for(const [ia,ib,ic] of triangles){
+      const a=pts[ia],b=pts[ib],c=pts[ic];
+      const cx=(a[0]+b[0]+c[0])/3,cy=(a[1]+b[1]+c[1])/3;
+      const rise=Math.min(.065,Math.max(.024,depth*.22));
+      for(const [p,q] of [[a,b],[b,c],[c,a]]){
+        facets.push(p[0],p[1],front,q[0],q[1],front,cx,cy,front+rise);
+      }
+    }
+    if(facets.length){
+      const geo=new T.BufferGeometry();
+      geo.setAttribute('position',new T.Float32BufferAttribute(facets,3));
+      geo.computeVertexNormals();
+      const facetMaterial=mat===black?steel:mat===steel?edge:mat;
+      add(geo,facetMaterial);
+    }
+  }
+  return body;
+};
  const line=(points,r=.026,mat=brass)=>add(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(16,points.length*8),r,8,false),mat);
  // Forged 3D blade: real diamond-section steel, rather than flat stacked
  // polygons. Both faces converge into a cutting edge, with a tapered point.
