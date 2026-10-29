@@ -811,6 +811,202 @@ export function makePvpWeaponModel(T,id){
    }
  }
 
+
+ // Replacement for the six jobs previously using box cuffs with flat white spikes.
+ // Keep bows, shields, hammers and every unrelated silhouette unchanged.
+ function forgeFistFamily(){
+   const styleByJob={
+     extra_011:'stone',
+     extra_033:'vampire',
+     extra_043:'monster',
+     extra_047:'chimera',
+     fighter:'fighter',
+     beast:'wild'
+   };
+   const style=styleByJob[w.id];
+   if(!style)return false;
+   const rock=new T.MeshStandardMaterial({color:0x62666a,roughness:1,metalness:0,flatShading:true,side:T.DoubleSide});
+   const rockDark=new T.MeshStandardMaterial({color:0x353d47,roughness:1,metalness:0,flatShading:true,side:T.DoubleSide});
+   const rockLight=new T.MeshStandardMaterial({color:0x93989b,roughness:.96,metalness:0,flatShading:true,side:T.DoubleSide});
+   const bone=new T.MeshStandardMaterial({color:0xe0d5bb,roughness:.40,metalness:.03,side:T.DoubleSide});
+   const blood=new T.MeshPhysicalMaterial({color:0x5c1729,metalness:.67,roughness:.27,clearcoat:.55,side:T.DoubleSide});
+   const brass=new T.MeshPhysicalMaterial({color:0xb58a51,metalness:.83,roughness:.27,side:T.DoubleSide});
+   const moss=new T.MeshStandardMaterial({color:0x445e50,metalness:.28,roughness:.45,side:T.DoubleSide});
+   const hide=new T.MeshStandardMaterial({color:0x4d372b,roughness:.90,side:T.DoubleSide});
+   const mat=(key)=>{
+     if(key==='rock')return rock;
+     if(key==='rockDark')return rockDark;
+     if(key==='rockLight')return rockLight;
+     if(key==='bone')return bone;
+     if(key==='blood')return blood;
+     if(key==='brass')return brass;
+     if(key==='moss')return moss;
+     if(key==='hide')return hide;
+     return key;
+   };
+   const solid=(geometry,m,x=0,y=0,z=0)=>mesh(geometry,mat(m),x,y,z);
+   const jewel=(x,y,z,r=.11,c='crystal')=>{
+     const mount=solid(new T.IcosahedronGeometry(r*1.20,1),'bronze',x,y,z-.035);
+     mount.scale.z=.56;
+     const glow=solid(new T.IcosahedronGeometry(r,1),c,x,y,z+.02);
+     glow.scale.z=.73;
+   };
+   const stoneBlock=(x,y,z,r,sx,sy,sz,m)=>{
+     const o=solid(new T.IcosahedronGeometry(r,0),m,x,y,z);
+     o.scale.set(sx,sy,sz);return o;
+   };
+   const segment=(a,b,rStart,rEnd,m,sides=12)=>{
+     const p=new T.Vector3(...a),q=new T.Vector3(...b),d=q.clone().sub(p);
+     const o=solid(new T.CylinderGeometry(rEnd,rStart,d.length(),sides),m,
+       (p.x+q.x)/2,(p.y+q.y)/2,(p.z+q.z)/2);
+     o.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());
+     return o;
+   };
+   const taperedTalons=(x,count,shape,material,scale=1)=>{
+     for(let i=0;i<count;i++){
+       const u=i-(count-1)/2;
+       const base=x+u*.155*scale;
+       const height=shape==='vampire'?1.36:shape==='chimera'?1.17:.88;
+       const wrist=[base,1.23,.17];
+       const mid=[base+u*.018,1.23+height*.45,.23+height*.18];
+       const end=[base+u*.052,1.23+height*.89,.34+height*.36];
+       const tip=[base+u*.08,1.23+height,.32+height*.46];
+       segment(wrist,mid,.105*scale,.080*scale,material);
+       segment(mid,end,.080*scale,.037*scale,material);
+       segment(end,tip,.040*scale,.002,material);
+       if(shape==='vampire'){
+         segment([base,1.35,.19],[base+u*.01,1.67,.33],.021,.012,'blood',8);
+       }
+     }
+   };
+   const cuff=(x,style)=>{
+     // Worn arm + articulated wrist rather than detached grey rectangular blocks.
+     const col=style==='stone'?'rockDark':
+       style==='vampire'?'blood':
+       style==='chimera'?'moss':
+       style==='fighter'?'dark':
+       style==='monster'?'hide':'moss';
+     const c=solid(new T.CylinderGeometry(.26,.19,.77,10),col,x,.31,0);
+     c.rotation.z=(x>0?-1:1)*.07;
+     for(const yy of [-.03,.68]){
+       const band=solid(new T.TorusGeometry(.225,.045,8,24),
+         style==='stone'?'rockLight':'bronze',x,yy,0);
+       band.rotation.x=Math.PI/2;
+     }
+     // Four reinforcing lamellae follow the back of the forearm.
+     if(style!=='stone')for(let j=0;j<3;j++){
+       const u=(j-1)*.15;
+       segment([x+u,.10,.18],[x+u,.56,.20],
+         .033,.025,style==='vampire'?'blood':'bronze',8);
+     }
+   };
+   const colorForStyle={
+     stone:'rock',vampire:'blood',chimera:'moss',
+     fighter:'iron',monster:'hide',wild:'moss'
+   };
+   for(const side of [-1,1]){
+     const x=side*.62;
+     cuff(x,style);
+     if(style==='stone'){
+       // Two heavy BOULDER FISTS. No spikes or pale rectangular blades.
+       stoneBlock(x,.85,.02,.43,1.10,1.05,.95,'rock');
+       stoneBlock(x,.88,-.20,.35,1.12,.92,.72,'rockDark');
+       stoneBlock(x,1.08,.29,.33,1.13,.78,.70,'rockLight');
+       const ridge=[[-.26,1.27,.31],[-.085,1.37,.34],[.10,1.32,.34],[.28,1.19,.28]];
+       for(let i=0;i<4;i++){
+         let [u,y,z]=ridge[i];
+         stoneBlock(x+u,y,z,.205,1.25,1.02,1.00,
+           i%2?'rock':'rockLight');
+         const facet=stoneBlock(x+u,y+.08,z+.12,.12,1.0,.78,.40,'rockDark');
+         facet.rotation.z=(i-1.5)*.28;
+       }
+       stoneBlock(x+side*.35,.77,.15,.24,1.05,.87,.90,'rockDark');
+       // Engraved fractures across rock facets, not floating glitter.
+       curve([[x-.26,.76,.47],[x-.08,.88,.55],[x-.15,1.04,.49],
+         [x+.06,1.20,.52]],.021,'gold');
+       curve([[x+.21,.74,.45],[x+.11,.91,.51],
+         [x+.28,1.07,.42]],.014,'recess');
+       jewel(x,.80,.53,.105);
+     }else if(style==='fighter'){
+       // Compact forged brass knuckles with four rounded padded striking heads.
+       solid(new T.SphereGeometry(.38,16,10),'leather',x,.98,.0).scale.set(1.25,1.08,.74);
+       solid(new T.CylinderGeometry(.21,.27,.24,12),'iron',x,.75,.06);
+       for(let j=0;j<4;j++){
+         const u=(j-1.5)*.145;
+         const knuckle=solid(new T.SphereGeometry(.125,12,10),'steel',
+           x+u,1.26+(.08-Math.abs(j-1.5)*.03),.27);
+         knuckle.scale.set(.95,.85,.86);
+         const ring=solid(new T.TorusGeometry(.118,.032,8,20),
+           'bronze',x+u,1.28+(.08-Math.abs(j-1.5)*.03),.30);
+         // The knuckle rings face forward.
+       }
+       solid(new T.SphereGeometry(.15,12,10),'leather',
+         x+side*.32,.88,.26);
+       jewel(x,.87,.36,.095);
+     }else{
+       // Five curved segments wrap each fist into a genuine clawed glove.
+       const shell=solid(new T.SphereGeometry(.37,16,12),
+         colorForStyle[style],x,.97,.01);
+       shell.scale.set(1.20,1.0,.75);
+       solid(new T.CylinderGeometry(.20,.28,.30,11),
+         colorForStyle[style],x,.75,0);
+       for(let j=0;j<4;j++){
+         const u=(j-1.5)*.16;
+         solid(new T.SphereGeometry(.12,10,10),'bronze',
+           x+u,1.26,.17).scale.set(1.05,.65,.70);
+       }
+       // Thumb sockets on the outside of each palm.
+       segment([x+side*.30,.95,.05],[x+side*.38,1.20,.18],
+         .135,.10,colorForStyle[style]);
+       if(style==='vampire'){
+         // Slender hooked bloodsteel talons, markedly different from stone fists.
+         taperedTalons(x,4,'vampire','steel',.86);
+         for(const sign of [-1,1]){
+           curve([[x+sign*.21,.70,.29],[x+sign*.18,.94,.34],
+             [x+sign*.09,1.13,.30]],.018,'gold');
+         }
+         jewel(x,.98,.29,.16);
+         for(let j=-1;j<=1;j++){
+           let px=x+j*.18;
+           solid(new T.ConeGeometry(.042,.19,8),'blood',
+             px,.64,.23).rotation.z=j*.20;
+         }
+       }else if(style==='chimera'){
+         // Heavy three-talon raptor gauntlets, with bone antler plates.
+         taperedTalons(x,3,'chimera','bone',1.20);
+         for(const a of [-1,1]){
+           segment([x+a*.23,.66,.11],[x+a*.42,1.07,.08],
+             .092,.028,'bone');
+           const scale=stoneBlock(x+a*.28,.83,.23,.17,.65,1.10,.45,'moss');
+           scale.rotation.z=a*.28;
+         }
+         jewel(x,1.02,.34,.17);
+       }else if(style==='monster'){
+         // Monster-handler's short claw mitt, spiked knuckles and leather straps.
+         taperedTalons(x,4,'beast','bone',.71);
+         for(const yy of [.64,.81]){
+           segment([x-.32,yy,.20],[x+.32,yy,.20],.044,.044,'bronze');
+         }
+         for(const s of [-1,1]){
+           const pad=stoneBlock(x+s*.25,.98,.23,.16,.85,.84,.45,'rockDark');
+           pad.rotation.z=s*.25;
+         }
+         jewel(x,.89,.32,.12);
+       }else{
+         // Wild-beast gauntlet: asymmetrical sweeping horn and blackened claws.
+         taperedTalons(x,4,'beast','steel',1.02);
+         for(const s of [-1,1]){
+           segment([x+s*.18,.71,.03],[x+s*.46,1.22,.10],
+             .12,.028,'bone');
+           stoneBlock(x+s*.22,.96,.22,.17,.82,1.23,.62,'moss');
+         }
+         jewel(x,.85,.33,.12);
+       }
+     }
+   }
+   return true;
+ }
+
  // Screenshot-driven mesh overhaul: 35 distinct models, not shared fallback heads.
  function buildAuditedWeapon(){
    const idx=/^extra_(\d{3})$/.exec(w.id);
@@ -1223,7 +1419,7 @@ export function makePvpWeaponModel(T,id){
  // Every nonstarter class gets a unique, native mesh — even if it belongs
  // to the same weapon family. Starter meshes can be generated here too but
  // existing first five remain selected from the story branch in the viewer.
- const audited=buildAuditedWeapon();
+ const audited=forgeFistFamily()||buildAuditedWeapon();
  if(audited){ /* unique screenshot-derived mesh */ }
  else if(/shield|tower|aegis|barrier/.test(k)||['reflect','extra_008'].includes(w.id))shieldModel(k);
  else if(/bow|arbalest|repeater|crossbow|tracker/.test(k))bowModel(k);
