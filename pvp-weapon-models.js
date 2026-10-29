@@ -1002,7 +1002,7 @@ export function makePvpWeaponModel(T,id){
        }
        rod([0,2.95,.28],[.23,3.20,.28],.025,'gold');
        rod([0,2.95,.29],[-.24,2.83,.29],.028,'steel');
-     }else if(type==='space'||type==='dream'){
+     }else if(type==='space'){
        ring(0,2.94,.59,0,'bronze');
        for(const a of [-.72,.72]){
          const t=ring(0,2.94,.76,.0,'steel');t.rotation.y=a;
@@ -1010,10 +1010,46 @@ export function makePvpWeaponModel(T,id){
        for(const s of [-1,1])plate([[s*.16,2.60],
           [s*.70,2.82],[s*.62,3.10],[s*.17,3.33]],.07,'dark',-.18);
        gem(0,2.94,.20,.27,.38,.15);
+     }else if(type==='dream'){
+       // An asymmetric crescent cradle and four shifting dream fragments.
+       curve([[-.42,2.34,0],[-.68,2.66,0],
+          [-.54,3.25,0],[-.13,3.52,0]],.14,'steel');
+       curve([[.10,2.35,0],[.38,2.63,0],
+          [.35,3.17,0],[.14,3.43,0]],.075,'bronze');
+       plate([[-.47,2.63],[-.17,2.92],
+         [-.04,3.40],[.24,2.94],[.43,2.73],
+         [.20,2.44]],.065,'dark',-.13);
+       for(const [x,y,z] of [[-.36,3.20,.19],[.30,2.55,.15],
+         [-.14,2.53,.24],[.22,3.36,.20]])
+           gem(x,y,z,.10,.17,.055);
+       gem(0,2.97,.24,.23,.32,.15);
      }
      for(const y of [.12,.66,1.24])cyl(0,y,0,.13,.06,'gold');
    };
-   if([1,3,55].includes(id))twoBlades(id===1,id!==1);
+   if([1,3,55].includes(id)){
+     twoBlades(id===1,id!==1);
+     if(id===3){
+       // Swift-blade fencing pairs: narrow swept quillons and aerodynamic grooves.
+       for(const side of [-1,1]){
+         plate([[side*.59-.33,.27],[side*.59,.42],
+           [side*.59+.34,.27],[side*.59,.19]],.10,'steel');
+         curve([[side*.59,.70,.19],
+           [side*.59+side*.12,1.55,.20],
+           [side*.59+side*.25,2.49,.18]],.028,'gold');
+       }
+     }else if(id===55){
+       // Dual swordsman's shorter, sturdier paired guards and bronze ricassos.
+       for(const side of [-1,1]){
+         const x=side*.59;
+         plate([[x-.31,.18],[x-.41,.41],[x-.12,.32],
+           [x,.46],[x+.12,.32],[x+.41,.41],
+           [x+.31,.18]],.11,'bronze');
+         plate([[x-.12,.48],[x+.12,.48],[x+.12,.84],
+           [x-.12,.84]],.055,'dark',.13);
+         jewel(x,.63,.20);
+       }
+     }
+   }
    else if(id===2){
      longHandle(2.39);
      plate([[0,2.17],[.34,2.52],[1.37,2.96],[1.54,2.54],
@@ -1066,6 +1102,25 @@ export function makePvpWeaponModel(T,id){
          rod([xx,1.25,.15],[xx+s*.08,1.70,.10],.026,'crystal');
        }
        jewel(x,.62,.30);
+     }
+     if(id===47){
+       // Chimera claws: bone spines sweeping backward from the paired gauntlets.
+       for(const side of [-1,1]){
+         for(let j=0;j<3;j++){
+           const x=side*.46+(j-1)*.15;
+           plate([[x-.10,.78],[x+.10,.78],
+             [x+side*.39,.38],[x+side*.31,1.13]],.10,'bronze');
+         }
+         gem(side*.46,1.18,.28,.18,.24,.09);
+       }
+     }else{
+       // Vampire claws are slim with a central blood-focus crystal.
+       for(const side of [-1,1]){
+         const x=side*.46;
+         curve([[x,1.05,.26],[x+side*.08,1.55,.22],
+           [x+side*.20,1.93,.17]],.027,'crystal');
+         gem(x,1.03,.29,.13,.18,.07);
+       }
      }
    }else if(id===34){
      // Marionette crossbar, suspended actual puppet body, arms and legs.
