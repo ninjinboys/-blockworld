@@ -1,8 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 import {makeJobWeaponModel,jobHeldBladeYaw,jobHeldWeaponScale,JOBS} from './job-system.js?v=20261027storyRestore';
-import {PVP_WEAPONS,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261029audit35b';
-import {makeFirstPersonHand} from './pvp-first-person-hand.js?v=20261029audit35b';
-import {makeAvatarHeldItems} from './pvp-avatar-held-items.js?v=20261029audit35b';
+import {PVP_WEAPONS,makePvpWeaponModel} from './pvp-weapon-models.js?v=20261029fistRebuild01';
+import {makeFirstPersonHand} from './pvp-first-person-hand.js?v=20261029fistRebuild01';
+import {makeAvatarHeldItems} from './pvp-avatar-held-items.js?v=20261029fistRebuild01';
 
 const $=id=>document.getElementById(id);
 
