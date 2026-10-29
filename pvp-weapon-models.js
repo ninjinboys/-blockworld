@@ -844,7 +844,13 @@ export function makePvpWeaponModel(T,id){
      if(key==='hide')return hide;
      return key;
    };
-   const solid=(geometry,m,x=0,y=0,z=0)=>mesh(geometry,mat(m),x,y,z);
+   const solid=(geometry,m,x=0,y=0,z=0)=>{
+     const material=mat(m);
+     const o=new T.Mesh(geometry,typeof material==='string'?(M[material]||M.iron):material);
+     o.position.set(x,y,z);
+     o.castShadow=true;o.receiveShadow=true;target.add(o);
+     return o;
+   };
    const jewel=(x,y,z,r=.11,c='crystal')=>{
      const mount=solid(new T.IcosahedronGeometry(r*1.20,1),'bronze',x,y,z-.035);
      mount.scale.z=.56;
