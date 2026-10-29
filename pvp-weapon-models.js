@@ -810,10 +810,367 @@ export function makePvpWeaponModel(T,id){
      }
    }
  }
+
+ // Screenshot-driven mesh overhaul: 35 distinct models, not shared fallback heads.
+ function buildAuditedWeapon(){
+   const idx=/^extra_(\d{3})$/.exec(w.id);
+   if(!idx)return false;
+   const id=Number(idx[1]);
+   const targets=new Set([1,2,3,4,5,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,46,47,49,50,51,52,53,54,55]);
+   if(!targets.has(id))return false;
+   const jewel=(x,y,z=.2)=>gem(x,y,z,.12,.16,.07);
+   const grip=(x=0,y=-.3,h=.65)=>{
+     cyl(x,y,0,.105,h,'leather');
+     for(let i=0;i<9;i++){
+       let yy=y-h*.43+i*h*.86/8;
+       rod([x-.08,yy,.08],[x+.08,yy+.05,.08],.015,'wrap');
+     }
+     for(let sy of [-1,1])cyl(x,y+sy*h*.5,0,.12,.06,'gold');
+   };
+   const longHandle=(height=2.42)=>{
+     rod([0,-.63,0],[0,height,0],.089,'leather');
+     for(const yy of [-.55,.48,height-.22]){
+       cyl(0,yy,0,.13,.095,'bronze');
+       cyl(0,yy+.049,0,.138,.027,'gold');
+     }
+     for(let i=0;i<11;i++){
+       let yy=-.30+i*.073;
+       rod([-.08,yy,.075],[.08,yy+.05,.075],.015,'wrap');
+     }
+   };
+   const ring=(x,y,r,z=0,mat='bronze')=>torus(x,y,z,r,.070,mat);
+   const hollow=(x,y,r=.65)=>{ring(x,y,r,0,'steel');ring(x,y,r*.82,.12,'gold');jewel(x,y,.24)};
+   const twoBlades=(short=false,curved=false)=>{
+     for(const sign of [-1,1]){
+       let x=sign*(short?.45:.59),end=short?1.85:2.75;
+       grip(x,-.34,short?.51:.68);
+       plate([[x-.27,.02],[x+.27,.02],[x+.22,.21],[x-.22,.21]],.13,'bronze');
+       plate([[x-.17,.18],[x+.17,.18],[x+.23,.66],
+          [x+sign*(curved?.30:0),end],[x-.18,.78]],.15,'steel');
+       plate([[x-.01,.51],[x+.055,.55],
+          [x+sign*(curved?.26:0),end-.18]],.024,'edge',.15);
+       curve([[x,.63,.17],[x+sign*.08,1.15,.16],
+         [x+sign*(curved?.25:0),end-.37,.12]],.018,'crystal');
+       jewel(x,.15,.23);
+       mesh(new T.IcosahedronGeometry(.10,0),'gold',x,-.72,0);
+     }
+   };
+   const bow=(key)=>{
+     bowModel(key);
+     for(const sign of [-1,1]){
+       plate([[-.48,sign*1.32],[-.72,sign*1.56],
+          [-.67,sign*1.87],[-.53,sign*1.71]],.085,'steel');
+       jewel(-.28,sign*.68,.25);
+     }
+     for(let i=0;i<7;i++)rod([-.09,-.22+i*.068,.08],
+        [.09,-.18+i*.068,.08],.015,'gold');
+   };
+   const crossbow=(repeater)=>{
+     cube(0,.17,.14,.32,.26,2.30,'leather');
+     cube(0,.20,-.88,.44,.20,.24,'bronze');
+     cube(0,-.25,.68,.17,.67,.23,'dark');
+     for(const s of [-1,1]){
+       curve([[0,.20,-1.01],[s*.61,.27,-1.08],[s*1.19,.30,-.80]],.09,'steel');
+       curve([[s*.14,.27,-.99],[s*.65,.33,-1.01],[s*1.19,.30,-.80]],.025,'gold');
+     }
+     curve([[-1.19,.30,-.80],[0,.31,.53],[1.19,.30,-.80]],.014,'wrap');
+     rod([0,.36,-1.19],[0,.36,.76],.027,'steel');
+     cube(0,.47,-.31,.20,.28,.75,'iron');
+     if(repeater){
+       cube(0,.74,-.20,.46,.39,.81,'dark');
+       for(let i=0;i<6;i++)cube(0,.99,-.51+i*.12,.33,.045,.06,'gold');
+     }else{
+       rod([0,.78,.30],[0,.78,-.80],.033,'bronze');
+       ring(0,.78,.15,-.69,'gold').rotation.x=Math.PI/2;
+     }
+     jewel(0,.44,.20);
+   };
+   const firearm=(type)=>{
+     firearmModel(type);
+     for(const s of [-1,1]){
+       cube(s*.26,.54,.01,.080,.25,.85,'bronze');
+       cube(s*.20,.46,.48,.075,.21,.29,'leather');
+     }
+     cube(0,.82,-.20,.28,.11,.80,'steel');
+     if(type==='sniper'){
+       rod([0,1.09,.05],[0,1.09,-1.37],.066,'dark');
+       for(const z of [-.10,-.94])ring(0,1.09,.11,z,'gold').rotation.x=Math.PI/2;
+       cube(0,.38,1.00,.49,.28,.64,'leather');
+     }else if(type==='mortar'){
+       for(const s of [-1,1]){
+         rod([s*.16,.52,-.70],[s*.16,.52,-2.03],.17,'iron');
+         ring(s*.16,.52,.18,-2.02,'gold').rotation.x=Math.PI/2;
+       }
+       cube(0,.45,.87,.64,.40,.65,'iron');
+     }else{
+       for(let i=0;i<6;i++){
+         let z=-.40-i*.19;
+         ring(0,.53,.17,z,i%2?'crystal':'gold').rotation.x=Math.PI/2;
+       }
+       for(const s of [-1,1])rod([s*.19,.52,-.40],
+         [s*.19,.52,-1.65],.028,'crystal');
+       jewel(0,.85,.28);
+     }
+   };
+   const spear=(three=false)=>{
+     longHandle(2.75);
+     cube(0,2.70,0,.26,.28,.26,'bronze');
+     if(three){
+       plate([[-.14,2.73],[.14,2.73],[.19,3.27],
+         [0,3.96],[-.19,3.27]],.18,'steel');
+       plate([[-.04,2.93],[.04,2.93],[0,3.78]],.035,'edge',.13);
+       for(const s of [-1,1]){
+         curve([[0,2.85,0],[s*.42,3.06,0],[s*.59,3.44,0]],.09,'iron');
+         plate([[s*.46,3.23],[s*.69,3.26],[s*.72,3.85],
+           [s*.60,4.00],[s*.48,3.70]],.14,'steel');
+         plate([[s*.59,3.43],[s*.65,3.80],[s*.60,3.86]],.024,'edge',.12);
+       }
+     }else{
+       plate([[-.20,2.73],[.20,2.73],[.29,3.12],
+         [0,3.79],[-.29,3.12]],.17,'steel');
+       plate([[-.04,2.89],[.04,2.89],[0,3.66]],.028,'edge',.14);
+       for(const s of [-1,1])plate([[s*.11,2.79],
+         [s*.39,2.78],[s*.32,3.08]],.11,'bronze');
+     }
+     jewel(0,2.78,.24);
+   };
+   const magic=(type)=>{
+     longHandle(2.24);
+     const cy=2.78;
+     if(type==='water'){
+       for(const s of [-1,1]){
+         curve([[0,2.17,0],[s*.36,2.58,0],
+           [s*.43,3.07,0],[s*.10,3.52,0]],.09,'steel');
+         curve([[s*.17,2.47,.12],[s*.31,2.85,.12],
+           [s*.23,3.24,.12]],.035,'crystal');
+       }
+       gem(0,2.93,.08,.26,.38,.16);
+     }else if(type==='wind'){
+       for(let i=0;i<7;i++){
+         const a=(i-3)*.20,x=Math.sin(a)*.92,h=3.48-Math.abs(i-3)*.11;
+         plate([[0,2.36],[x*.55,2.73],[x+.11,h],
+           [x-.08,h-.18]],.060,i%2?'steel':'iron');
+         curve([[0,2.46,.15],[x*.53,2.93,.15],
+           [x+.03,h-.14,.15]],.015,'crystal');
+       }
+       ring(0,2.56,.20,.16,'gold');
+     }else if(type==='earth'){
+       cube(0,2.82,0,1.13,.70,.60,'dark');
+       for(const s of [-1,1]){
+         plate([[s*.23,2.45],[s*.70,2.40],[s*.89,2.83],
+           [s*.68,3.25],[s*.21,3.19]],.20,'iron');
+         plate([[s*.45,2.55],[s*.71,2.85],[s*.42,3.06]],.040,'steel',.22);
+       }
+       gem(0,2.83,.40,.25,.30,.12);
+     }else if(type==='light'){
+       hollow(0,2.91,.54);
+       for(let i=0;i<10;i++){
+         let a=i*Math.PI/5,x=Math.sin(a),y=Math.cos(a);
+         plate([[x*.52,2.91+y*.52],[x*.72-y*.10,2.91+y*.72+x*.10],
+           [x*1.04,2.91+y*1.04],[x*.72+y*.10,2.91+y*.72-x*.10]],
+            .10,'gold');
+       }
+       gem(0,2.91,.23,.24,.31,.12);
+     }else if(type==='dark'||type==='necro'){
+       for(const y of [2.47,3.48])cube(0,y,0,.88,.14,.49,'bronze');
+       for(const s of [-1,1]){
+         rod([s*.39,2.52,0],[s*.42,3.44,0],.07,'dark');
+         plate([[s*.27,3.41],[s*.43,3.73],[s*.58,3.32]],.11,'steel');
+       }
+       if(type==='necro'){
+         const skull=mesh(new T.SphereGeometry(.33,14,10),'steel',0,2.95,0);
+         skull.scale.y=1.12;
+         for(const s of [-1,1])cube(s*.12,3.00,.30,.11,.12,.07,'recess');
+         cube(0,2.67,.30,.24,.15,.12,'steel');
+       }else mesh(new T.IcosahedronGeometry(.37,1),'crystal',0,2.97,0);
+       ring(0,2.95,.24,.20,'gold');
+     }else if(type==='poison'){
+       for(const s of [-1,1]){
+         plate([[s*.11,2.45],[s*.49,2.72],[s*.53,3.38],
+           [s*.32,3.78],[s*.35,3.10],[s*.07,2.69]],.12,'steel');
+         curve([[s*.16,2.54,.13],[s*.38,3.15,.13],
+           [s*.34,3.59,.12]],.026,'crystal');
+       }
+       mesh(new T.CylinderGeometry(.19,.24,.72,14),'crystal',0,2.95,0);
+       ring(0,2.62,.26,.11,'bronze');
+     }else if(type==='time'){
+       hollow(0,2.95,.58);
+       for(let i=0;i<12;i++){
+         let a=i*Math.PI/6;
+         rod([Math.sin(a)*.43,2.95+Math.cos(a)*.43,.20],
+           [Math.sin(a)*.54,2.95+Math.cos(a)*.54,.20],.018,'steel');
+       }
+       rod([0,2.95,.28],[.23,3.20,.28],.025,'gold');
+       rod([0,2.95,.29],[-.24,2.83,.29],.028,'steel');
+     }else if(type==='space'||type==='dream'){
+       ring(0,2.94,.59,0,'bronze');
+       for(const a of [-.72,.72]){
+         const t=ring(0,2.94,.76,.0,'steel');t.rotation.y=a;
+       }
+       for(const s of [-1,1])plate([[s*.16,2.60],
+          [s*.70,2.82],[s*.62,3.10],[s*.17,3.33]],.07,'dark',-.18);
+       gem(0,2.94,.20,.27,.38,.15);
+     }
+     for(const y of [.12,.66,1.24])cyl(0,y,0,.13,.06,'gold');
+   };
+   if([1,3,55].includes(id))twoBlades(id===1,id!==1);
+   else if(id===2){
+     longHandle(2.39);
+     plate([[0,2.17],[.34,2.52],[1.37,2.96],[1.54,2.54],
+       [1.13,2.71],[.70,2.64],[.28,2.33]],.16,'steel');
+     plate([[.51,2.54],[1.34,2.89],[1.43,2.70],[.82,2.70]],.034,'edge',.12);
+     curve([[0,-.58,0],[.34,-.80,0],[.54,-1.12,0],[.99,-1.24,0]],.047,'bronze');
+     mesh(new T.IcosahedronGeometry(.18,1),'iron',.99,-1.24,0);
+   }else if(id===4){
+     for(let i=-1;i<=1;i++){
+       const t=new T.Group();g.add(t);
+       const old=target;target=t;
+       plate([[-.27,.10],[.27,.10],[.32,1.44],[0,1.83],
+         [-.32,1.44]],.095,'dark');
+       plate([[-.19,.23],[.19,.23],[.25,1.38],[0,1.68],
+         [-.25,1.38]],.030,'steel',.10);
+       jewel(0,.94,.20);t.position.x=i*.32;t.rotation.z=i*.31;
+       target=old;
+     }
+   }else if(id===5||id===31){
+     bow(id===5?'tracker':'huntingbow');
+     if(id===5){cube(.19,.24,.22,.20,.23,.27,'bronze');rod([.2,.2,.2],[.2,.2,.77],.03,'dark');}
+     else for(const s of [-1,1])curve([[-.52,s*1.15,.25],
+          [-.72,s*1.50,.25],[-.65,s*1.80,.24]],.032,'gold');
+   }else if(id>=16&&id<=23){
+     magic(['water','wind','earth','light','dark','poison','time','space'][id-16]);
+   }else if(id===24||id===25||id===30){
+     firearm(id===24?'sniper':id===25?'mortar':'spellgun');
+   }else if(id===26||id===53)spear(id===53);
+   else if(id===27||id===29)crossbow(id===29);
+   else if(id===28){
+     grip(0,-.40,.67);
+     for(const s of [-1,1]){
+       curve([[0,-.04,0],[s*.24,.48,0],[s*.65,1.44,0]],.09,'bronze');
+       curve([[s*.10,.22,.10],[s*.40,.81,.12],
+         [s*.65,1.42,.08]],.032,'gold');
+     }
+     curve([[-.65,1.45,.08],[-.25,.77,.13],
+       [0,.69,.15],[.25,.77,.13],[.65,1.45,.08]],.020,'wrap');
+     plate([[-.25,.59],[.25,.59],[.32,.82],[-.32,.82]],.11,'leather',.16);
+     mesh(new T.IcosahedronGeometry(.18,1),'iron',0,.73,.21);
+   }else if(id===32)magic('necro');
+   else if(id===33||id===47){
+     for(const s of [-1,1]){
+       const x=s*.46;
+       cube(x,.59,0,.53,.55,.48,'dark');cube(x,.91,0,.54,.22,.47,'bronze');
+       for(let j=-1;j<=1;j++){
+         const xx=x+j*.14;
+         plate([[xx-.08,.92],[xx+.08,.92],[xx+.10,1.44],
+           [xx+s*.18,2.10],[xx-.10,1.53]],.11,'steel');
+         rod([xx,1.25,.15],[xx+s*.08,1.70,.10],.026,'crystal');
+       }
+       jewel(x,.62,.30);
+     }
+   }else if(id===34){
+     // Marionette crossbar, suspended actual puppet body, arms and legs.
+     rod([-.72,2.55,0],[.72,2.55,0],.080,'bronze');
+     rod([0,2.22,0],[0,3.04,0],.080,'leather');
+     for(const s of [-1,1]){
+       rod([s*.65,2.55,0],[s*.39,1.11,0],.012,'gold');
+       rod([s*.19,2.55,0],[s*.13,1.47,0],.012,'wrap');
+       rod([s*.20,1.31,0],[s*.47,.97,0],.090,'iron');
+       rod([s*.15,.82,0],[s*.20,.40,0],.094,'iron');
+     }
+     mesh(new T.SphereGeometry(.23,12,10),'steel',0,1.64,0);
+     cube(0,1.09,0,.45,.74,.28,'dark');
+     cube(0,1.11,.19,.27,.37,.06,'bronze');
+     jewel(0,2.70,.17);
+   }else if(id===35)magic('dream');
+   else if(id===46){
+     grip(0,-.42,.60);
+     curve([[0,-.10,0],[.33,.46,0],[.48,1.15,0],
+       [-.07,1.85,0],[-.49,2.59,0],[0,3.31,0]],.080,'bronze');
+     curve([[0,.20,.12],[.34,.72,.12],[.23,1.32,.12],
+       [-.28,2.22,.12]],.028,'crystal');
+     for(let i=0;i<8;i++){
+       let y=.35+i*.34,s=i%2?1:-1,x=s*.24;
+       plate([[x,y],[x+s*.32,y+.13],[x+s*.09,y+.43]],.09,
+         i%2?'bronze':'steel');
+     }
+     for(let i=0;i<6;i++){
+       let a=i*Math.PI/3;
+       plate([[0,3.06],[Math.sin(a)*.32,3.20+Math.cos(a)*.31],
+         [Math.sin(a)*.49,3.36+Math.cos(a)*.48]],.08,'crystal');
+     }
+     jewel(0,3.25,.13);
+   }else if(id===49){
+     grip(0,-.52,.68);
+     const pts=[[0,-.18,0],[.30,.10,0],[.51,.52,0],[.28,1.04,0],
+       [-.19,1.56,0],[-.69,1.99,0],[-.79,2.45,0],
+       [-.26,2.84,0],[.15,3.18,0]];
+     for(let i=0;i<pts.length-1;i++){
+       rod(pts[i],pts[i+1],Math.max(.014,.086-i*.009),
+         i%2?'dark':'bronze',12);
+       if(i>0)mesh(new T.SphereGeometry(.045,10,8),'gold',...pts[i]);
+     }
+   }else if(id===50){
+     grip(0,-.48,.70);
+     rod([0,-.19,0],[0,1.24,0],.12,'iron');
+     const chain=[[0,1.19,0],[.16,1.52,0],[.26,1.85,0],
+       [.09,2.13,0],[0,2.39,0]];
+     for(let i=0;i<chain.length-1;i++){
+       rod(chain[i],chain[i+1],.058,'iron');
+       mesh(new T.IcosahedronGeometry(.074,0),'gold',...chain[i+1]);
+     }
+     mesh(new T.IcosahedronGeometry(.45,2),'iron',0,2.66,0);
+     for(let i=0;i<14;i++){
+       let a=i*Math.PI*2/14,z=i%2?.22:-.22;
+       const v=new T.Vector3(Math.cos(a),Math.sin(a),z).normalize();
+       const spike=mesh(new T.ConeGeometry(.13,.39,7),'steel',
+         Math.cos(a)*.40,2.66+Math.sin(a)*.40,z);
+       spike.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),v);
+     }
+   }else if(id===51){
+     rod([0,-1.70,0],[0,1.85,0],.105,'leather',18);
+     for(const yy of [-1.68,1.83])cyl(0,yy,0,.13,.24,'steel');
+     for(const yy of [-1.15,-.46,.46,1.15])cyl(0,yy,0,.13,.11,'gold');
+     for(const s of [-1,1])for(let i=0;i<8;i++){
+       let yy=s*(.53+i*.067);
+       rod([-.095,yy,.08],[.095,yy+s*.055,.08],.016,'wrap');
+     }
+   }else if(id===52){
+     longHandle(2.49);cube(0,2.48,0,.46,.77,.40,'dark');
+     for(const s of [-1,1]){
+       plate([[s*.17,2.14],[s*.58,2.25],[s*.93,2.73],
+         [s*1.05,3.16],[s*.72,3.42],[s*.32,2.97],
+         [s*.58,2.72],[s*.23,2.57]],.18,'steel');
+       plate([[s*.55,2.40],[s*.87,2.81],
+         [s*.98,3.13],[s*.73,3.30],[s*.61,3.10],
+         [s*.80,2.80]],.03,'edge',.16);
+       curve([[s*.20,2.28,.23],[s*.52,2.65,.23],
+         [s*.73,2.95,.22]],.025,'gold');
+       jewel(s*.48,2.73,.26);
+     }
+     jewel(0,2.48,.33);
+   }else if(id===54){
+     const r=.86,cy=1.48;
+     ring(0,cy,r,0,'steel');ring(0,cy,r*.80,.16,'bronze');
+     for(let i=0;i<12;i++){
+       const a=i*Math.PI/6,b=a+.22;
+       plate([[Math.cos(a)*.72,cy+Math.sin(a)*.72],
+         [Math.cos(a)*1.03,cy+Math.sin(a)*1.03],
+         [Math.cos(b)*1.21,cy+Math.sin(b)*1.21],
+         [Math.cos(b)*.86,cy+Math.sin(b)*.86]],.082,
+           i%2?'edge':'steel',.03);
+       if(i%3===0)gem(Math.cos(a)*.85,cy+Math.sin(a)*.85,.18,.08,.08,.05);
+     }
+     curve([[.18,.90,.15],[.28,1.09,.15],[.38,1.23,.15]],.08,'leather');
+   }
+   return true;
+ }
+
  // Every nonstarter class gets a unique, native mesh — even if it belongs
  // to the same weapon family. Starter meshes can be generated here too but
  // existing first five remain selected from the story branch in the viewer.
- if(/shield|tower|aegis|barrier/.test(k)||['reflect','extra_008'].includes(w.id))shieldModel(k);
+ const audited=buildAuditedWeapon();
+ if(audited){ /* unique screenshot-derived mesh */ }
+ else if(/shield|tower|aegis|barrier/.test(k)||['reflect','extra_008'].includes(w.id))shieldModel(k);
  else if(/bow|arbalest|repeater|crossbow|tracker/.test(k))bowModel(k);
  else if(/gun|rifle|sniper|cannon|mortar|rotary|turret|armcannon|gatling|coil|drone/.test(k))firearmModel(k);
  else if(/sword|blade|katana|nodachi|great|cleaver|twin|dual|mimic|shapeshift|phantom/.test(k)){
@@ -823,7 +1180,7 @@ export function makePvpWeaponModel(T,id){
  else if(/spear|naginata|halberd|trident|bo|scythe|axe|hammer|mace|kusarigama|chain|flail|whip|earth|thunder|underworld|dragonhorn|dragonmaw|morningstar|sky|infernal/.test(k))poleModel(k);
  else if(/staff|rod|hourglass|clock|oracle|chrono|portal|rift|gravity|astro|star|comet|waterwheel|sun|wind|chaos|venom|crystal|seal|mirror|bell|lantern|cage|swarm|wing|seraph|fan|harp|lute|ribbon/.test(k))arcaneModel(k);
  else specialModel(k);
- forgeFinish();
+ if(!audited)forgeFinish();
  // Job-based signatures are small structural changes, never floating gem
  // decals over the primary surface. Geometry is original for every ID.
  if(/shield|tower|aegis|barrier/.test(k)){
