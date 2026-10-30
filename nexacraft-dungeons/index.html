@@ -16,6 +16,28 @@
 <style>
 /* The real, original swordsman mesh is rendered in this transparent 3D layer. */
 #exactSword{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;touch-action:none}
+/* Touch controls sit ABOVE the original 3D arm, while pause/menu remain above touch UI. */
+#touchUi{z-index:4}
+#hitBtn{
+  top:53%;bottom:auto;right:24px;
+  transform:translateY(-50%);
+  width:96px;height:96px;
+  z-index:1;
+  background:linear-gradient(155deg,#b78750 0%,#72502e 100%);
+  border:3px solid #ffe0b0;
+  box-shadow:0 0 0 4px rgba(9,15,19,.62),0 6px 22px #000b;
+  opacity:1;
+}
+#hitBtn:active{transform:translateY(-50%) scale(.96);background:#d6a568}
+#touchHint{top:calc(53% - 83px);bottom:auto;right:19px}
+@media(max-height:460px){
+ #hitBtn{top:51%;bottom:auto;right:16px;width:76px;height:76px}
+ #touchHint{top:calc(51% - 70px);bottom:auto;right:14px}
+}
+@media(max-width:600px) and (min-height:461px){
+ #hitBtn{top:51%;bottom:auto;right:12px;width:84px;height:84px}
+ #touchHint{top:calc(51% - 75px);bottom:auto;right:10px}
+}
 #sword{display:none}
 #swordModelMessage{position:absolute;right:12px;bottom:23%;z-index:3;max-width:min(50vw,270px);text-align:right;font-weight:700;font-size:11px;color:#ffdcaa;text-shadow:0 2px 5px #000;pointer-events:none}
 
