@@ -7,9 +7,23 @@
 :root{color-scheme:dark;--gold:#f6bd6a;--muted:#97a4ac;--panel:rgba(12,20,27,.92)}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080e13;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#f4f2eb;touch-action:none;user-select:none}canvas#game{display:block;width:100%;height:100%;touch-action:none}#sword{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 39%,rgba(0,0,0,.46) 100%)}#hurt{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 32%,rgba(209,39,31,.62));pointer-events:none;opacity:0;transition:opacity .13s}#topBar{position:absolute;top:0;left:0;right:0;display:flex;gap:12px;justify-content:space-between;align-items:flex-start;padding:19px 21px;pointer-events:none}#brand{font-size:12px;font-weight:900;letter-spacing:.20em;color:#ffc982;text-shadow:0 2px 12px #000}#brand small{display:block;letter-spacing:.32em;color:#c0cbd2;font-size:9px;margin-top:4px}#stats{margin-top:13px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700}#heart{display:inline-flex;gap:3px;align-items:center;font-size:19px;color:#ff756f}#healthTrack{width:123px;height:9px;border-radius:10px;background:#4e2928;border:1px solid #85605c;overflow:hidden}#healthFill{height:100%;width:100%;background:linear-gradient(90deg,#e45e51,#fbaf84);transition:width .12s}#count{color:#e7ded0;margin-left:4px}#minimapShell{padding:7px;background:rgba(9,17,23,.67);border:1px solid rgba(221,205,170,.21);box-shadow:0 5px 20px #0008;border-radius:10px}#minimap{display:block;width:138px;height:138px;image-rendering:pixelated}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:19px;height:19px;pointer-events:none;opacity:.82}#crosshair:before,#crosshair:after{content:"";position:absolute;background:#f3ead8;box-shadow:0 0 3px #100c0c}#crosshair:before{width:2px;height:15px;left:8px;top:2px}#crosshair:after{height:2px;width:15px;left:2px;top:8px}#objective{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);max-width:calc(100% - 20px);font-size:12px;line-height:1.6;font-weight:700;text-align:center;padding:10px 17px;border:1px solid rgba(255,202,128,.26);border-radius:8px;background:rgba(13,21,27,.78);box-shadow:0 6px 24px #0005;white-space:nowrap;pointer-events:none}#objective em{font-style:normal;color:#ffcd83}#toast{position:absolute;top:23%;left:50%;transform:translateX(-50%);text-align:center;color:#ffe0a9;font-size:17px;font-weight:900;text-shadow:0 3px 10px #000;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;background:linear-gradient(135deg,rgba(5,12,18,.87),rgba(15,24,28,.79) 55%,rgba(28,18,15,.84));padding:20px}#menu.hidden{display:none}.panel{position:relative;width:min(480px,100%);background:linear-gradient(150deg,#1c2b30,#121a23 62%,#161e22);border:1px solid #52605b;box-shadow:0 20px 70px #0009,0 0 0 6px #0b1217a8;border-radius:12px;padding:30px 30px 26px;text-align:center;overflow:hidden}.panel:before{content:"";position:absolute;left:0;top:0;right:0;height:5px;background:linear-gradient(90deg,#63503e,#ffca79,#66533c)}.panel .eyebrow{font-size:11px;letter-spacing:.24em;color:#a4b3b6;font-weight:700}.panel h1{font-size:clamp(26px,6vw,36px);margin:12px 0 0;line-height:1.16;letter-spacing:.025em}.panel h1 span{display:block;font-size:17px;letter-spacing:.25em;color:#f7bc6b;margin-top:8px}.panel p{font-size:13px;color:#c6d0cc;line-height:1.85;margin:21px 0}.panel .tip{font-size:12px;color:#bbc3c6;line-height:1.9;margin-bottom:19px;background:#0d181c;padding:13px;border-radius:7px;border:1px solid #334044}.panel .tip strong{color:#ffe0a6}.mainBtn{appearance:none;border:1px solid #ffdb9e;border-radius:7px;background:linear-gradient(#efc076,#c98f46);color:#1d1915;box-shadow:0 5px 0 #765128;font-size:15px;font-weight:900;padding:13px 30px;cursor:pointer;width:100%;letter-spacing:.08em}.mainBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #765128}#touchUi{display:none;position:absolute;inset:0;pointer-events:none}#touchUi.active{display:block}#touchUi.active #pauseBtn{display:block}#movePad{position:absolute;left:24px;bottom:50px;width:130px;height:130px;border-radius:100%;background:#ced6c011;border:2px solid #c7d2c43e;pointer-events:auto;touch-action:none}#stick{position:absolute;top:39px;left:39px;width:48px;height:48px;border-radius:50%;background:#e2caa777;border:2px solid #ead5ad88;box-shadow:0 0 20px #0005}#hitBtn{position:absolute;bottom:62px;right:27px;width:92px;height:92px;border-radius:50%;border:2px solid #ffdcaf8a;background:linear-gradient(160deg,#a67b49bb,#704829aa);color:#ffebcb;font-size:18px;font-weight:900;pointer-events:auto;touch-action:none;box-shadow:0 6px 20px #0008}#touchHint{position:absolute;bottom:167px;right:24px;font-size:11px;color:#f5e8cb;text-shadow:1px 1px 4px #000;line-height:1.5;text-align:right}#pauseBtn{position:absolute;right:20px;bottom:20px;display:none;padding:8px 12px;border-radius:8px;border:1px solid #9998;background:#0e1923be;color:#eee;font-weight:600;pointer-events:auto}#compat{position:absolute;z-index:8;inset:0;background:#090d11;color:#fff;display:none;padding:30px;text-align:center;align-items:center;justify-content:center}#compat.show{display:flex}@media(pointer:coarse){#touchUi.active{display:block}#pauseBtn{display:block}#objective{bottom:8px;font-size:11px;padding:6px 10px}#topBar{padding:13px}#minimap{width:96px;height:96px}#stats{font-size:11px;gap:6px}#healthTrack{width:84px}#brand{font-size:11px}#heart{font-size:16px}}@media(max-height:460px){#objective{bottom:5px}#topBar{padding:9px 15px}#movePad{width:98px;height:98px;bottom:22px;left:16px}#stick{left:28px;top:28px;width:39px;height:39px}#hitBtn{width:76px;height:76px;right:20px;bottom:28px}#touchHint{bottom:110px}#menu .panel{padding:17px 24px}#menu .panel p{margin:8px 0}#menu .panel .tip{margin-bottom:12px;padding:5px}#minimap{width:82px;height:82px}#stats{margin-top:5px}} 
 #healthHud{position:absolute;z-index:3;bottom:83px;left:50%;transform:translateX(-50%);padding:4px 7px;background:rgba(14,23,27,.78);border:1px solid #a7c3b64d;border-radius:8px;pointer-events:none}#hearts{display:flex;gap:2px;align-items:center;justify-content:center}#hearts img{width:24px;height:22px;image-rendering:pixelated;object-fit:contain;display:block}#keyStatus{color:#fce2a0;font-weight:900}@media(pointer:coarse){#healthHud{bottom:77px}#hearts img{width:20px;height:19px}}@media(max-height:460px){#healthHud{bottom:43px}#hearts img{width:17px;height:16px}}</style>
+<script type="importmap">{
+ "imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+ }
+}</script>
+<style>
+/* The real, original swordsman mesh is rendered in this transparent 3D layer. */
+#exactSword{position:absolute;right:0;bottom:0;width:min(55vw,520px);height:min(83vh,760px);z-index:2;pointer-events:none;touch-action:none}
+#sword{display:none}
+#swordModelMessage{position:absolute;right:12px;bottom:23%;z-index:3;max-width:min(50vw,270px);text-align:right;font-weight:700;font-size:11px;color:#ffdcaa;text-shadow:0 2px 5px #000;pointer-events:none}
+@media(max-height:490px){#exactSword{width:45vw;height:95vh}}
+@media(max-width:600px) and (min-height:500px){#exactSword{width:60vw;height:75vh}}
+</style>
 </head>
 <body>
-<canvas id="game"></canvas><canvas id="sword"></canvas><div id="vignette"></div><div id="hurt"></div>
+<canvas id="game"></canvas><canvas id="sword"></canvas><canvas id="exactSword" aria-label="NEXACRAFT本編の剣士の剣 3Dモデル"></canvas><div id="swordModelMessage" style="display:none"></div><div id="vignette"></div><div id="hurt"></div>
 <div id="topBar"><div><div id="brand">NEXACRAFT <small>D U N G E O N S · P R O T O T Y P E</small></div><div id="stats"><span id="keyStatus">🔑 鍵を探そう</span><span id="count">☠ 0 / 4</span></div></div><div id="minimapShell"><canvas id="minimap" width="170" height="170"></canvas></div></div>
 <div id="healthHud" role="img" aria-label="体力 10 / 10"><div id="hearts"></div></div><div id="crosshair"></div><div id="toast"></div><div id="objective"><em>目標：</em>地下迷宮の奥に隠された鍵を探せ</div>
 <div id="touchUi"><div id="movePad"><div id="stick"></div></div><button id="hitBtn" type="button">⚔ 攻撃</button><div id="touchHint">右側をスワイプして視点移動</div><button id="pauseBtn" type="button">Ⅱ</button></div>
@@ -262,30 +276,10 @@ function renderFallback(){
  }
 }
 
-function drawSword(){
- const w=swordCanvas.clientWidth,h=swordCanvas.clientHeight;sc.clearRect(0,0,w,h);if(phase==='menu')return;
- const scale=Math.min(w/850,h/560)*1.24,x=w*.72,y=h*.94;
- const a=swing>0?Math.sin((1-swing/.31)*Math.PI):0;
- sc.save();sc.translate(x-a*w*.19,y-a*h*.16);sc.rotate(-.26-a*1.22+Math.sin(elapsed*11)*walkTime*.014);sc.scale(scale,scale);
- const poly=(p,col)=>{sc.fillStyle=col;sc.beginPath();sc.moveTo(...p[0]);for(let i=1;i<p.length;i++)sc.lineTo(...p[i]);sc.closePath();sc.fill()};
- sc.shadowColor='#0009';sc.shadowBlur=16;sc.shadowOffsetX=7;sc.shadowOffsetY=8;
- // Original NEXACRAFT iron katana: broad curved single-edged steel, compact guard, wrapped grip.
- poly([[-17,23],[-22,-18],[-22,-49],[-17,-79],[-8,-111],[6,-145],[23,-179],[47,-205],[62,-217],[57,-183],[43,-152],[27,-112],[19,-74],[18,-37],[20,23]],'#aebfc7');
- poly([[-18,15],[-21,-34],[-17,-80],[-7,-116],[7,-146],[25,-177],[47,-201],[43,-174],[24,-133],[10,-98],[1,-59],[1,20]],'#e5f5f8');
- poly([[20,23],[18,-37],[19,-74],[27,-112],[43,-152],[57,-183],[62,-217],[61,-172],[47,-133],[32,-93],[30,-51],[31,22]],'#4d5e6b');
- sc.shadowBlur=0;sc.shadowOffsetX=0;sc.shadowOffsetY=0;
- poly([[-29,20],[39,20],[37,33],[-28,33]],'#3d454d');
- poly([[-24,20],[34,20],[31,25],[-20,25]],'#c7d7dd');
- poly([[-12,33],[19,33],[17,127],[-10,127]],'#302b36');
- for(let i=0;i<6;i++){
-  let y=39+i*14;
-  poly([[-10,y],[18,y+7],[18,y+12],[-10,y+5]],i%2?'#d4c4a6':'#ad9d85');
-  poly([[18,y],[-10,y+7],[-10,y+10],[18,y+4]],'#706476');
- }
- poly([[-17,122],[24,122],[23,137],[-16,137]],'#30343a');
- poly([[-12,124],[20,124],[20,129],[-12,129]],'#aebfc7');
- sc.restore();
-}
+// The earlier hand-drawn approximation is intentionally removed.
+ // The official NEXACRAFT swordsman sword (job weapon 190) renders
+ // separately through makeJobWeaponModel(THREE,JOBS.sword.weapon).
+ function drawSword(){}
 function drawMap(){const size=170,cell=size/W;mc.clearRect(0,0,size,size);mc.fillStyle='#111b22';mc.fillRect(0,0,size,size);let px=Math.floor(camera.x/C),pz=Math.floor(camera.z/C);for(let z=0;z<H;z++)for(let x=0;x<W;x++){
  if(!seen[z][x])continue;mc.fillStyle=wallAt(x,z)?'#35424a':'#68716c';mc.fillRect(x*cell+.7,z*cell+.7,cell-.7,cell-.7)
  }
@@ -332,6 +326,7 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;
 function resize(){let r=Math.min(window.devicePixelRatio||1,webgl?1.7:1.0);canvas.width=Math.floor(innerWidth*r);canvas.height=Math.floor(innerHeight*r);swordCanvas.width=Math.floor(innerWidth*r);swordCanvas.height=Math.floor(innerHeight*r);swordCanvas.style.width=innerWidth+'px';swordCanvas.style.height=innerHeight+'px';sc.setTransform(r,0,0,r,0,0)}
 window.addEventListener('resize',resize);resize();reset();
 function loop(ts){if(!lastTime)lastTime=ts;let dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;update(dt);render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+window.NEXACRAFT_DUNGEON_STATE=()=>({phase,swing,walkTime,elapsed});
 function safeLock(){try{if(!canvas.requestPointerLock)return;const request=canvas.requestPointerLock();if(request&&typeof request.catch==='function')request.catch(()=>{});}catch(e){/* Browser may deny pointer lock; touch/drag still works. */}}
 function start(){if(phase==='pause'){phase='play';document.querySelector('#menu').classList.add('hidden');if(!coarse)safeLock();return}reset();phase='play';document.querySelector('#menu').classList.add('hidden');if(coarse)document.querySelector('#touchUi').classList.add('active');else safeLock();notify('迷宮に入った。古代の鍵を探そう',2.4)}
 document.querySelector('#startBtn').addEventListener('click',start);
@@ -349,4 +344,73 @@ function stickMove(e){const r=movePad.getBoundingClientRect(),cx=r.left+r.width/
 movePad.addEventListener('pointerdown',e=>{if(phase!=='play')return;e.preventDefault();touch.moveId=e.pointerId;movePad.setPointerCapture(e.pointerId);stickMove(e)});movePad.addEventListener('pointermove',e=>{if(e.pointerId===touch.moveId)stickMove(e)});function stickEnd(e){if(e.pointerId!==touch.moveId)return;touch.moveId=null;touch.moveX=touch.moveY=0;stick.style.transform='translate(0,0)'}movePad.addEventListener('pointerup',stickEnd);movePad.addEventListener('pointercancel',stickEnd);
 canvas.addEventListener('pointerdown',e=>{if(!coarse||phase!=='play'||e.clientX<innerWidth*.35)return;touch.lookId=e.pointerId;touch.lastX=e.clientX;touch.lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!coarse||e.pointerId!==touch.lookId||phase!=='play')return;camera.yaw+=(e.clientX-touch.lastX)*.006;camera.pitch=Math.max(-1.05,Math.min(1.05,camera.pitch-(e.clientY-touch.lastY)*.005));touch.lastX=e.clientX;touch.lastY=e.clientY});canvas.addEventListener('pointerup',e=>{if(e.pointerId===touch.lookId)touch.lookId=null});canvas.addEventListener('pointercancel',e=>{if(e.pointerId===touch.lookId)touch.lookId=null});document.querySelector('#hitBtn').addEventListener('pointerdown',e=>{e.preventDefault();attack()});document.querySelector('#pauseBtn').addEventListener('click',()=>{if(phase==='play'){phase='pause';document.querySelector('#menu').classList.remove('hidden');document.querySelector('#menuText').textContent='一時停止中';document.querySelector('#startBtn').textContent='再開する';}});
 })();
-</script></body></html>
+</script>
+<script type="module">
+/* EXACT main-story NEXACRAFT swordsman weapon, not a traced image or a substitute.
+ * The official weapon viewer calls this same makeJobWeaponModel function.
+ * Mesh is sourced live from ../job-system.js -> job-weapon-models.js -> reference-weapon-models.js.
+ */
+const canvas=document.getElementById('exactSword');
+const status=document.getElementById('swordModelMessage');
+const fail=(reason)=>{
+ canvas.style.display='none';
+ status.style.display='block';
+ status.textContent='本編の剣士の剣を読み込めませんでした。'+reason;
+};
+try{
+ const THREE=await import('three');
+ const {RoomEnvironment}=await import('three/addons/environments/RoomEnvironment.js');
+ const {JOBS,makeJobWeaponModel}=await import('../job-system.js?v=20261023bowFacingForward24');
+ if(JOBS.sword?.weapon!==190)throw new Error('剣士の武器IDが変更されています');
+ const officialSword=makeJobWeaponModel(THREE,JOBS.sword.weapon);
+ if(!officialSword?.children?.length)throw new Error('本編の剣士モデルが空です');
+ const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'default'});
+ renderer.setClearColor(0x000000,0);
+ renderer.outputColorSpace=THREE.SRGBColorSpace;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;
+ renderer.toneMappingExposure=1.12;
+ const studio=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer);
+ const env=pmrem.fromScene(studio);studio.dispose();pmrem.dispose();
+ const scene=new THREE.Scene();scene.environment=env.texture;
+ scene.add(new THREE.HemisphereLight(0xdcecff,0x283646,1.35));
+ const sun=new THREE.DirectionalLight(0xffeee0,3);sun.position.set(4,7,7);scene.add(sun);
+ const rim=new THREE.DirectionalLight(0x9fdaff,2.2);rim.position.set(-5,4,-6);scene.add(rim);
+ const fill=new THREE.DirectionalLight(0xffd6aa,1);fill.position.set(-4,1,5);scene.add(fill);
+ const bb=new THREE.Box3().setFromObject(officialSword),min=bb.min.clone(),center=new THREE.Vector3(),size=new THREE.Vector3();
+ bb.getCenter(center);bb.getSize(size);
+ const pivot=new THREE.Group();
+ // Position the weapon by its actual geometry bounds, leaving the original vertices,
+ // materials, details, and proportions entirely untouched.
+ officialSword.position.set(-center.x,-min.y-size.y*.12,-center.z);
+ pivot.add(officialSword);
+ pivot.position.set(size.y*.08,-size.y*.39,0);
+ scene.add(pivot);
+ const camera=new THREE.PerspectiveCamera(39,1,.02,100);
+ camera.position.set(0,0,Math.max(3,size.y/(2*Math.tan(39*Math.PI/360)))*1.24);
+ camera.lookAt(0,0,0);
+ let width=0,height=0,first=true;
+ const frame=()=>{
+   requestAnimationFrame(frame);
+   const state=window.NEXACRAFT_DUNGEON_STATE?.();
+   const playing=!!state&&(state.phase==='play'||state.phase==='pause');
+   if(!playing){canvas.style.visibility='hidden';return}
+   canvas.style.visibility='visible';
+   const rect=canvas.getBoundingClientRect(),w=Math.max(1,rect.width|0),h=Math.max(1,rect.height|0);
+   if(w!==width||h!==height||first){
+     width=w;height=h;first=false;
+     renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));
+     renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+   }
+   const swing=state.swing>0?Math.sin((1-state.swing/.31)*Math.PI):0;
+   pivot.rotation.set(-.20-swing*.47,.31,-.18-swing*1.18);
+   pivot.position.x=size.y*.08-swing*size.y*.18;
+   pivot.position.y=-size.y*.39-swing*size.y*.14+Math.sin(state.elapsed*11)*(state.walkTime||0)*.008;
+   renderer.render(scene,camera);
+ };
+ requestAnimationFrame(frame);
+}catch(error){
+ console.error('Original NEXACRAFT swordsman mesh failed',error);
+ fail('ブラウザの再読み込みを試してください。');
+}
+</script>
+</body></html>
