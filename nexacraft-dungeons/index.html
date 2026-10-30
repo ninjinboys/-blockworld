@@ -38,6 +38,19 @@
  #hitBtn{top:51%;bottom:auto;right:12px;width:84px;height:84px}
  #touchHint{top:calc(51% - 75px);bottom:auto;right:10px}
 }
+/* Keep attack at bottom-right, away from the first-person arm and pause. */
+#hitBtn{top:auto;bottom:18px;right:16px;transform:none;width:88px;height:88px;z-index:5}
+#hitBtn:active{transform:scale(.96)}
+#touchHint{top:auto;bottom:121px;right:14px}
+#pauseBtn{top:18px;bottom:auto;right:calc(125px + env(safe-area-inset-right));z-index:6}
+@media(max-height:460px){
+#hitBtn{top:auto;bottom:12px;right:14px;width:76px;height:76px}
+#touchHint{top:auto;bottom:99px;right:12px}
+#pauseBtn{top:12px;bottom:auto;right:145px}}
+@media(max-width:600px) and (min-height:461px){
+#hitBtn{top:auto;bottom:18px;right:12px;width:84px;height:84px}
+#touchHint{top:auto;bottom:115px;right:10px}
+#pauseBtn{top:12px;bottom:auto;right:118px}}
 #sword{display:none}
 #swordModelMessage{position:absolute;right:12px;bottom:23%;z-index:3;max-width:min(50vw,270px);text-align:right;font-weight:700;font-size:11px;color:#ffdcaa;text-shadow:0 2px 5px #000;pointer-events:none}
 
@@ -49,7 +62,7 @@
 <div id="topBar"><div><div id="brand">NEXACRAFT <small>D U N G E O N S · P R O T O T Y P E</small></div><div id="stats"><span id="keyStatus">🔑 鍵を探そう</span><span id="count">☠ 0 / 4</span></div></div><div id="minimapShell"><canvas id="minimap" width="170" height="170"></canvas></div></div>
 <div id="healthHud" role="img" aria-label="体力 10 / 10"><div id="hearts"></div></div><div id="crosshair"></div><div id="toast"></div><div id="objective"><em>目標：</em>地下迷宮の奥に隠された鍵を探せ</div>
 <div id="touchUi"><div id="movePad"><div id="stick"></div></div><button id="hitBtn" type="button">⚔ 攻撃</button><div id="touchHint">右側をスワイプして視点移動</div><button id="pauseBtn" type="button">Ⅱ</button></div>
-<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">ブロックで構成された小さな地下迷宮。<br>ゾンビを避けたり剣で戦ったりしながら、古代の鍵を見つけよう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・画面右で視点・攻撃ボタン</div><button class="mainBtn" id="startBtn">ダンジョンに入る</button></div></div>
+<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">ブロックで構成された小さな地下迷宮。<br>ゾンビを避けながら古代の鍵を見つけ、開いた出口の扉から脱出しよう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・画面右で視点・攻撃ボタン</div><button class="mainBtn" id="startBtn">ダンジョンに入る</button></div></div>
 <div id="compat">この端末ではWebGLが利用できません。WebGL対応のブラウザ（Chrome / Safariなど）で開いてください。</div>
 <script>
 (()=>{'use strict';
@@ -74,7 +87,7 @@ const level=[
 '###.#.#.#.#####.#',
 '#...#.#...#K..#.#',
 '#.###.#####.#.#.#',
-'#...Z....Z..#..E#',
+'#...Z....Z..#.#E#',
 '#################'];
 const W=level[0].length,H=level.length,C=2.5,WALL=3.15,eyeHeight=1.50;
 const grid=level.map(r=>r.split(''));
@@ -84,7 +97,7 @@ for(let z=0;z<H;z++)for(let x=0;x<W;x++){
  const c=grid[z][x];if(c==='P')entrance=point(x,z);if(c==='E')exit=point(x,z);if(c==='K')keyPos=point(x,z);if(c==='Z')initial.push({x:point(x,z)[0],z:point(x,z)[1]});if(c!=='#')grid[z][x]='.';
 }
 const camera={x:entrance[0],z:entrance[1],yaw:Math.PI,pitch:0}; // First view points into labyrinth.
-let hp=100,kills=0,keyFound=false,phase='menu',entities=[],elapsed=0,lastTime=0,swing=0,swingCd=0,swingHit=false,damageFlash=0,walkTime=0,toastUntil=0,toastText='',hitShake=0;
+let hp=100,kills=0,keyFound=false,doorOpen=0,phase='menu',entities=[],elapsed=0,lastTime=0,swing=0,swingCd=0,swingHit=false,damageFlash=0,walkTime=0,toastUntil=0,toastText='',hitShake=0;
 const keys={},seen=Array.from({length:H},()=>Array(W).fill(false));
 const touch={moveX:0,moveY:0,lookId:null,lastX:0,lastY:0,moveId:null};const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
 const vsh=`attribute vec3 aPosition;attribute vec3 aColor;uniform mat4 uVP;varying vec3 vColor;varying vec3 vPos;void main(){vColor=aColor;vPos=aPosition;gl_Position=uVP*vec4(aPosition,1.0);}`;
@@ -147,6 +160,11 @@ for(const [tx,tz] of sconces){const [x,z]=point(tx,tz);if(wallAt(tx,tz))continue
 const [kx,kz]=keyPos,[ex,ez]=exit;
 box(staticVerts,kx-.43,0,kz-.43,kx+.43,.32,kz+.43,[.29,.31,.32]);
 box(staticVerts,kx-.34,.32,kz-.34,kx+.34,.57,kz+.34,[.49,.45,.35]);
+const doorZ=ez-.80;
+box(staticVerts,ex-1.08,0,doorZ-.18,ex-.82,2.78,doorZ+.22,[.30,.35,.38]);
+box(staticVerts,ex+.82,0,doorZ-.18,ex+1.08,2.78,doorZ+.22,[.30,.35,.38]);
+box(staticVerts,ex-1.11,2.68,doorZ-.20,ex+1.11,3.08,doorZ+.24,[.38,.41,.43]);
+box(staticVerts,ex-1.0,.06,doorZ-.23,ex+1.0,.19,doorZ+.30,[.40,.31,.21]);
 const staticData=new Float32Array(staticVerts);gl.bindBuffer(gl.ARRAY_BUFFER,staticBuffer);gl.bufferData(gl.ARRAY_BUFFER,staticData,gl.STATIC_DRAW);
 function rotated(lx,lz,x,z,a){let c=Math.cos(a),s=Math.sin(a);return[x+lx*c-lz*s,z+lx*s+lz*c]}
 function bodyBox(out,entity,x0,y0,z0,x1,y1,z1,color,brightness=1){let corners=[];const a=entity.angle;for(const [lx,lz] of [[x0,z0],[x1,z0],[x1,z1],[x0,z1]])corners.push(rotated(lx,lz,entity.x,entity.z,a));const A=corners;let c=mul(color,brightness);quad(out,[A[0][0],y1,A[0][1]],[A[1][0],y1,A[1][1]],[A[2][0],y1,A[2][1]],[A[3][0],y1,A[3][1]],mul(c,.96));quad(out,[A[3][0],y0,A[3][1]],[A[2][0],y0,A[2][1]],[A[1][0],y0,A[1][1]],[A[0][0],y0,A[0][1]],mul(c,.7));for(let i=0;i<4;i++){const j=(i+1)%4;quad(out,[A[i][0],y0,A[i][1]],[A[j][0],y0,A[j][1]],[A[j][0],y1,A[j][1]],[A[i][0],y1,A[i][1]],mul(c,[.81,.72,.94,1][i]))}}
@@ -184,6 +202,27 @@ function zombieModel(out,e){
   bodyBox(out,e,-.31,1.94,-.05,-.31+.62*Math.max(0,e.hp/65),2,.05,[.91,.28,.20],1.2);
  }
 }
+function doorModel(out){
+ // Door starts locked and slides up after collecting the key.
+ const dark=[.17,.25,.29],steel=[.35,.46,.48],trim=[.56,.43,.22],
+       gold=[1,.72,.18],aqua=[.18,.90,.77];
+ const panel={x:ex,z:ez,angle:0};
+ const b=(x0,y0,z0,x1,y1,z1,col,bright=1)=>bodyBox(out,panel,x0,y0,z0,x1,y1,z1,col,bright);
+ const localZ=doorZ-ez,lift=doorOpen*3.40;
+ if(doorOpen>.24){
+   const alpha=.4+.6*doorOpen,glow=[.10*alpha,.55*alpha,.45*alpha];
+   b(-.60,.16,.43,.60,2.46,.48,glow,1.4);
+   b(-.48,.25,.38,.48,2.38,.43,[.14,.42,.36],1.15);
+ }
+ if(doorOpen<.995){
+   b(-.79,.18+lift,localZ-.105,.79,2.65+lift,localZ+.105,dark);
+   b(-.70,.29+lift,localZ-.14,.70,2.48+lift,localZ-.105,steel);
+   for(let j=0;j<6;j++){const y=.39+j*.34+lift;b(-.70,y,localZ-.16,.70,y+.055,localZ-.13,trim);}
+   for(const x of [-.62,.62])b(x-.055,.28+lift,localZ-.18,x+.055,2.48+lift,localZ-.13,trim);
+   b(-.19,1.18+lift,localZ-.23,.19,1.60+lift,localZ-.17,keyFound?aqua:gold,1.6);
+   b(-.09,1.30+lift,localZ-.25,.09,1.47+lift,localZ-.22,dark);
+ }
+}
 function keyModel(out){
  const p={x:kx,z:kz,angle:elapsed*.9},bob=Math.sin(elapsed*3)*.08;
  const gold=[1,.71,.16],shine=[1,.94,.48],shadow=[.58,.35,.07];
@@ -206,6 +245,7 @@ function render(){if(!webgl){renderFallback();drawSword();drawMap();return}gl.vi
  bindBuffer(staticBuffer);gl.drawArrays(gl.TRIANGLES,0,staticData.length/6);
  const out=[];for(const e of entities)if(e.hp>0)zombieModel(out,e);
  if(!keyFound)keyModel(out);
+ doorModel(out);
  if(out.length){let data=new Float32Array(out);gl.bindBuffer(gl.ARRAY_BUFFER,dynamicBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);bindBuffer(dynamicBuffer);gl.drawArrays(gl.TRIANGLES,0,data.length/6)}
  drawSword();drawMap();
 }
@@ -264,6 +304,7 @@ function renderFallback(){
  };
  for(const e of entities){if(e.hp<=0)continue;let sp=screenPos(e.x,e.z);if(sp&&sp.x>-w*.2&&sp.x<w*1.2&&lineOfSight(camera.x,camera.z,e.x,e.z))billboards.push({sp,e,type:'zombie'})}
  if(!keyFound){let gp=screenPos(kx,kz);if(gp&&lineOfSight(camera.x,camera.z,kx,kz))billboards.push({sp:gp,type:'key'});}
+ {let dp=screenPos(ex,ez);if(dp&&lineOfSight(camera.x,camera.z,ex,ez))billboards.push({sp:dp,type:'door'});}
  for(const [tx,tz] of sconces){let [wx,wz]=point(tx,tz),sp=screenPos(wx,wz);if(sp&&lineOfSight(camera.x,camera.z,wx,wz))billboards.push({sp,type:'flame'})}
  billboards.sort((a,b)=>b.sp.d-a.sp.d);
  for(const obj of billboards){let {sp}=obj;if(sp.x<-w*.2||sp.x>w*1.2)continue;
@@ -291,6 +332,16 @@ function renderFallback(){
    block(-.05,1.39,.68,.12,'#ffe46a');block(.37,1.15,.13,.28,'#dca02d');block(.54,1.20,.12,.23,'#dca02d');
    ctx.shadowBlur=0;
 
+  }else if(obj.type==='door'){
+   const lift=doorOpen*3.40;
+   block(-1.05,0,.20,2.75,'#55656a');block(.85,0,.20,2.75,'#55656a');
+   block(-1.05,2.69,2.10,.34,'#657176');
+   if(doorOpen>.24){block(-.75,.16,1.50,2.36,'#1f574e');block(-.59,.23,1.18,2.20,'#327f6a');}
+   if(doorOpen<.995){
+     block(-.78,.18+lift,1.56,2.47,'#33454b');block(-.70,.32+lift,1.40,2.19,'#647878');
+     for(let j=0;j<6;j++)block(-.70,.38+j*.35+lift,1.40,.05,'#c19b5c');
+     block(-.17,1.18+lift,.34,.40,keyFound?'#58e5c8':'#f8d36b');
+   }
   }else if(obj.type==='flame'){
    block(-.12,1.20,.24,.4,'#816448');block(-.16,1.55,.32,.09,'#978068');block(-.13,1.64,.26,.30,'#dc7532');block(-.065,1.84,.13,.34,'#ffe29e');
   }
@@ -306,11 +357,14 @@ function drawMap(){const size=170,cell=size/W;mc.clearRect(0,0,size,size);mc.fil
  if(!seen[z][x])continue;mc.fillStyle=wallAt(x,z)?'#35424a':'#68716c';mc.fillRect(x*cell+.7,z*cell+.7,cell-.7,cell-.7)
  }
  if(!keyFound&&seen[Math.floor(kz/C)][Math.floor(kx/C)]){mc.fillStyle='#f9cd52';mc.fillRect((kx/C-.5)*cell+cell*.2,(kz/C-.5)*cell+cell*.2,cell*.6,cell*.6)}
+ if(seen[Math.floor(ez/C)][Math.floor(ex/C)]){mc.fillStyle=keyFound?'#5af2c4':'#de6958';mc.fillRect((ex/C-.5)*cell+cell*.16,(ez/C-.5)*cell+cell*.16,cell*.68,cell*.68)}
  for(const e of entities)if(e.hp>0&&Math.hypot(e.x-camera.x,e.z-camera.z)<C*3.3){mc.fillStyle='#eb665f';mc.fillRect(e.x/C*cell-2,e.z/C*cell-2,4,4)}
  mc.save();mc.translate(camera.x/C*cell,camera.z/C*cell);mc.rotate(camera.yaw);mc.beginPath();mc.moveTo(0,-7);mc.lineTo(-4,5);mc.lineTo(4,5);mc.closePath();mc.fillStyle='#f8df9d';mc.fill();mc.restore()
 }
 function updateVisited(){let tx=Math.floor(camera.x/C),tz=Math.floor(camera.z/C);for(let z=Math.max(0,tz-2);z<=Math.min(H-1,tz+2);z++)for(let x=Math.max(0,tx-2);x<=Math.min(W-1,tx+2);x++)if(Math.hypot(x-tx,z-tz)<2.65)seen[z][x]=true}
-function passable(x,z,r=.27){for(let zz=Math.floor((z-r)/C);zz<=Math.floor((z+r)/C);zz++)for(let xx=Math.floor((x-r)/C);xx<=Math.floor((x+r)/C);xx++)if(wallAt(xx,zz)){const nearestX=Math.max(xx*C,Math.min(x,(xx+1)*C)),nearestZ=Math.max(zz*C,Math.min(z,(zz+1)*C));if(Math.hypot(nearestX-x,nearestZ-z)<r)return false}return true}
+function passable(x,z,r=.27){
+ if((!keyFound||doorOpen<.86)&&x>ex-C*.50-r&&x<ex+C*.50+r&&z>ez-C*.50-r&&z<ez+C*.50+r)return false;
+ for(let zz=Math.floor((z-r)/C);zz<=Math.floor((z+r)/C);zz++)for(let xx=Math.floor((x-r)/C);xx<=Math.floor((x+r)/C);xx++)if(wallAt(xx,zz)){const nearestX=Math.max(xx*C,Math.min(x,(xx+1)*C)),nearestZ=Math.max(zz*C,Math.min(z,(zz+1)*C));if(Math.hypot(nearestX-x,nearestZ-z)<r)return false}return true}
 function walkEntity(obj,dx,dz,r){if(passable(obj.x+dx,obj.z,r))obj.x+=dx;if(passable(obj.x,obj.z+dz,r))obj.z+=dz}
 function shortestPath(sx,sz,tx,tz){if(sx===tx&&sz===tz)return [[tx,tz]];const queue=[[sx,sz]],prev=new Map(),id=(x,z)=>z*W+x;prev.set(id(sx,sz),-1);let head=0,end=-1;
  while(head<queue.length){let [x,z]=queue[head++];if(x===tx&&z===tz){end=id(x,z);break}for(let [nx,nz] of [[x+1,z],[x,z+1],[x-1,z],[x,z-1]]){let key=id(nx,nz);if(!wallAt(nx,nz)&&!prev.has(key)){prev.set(key,id(x,z));queue.push([nx,nz])}}}
@@ -328,11 +382,11 @@ function updateHUD(){
  document.querySelector('#hearts').innerHTML=imgs.join('');
  document.querySelector('#healthHud').setAttribute('aria-label','体力 '+(hp/10).toFixed(1)+' / 10');
  document.querySelector('#count').textContent='☠ '+kills+' / '+initial.length;
- document.querySelector('#keyStatus').textContent=keyFound?'🔑 鍵を入手！':'🔑 鍵を探そう';
+ document.querySelector('#keyStatus').textContent=keyFound?'🔓 出口の扉が開いた！':'🔑 鍵を探そう';
 }
-function end(mode){phase=mode;document.exitPointerLock?.();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#touchUi').classList.remove('active');document.querySelector('#startBtn').textContent='もう一度挑戦する';document.querySelector('#menuText').innerHTML=mode==='win'?'クリア！ 古代の鍵を発見した！<br>地下迷宮の探索に成功！':'ゲームオーバー。<br>ゾンビに倒されてしまった。';document.querySelector('#helpText').innerHTML=mode==='win'?'🔑 鍵を拾えばクリア。<br>ゾンビを全滅させる必要はない。':'⚔ ゾンビは2回攻撃すると倒せる。<br>攻撃が届く距離を保って戦おう。'}
-function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI;camera.pitch=0;hp=100;kills=0;keyFound=false;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:0,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
-function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;
+function end(mode){phase=mode;document.exitPointerLock?.();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#touchUi').classList.remove('active');document.querySelector('#startBtn').textContent='もう一度挑戦する';document.querySelector('#menuText').innerHTML=mode==='win'?'クリア！ 開いた出口の扉をくぐり、<br>地下迷宮を脱出した！':'ゲームオーバー。<br>ゾンビに倒されてしまった。';document.querySelector('#helpText').innerHTML=mode==='win'?'🔑 鍵で扉を開け、出口に入ってクリア！<br>ゾンビの全滅は必要ない。':'⚔ ゾンビは2回攻撃すると倒せる。<br>攻撃が届く距離を保って戦おう。'}
+function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI;camera.pitch=0;hp=100;kills=0;keyFound=false;doorOpen=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:0,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
+function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)doorOpen=Math.min(1,doorOpen+dt*1.25);
  let forward=0,strafe=0;if(keys.KeyW||keys.ArrowUp)forward++;if(keys.KeyS||keys.ArrowDown)forward--;if(keys.KeyA||keys.ArrowLeft)strafe--;if(keys.KeyD||keys.ArrowRight)strafe++;
  forward-=touch.moveY;strafe+=touch.moveX;let l=Math.hypot(forward,strafe);if(l>.02){forward/=Math.max(1,l);strafe/=Math.max(1,l);let s=keys.ShiftLeft?5.0:3.60,dx=(Math.sin(camera.yaw)*forward+Math.cos(camera.yaw)*strafe)*s*dt,dz=(-Math.cos(camera.yaw)*forward+Math.sin(camera.yaw)*strafe)*s*dt;walkEntity(camera,dx,dz,.31);walkTime=1}
  updateVisited();if(keys.Space)attack();
@@ -342,7 +396,12 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;
  if(dist<1.25){if(e.attackTimer<=0&&lineOfSight(e.x,e.z,camera.x,camera.z)){e.attackTimer=1.3;e.attackPose=1;hp=Math.max(0,hp-14);damageFlash=.85;playSound('hurt');updateHUD();if(hp<=0){end('lose');return}}}
  else if(dist<16){e.repath-=dt;if(e.repath<=0){e.path=shortestPath(Math.floor(e.x/C),Math.floor(e.z/C),Math.floor(camera.x/C),Math.floor(camera.z/C));e.repath=.6+hash(e.seed,elapsed)*.2}if(e.path.length){let t=e.path[Math.min(1,e.path.length-1)],[tx,tz]=point(t[0],t[1]);if(Math.hypot(tx-e.x,tz-e.z)<.22&&e.path.length>1)e.path.shift();t=e.path[Math.min(1,e.path.length-1)];[tx,tz]=point(t[0],t[1]);const d=Math.hypot(tx-e.x,tz-e.z);if(d>.06){let vx=(tx-e.x)/d,vz=(tz-e.z)/d;walkEntity(e,vx*dt*.99,vz*dt*.99,.29);e.speed=1}}}
  }
- if(!keyFound&&Math.hypot(camera.x-kx,camera.z-kz)<1.15){keyFound=true;updateHUD();end('win');return}
+ if(!keyFound&&Math.hypot(camera.x-kx,camera.z-kz)<1.15){
+ keyFound=true;playSound('hit');updateHUD();
+ document.querySelector('#objective').innerHTML='<em>目標：</em>開いた出口の扉へ向かい、中へ入ろう！';
+ notify('🔑 古代の鍵を入手！ 出口の扉が開いた！',3.5);
+}
+if(keyFound&&doorOpen>.86&&Math.hypot(camera.x-ex,camera.z-ez)<.80){end('win');return}
  if(elapsed>toastUntil)document.querySelector('#toast').style.opacity='0';
 }
 function resize(){let r=Math.min(window.devicePixelRatio||1,webgl?1.7:1.0);canvas.width=Math.floor(innerWidth*r);canvas.height=Math.floor(innerHeight*r);swordCanvas.width=Math.floor(innerWidth*r);swordCanvas.height=Math.floor(innerHeight*r);swordCanvas.style.width=innerWidth+'px';swordCanvas.style.height=innerHeight+'px';sc.setTransform(r,0,0,r,0,0)}
