@@ -530,15 +530,28 @@ function renderFallback(){
   const block=(x,y,bw,bh,color)=>{ctx.fillStyle=color;ctx.fillRect(x*unit,-(y+bh)*unit,bw*unit,bh*unit)};
   if(obj.type==='zombie'){
    const e=obj.e,step=Math.sin(elapsed*8+e.seed)*.06,flash=e.flash>0;
+   const dx=camera.x-e.x,dz=camera.z-e.z,len=Math.max(.001,Math.hypot(dx,dz));
+   const facing=(Math.sin(e.angle)*dx-Math.cos(e.angle)*dz)/len;
+   const front=facing>.38,back=facing<-.38,side=!front&&!back;
+   const width=side?.34:.53,offset=-width/2;
    let skin=flash?'#ffe9c6':'#6fbf5f',shirt=flash?'#ffcea8':'#4e9848';
-   block(-.265,.575,.53,.85,shirt);block(-.24,1.27,.48,.52,skin);block(-.24,1.70,.48,.10,'#8bd275');
-   block(-.14,1.49,.065,.085,'#ddebc9');block(.08,1.49,.065,.085,'#ddebc9');
-   block(-.115,1.51,.033,.042,'#202d20');block(.10,1.51,.033,.042,'#202d20');
-   block(-.07,1.39,.14,.045,'#447c3c');
-   block(-.39,.90,.14,.40,shirt);block(.25,.90,.14,.40,shirt);
-   block(-.39,.58,.14,.18,skin);block(.25,.58,.14,.18,skin);
-   block(-.24,.20+step,.20,.51,'#386c3e');block(.04,.20-step,.20,.51,'#386c3e');
-   block(-.25,.02+step,.21,.15,'#23492a');block(.04,.02-step,.21,.15,'#23492a');
+   block(offset,.575,width,.85,shirt);block(offset+.02,1.27,width-.04,.52,skin);block(offset+.02,1.70,width-.04,.10,'#8bd275');
+   if(front){
+    block(-.14,1.49,.065,.085,'#ddebc9');block(.08,1.49,.065,.085,'#ddebc9');
+    block(-.115,1.51,.033,.042,'#202d20');block(.10,1.51,.033,.042,'#202d20');
+    block(-.07,1.39,.14,.045,'#447c3c');
+   }else if(side){
+    const sideX=(dx*Math.cos(e.angle)+dz*Math.sin(e.angle)>0?offset+width-.075:offset+.018);
+    block(sideX,1.49,.055,.085,'#ddebc9');
+   }else{
+    block(offset+.05,1.62,width-.10,.13,'#447c3c');
+    block(offset+.08,.86,width-.16,.47,'#397438');
+   }
+   const armOffset=side?.17:.39,armWidth=side?.08:.14;
+   block(-armOffset,.90,armWidth,.40,shirt);block(armOffset-armWidth,.90,armWidth,.40,shirt);
+   block(-armOffset,.58,armWidth,.18,skin);block(armOffset-armWidth,.58,armWidth,.18,skin);
+   block(-.22,.20+step,.20,.51,'#386c3e');block(.02,.20-step,.20,.51,'#386c3e');
+   block(-.23,.02+step,.21,.15,'#23492a');block(.02,.02-step,.21,.15,'#23492a');
    if(e.hp<65){block(-.31,1.95,.62,.07,'#63292a');block(-.31,1.95,.62*e.hp/65,.07,'#ed715e')}
   }else if(obj.type==='player'){
     const p=obj.p;
@@ -627,7 +640,14 @@ function collectKey(){
  document.querySelector('#objective').innerHTML='<em>目標：</em>開いた出口の扉へ向かい、中へ入ろう！';
  notify('🔑 古代の鍵を入手！ 出口の扉が開いた！',3.5);
 }
-function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI;camera.pitch=0;hp=100;kills=0;keyFound=false;doorOpen=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:0,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
+function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI;camera.pitch=0;hp=100;kills=0;keyFound=false;doorOpen=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:hash(i,71)*Math.PI*2,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
+// Change orientation only after an NPC physically moves. Never billboard towards a viewer.
+function turnZombieTowardTravel(e,dx,dz,dt){
+ const len=Math.hypot(dx,dz);if(len<.0001)return;
+ const desired=Math.atan2(dx,-dz);
+ const delta=Math.atan2(Math.sin(desired-e.angle),Math.cos(desired-e.angle));
+ e.angle+=Math.sign(delta)*Math.min(Math.abs(delta),dt*5.0);
+}
 function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)doorOpen=Math.min(1,doorOpen+dt*1.25);
  let forward=0,strafe=0;if(keys.KeyW||keys.ArrowUp)forward++;if(keys.KeyS||keys.ArrowDown)forward--;if(keys.KeyA||keys.ArrowLeft)strafe--;if(keys.KeyD||keys.ArrowRight)strafe++;
  forward-=touch.moveY;strafe+=touch.moveX;let l=Math.hypot(forward,strafe);if(l>.02){forward/=Math.max(1,l);strafe/=Math.max(1,l);let s=keys.ShiftLeft?5.0:3.60,dx=(Math.sin(camera.yaw)*forward+Math.cos(camera.yaw)*strafe)*s*dt,dz=(-Math.cos(camera.yaw)*forward+Math.sin(camera.yaw)*strafe)*s*dt;walkEntity(camera,dx,dz,.31);walkTime=1}
@@ -641,13 +661,16 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)
  const target=targets.sort((a,b)=>Math.hypot(e.x-a.x,e.z-a.z)-Math.hypot(e.x-b.x,e.z-b.z))[0];
  if(!target)continue;
  const dist=Math.hypot(target.x-e.x,target.z-e.z);
- e.angle=Math.atan2(target.x-e.x,-(target.z-e.z));e.flash=Math.max(0,e.flash-dt);e.attackPose=Math.max(0,e.attackPose-dt*1.8);e.attackTimer=Math.max(0,e.attackTimer-dt);e.speed=0;
+ // Keep the last facing when idle, even when the camera circles this enemy.
+ e.flash=Math.max(0,e.flash-dt);e.attackPose=Math.max(0,e.attackPose-dt*1.8);e.attackTimer=Math.max(0,e.attackTimer-dt);e.speed=0;
  if(dist<1.25){if(e.attackTimer<=0&&lineOfSight(e.x,e.z,target.x,target.z)){
+   // Only a new attack triggers a look at the target, never every frame.
+   e.angle=Math.atan2(target.x-e.x,-(target.z-e.z));
    e.attackTimer=1.3;e.attackPose=1;
    if(target.me){hp=Math.max(0,hp-14);damageFlash=.85;playSound('hurt');updateHUD();if(hp<=0){end('lose');return}}
    else window.NEXA_MP?.hostDamage(target.id,14);
  }}
- else if(dist<16){e.repath-=dt;if(e.repath<=0){e.path=shortestPath(Math.floor(e.x/C),Math.floor(e.z/C),Math.floor(target.x/C),Math.floor(target.z/C));e.repath=.6+hash(e.seed,elapsed)*.2}if(e.path.length){let t=e.path[Math.min(1,e.path.length-1)],[tx,tz]=point(t[0],t[1]);if(Math.hypot(tx-e.x,tz-e.z)<.22&&e.path.length>1)e.path.shift();t=e.path[Math.min(1,e.path.length-1)];[tx,tz]=point(t[0],t[1]);const d=Math.hypot(tx-e.x,tz-e.z);if(d>.06){let vx=(tx-e.x)/d,vz=(tz-e.z)/d;walkEntity(e,vx*dt*.99,vz*dt*.99,.29);e.speed=1}}}
+ else if(dist<16){e.repath-=dt;if(e.repath<=0){e.path=shortestPath(Math.floor(e.x/C),Math.floor(e.z/C),Math.floor(target.x/C),Math.floor(target.z/C));e.repath=.6+hash(e.seed,elapsed)*.2}if(e.path.length){let t=e.path[Math.min(1,e.path.length-1)],[tx,tz]=point(t[0],t[1]);if(Math.hypot(tx-e.x,tz-e.z)<.22&&e.path.length>1)e.path.shift();t=e.path[Math.min(1,e.path.length-1)];[tx,tz]=point(t[0],t[1]);const d=Math.hypot(tx-e.x,tz-e.z);if(d>.06){let vx=(tx-e.x)/d,vz=(tz-e.z)/d;const previousX=e.x,previousZ=e.z;walkEntity(e,vx*dt*.99,vz*dt*.99,.29);const movedX=e.x-previousX,movedZ=e.z-previousZ;if(Math.hypot(movedX,movedZ)>.0001){turnZombieTowardTravel(e,movedX,movedZ,dt);e.speed=1}}}}
  }
  if(multiRole!=='guest'&&!keyFound&&Math.hypot(camera.x-kx,camera.z-kz)<1.15)collectKey();
 if(multiRole!=='guest'&&keyFound&&doorOpen>.86&&Math.hypot(camera.x-ex,camera.z-ez)<.80){window.NEXA_MP?.clear();if(multiRole==='solo')end('win');return}
