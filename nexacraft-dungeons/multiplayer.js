@@ -112,7 +112,14 @@ function guestMessage(raw){
  if(raw.t==='chat')addChat(raw.name,raw.text);
  if(raw.t==='system')addChat('',raw.text,true);
  if(raw.t==='clear')bridge.finish('win');
+ if(raw.t==='failed')bridge.finish('lose');
  if(raw.t==='roomClosed'||raw.t==='reject')handleLoss(raw.reason||'ホストが部屋を終了しました');
+}
+function failRoom(){
+ if(mode==='host'){
+   notifyAll({t:'failed'});
+   addChat('','ホストが倒れました。全員ゲームオーバーです。',true);
+ }
 }
 function clearRoom(){
  if(mode!=='host'||bridge.phase()!=='play')return;
@@ -247,7 +254,7 @@ window.NEXA_MP={
   p.hp=limit(p.hp-value,0,100);
   if(!p.hp)sendTo(id,{t:'system',text:'HPが0になりました。'});
  },
- clear:clearRoom,
+ clear:clearRoom,fail:failRoom,
  sendChat,
  get members(){return memberCount();},
  get code(){return roomCode;}
