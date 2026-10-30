@@ -121,36 +121,36 @@ const fallbackContext=webgl?null:canvas.getContext('2d',{alpha:false});
 const gl=webgl||new Proxy({getShaderParameter:()=>true,getProgramParameter:()=>true,getAttribLocation:()=>0,createBuffer:()=>({}),createProgram:()=>({}),createShader:()=>({})},{get:(target,key)=>target[key]??(()=>null)});
 const level=[
 '#############################',
-'#Z#.......KZ#.............#.#',
-'#.###.#.#####.#########.#.#.#',
-'#......Z..................#.#',
-'###....############.......#.#',
-'#.#Z......#.......#.......#.#',
-'#.#.....#.#.#####.#......##.#',
-'#.#.........#.....#.........#',
-'#.###########.#######.###.#.#',
-'#.........#...........#.....#',
-'#.#######.#.....#.#######.#.#',
-'#.......#.........#.......#.#',
-'#####.#.#####.###.###.###.#.#',
-'#.........#...........#.#.#.#',
-'#.#.#.....#############.#.#.#',
-'#.#.#.......#...#.........#Z#',
-'#.#.#.....#.#.#.#.#######.#.#',
-'#.#.........#.#.#....Z..#E#.#',
-'#.#########.#.#.#.......###.#',
-'#.#....P#...#.#..........Z..#',
-'#.#.#####.###.###.......#####',
-'#.#.........#.#.............#',
-'#.###########.#.#.......#.#.#',
-'#.....#.......#.........#..Z#',
-'#.###.#.#########.#.#.#.###.#',
-'#.#.#...#.........#.#.#.....#',
-'#.#.#######.###.###.#.#####.#',
-'#...........#.........#.....#',
+'#Z........KZ................#',
+'#...........................#',
+'#......Z....................#',
+'#...........................#',
+'#..Z........................#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#..........................Z#',
+'#...........................#',
+'#....................Z...E..#',
+'#...........................#',
+'#......P.................Z..#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#..........................Z#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
+'#...........................#',
 '#############################'
 ];
-const W=level[0].length,H=level.length,C=4.5,WALL=4.35,eyeHeight=1.65;
+const W=level[0].length,H=level.length,C=4.5,WALL=5.15,eyeHeight=1.65;
 const grid=level.map(r=>r.split(''));
 const point=(x,z)=>[(x+.5)*C,(z+.5)*C];
 const initial=[];let entrance,exit,keyPos;
@@ -162,7 +162,7 @@ let multiRole="solo",remotePlayers=[];let hp=100,kills=0,keyFound=false,doorOpen
 const keys={},seen=Array.from({length:H},()=>Array(W).fill(false));
 const touch={moveX:0,moveY:0,lookId:null,lastX:0,lastY:0,moveId:null};const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
 const vsh=`attribute vec3 aPosition;attribute vec3 aColor;uniform mat4 uVP;varying vec3 vColor;varying vec3 vPos;void main(){vColor=aColor;vPos=aPosition;gl_Position=uVP*vec4(aPosition,1.0);}`;
-const fsh=`precision mediump float;varying vec3 vColor;varying vec3 vPos;uniform vec3 uEye;uniform vec3 uLightPos[7];uniform float uTime;void main(){float d=distance(vPos,uEye);float illumination=0.30 + 0.33/(1.0+0.018*d*d);for(int i=0;i<7;i++){float l=distance(vPos,uLightPos[i]);illumination += (1.34+0.05*sin(uTime*4.0+float(i)*7.2))/(1.0+0.51*l+0.19*l*l);}vec3 base=vColor*min(illumination,1.55);float fog=clamp((d-8.5)/21.0,0.0,0.88);vec3 fogColor=vec3(0.043,0.041,0.031);gl_FragColor=vec4(mix(base,fogColor,fog),1.0);}`;
+const fsh=`precision mediump float;varying vec3 vColor;varying vec3 vPos;uniform vec3 uEye;uniform vec3 uLightPos[7];uniform float uTime;void main(){float d=distance(vPos,uEye);float illumination=0.30 + 0.33/(1.0+0.018*d*d);for(int i=0;i<7;i++){float l=distance(vPos,uLightPos[i]);illumination += (1.34+0.05*sin(uTime*4.0+float(i)*7.2))/(1.0+0.51*l+0.19*l*l);}vec3 base=vColor*min(illumination,1.55);float fog=clamp((d-20.0)/50.0,0.0,0.74);vec3 fogColor=vec3(0.043,0.041,0.031);gl_FragColor=vec4(mix(base,fogColor,fog),1.0);}`;
 function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
 const prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vsh));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,fsh));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));gl.useProgram(prog);
 const aPosition=gl.getAttribLocation(prog,'aPosition'),aColor=gl.getAttribLocation(prog,'aColor'),uVP=gl.getUniformLocation(prog,'uVP'),uEye=gl.getUniformLocation(prog,'uEye'),uLightPos=gl.getUniformLocation(prog,'uLightPos'),uTime=gl.getUniformLocation(prog,'uTime');
@@ -528,7 +528,7 @@ function drawMap(){const size=170,cell=size/W;mc.clearRect(0,0,size,size);mc.fil
 }
 function updateVisited(){let tx=Math.floor(camera.x/C),tz=Math.floor(camera.z/C);for(let z=Math.max(0,tz-2);z<=Math.min(H-1,tz+2);z++)for(let x=Math.max(0,tx-2);x<=Math.min(W-1,tx+2);x++)if(Math.hypot(x-tx,z-tz)<2.65)seen[z][x]=true}
 function passable(x,z,r=.27){
- if((!keyFound||doorOpen<.86)&&x>ex-C*.50-r&&x<ex+C*.50+r&&z>ez-C*.50-r&&z<ez+C*.50+r)return false;
+ if((!keyFound||doorOpen<.86)&&x>ex-C*.40-r&&x<ex+C*.40+r&&z>ez-C*.40-r&&z<ez+C*.40+r)return false;
  for(let zz=Math.floor((z-r)/C);zz<=Math.floor((z+r)/C);zz++)for(let xx=Math.floor((x-r)/C);xx<=Math.floor((x+r)/C);xx++)if(wallAt(xx,zz)){const nearestX=Math.max(xx*C,Math.min(x,(xx+1)*C)),nearestZ=Math.max(zz*C,Math.min(z,(zz+1)*C));if(Math.hypot(nearestX-x,nearestZ-z)<r)return false}return true}
 function walkEntity(obj,dx,dz,r){if(passable(obj.x+dx,obj.z,r))obj.x+=dx;if(passable(obj.x,obj.z+dz,r))obj.z+=dz}
 function shortestPath(sx,sz,tx,tz){if(sx===tx&&sz===tz)return [[tx,tz]];const queue=[[sx,sz]],prev=new Map(),id=(x,z)=>z*W+x;prev.set(id(sx,sz),-1);let head=0,end=-1;
