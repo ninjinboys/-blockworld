@@ -6,7 +6,39 @@
 <style>
 :root{color-scheme:dark;--gold:#f6bd6a;--muted:#97a4ac;--panel:rgba(12,20,27,.92)}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080e13;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#f4f2eb;touch-action:none;user-select:none}canvas#game{display:block;width:100%;height:100%;touch-action:none}#sword{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 39%,rgba(0,0,0,.46) 100%)}#hurt{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 32%,rgba(209,39,31,.62));pointer-events:none;opacity:0;transition:opacity .13s}#topBar{position:absolute;top:0;left:0;right:0;display:flex;gap:12px;justify-content:space-between;align-items:flex-start;padding:19px 21px;pointer-events:none}#brand{font-size:12px;font-weight:900;letter-spacing:.20em;color:#ffc982;text-shadow:0 2px 12px #000}#brand small{display:block;letter-spacing:.32em;color:#c0cbd2;font-size:9px;margin-top:4px}#stats{margin-top:13px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700}#heart{display:inline-flex;gap:3px;align-items:center;font-size:19px;color:#ff756f}#healthTrack{width:123px;height:9px;border-radius:10px;background:#4e2928;border:1px solid #85605c;overflow:hidden}#healthFill{height:100%;width:100%;background:linear-gradient(90deg,#e45e51,#fbaf84);transition:width .12s}#count{color:#e7ded0;margin-left:4px}#minimapShell{padding:7px;background:rgba(9,17,23,.67);border:1px solid rgba(221,205,170,.21);box-shadow:0 5px 20px #0008;border-radius:10px}#minimap{display:block;width:138px;height:138px;image-rendering:pixelated}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:19px;height:19px;pointer-events:none;opacity:.82}#crosshair:before,#crosshair:after{content:"";position:absolute;background:#f3ead8;box-shadow:0 0 3px #100c0c}#crosshair:before{width:2px;height:15px;left:8px;top:2px}#crosshair:after{height:2px;width:15px;left:2px;top:8px}#objective{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);max-width:calc(100% - 20px);font-size:12px;line-height:1.6;font-weight:700;text-align:center;padding:10px 17px;border:1px solid rgba(255,202,128,.26);border-radius:8px;background:rgba(13,21,27,.78);box-shadow:0 6px 24px #0005;white-space:nowrap;pointer-events:none}#objective em{font-style:normal;color:#ffcd83}#toast{position:absolute;top:23%;left:50%;transform:translateX(-50%);text-align:center;color:#ffe0a9;font-size:17px;font-weight:900;text-shadow:0 3px 10px #000;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;background:linear-gradient(135deg,rgba(5,12,18,.87),rgba(15,24,28,.79) 55%,rgba(28,18,15,.84));padding:20px}#menu.hidden{display:none}.panel{position:relative;width:min(480px,100%);background:linear-gradient(150deg,#1c2b30,#121a23 62%,#161e22);border:1px solid #52605b;box-shadow:0 20px 70px #0009,0 0 0 6px #0b1217a8;border-radius:12px;padding:30px 30px 26px;text-align:center;overflow:hidden}.panel:before{content:"";position:absolute;left:0;top:0;right:0;height:5px;background:linear-gradient(90deg,#63503e,#ffca79,#66533c)}.panel .eyebrow{font-size:11px;letter-spacing:.24em;color:#a4b3b6;font-weight:700}.panel h1{font-size:clamp(26px,6vw,36px);margin:12px 0 0;line-height:1.16;letter-spacing:.025em}.panel h1 span{display:block;font-size:17px;letter-spacing:.25em;color:#f7bc6b;margin-top:8px}.panel p{font-size:13px;color:#c6d0cc;line-height:1.85;margin:21px 0}.panel .tip{font-size:12px;color:#bbc3c6;line-height:1.9;margin-bottom:19px;background:#0d181c;padding:13px;border-radius:7px;border:1px solid #334044}.panel .tip strong{color:#ffe0a6}.mainBtn{appearance:none;border:1px solid #ffdb9e;border-radius:7px;background:linear-gradient(#efc076,#c98f46);color:#1d1915;box-shadow:0 5px 0 #765128;font-size:15px;font-weight:900;padding:13px 30px;cursor:pointer;width:100%;letter-spacing:.08em}.mainBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #765128}#touchUi{display:none;position:absolute;inset:0;pointer-events:none}#touchUi.active{display:block}#touchUi.active #pauseBtn{display:block}#movePad{position:absolute;left:24px;bottom:50px;width:130px;height:130px;border-radius:100%;background:#ced6c011;border:2px solid #c7d2c43e;pointer-events:auto;touch-action:none}#stick{position:absolute;top:39px;left:39px;width:48px;height:48px;border-radius:50%;background:#e2caa777;border:2px solid #ead5ad88;box-shadow:0 0 20px #0005}#hitBtn{position:absolute;bottom:62px;right:27px;width:92px;height:92px;border-radius:50%;border:2px solid #ffdcaf8a;background:linear-gradient(160deg,#a67b49bb,#704829aa);color:#ffebcb;font-size:18px;font-weight:900;pointer-events:auto;touch-action:none;box-shadow:0 6px 20px #0008}#touchHint{position:absolute;bottom:167px;right:24px;font-size:11px;color:#f5e8cb;text-shadow:1px 1px 4px #000;line-height:1.5;text-align:right}#pauseBtn{position:absolute;right:20px;bottom:20px;display:none;padding:8px 12px;border-radius:8px;border:1px solid #9998;background:#0e1923be;color:#eee;font-weight:600;pointer-events:auto}#compat{position:absolute;z-index:8;inset:0;background:#090d11;color:#fff;display:none;padding:30px;text-align:center;align-items:center;justify-content:center}#compat.show{display:flex}@media(pointer:coarse){#touchUi.active{display:block}#pauseBtn{display:block}#objective{bottom:8px;font-size:11px;padding:6px 10px}#topBar{padding:13px}#minimap{width:96px;height:96px}#stats{font-size:11px;gap:6px}#healthTrack{width:84px}#brand{font-size:11px}#heart{font-size:16px}}@media(max-height:460px){#objective{bottom:5px}#topBar{padding:9px 15px}#movePad{width:98px;height:98px;bottom:22px;left:16px}#stick{left:28px;top:28px;width:39px;height:39px}#hitBtn{width:76px;height:76px;right:20px;bottom:28px}#touchHint{bottom:110px}#menu .panel{padding:17px 24px}#menu .panel p{margin:8px 0}#menu .panel .tip{margin-bottom:12px;padding:5px}#minimap{width:82px;height:82px}#stats{margin-top:5px}} 
-#healthHud{position:absolute;z-index:3;bottom:83px;left:50%;transform:translateX(-50%);padding:4px 7px;background:rgba(14,23,27,.78);border:1px solid #a7c3b64d;border-radius:8px;pointer-events:none}#hearts{display:flex;gap:2px;align-items:center;justify-content:center}#hearts img{width:24px;height:22px;image-rendering:pixelated;object-fit:contain;display:block}#keyStatus{color:#fce2a0;font-weight:900}@media(pointer:coarse){#healthHud{bottom:77px}#hearts img{width:20px;height:19px}}@media(max-height:460px){#healthHud{bottom:43px}#hearts img{width:17px;height:16px}}</style>
+#healthHud{position:absolute;z-index:3;bottom:83px;left:50%;transform:translateX(-50%);padding:4px 7px;background:rgba(14,23,27,.78);border:1px solid #a7c3b64d;border-radius:8px;pointer-events:none}#hearts{display:flex;gap:2px;align-items:center;justify-content:center}#hearts img{width:24px;height:22px;image-rendering:pixelated;object-fit:contain;display:block}#keyStatus{color:#fce2a0;font-weight:900}@media(pointer:coarse){#healthHud{bottom:77px}#hearts img{width:20px;height:19px}}@media(max-height:460px){#healthHud{bottom:43px}#hearts img{width:17px;height:16px}}
+/* Cooperative dungeon lobby and chat; touch-friendly for iPad landscape. */
+.panel{max-height:calc(100dvh - 28px);overflow-y:auto}
+#multiOptions{margin:12px 0 3px;text-align:left;border:1px solid #50646b;border-radius:8px;background:rgba(8,23,29,.72);padding:9px 11px}
+#multiOptions summary{font-size:13px;font-weight:800;color:#ffe0a8;cursor:pointer;list-style-position:inside}
+#multiOptions label{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;margin:9px 0;color:#d7e0df}
+#multiOptions input{width:52%;min-width:110px;border:1px solid #71858b;border-radius:5px;background:#0b1c25;color:#fff;font-size:16px;padding:8px;outline-offset:2px}
+.multiButtons{display:flex;gap:7px;margin:9px 0 3px}
+.multiButtons button{flex:1;min-width:0;font-size:12px;font-weight:800;color:#15212a;background:#d7be85;border:1px solid #ffeead;border-radius:6px;padding:10px 5px;cursor:pointer}
+#multiStatus{color:#b5f7cf;font-size:11px;min-height:18px;line-height:1.5;overflow-wrap:anywhere}
+#multiRoomHud{position:absolute;z-index:7;left:14px;top:94px;font-size:12px;font-weight:900;color:#ddfdea;background:#0a2324d9;border:1px solid #6caaa5;padding:6px 10px;border-radius:7px;pointer-events:none}
+#chatToggle{position:absolute;z-index:8;left:14px;top:137px;pointer-events:auto;min-height:36px;padding:8px 14px;background:#173e49;color:#fff;border:1px solid #96d8cc;border-radius:7px;font-weight:850;cursor:pointer}
+#chatToggle.unread{box-shadow:0 0 0 3px #fff17b}
+#chatPanel{position:absolute;z-index:9;left:14px;top:182px;width:min(340px,calc(100vw - 28px));max-height:min(320px,calc(100dvh - 195px));display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #6c9090;border-radius:9px;background:#0c1c23f0;box-shadow:0 9px 30px #0008;pointer-events:auto}
+#chatPanel:not(.open){display:none}
+#chatTop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
+#chatClose{background:#3f555d;color:#fff;border:1px solid #718b91;border-radius:5px;padding:4px 9px}
+#chatLog{height:165px;min-height:75px;overflow-y:auto;font-size:12px;line-height:1.6;overflow-wrap:anywhere;user-select:text;touch-action:pan-y;border:1px solid #32474d;padding:5px;background:#0b151b}
+.chat-line{color:#e4f4f1;margin-bottom:4px}.chat-line b{color:#ffe1a0}.chat-line.system{color:#b3c7cf;font-style:italic}
+#chatForm{display:flex;gap:5px}#chatInput{flex:1;min-width:0;background:#142e38;border:1px solid #719497;border-radius:5px;padding:8px;color:#fff;font-size:15px}
+#chatForm button{background:#d8bb84;border:0;border-radius:5px;font-weight:850;color:#182329;padding:0 12px}
+#multiActions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:10px}
+#multiActions button{border:1px solid #607d81;border-radius:4px;background:#243f47;color:#fff;padding:6px 8px;font-size:11px}
+#roomMembers{color:#a4dbd3;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+@media(max-height:460px){
+#multiRoomHud{top:72px;left:12px;padding:4px 7px}
+#chatToggle{top:103px;left:12px;min-height:28px;padding:5px 9px}
+#chatPanel{top:135px;left:12px;max-height:calc(100dvh - 146px);width:min(335px,calc(100vw - 24px));padding:6px}
+#chatLog{height:75px;min-height:45px}
+#multiOptions{padding:6px 9px;margin:6px 0}
+#multiOptions label{margin:5px 0}
+}
+</style>
 <script type="importmap">{
  "imports":{
   "three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
@@ -61,8 +93,24 @@
 <canvas id="game"></canvas><canvas id="sword"></canvas><canvas id="exactSword" aria-label="NEXACRAFT本編の剣士の剣 3Dモデル"></canvas><div id="swordModelMessage" style="display:none"></div><div id="vignette"></div><div id="hurt"></div>
 <div id="topBar"><div><div id="brand">NEXACRAFT <small>D U N G E O N S · P R O T O T Y P E</small></div><div id="stats"><span id="keyStatus">🔑 鍵を探そう</span><span id="count">☠ 0 / 4</span></div></div><div id="minimapShell"><canvas id="minimap" width="170" height="170"></canvas></div></div>
 <div id="healthHud" role="img" aria-label="体力 10 / 10"><div id="hearts"></div></div><div id="crosshair"></div><div id="toast"></div><div id="objective"><em>目標：</em>地下迷宮の奥に隠された鍵を探せ</div>
+<div id="multiRoomHud" hidden></div>
+<button id="chatToggle" type="button" hidden>💬 チャット</button>
+<section id="chatPanel" aria-label="マルチプレイチャット">
+<div id="chatTop"><strong>💬 パーティーチャット</strong><button id="chatClose" type="button">閉じる</button></div>
+<div id="roomMembers"></div>
+<div id="chatLog" role="log" aria-live="polite"></div>
+<form id="chatForm"><input id="chatInput" maxlength="160" autocomplete="off" placeholder="仲間にメッセージ" aria-label="チャットのメッセージ"><button type="submit">送信</button></form>
+<div id="multiActions"><button id="inviteLink" type="button" hidden>🔗 招待リンクをコピー</button><button id="leaveRoom" type="button" hidden>退出</button><span id="chatNotice" hidden>最大4人／ホスト退出で終了</span></div>
+</section>
 <div id="touchUi"><div id="movePad"><div id="stick"></div></div><button id="hitBtn" type="button">⚔ 攻撃</button><div id="touchHint">右側をスワイプして視点移動</div><button id="pauseBtn" type="button">Ⅱ</button></div>
-<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">ブロックで構成された小さな地下迷宮。<br>ゾンビを避けながら古代の鍵を見つけ、開いた出口の扉から脱出しよう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・画面右で視点・攻撃ボタン</div><button class="mainBtn" id="startBtn">ダンジョンに入る</button></div></div>
+<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">ブロックで構成された小さな地下迷宮。<br>ゾンビを避けながら古代の鍵を見つけ、開いた出口の扉から脱出しよう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・画面右で視点・攻撃ボタン</div><details id="multiOptions">
+<summary>🌐 マルチプレイ（最大4人・チャット対応）</summary>
+<label>名前 <input id="multiName" maxlength="12" value="冒険者" autocomplete="nickname" aria-label="プレイヤー名"></label>
+<label>部屋コード <input id="multiCode" maxlength="6" placeholder="自動作成／入力" inputmode="text" autocapitalize="characters" aria-label="英数字6文字の部屋コード"></label>
+<div class="multiButtons"><button id="createRoom" type="button">部屋を作る</button><button id="joinRoom" type="button">部屋に参加</button></div>
+<div id="multiStatus" role="status">部屋コードか招待リンクで参加できます。</div>
+</details>
+<button class="mainBtn" id="startBtn">ソロでダンジョンに入る</button></div></div>
 <div id="compat">この端末ではWebGLが利用できません。WebGL対応のブラウザ（Chrome / Safariなど）で開いてください。</div>
 <script>
 (()=>{'use strict';
@@ -97,7 +145,7 @@ for(let z=0;z<H;z++)for(let x=0;x<W;x++){
  const c=grid[z][x];if(c==='P')entrance=point(x,z);if(c==='E')exit=point(x,z);if(c==='K')keyPos=point(x,z);if(c==='Z')initial.push({x:point(x,z)[0],z:point(x,z)[1]});if(c!=='#')grid[z][x]='.';
 }
 const camera={x:entrance[0],z:entrance[1],yaw:Math.PI,pitch:0}; // First view points into labyrinth.
-let hp=100,kills=0,keyFound=false,doorOpen=0,phase='menu',entities=[],elapsed=0,lastTime=0,swing=0,swingCd=0,swingHit=false,damageFlash=0,walkTime=0,toastUntil=0,toastText='',hitShake=0;
+let multiRole="solo",remotePlayers=[];let hp=100,kills=0,keyFound=false,doorOpen=0,phase='menu',entities=[],elapsed=0,lastTime=0,swing=0,swingCd=0,swingHit=false,damageFlash=0,walkTime=0,toastUntil=0,toastText='',hitShake=0;
 const keys={},seen=Array.from({length:H},()=>Array(W).fill(false));
 const touch={moveX:0,moveY:0,lookId:null,lastX:0,lastY:0,moveId:null};const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
 const vsh=`attribute vec3 aPosition;attribute vec3 aColor;uniform mat4 uVP;varying vec3 vColor;varying vec3 vPos;void main(){vColor=aColor;vPos=aPosition;gl_Position=uVP*vec4(aPosition,1.0);}`;
@@ -223,6 +271,28 @@ function doorModel(out){
    b(-.09,1.30+lift,localZ-.25,.09,1.47+lift,localZ-.22,dark);
  }
 }
+function allyModel(out,p){
+ // Teammate has recognizable NEXACRAFT block limbs and a sword.
+ const blue=[.14,.49,.61],blueSide=[.10,.32,.41],skin=[.83,.63,.47],pants=[.23,.33,.43],steel=[.79,.86,.90],gold=[.80,.61,.33];
+ const q={x:p.x,z:p.z,angle:p.yaw};
+ const b=(x0,y0,z0,x1,y1,z1,c)=>bodyBox(out,q,x0,y0,z0,x1,y1,z1,c);
+ b(-.30,.77,-.20,.30,1.43,.20,blue);
+ b(-.24,1.44,-.23,.24,1.89,.23,skin);
+ b(-.23,1.83,-.24,.23,1.93,.24,[.22,.25,.30]);
+ for(const x of [-.14,.14])b(x-.045,1.65,-.25,x+.045,1.71,-.22,[.16,.23,.26]);
+ for(const sign of [-1,1]){
+  const x=sign*.41;
+  b(x-.11,.93,-.17,x+.11,1.35,.17,blueSide);
+  b(x-.105,.75,-.17,x+.105,.96,.17,skin);
+  const leg=sign*.15;
+  b(leg-.135,.07,-.17,leg+.135,.72,.17,pants);
+  b(leg-.14,0,-.20,leg+.14,.13,.22,[.14,.17,.20]);
+ }
+ // Weapon in right hand; remote players have a compact low-poly preview.
+ b(.26,1.18,-.38,.56,1.25,-.26,gold);
+ b(.38,1.23,-.35,.45,2.06,-.29,steel);
+ b(.39,2.05,-.35,.44,2.24,-.29,steel);
+}
 function keyModel(out){
  const p={x:kx,z:kz,angle:elapsed*.9},bob=Math.sin(elapsed*3)*.08;
  const gold=[1,.71,.16],shine=[1,.94,.48],shadow=[.58,.35,.07];
@@ -244,6 +314,7 @@ function render(){if(!webgl){renderFallback();drawSword();drawMap();return}gl.vi
  let lightNums=[];const arr=[];for(let i=0;i<lights.length;i+=3){const dx=lights[i]-camera.x,dz=lights[i+2]-camera.z;arr.push([dx*dx+dz*dz,lights[i],lights[i+1],lights[i+2]])}arr.sort((a,b)=>a[0]-b[0]);for(let i=0;i<7;i++){let a=arr[i];if(a)lightNums.push(a[1],a[2],a[3]);else lightNums.push(-100,-100,-100)}gl.uniform3fv(uLightPos,new Float32Array(lightNums));
  bindBuffer(staticBuffer);gl.drawArrays(gl.TRIANGLES,0,staticData.length/6);
  const out=[];for(const e of entities)if(e.hp>0)zombieModel(out,e);
+ for(const peer of remotePlayers)if(peer.hp>0)allyModel(out,peer);
  if(!keyFound)keyModel(out);
  doorModel(out);
  if(out.length){let data=new Float32Array(out);gl.bindBuffer(gl.ARRAY_BUFFER,dynamicBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);bindBuffer(dynamicBuffer);gl.drawArrays(gl.TRIANGLES,0,data.length/6)}
@@ -305,6 +376,7 @@ function renderFallback(){
  for(const e of entities){if(e.hp<=0)continue;let sp=screenPos(e.x,e.z);if(sp&&sp.x>-w*.2&&sp.x<w*1.2&&lineOfSight(camera.x,camera.z,e.x,e.z))billboards.push({sp,e,type:'zombie'})}
  if(!keyFound){let gp=screenPos(kx,kz);if(gp&&lineOfSight(camera.x,camera.z,kx,kz))billboards.push({sp:gp,type:'key'});}
  {let dp=screenPos(ex,ez);if(dp&&lineOfSight(camera.x,camera.z,ex,ez))billboards.push({sp:dp,type:'door'});}
+ for(const p of remotePlayers){if(p.hp<=0)continue;const sp=screenPos(p.x,p.z);if(sp&&lineOfSight(camera.x,camera.z,p.x,p.z))billboards.push({sp,p,type:'player'});}
  for(const [tx,tz] of sconces){let [wx,wz]=point(tx,tz),sp=screenPos(wx,wz);if(sp&&lineOfSight(camera.x,camera.z,wx,wz))billboards.push({sp,type:'flame'})}
  billboards.sort((a,b)=>b.sp.d-a.sp.d);
  for(const obj of billboards){let {sp}=obj;if(sp.x<-w*.2||sp.x>w*1.2)continue;
@@ -325,6 +397,17 @@ function renderFallback(){
    block(-.24,.20+step,.20,.51,'#386c3e');block(.04,.20-step,.20,.51,'#386c3e');
    block(-.25,.02+step,.21,.15,'#23492a');block(.04,.02-step,.21,.15,'#23492a');
    if(e.hp<65){block(-.31,1.95,.62,.07,'#63292a');block(-.31,1.95,.62*e.hp/65,.07,'#ed715e')}
+  }else if(obj.type==='player'){
+    const p=obj.p;
+    block(-.31,.75,.62,.72,'#247f9b');block(-.24,1.46,.48,.46,'#d4a078');
+    block(-.24,1.84,.48,.10,'#303943');
+    for(const dx of [-.18,.10])block(dx,1.67,.07,.065,'#162c34');
+    block(-.47,.80,.18,.58,'#247f9b');block(.29,.80,.18,.58,'#247f9b');
+    block(-.46,.76,.18,.18,'#d4a078');block(.28,.76,.18,.18,'#d4a078');
+    block(-.24,.12,.23,.64,'#3b546d');block(.03,.12,.23,.64,'#3b546d');
+    block(.40,1.20,.09,1.05,'#d2e8ef');block(.26,1.14,.39,.07,'#d8af66');
+    const font=Math.max(9,Math.min(22,sp.scale*.20));ctx.font='bold '+font+'px system-ui';
+    ctx.textAlign='center';ctx.fillStyle='#eeffff';ctx.shadowColor='#000';ctx.shadowBlur=5;ctx.fillText(p.name||'冒険者',0,-2.18*unit);ctx.shadowBlur=0;
   }else if(obj.type==='key'){
    block(-.44,0,.88,.57,'#606b6b');block(-.34,.56,.68,.13,'#8e846a');
    ctx.shadowColor='#ffbf35';ctx.shadowBlur=12*unit;
@@ -359,6 +442,7 @@ function drawMap(){const size=170,cell=size/W;mc.clearRect(0,0,size,size);mc.fil
  if(!keyFound&&seen[Math.floor(kz/C)][Math.floor(kx/C)]){mc.fillStyle='#f9cd52';mc.fillRect((kx/C-.5)*cell+cell*.2,(kz/C-.5)*cell+cell*.2,cell*.6,cell*.6)}
  if(seen[Math.floor(ez/C)][Math.floor(ex/C)]){mc.fillStyle=keyFound?'#5af2c4':'#de6958';mc.fillRect((ex/C-.5)*cell+cell*.16,(ez/C-.5)*cell+cell*.16,cell*.68,cell*.68)}
  for(const e of entities)if(e.hp>0&&Math.hypot(e.x-camera.x,e.z-camera.z)<C*3.3){mc.fillStyle='#eb665f';mc.fillRect(e.x/C*cell-2,e.z/C*cell-2,4,4)}
+ for(const p of remotePlayers)if(p.hp>0){mc.fillStyle='#69e9d8';mc.fillRect(p.x/C*cell-3,p.z/C*cell-3,6,6)}
  mc.save();mc.translate(camera.x/C*cell,camera.z/C*cell);mc.rotate(camera.yaw);mc.beginPath();mc.moveTo(0,-7);mc.lineTo(-4,5);mc.lineTo(4,5);mc.closePath();mc.fillStyle='#f8df9d';mc.fill();mc.restore()
 }
 function updateVisited(){let tx=Math.floor(camera.x/C),tz=Math.floor(camera.z/C);for(let z=Math.max(0,tz-2);z<=Math.min(H-1,tz+2);z++)for(let x=Math.max(0,tx-2);x<=Math.min(W-1,tx+2);x++)if(Math.hypot(x-tx,z-tz)<2.65)seen[z][x]=true}
@@ -374,7 +458,8 @@ function lineOfSight(x0,z0,x1,z1){let d=Math.hypot(x1-x0,z1-z0);for(let t=.35;t<
 function notify(text,time=2.2){toastText=text;toastUntil=elapsed+time;document.querySelector('#toast').textContent=text;document.querySelector('#toast').style.opacity='1'}
 function playSound(kind){try{let A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!playSound.ctx)playSound.ctx=new A();let ctx=playSound.ctx;if(ctx.state==='suspended')ctx.resume();let t=ctx.currentTime,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type=kind==='hit'?'sawtooth':kind==='hurt'?'triangle':'square';let f=kind==='slash'?260:kind==='hit'?125:kind==='hurt'?70:520;osc.frequency.setValueAtTime(f,t);osc.frequency.exponentialRampToValueAtTime(kind==='slash'?100:kind==='hit'?45:kind==='hurt'?34:820,t+.12);gain.gain.setValueAtTime(kind==='slash'?.08:.11,t);gain.gain.exponentialRampToValueAtTime(.001,t+.14);osc.connect(gain);gain.connect(ctx.destination);osc.start(t);osc.stop(t+.145)}catch{}}
 function attack(){if(phase!=='play'||swingCd>0)return;swing=.31;swingCd=.50;swingHit=false;playSound('slash')}
-function doHit(){let cand=[];for(const e of entities){if(e.hp<=0)continue;let dx=e.x-camera.x,dz=e.z-camera.z,dist=Math.hypot(dx,dz),ang=Math.atan2(dx,-dz),delta=Math.atan2(Math.sin(ang-camera.yaw),Math.cos(ang-camera.yaw));if(dist<2.55&&Math.abs(delta)<.88&&lineOfSight(camera.x,camera.z,e.x,e.z))cand.push({e,dist})}cand.sort((a,b)=>a.dist-b.dist);if(cand.length){let e=cand[0].e;e.hp-=36;e.flash=.22;hitShake=.12;playSound('hit');if(e.hp<=0){kills++;notify('ゾンビを倒した！  '+kills+' / '+initial.length,1.5); }updateHUD()}}
+function doHit(){if(multiRole==='guest'){window.NEXA_MP?.attack();return}doHitFrom(camera.x,camera.z,camera.yaw)}
+function doHitFrom(ax,az,ay){let cand=[];for(const e of entities){if(e.hp<=0)continue;let dx=e.x-ax,dz=e.z-az,dist=Math.hypot(dx,dz),ang=Math.atan2(dx,-dz),delta=Math.atan2(Math.sin(ang-ay),Math.cos(ang-ay));if(dist<2.55&&Math.abs(delta)<.88&&lineOfSight(ax,az,e.x,e.z))cand.push({e,dist})}cand.sort((a,b)=>a.dist-b.dist);if(cand.length){let e=cand[0].e;e.hp-=36;e.flash=.22;hitShake=.12;playSound('hit');if(e.hp<=0){kills++;notify('ゾンビを倒した！  '+kills+' / '+initial.length,1.5); }updateHUD()}}
 function updateHUD(){
  // The original 10 SVG hearts from ../assets, full / half / empty.
  const pips=Math.ceil(hp/5),imgs=[];
@@ -385,6 +470,12 @@ function updateHUD(){
  document.querySelector('#keyStatus').textContent=keyFound?'🔓 出口の扉が開いた！':'🔑 鍵を探そう';
 }
 function end(mode){phase=mode;document.exitPointerLock?.();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#touchUi').classList.remove('active');document.querySelector('#startBtn').textContent='もう一度挑戦する';document.querySelector('#menuText').innerHTML=mode==='win'?'クリア！ 開いた出口の扉をくぐり、<br>地下迷宮を脱出した！':'ゲームオーバー。<br>ゾンビに倒されてしまった。';document.querySelector('#helpText').innerHTML=mode==='win'?'🔑 鍵で扉を開け、出口に入ってクリア！<br>ゾンビの全滅は必要ない。':'⚔ ゾンビは2回攻撃すると倒せる。<br>攻撃が届く距離を保って戦おう。'}
+function collectKey(){
+ if(keyFound)return;
+ keyFound=true;playSound('hit');updateHUD();
+ document.querySelector('#objective').innerHTML='<em>目標：</em>開いた出口の扉へ向かい、中へ入ろう！';
+ notify('🔑 古代の鍵を入手！ 出口の扉が開いた！',3.5);
+}
 function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI;camera.pitch=0;hp=100;kills=0;keyFound=false;doorOpen=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:0,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
 function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)doorOpen=Math.min(1,doorOpen+dt*1.25);
  let forward=0,strafe=0;if(keys.KeyW||keys.ArrowUp)forward++;if(keys.KeyS||keys.ArrowDown)forward--;if(keys.KeyA||keys.ArrowLeft)strafe--;if(keys.KeyD||keys.ArrowRight)strafe++;
@@ -392,26 +483,75 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)
  updateVisited();if(keys.Space)attack();
  if(swing>0){swing=Math.max(0,swing-dt);if(!swingHit&&swing<.19){swingHit=true;doHit()}}swingCd=Math.max(0,swingCd-dt);
  damageFlash=Math.max(0,damageFlash-dt*2.5);document.querySelector('#hurt').style.opacity=damageFlash.toFixed(2);
- for(const e of entities){if(e.hp<=0)continue;const dist=Math.hypot(camera.x-e.x,camera.z-e.z);e.angle=Math.atan2(camera.x-e.x,-(camera.z-e.z));e.flash=Math.max(0,e.flash-dt);e.attackPose=Math.max(0,e.attackPose-dt*1.8);e.attackTimer=Math.max(0,e.attackTimer-dt);e.speed=0;
- if(dist<1.25){if(e.attackTimer<=0&&lineOfSight(e.x,e.z,camera.x,camera.z)){e.attackTimer=1.3;e.attackPose=1;hp=Math.max(0,hp-14);damageFlash=.85;playSound('hurt');updateHUD();if(hp<=0){end('lose');return}}}
- else if(dist<16){e.repath-=dt;if(e.repath<=0){e.path=shortestPath(Math.floor(e.x/C),Math.floor(e.z/C),Math.floor(camera.x/C),Math.floor(camera.z/C));e.repath=.6+hash(e.seed,elapsed)*.2}if(e.path.length){let t=e.path[Math.min(1,e.path.length-1)],[tx,tz]=point(t[0],t[1]);if(Math.hypot(tx-e.x,tz-e.z)<.22&&e.path.length>1)e.path.shift();t=e.path[Math.min(1,e.path.length-1)];[tx,tz]=point(t[0],t[1]);const d=Math.hypot(tx-e.x,tz-e.z);if(d>.06){let vx=(tx-e.x)/d,vz=(tz-e.z)/d;walkEntity(e,vx*dt*.99,vz*dt*.99,.29);e.speed=1}}}
+ if(multiRole!=='guest')for(const e of entities){
+ if(e.hp<=0)continue;
+ const targets=[{x:camera.x,z:camera.z,hp,me:true},
+   ...remotePlayers.filter(p=>p.hp>0).map(p=>({...p,me:false}))];
+ const target=targets.sort((a,b)=>Math.hypot(e.x-a.x,e.z-a.z)-Math.hypot(e.x-b.x,e.z-b.z))[0];
+ if(!target)continue;
+ const dist=Math.hypot(target.x-e.x,target.z-e.z);
+ e.angle=Math.atan2(target.x-e.x,-(target.z-e.z));e.flash=Math.max(0,e.flash-dt);e.attackPose=Math.max(0,e.attackPose-dt*1.8);e.attackTimer=Math.max(0,e.attackTimer-dt);e.speed=0;
+ if(dist<1.25){if(e.attackTimer<=0&&lineOfSight(e.x,e.z,target.x,target.z)){
+   e.attackTimer=1.3;e.attackPose=1;
+   if(target.me){hp=Math.max(0,hp-14);damageFlash=.85;playSound('hurt');updateHUD();if(hp<=0){end('lose');return}}
+   else window.NEXA_MP?.hostDamage(target.id,14);
+ }}
+ else if(dist<16){e.repath-=dt;if(e.repath<=0){e.path=shortestPath(Math.floor(e.x/C),Math.floor(e.z/C),Math.floor(target.x/C),Math.floor(target.z/C));e.repath=.6+hash(e.seed,elapsed)*.2}if(e.path.length){let t=e.path[Math.min(1,e.path.length-1)],[tx,tz]=point(t[0],t[1]);if(Math.hypot(tx-e.x,tz-e.z)<.22&&e.path.length>1)e.path.shift();t=e.path[Math.min(1,e.path.length-1)];[tx,tz]=point(t[0],t[1]);const d=Math.hypot(tx-e.x,tz-e.z);if(d>.06){let vx=(tx-e.x)/d,vz=(tz-e.z)/d;walkEntity(e,vx*dt*.99,vz*dt*.99,.29);e.speed=1}}}
  }
- if(!keyFound&&Math.hypot(camera.x-kx,camera.z-kz)<1.15){
- keyFound=true;playSound('hit');updateHUD();
- document.querySelector('#objective').innerHTML='<em>目標：</em>開いた出口の扉へ向かい、中へ入ろう！';
- notify('🔑 古代の鍵を入手！ 出口の扉が開いた！',3.5);
-}
-if(keyFound&&doorOpen>.86&&Math.hypot(camera.x-ex,camera.z-ez)<.80){end('win');return}
+ if(multiRole!=='guest'&&!keyFound&&Math.hypot(camera.x-kx,camera.z-kz)<1.15)collectKey();
+if(multiRole!=='guest'&&keyFound&&doorOpen>.86&&Math.hypot(camera.x-ex,camera.z-ez)<.80){window.NEXA_MP?.clear();if(multiRole==='solo')end('win');return}
  if(elapsed>toastUntil)document.querySelector('#toast').style.opacity='0';
 }
 function resize(){let r=Math.min(window.devicePixelRatio||1,webgl?1.7:1.0);canvas.width=Math.floor(innerWidth*r);canvas.height=Math.floor(innerHeight*r);swordCanvas.width=Math.floor(innerWidth*r);swordCanvas.height=Math.floor(innerHeight*r);swordCanvas.style.width=innerWidth+'px';swordCanvas.style.height=innerHeight+'px';sc.setTransform(r,0,0,r,0,0)}
 window.addEventListener('resize',resize);resize();reset();
 function loop(ts){if(!lastTime)lastTime=ts;let dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;update(dt);render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 window.NEXACRAFT_DUNGEON_STATE=()=>({phase,swing,walkTime,elapsed});
+window.NEXA_DUNGEON_BRIDGE={
+ getRole:()=>multiRole,setRole:r=>{multiRole=r;},
+ phase:()=>phase,getHealth:()=>hp,
+ spawn:()=>({x:entrance[0],z:entrance[1]}),
+ pose:()=>({x:camera.x,z:camera.z,yaw:camera.yaw}),
+ isPassable:(x,z)=>passable(x,z,.27),
+ isKeyNear:(x,z)=>!keyFound&&Math.hypot(x-kx,z-kz)<1.15,
+ isExitNear:(x,z)=>keyFound&&doorOpen>.86&&Math.hypot(x-ex,z-ez)<.80,
+ collectKey,remoteAttack:(x,z,yaw)=>{if(multiRole==='host')doHitFrom(x,z,yaw)},
+ begin:()=>start(),finish:mode=>{if(phase==='play'||phase==='pause')end(mode)},
+ setPeers:peers=>{remotePlayers=(Array.isArray(peers)?peers:[]).slice(0,3)
+   .filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&Number.isFinite(p.yaw))
+   .map(p=>({id:p.id,name:String(p.name||'冒険者').slice(0,12),x:p.x,z:p.z,yaw:p.yaw,hp:p.hp||0}))},
+ getPeers:()=>remotePlayers,
+ snapshot:()=>({keyFound,doorOpen,kills,zombies:entities.map(e=>({
+  x:e.x,z:e.z,hp:e.hp,angle:e.angle,flash:e.flash,attackPose:e.attackPose
+ }))}),
+ receiveSnapshot:(world,guestHp)=>{
+  if(multiRole!=='guest'||!world||!Array.isArray(world.zombies))return;
+  const got=world.zombies;
+  if(got.length!==entities.length)return;
+  for(let i=0;i<entities.length;i++){
+    const z=got[i],e=entities[i];
+    if(!z||![z.x,z.z,z.hp,z.angle].every(Number.isFinite))return;
+    e.x=z.x;e.z=z.z;e.hp=z.hp;e.angle=z.angle;
+    e.flash=Number(z.flash)||0;e.attackPose=Number(z.attackPose)||0;
+  }
+  const oldKey=keyFound;
+  keyFound=!!world.keyFound;doorOpen=Math.max(0,Math.min(1,Number(world.doorOpen)||0));
+  kills=Math.max(0,Math.min(initial.length,Number(world.kills)||0));
+  if(Number.isFinite(guestHp)){
+    const oldHp=hp;hp=Math.max(0,Math.min(100,guestHp));
+    if(hp<oldHp){damageFlash=.85;playSound('hurt')}
+    if(hp===0&&phase==='play'){end('lose');}
+  }
+  if(keyFound&&!oldKey){
+    document.querySelector('#objective').innerHTML='<em>目標：</em>開いた出口の扉へ向かい、中へ入ろう！';
+    notify('🔑 仲間が鍵を見つけた！ 出口が開いた！',2.6);
+  }
+  updateHUD();
+ }
+};
 function safeLock(){try{if(!canvas.requestPointerLock)return;const request=canvas.requestPointerLock();if(request&&typeof request.catch==='function')request.catch(()=>{});}catch(e){/* Browser may deny pointer lock; touch/drag still works. */}}
 function start(){if(phase==='pause'){phase='play';document.querySelector('#menu').classList.add('hidden');if(!coarse)safeLock();return}reset();phase='play';document.querySelector('#menu').classList.add('hidden');if(coarse)document.querySelector('#touchUi').classList.add('active');else safeLock();notify('迷宮に入った。古代の鍵を探そう',2.4)}
 document.querySelector('#startBtn').addEventListener('click',start);
-window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();keys[e.code]=true;if((e.code==='KeyR'&&phase!=='play')||(e.code==='Enter'&&phase!=='play'))start();if(e.code==='Escape'&&phase==='play'&&document.pointerLockElement!==canvas){phase='pause';document.querySelector('#menu').classList.remove('hidden');document.querySelector('#menuText').textContent='一時停止中';document.querySelector('#startBtn').textContent='再開する'}});
+window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||e.target instanceof HTMLButtonElement)return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();keys[e.code]=true;if((e.code==='KeyR'&&phase!=='play')||(e.code==='Enter'&&phase!=='play'))start();if(e.code==='Escape'&&phase==='play'&&document.pointerLockElement!==canvas){phase='pause';document.querySelector('#menu').classList.remove('hidden');document.querySelector('#menuText').textContent='一時停止中';document.querySelector('#startBtn').textContent='再開する'}});
 window.addEventListener('keyup',e=>keys[e.code]=false);
 canvas.addEventListener('click',()=>{if(phase==='play'&&!coarse){if(document.pointerLockElement!==canvas)safeLock();attack()}});
 let dragging=false,lastMouseX=0,lastMouseY=0;
@@ -499,4 +639,5 @@ try{
  fail('ページを再読み込みしてください。');
 }
 </script>
+<script type="module" src="./multiplayer.js?v=20261030coop01"></script>
 </body></html>
