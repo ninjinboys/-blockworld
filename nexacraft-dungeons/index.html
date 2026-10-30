@@ -253,7 +253,7 @@ function wallSurface(out,x,z,side){
  const offset=side===0?-.013:side===1?.013:side===2?-.013:.013;
  const edge=base+offset;
  // Warm umber-red sandstone and iron-rich ancient brick, NOT gray stone.
- const mortar=[.105,.10,.075],redSand=[.40,.37,.265],rust=[.34,.30,.215],
+ const mortar=[.34,.315,.245],redSand=[.40,.37,.265],rust=[.34,.30,.215],
        sienna=[.49,.43,.30],moss=[.27,.31,.19];
  function patch(t0,v0,t1,v1,col,depth=0){
   let A,B,D,E;
@@ -266,25 +266,26 @@ function wallSurface(out,x,z,side){
   }
   quad(out,A,B,D,E,col);
  }
- patch(start,0,start+C,WALL,mortar);
+ // Solid, full-height sandstone underlay: uncovered portions must NEVER become black voids.
+ patch(start-.015,-.012,start+C+.015,WALL+.012,mortar);
  const rows=7,cols=4;
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
   const off=(r%2)*.42;
   let a=start+(c+off)*C/cols,b=start+(c+1+off)*C/cols;
-  a=Math.max(start+.014,a);b=Math.min(start+C-.014,b);
+  a=Math.max(start+.006,a);b=Math.min(start+C-.006,b);
   if(b-a<.15)continue;
   const n=hash(x*23+c,z*19+r,side),variation=.74+.45*n;
-  const v0=r*WALL/rows+.035,v1=(r+1)*WALL/rows-.045;
+  const v0=r*WALL/rows+.014,v1=(r+1)*WALL/rows-.017;
   const brick=hash(x+c*2,z+r*3,side+14)<.08?moss:
        hash(x*4+c,z*6+r,side+22)<.48?redSand:
        hash(x*6+c,z*4+r,side+30)<.58?rust:sienna;
-  patch(a+.035,v0,b-.035,v1,mul(brick,variation),Math.sign(offset)*(.025+n*.03));
+  patch(a+.016,v0,b-.016,v1,mul(brick,variation),Math.sign(offset)*(.025+n*.03));
   // Slight highlight gives each warm-brown block depth in torchlight.
-  patch(a+.055,v1-.047,b-.055,v1-.023,mul(brick,variation*1.12),Math.sign(offset)*(.030+n*.03));
+  patch(a+.035,v1-.036,b-.035,v1-.014,mul(brick,variation*1.12),Math.sign(offset)*(.030+n*.03));
  }
  // Foundation course and stone lintel share the warm earth palette.
- patch(start+.015,.04,start+C-.015,.22,[.30,.28,.20],Math.sign(offset)*.049);
- patch(start+.025,WALL-.20,start+C-.025,WALL-.035,[.35,.32,.23],Math.sign(offset)*.047);
+ patch(start+.008,.015,start+C-.008,.22,[.38,.35,.26],Math.sign(offset)*.049);
+ patch(start+.008,WALL-.20,start+C-.008,WALL-.015,[.40,.37,.28],Math.sign(offset)*.047);
 }
 const staticVerts=[];
 for(let z=0;z<H;z++)for(let x=0;x<W;x++){
