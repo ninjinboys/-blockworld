@@ -30,7 +30,7 @@ function addChat(who,message,system=false){
  }
  chatLog.appendChild(line);while(chatLog.children.length>50)chatLog.firstChild.remove();
  chatLog.scrollTop=chatLog.scrollHeight;
- if(!chatPanel.open&&!system)chatToggle.classList.add('unread');
+ if(!chatPanel.classList.contains('open')&&!system)chatToggle.classList.add('unread');
 }
 function currentPeers(){
  if(mode==='host')return [...players.values()].map(p=>({...p}));
@@ -45,7 +45,7 @@ function refreshMembers(){
 function uiRoom(){
  const active=mode!=='solo';
  roomHud.hidden=!active;chatToggle.hidden=!active;chatNotice.hidden=!active;leaveButton.hidden=!active;inviteButton.hidden=!active;
- if(!active){roomMembers.textContent='';chatPanel.open=false;}
+ if(!active){roomMembers.textContent='';chatPanel.classList.remove('open');}
  refreshMembers();
 }
 function notifyAll(data){
@@ -72,7 +72,7 @@ function hostMessage(id,raw){
  if(!p||!raw||typeof raw.t!=='string')return;
  if(raw.t==='hello'){
   p.name=safeName(raw.name);p.hello=true;
-  sendTo(id,{t:'welcome',you:id,room:roomCode,...snapshot()});
+  sendTo(id,{...snapshot(),t:'welcome',you:id,room:roomCode});
   addChat('',p.name+' が参加しました',true);notifyAll({t:'system',text:p.name+' が参加しました'});
   refreshWorld();return;
  }
@@ -87,6 +87,7 @@ function hostMessage(id,raw){
   if(p.hp>0 && bridge.isExitNear(p.x,p.z))clearRoom();
   return;
  }
+ if(raw.t==='pickup'){if(p.hp>0&&bridge.isKeyNear(p.x,p.z))bridge.collectKey();return;}
  if(raw.t==='attack'){
   const now=performance.now();if(p.hp>0&&now-(p.lastAttack||0)>420){
    p.lastAttack=now;bridge.remoteAttack(p.x,p.z,p.yaw);
@@ -213,7 +214,7 @@ function sendChat(raw){
  const text=safeText(raw),now=performance.now();if(!text||mode==='solo'||now-lastMessage<400)return;
  lastMessage=now;
  if(mode==='host'){addChat(myName,text);notifyAll({t:'chat',name:myName,text});}
- else if(mode==='guest'&&hostConn?.open){hostConn.send({t:'chat',text});addChat(myName,text);}
+ else if(mode==='guest'&&hostConn?.open){hostConn.send({t:'chat',text});}
 }
 $('createRoom').addEventListener('click',()=>begin(true));
 $('joinRoom').addEventListener('click',()=>begin(false));
@@ -227,10 +228,10 @@ leaveButton.addEventListener('click',()=>{
  closeNetwork();setStatus('部屋を退出しました。ソロで続けられます。');
 });
 chatToggle.addEventListener('click',()=>{
- chatPanel.open=!chatPanel.open;chatToggle.classList.remove('unread');
- if(chatPanel.open){try{document.exitPointerLock?.()}catch{}chatInput.focus();}
+ chatPanel.classList.toggle('open');chatToggle.classList.remove('unread');
+ if(chatPanel.classList.contains('open')){try{document.exitPointerLock?.()}catch{}chatInput.focus();}
 });
-$('chatClose').addEventListener('click',()=>chatPanel.open=false);
+$('chatClose').addEventListener('click',()=>chatPanel.classList.remove('open'));
 chatForm.addEventListener('submit',e=>{
  e.preventDefault();const value=chatInput.value;chatInput.value='';sendChat(value);chatInput.focus();
 });
