@@ -15,11 +15,11 @@
 }</script>
 <style>
 /* The real, original swordsman mesh is rendered in this transparent 3D layer. */
-#exactSword{position:absolute;right:0;bottom:0;width:min(55vw,520px);height:min(83vh,760px);z-index:2;pointer-events:none;touch-action:none}
+#exactSword{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;touch-action:none}
 #sword{display:none}
 #swordModelMessage{position:absolute;right:12px;bottom:23%;z-index:3;max-width:min(50vw,270px);text-align:right;font-weight:700;font-size:11px;color:#ffdcaa;text-shadow:0 2px 5px #000;pointer-events:none}
-@media(max-height:490px){#exactSword{width:45vw;height:95vh}}
-@media(max-width:600px) and (min-height:500px){#exactSword{width:60vw;height:75vh}}
+
+
 </style>
 </head>
 <body>
@@ -346,71 +346,76 @@ canvas.addEventListener('pointerdown',e=>{if(!coarse||phase!=='play'||e.clientX<
 })();
 </script>
 <script type="module">
-/* EXACT main-story NEXACRAFT swordsman weapon, not a traced image or a substitute.
- * The official weapon viewer calls this same makeJobWeaponModel function.
- * Mesh is sourced live from ../job-system.js -> job-weapon-models.js -> reference-weapon-models.js.
+/* Same first-person arm, hand, grip and exact Swordsman weapon model as
+ * NEXACRAFT main game. This is not a separately drawn substitute.
+ * The existing gameplay uses the same first-person-hand.js module.
  */
 const canvas=document.getElementById('exactSword');
 const status=document.getElementById('swordModelMessage');
 const fail=(reason)=>{
  canvas.style.display='none';
  status.style.display='block';
- status.textContent='本編の剣士の剣を読み込めませんでした。'+reason;
+ status.textContent='本編の剣士装備の読み込みに失敗しました。'+reason;
 };
 try{
  const THREE=await import('three');
  const {RoomEnvironment}=await import('three/addons/environments/RoomEnvironment.js');
- const {JOBS,makeJobWeaponModel}=await import('../job-system.js?v=20261023bowFacingForward24');
- if(JOBS.sword?.weapon!==190)throw new Error('剣士の武器IDが変更されています');
- const officialSword=makeJobWeaponModel(THREE,JOBS.sword.weapon);
- if(!officialSword?.children?.length)throw new Error('本編の剣士モデルが空です');
+ const {makeFirstPersonHand}=await import('../first-person-hand.js?v=20261030dungeonsArm01');
+ const {JOBS}=await import('../job-system.js?v=20261023bowFacingForward24');
+ if(JOBS.sword?.weapon!==190)throw new Error('剣士武器IDが変更されています');
  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'default'});
  renderer.setClearColor(0x000000,0);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure=1.12;
  const studio=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer);
- const env=pmrem.fromScene(studio);studio.dispose();pmrem.dispose();
- const scene=new THREE.Scene();scene.environment=env.texture;
- scene.add(new THREE.HemisphereLight(0xdcecff,0x283646,1.35));
- const sun=new THREE.DirectionalLight(0xffeee0,3);sun.position.set(4,7,7);scene.add(sun);
- const rim=new THREE.DirectionalLight(0x9fdaff,2.2);rim.position.set(-5,4,-6);scene.add(rim);
- const fill=new THREE.DirectionalLight(0xffd6aa,1);fill.position.set(-4,1,5);scene.add(fill);
- const bb=new THREE.Box3().setFromObject(officialSword),min=bb.min.clone(),center=new THREE.Vector3(),size=new THREE.Vector3();
- bb.getCenter(center);bb.getSize(size);
- const pivot=new THREE.Group();
- // Position the weapon by its actual geometry bounds, leaving the original vertices,
- // materials, details, and proportions entirely untouched.
- officialSword.position.set(-center.x,-min.y-size.y*.12,-center.z);
- pivot.add(officialSword);
- pivot.position.set(size.y*.08,-size.y*.39,0);
- scene.add(pivot);
- const camera=new THREE.PerspectiveCamera(39,1,.02,100);
- camera.position.set(0,0,Math.max(3,size.y/(2*Math.tan(39*Math.PI/360)))*1.24);
- camera.lookAt(0,0,0);
- let width=0,height=0,first=true;
- const frame=()=>{
-   requestAnimationFrame(frame);
-   const state=window.NEXACRAFT_DUNGEON_STATE?.();
-   const playing=!!state&&(state.phase==='play'||state.phase==='pause');
-   if(!playing){canvas.style.visibility='hidden';return}
-   canvas.style.visibility='visible';
-   const rect=canvas.getBoundingClientRect(),w=Math.max(1,rect.width|0),h=Math.max(1,rect.height|0);
-   if(w!==width||h!==height||first){
-     width=w;height=h;first=false;
-     renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));
-     renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
-   }
-   const swing=state.swing>0?Math.sin((1-state.swing/.31)*Math.PI):0;
-   pivot.rotation.set(-.20-swing*.47,.31,-.18-swing*1.18);
-   pivot.position.x=size.y*.08-swing*size.y*.18;
-   pivot.position.y=-size.y*.39-swing*size.y*.14+Math.sin(state.elapsed*11)*(state.walkTime||0)*.008;
-   renderer.render(scene,camera);
- };
+ const environment=pmrem.fromScene(studio);
+ studio.dispose();pmrem.dispose();
+ const scene=new THREE.Scene();scene.environment=environment.texture;
+ const camera=new THREE.PerspectiveCamera(73,1,.05,120);
+ scene.add(new THREE.HemisphereLight(0xcbe9ff,0x5f7049,1.25));
+ const light=new THREE.DirectionalLight(0xffefd0,2);light.position.set(4,7,7);scene.add(light);
+ const rim=new THREE.DirectionalLight(0x9fdaff,2.0);rim.position.set(-5,4,-6);scene.add(rim);
+ let lastState=null,lastFrame=performance.now(),lastSwing=0,width=0,height=0;
+ const equipped={id:190,qty:1};
+ const viewModel=makeFirstPersonHand(THREE,{
+  scene,camera,
+  drawItemIcon:()=>{},
+  getHeld:()=>equipped,
+  getOffhand:()=>null,
+  isGuarding:()=>false,
+  isVisible:()=>!!lastState&&(lastState.phase==='play'||lastState.phase==='pause'),
+  getMovement:()=>Math.min(4.4,(lastState?.walkTime||0)*4.4),
+  isMining:()=>false,
+  isHurt:()=>false
+ });
+ // Keep the same full-viewport screen coordinates as NEXACRAFT main game:
+ // the blue sleeve enters from bottom right and the hand actually grips
+ // the original Swordsman sword. Weapon and arm swing as one rig.
+ function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min((now-lastFrame)/1000,.05);lastFrame=now;
+  lastState=window.NEXACRAFT_DUNGEON_STATE?.();
+  const visible=lastState&&(lastState.phase==='play'||lastState.phase==='pause');
+  canvas.style.visibility=visible?'visible':'hidden';
+  if(!visible){lastSwing=0;return}
+  const swing=lastState.swing||0;
+  if(swing>0&&(lastSwing<=0||swing>lastSwing+.045))viewModel.swing(1,'swing');
+  lastSwing=swing;
+  const w=Math.max(1,canvas.clientWidth|0),h=Math.max(1,canvas.clientHeight|0);
+  if(w!==width||h!==height){
+   width=w;height=h;
+   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.4));
+   renderer.setSize(w,h,false);
+   camera.aspect=w/h;camera.updateProjectionMatrix();
+  }
+  viewModel.update(dt,now);
+  renderer.render(scene,camera);
+ }
  requestAnimationFrame(frame);
 }catch(error){
- console.error('Original NEXACRAFT swordsman mesh failed',error);
- fail('ブラウザの再読み込みを試してください。');
+ console.error('NEXACRAFT first-person Swordsman equipment error',error);
+ fail('ページを再読み込みしてください。');
 }
 </script>
 </body></html>
