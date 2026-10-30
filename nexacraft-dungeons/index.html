@@ -162,29 +162,55 @@ let multiRole="solo",remotePlayers=[];let hp=100,kills=0,keyFound=false,doorOpen
 const keys={},seen=Array.from({length:H},()=>Array(W).fill(false));
 const touch={moveX:0,moveY:0,lookId:null,lastX:0,lastY:0,moveId:null};const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
 const vsh=`attribute vec3 aPosition;attribute vec3 aColor;uniform mat4 uVP;varying vec3 vColor;varying vec3 vPos;void main(){vColor=aColor;vPos=aPosition;gl_Position=uVP*vec4(aPosition,1.0);}`;
-const fsh=`precision mediump float;varying vec3 vColor;varying vec3 vPos;uniform vec3 uEye;uniform vec3 uLightPos[7];uniform float uTime;void main(){float d=distance(vPos,uEye);float illumination=0.30 + 0.33/(1.0+0.018*d*d);for(int i=0;i<7;i++){float l=distance(vPos,uLightPos[i]);illumination += (1.34+0.05*sin(uTime*4.0+float(i)*7.2))/(1.0+0.51*l+0.19*l*l);}vec3 base=vColor*min(illumination,1.55);float fog=clamp((d-8.5)/21.0,0.0,0.88);vec3 fogColor=vec3(0.020,0.030,0.040);gl_FragColor=vec4(mix(base,fogColor,fog),1.0);}`;
+const fsh=`precision mediump float;varying vec3 vColor;varying vec3 vPos;uniform vec3 uEye;uniform vec3 uLightPos[7];uniform float uTime;void main(){float d=distance(vPos,uEye);float illumination=0.30 + 0.33/(1.0+0.018*d*d);for(int i=0;i<7;i++){float l=distance(vPos,uLightPos[i]);illumination += (1.34+0.05*sin(uTime*4.0+float(i)*7.2))/(1.0+0.51*l+0.19*l*l);}vec3 base=vColor*min(illumination,1.55);float fog=clamp((d-8.5)/21.0,0.0,0.88);vec3 fogColor=vec3(0.064,0.030,0.020);gl_FragColor=vec4(mix(base,fogColor,fog),1.0);}`;
 function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
 const prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vsh));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,fsh));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));gl.useProgram(prog);
 const aPosition=gl.getAttribLocation(prog,'aPosition'),aColor=gl.getAttribLocation(prog,'aColor'),uVP=gl.getUniformLocation(prog,'uVP'),uEye=gl.getUniformLocation(prog,'uEye'),uLightPos=gl.getUniformLocation(prog,'uLightPos'),uTime=gl.getUniformLocation(prog,'uTime');
-gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.clearColor(.027,.046,.06,1);
+gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.clearColor(.064,.030,.020,1);
 const staticBuffer=gl.createBuffer(),dynamicBuffer=gl.createBuffer();
 function hash(a,b,c=0){let n=Math.sin(a*127.1+b*311.7+c*71.93)*43758.5453;return n-Math.floor(n)}
 function mul(color,m){return [color[0]*m,color[1]*m,color[2]*m]}
 function quad(out,p1,p2,p3,p4,color){const pts=[p1,p2,p3,p1,p3,p4];for(const p of pts)out.push(p[0],p[1],p[2],color[0],color[1],color[2])}
 function box(out,x0,y0,z0,x1,y1,z1,c,em=1){const shade=[.91,.70,.83,1.05,.83,.73].map(k=>k*em);quad(out,[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1],mul(c,shade[0]));quad(out,[x0,y0,z1],[x1,y0,z1],[x1,y0,z0],[x0,y0,z0],mul(c,shade[1]));quad(out,[x0,y0,z0],[x0,y1,z0],[x0,y1,z1],[x0,y0,z1],mul(c,shade[2]));quad(out,[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],[x1,y0,z0],mul(c,shade[3]));quad(out,[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z0],mul(c,shade[4]));quad(out,[x0,y0,z1],[x0,y1,z1],[x1,y1,z1],[x1,y0,z1],mul(c,shade[5]))}
 function wallAt(x,z){return z<0||x<0||x>=W||z>=H||grid[z][x]==='#'}
-function wallSurface(out,x,z,side){const x0=x*C,z0=z*C,base=side===0?x0:side===1?x0+C:z0,dir=side<2?'x':'z';const start=dir==='x'?z0:x0;const offset=side===0?-.013:side===1?.013:side===2?-.013:.013;const edge=base+offset;
- const dark=[.11,.17,.19];
- function patch(t0,v0,t1,v1,col,offset2=0){let A,B,D,E;if(dir==='x'){A=[edge+offset2,v0,t0];B=[edge+offset2,v0,t1];D=[edge+offset2,v1,t1];E=[edge+offset2,v1,t0]}else{A=[t0,v0,edge+offset2];B=[t1,v0,edge+offset2];D=[t1,v1,edge+offset2];E=[t0,v1,edge+offset2]};quad(out,A,B,D,E,col)}
- patch(start,0,start+C,WALL,dark);
- const rows=5,cols=3;
- for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-  const off=(r%2)*.31;let a=start+(c+off)*C/cols,b=start+(c+1+off)*C/cols;a=Math.max(start,a);b=Math.min(start+C,b);if(b<=a)continue;
-  const margin=.035;let v0=r*WALL/rows+.027,v1=(r+1)*WALL/rows-.028;
-  const v=hash(x*23+c,z*19+r,side),m=.82+.32*v;
-  let color=[.25*m,.30*m,.30*m];if(hash(x+c,z+r,side+14)<.12)color=[.19*m,.31*m,.25*m];
-  patch(a+margin,v0,b-margin,v1,color,Math.sign(offset)*.02);
+function wallSurface(out,x,z,side){
+ const x0=x*C,z0=z*C,base=side===0?x0:side===1?x0+C:z0;
+ const dir=side<2?'x':'z',start=dir==='x'?z0:x0;
+ const offset=side===0?-.013:side===1?.013:side===2?-.013:.013;
+ const edge=base+offset;
+ // Warm umber-red sandstone and iron-rich ancient brick, NOT gray stone.
+ const mortar=[.13,.065,.045],redSand=[.59,.27,.145],rust=[.48,.20,.12],
+       sienna=[.66,.34,.18],moss=[.24,.28,.115];
+ function patch(t0,v0,t1,v1,col,depth=0){
+  let A,B,D,E;
+  if(dir==='x'){
+   A=[edge+depth,v0,t0];B=[edge+depth,v0,t1];
+   D=[edge+depth,v1,t1];E=[edge+depth,v1,t0];
+  }else{
+   A=[t0,v0,edge+depth];B=[t1,v0,edge+depth];
+   D=[t1,v1,edge+depth];E=[t0,v1,edge+depth];
+  }
+  quad(out,A,B,D,E,col);
  }
+ patch(start,0,start+C,WALL,mortar);
+ const rows=6,cols=3;
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+  const off=(r%2)*.37;
+  let a=start+(c+off)*C/cols,b=start+(c+1+off)*C/cols;
+  a=Math.max(start+.014,a);b=Math.min(start+C-.014,b);
+  if(b-a<.15)continue;
+  const n=hash(x*23+c,z*19+r,side),variation=.74+.45*n;
+  const v0=r*WALL/rows+.035,v1=(r+1)*WALL/rows-.045;
+  const brick=hash(x+c*2,z+r*3,side+14)<.08?moss:
+       hash(x*4+c,z*6+r,side+22)<.48?redSand:
+       hash(x*6+c,z*4+r,side+30)<.58?rust:sienna;
+  patch(a+.035,v0,b-.035,v1,mul(brick,variation),Math.sign(offset)*(.025+n*.03));
+  // Slight highlight gives each warm-brown block depth in torchlight.
+  patch(a+.055,v1-.047,b-.055,v1-.023,mul(brick,variation*1.12),Math.sign(offset)*(.030+n*.03));
+ }
+ // Foundation course and stone lintel share the warm earth palette.
+ patch(start+.015,.04,start+C-.015,.22,[.33,.145,.085],Math.sign(offset)*.049);
+ patch(start+.025,WALL-.20,start+C-.025,WALL-.035,[.39,.17,.092],Math.sign(offset)*.047);
 }
 const staticVerts=[];
 for(let z=0;z<H;z++)for(let x=0;x<W;x++){
@@ -196,25 +222,25 @@ for(let z=0;z<H;z++)for(let x=0;x<W;x++){
   if(!wallAt(x,z+1))wallSurface(staticVerts,x,z,3);
   continue;
  }
- const stone=[.20,.24,.25],k=hash(x,z),m=.92+.22*k;
- quad(staticVerts,[x0,0,z0],[x0+C,0,z0],[x0+C,0,z0+C],[x0,0,z0+C],[.09,.12,.14]);
+ const stone=[.39,.22,.145],k=hash(x,z),m=.92+.22*k;
+ quad(staticVerts,[x0,0,z0],[x0+C,0,z0],[x0+C,0,z0+C],[x0,0,z0+C],[.19,.105,.073]);
  for(let dz=0;dz<2;dz++)for(let dx=0;dx<2;dx++){
   const a=x0+dx*C/2+.034,b=x0+(dx+1)*C/2-.035,p=z0+dz*C/2+.034,q=z0+(dz+1)*C/2-.035;
-  const moss=hash(x*3+dx,z*5+dz)>0.87;const col=moss?[.18,.25,.20]:mul(stone,m*(.86+.20*hash(x+dx,z+dz,5)));
+  const moss=hash(x*3+dx,z*5+dz)>0.87;const col=moss?[.22,.25,.10]:mul(stone,m*(.86+.20*hash(x+dx,z+dz,5)));
   quad(staticVerts,[a,.015,p],[b,.015,p],[b,.015,q],[a,.015,q],col);
  }
  // Dark slab ceiling with checker tiles and heavy support beams.
- quad(staticVerts,[x0,WALL,z0+C],[x0+C,WALL,z0+C],[x0+C,WALL,z0],[x0,WALL,z0],[.10,.15,.18]);
+ quad(staticVerts,[x0,WALL,z0+C],[x0+C,WALL,z0+C],[x0+C,WALL,z0],[x0,WALL,z0],[.24,.105,.065]);
  for(let dz=0;dz<2;dz++)for(let dx=0;dx<2;dx++){
-  let a=x0+dx*C/2+.035,b=x0+(dx+1)*C/2-.035,p=z0+dz*C/2+.035,q=z0+(dz+1)*C/2-.035;let c=[.14,.19,.22];
+  let a=x0+dx*C/2+.035,b=x0+(dx+1)*C/2-.035,p=z0+dz*C/2+.035,q=z0+(dz+1)*C/2-.035;let c=[.30,.14,.095];
   quad(staticVerts,[a,WALL-.01,q],[b,WALL-.01,q],[b,WALL-.01,p],[a,WALL-.01,p],mul(c,.8+.20*hash(x+dx,z+dz,21)));
  }
- if(hash(x,z,18)<.16){box(staticVerts,x0+C*.45,WALL-.12,z0,x0+C*.55,WALL-.01,z0+C,[.16,.21,.24])}
+ if(hash(x,z,18)<.16){box(staticVerts,x0+C*.45,WALL-.12,z0,x0+C*.55,WALL-.01,z0+C,[.37,.18,.115])}
  // Intermittent arches and cracked stone supports make straight passages feel medieval.
  const wN=wallAt(x,z-1),wS=wallAt(x,z+1),wW=wallAt(x-1,z),wE=wallAt(x+1,z);
  const narrowEW=!wW&&!wE&&wN&&wS,narrowNS=!wN&&!wS&&wW&&wE;
  if((narrowEW||narrowNS)&&hash(x,z,33)<.27){
-  const stone=[.22,.19,.17],stoneDark=[.15,.14,.13];
+  const stone=[.55,.27,.14],stoneDark=[.33,.145,.085];
   if(narrowEW){
    for(const zz of [z0+.13,z0+C-.29]){
     box(staticVerts,x0+.14,.13,zz,x0+.31,2.19,zz+.17,stoneDark);
@@ -242,8 +268,8 @@ for(let z=0;z<H;z++)for(let x=0;x<W;x++){
   quad(staticVerts,[x0+C*.16,.023,z0+C*.17],[x0+C*.47,.023,z0+C*.14],[x0+C*.54,.023,z0+C*.41],[x0+C*.23,.023,z0+C*.48],[.080,.14,.108]);
  }
  if(hash(x,z,59)>.94){
-  box(staticVerts,x0+C*.07,.03,z0+C*.05,x0+C*.25,.20,z0+C*.22,[.26,.28,.26]);
-  box(staticVerts,x0+C*.10,.20,z0+C*.10,x0+C*.20,.32,z0+C*.20,[.32,.32,.28]);
+  box(staticVerts,x0+C*.07,.03,z0+C*.05,x0+C*.25,.20,z0+C*.22,[.47,.245,.14]);
+  box(staticVerts,x0+C*.10,.20,z0+C*.10,x0+C*.20,.32,z0+C*.20,[.60,.34,.19]);
  }
 }
 // Cubic sconces, each containing a glowing block flame.
@@ -261,13 +287,13 @@ for(const [tx,tz] of sconces){const [x,z]=point(tx,tz);if(wallAt(tx,tz))continue
 }
 // Ancient key rests on a small stone pedestal. No locked exit or kill quota.
 const [kx,kz]=keyPos,[ex,ez]=exit;
-box(staticVerts,kx-.43,0,kz-.43,kx+.43,.32,kz+.43,[.29,.31,.32]);
-box(staticVerts,kx-.34,.32,kz-.34,kx+.34,.57,kz+.34,[.49,.45,.35]);
+box(staticVerts,kx-.43,0,kz-.43,kx+.43,.32,kz+.43,[.46,.22,.13]);
+box(staticVerts,kx-.34,.32,kz-.34,kx+.34,.57,kz+.34,[.66,.38,.18]);
 const doorZ=ez-.80;
-box(staticVerts,ex-1.08,0,doorZ-.18,ex-.82,2.78,doorZ+.22,[.30,.35,.38]);
+box(staticVerts,ex-1.08,0,doorZ-.18,ex-.82,2.78,doorZ+.22,[.49,.25,.14]);
 box(staticVerts,ex+.82,0,doorZ-.18,ex+1.08,2.78,doorZ+.22,[.30,.35,.38]);
-box(staticVerts,ex-1.11,2.68,doorZ-.20,ex+1.11,3.08,doorZ+.24,[.38,.41,.43]);
-box(staticVerts,ex-1.0,.06,doorZ-.23,ex+1.0,.19,doorZ+.30,[.40,.31,.21]);
+box(staticVerts,ex-1.11,2.68,doorZ-.20,ex+1.11,3.08,doorZ+.24,[.63,.34,.19]);
+box(staticVerts,ex-1.0,.06,doorZ-.23,ex+1.0,.19,doorZ+.30,[.60,.35,.19]);
 const staticData=new Float32Array(staticVerts);gl.bindBuffer(gl.ARRAY_BUFFER,staticBuffer);gl.bufferData(gl.ARRAY_BUFFER,staticData,gl.STATIC_DRAW);
 function rotated(lx,lz,x,z,a){let c=Math.cos(a),s=Math.sin(a);return[x+lx*c-lz*s,z+lx*s+lz*c]}
 function bodyBox(out,entity,x0,y0,z0,x1,y1,z1,color,brightness=1){let corners=[];const a=entity.angle;for(const [lx,lz] of [[x0,z0],[x1,z0],[x1,z1],[x0,z1]])corners.push(rotated(lx,lz,entity.x,entity.z,a));const A=corners;let c=mul(color,brightness);quad(out,[A[0][0],y1,A[0][1]],[A[1][0],y1,A[1][1]],[A[2][0],y1,A[2][1]],[A[3][0],y1,A[3][1]],mul(c,.96));quad(out,[A[3][0],y0,A[3][1]],[A[2][0],y0,A[2][1]],[A[1][0],y0,A[1][1]],[A[0][0],y0,A[0][1]],mul(c,.7));for(let i=0;i<4;i++){const j=(i+1)%4;quad(out,[A[i][0],y0,A[i][1]],[A[j][0],y0,A[j][1]],[A[j][0],y1,A[j][1]],[A[i][0],y1,A[i][1]],mul(c,[.81,.72,.94,1][i]))}}
@@ -382,9 +408,9 @@ function renderFallback(){
  const proj=h/(2*Math.tan(1.26/2)),aspect=w/h;
  let horizon=h*.5+Math.tan(camera.pitch)*proj;
  const upper=ctx.createLinearGradient(0,0,0,horizon);
- upper.addColorStop(0,'#05090f');upper.addColorStop(1,'#121c22');ctx.fillStyle=upper;ctx.fillRect(0,0,w,Math.max(0,horizon));
+ upper.addColorStop(0,'#140b0a');upper.addColorStop(1,'#23130f');ctx.fillStyle=upper;ctx.fillRect(0,0,w,Math.max(0,horizon));
  const lower=ctx.createLinearGradient(0,horizon,0,h);
- lower.addColorStop(0,'#252c2c');lower.addColorStop(1,'#0d131b');ctx.fillStyle=lower;ctx.fillRect(0,Math.max(0,horizon),w,h);
+ lower.addColorStop(0,'#503124');lower.addColorStop(1,'#1b0f0b');ctx.fillStyle=lower;ctx.fillRect(0,Math.max(0,horizon),w,h);
  const strip=Math.max(2,Math.floor(w/350)),depth=[];
  for(let x=0;x<w;x+=strip){
   const angle=camera.yaw+Math.atan(((x+strip*.5)/w*2-1)*Math.tan(1.26/2)*aspect);
@@ -404,14 +430,14 @@ function renderFallback(){
   let u=((axis===0?camera.z+rayDist*rz:camera.x+rayDist*rx)/C)%1;
   if(u<0)u+=1;
   let dark=Math.max(.25,Math.min(1,1.45-d*.045))*(axis===0?.90:1),m=hash(gx,gz,axis);
-  ctx.fillStyle=`rgb(${Math.floor(36*dark)},${Math.floor(46*dark)},${Math.floor(49*dark)})`;
+  ctx.fillStyle=`rgb(${Math.floor(65*dark)},${Math.floor(31*dark)},${Math.floor(20*dark)})`;
   ctx.fillRect(x,Math.max(0,top),strip+1,Math.min(h,bot)-Math.max(0,top));
   for(let r=0;r<5;r++){
    let v0=top+r*height/5,v1=top+(r+1)*height/5;
    if(v1<0||v0>h)continue;
    let shifted=(u*3+(r%2)*.5),tile=Math.floor(shifted),joint=(shifted-Math.floor(shifted))<.065;
    let noise=hash(gx*13+tile,gz*11+r,axis),moss=noise>.88,shade=(.86+noise*.28)*dark;
-   ctx.fillStyle=joint?`rgb(${(19*dark)|0},${(28*dark)|0},${(29*dark)|0})`:moss?`rgb(${(38*shade)|0},${(72*shade)|0},${(53*shade)|0})`:`rgb(${(74*shade)|0},${(84*shade)|0},${(82*shade)|0})`;
+   ctx.fillStyle=joint?`rgb(${(34*dark)|0},${(17*dark)|0},${(11*dark)|0})`:moss?`rgb(${(65*shade)|0},${(78*shade)|0},${(34*shade)|0})`:`rgb(${(151*shade)|0},${(73*shade)|0},${(40*shade)|0})`;
    ctx.fillRect(x,Math.max(0,v0+Math.min(3,height/170)),strip+1,Math.max(0,Math.min(h,v1-2)-Math.max(0,v0+Math.min(3,height/170))));
   }
   // Mortar lines from the large block grid, and a dark floor contact edge.
@@ -421,7 +447,7 @@ function renderFallback(){
  ctx.lineWidth=1;
  for(let y=Math.max(horizon+10,0);y<h;y+=Math.max(7,Math.floor(h/46))){
    const dist=eyeHeight*proj/(y-horizon),fade=Math.max(0,.23-dist*.006);
-   if(dist>0&&dist<75){ctx.strokeStyle=`rgba(180,195,171,${fade})`;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+   if(dist>0&&dist<75){ctx.strokeStyle=`rgba(190,121,76,${fade})`;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
  }
  const billboards=[];
  const screenPos=(wx,wz)=>{
@@ -492,7 +518,7 @@ function renderFallback(){
  // separately through makeJobWeaponModel(THREE,JOBS.sword.weapon).
  function drawSword(){}
 function drawMap(){const size=170,cell=size/W;mc.clearRect(0,0,size,size);mc.fillStyle='#111b22';mc.fillRect(0,0,size,size);let px=Math.floor(camera.x/C),pz=Math.floor(camera.z/C);for(let z=0;z<H;z++)for(let x=0;x<W;x++){
- if(!seen[z][x])continue;mc.fillStyle=wallAt(x,z)?'#35424a':'#68716c';mc.fillRect(x*cell+.7,z*cell+.7,cell-.7,cell-.7)
+ if(!seen[z][x])continue;mc.fillStyle=wallAt(x,z)?'#5c2c1e':'#986846';mc.fillRect(x*cell+.7,z*cell+.7,cell-.7,cell-.7)
  }
  if(!keyFound&&seen[Math.floor(kz/C)][Math.floor(kx/C)]){mc.fillStyle='#f9cd52';mc.fillRect((kx/C-.5)*cell+cell*.2,(kz/C-.5)*cell+cell*.2,cell*.6,cell*.6)}
  if(seen[Math.floor(ez/C)][Math.floor(ex/C)]){mc.fillStyle=keyFound?'#5af2c4':'#de6958';mc.fillRect((ex/C-.5)*cell+cell*.16,(ez/C-.5)*cell+cell*.16,cell*.68,cell*.68)}
