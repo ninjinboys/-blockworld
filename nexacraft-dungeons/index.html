@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>NEXACRAFT: DUNGEONS | 小さな試作ダンジョン</title>
+<style>
+:root{color-scheme:dark;--gold:#f6bd6a;--muted:#97a4ac;--panel:rgba(12,20,27,.92)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080e13;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#f4f2eb;touch-action:none;user-select:none}canvas#game{display:block;width:100%;height:100%;touch-action:none}#sword{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 39%,rgba(0,0,0,.46) 100%)}#hurt{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 32%,rgba(209,39,31,.62));pointer-events:none;opacity:0;transition:opacity .13s}#topBar{position:absolute;top:0;left:0;right:0;display:flex;gap:12px;justify-content:space-between;align-items:flex-start;padding:19px 21px;pointer-events:none}#brand{font-size:12px;font-weight:900;letter-spacing:.20em;color:#ffc982;text-shadow:0 2px 12px #000}#brand small{display:block;letter-spacing:.32em;color:#c0cbd2;font-size:9px;margin-top:4px}#stats{margin-top:13px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700}#heart{display:inline-flex;gap:3px;align-items:center;font-size:19px;color:#ff756f}#healthTrack{width:123px;height:9px;border-radius:10px;background:#4e2928;border:1px solid #85605c;overflow:hidden}#healthFill{height:100%;width:100%;background:linear-gradient(90deg,#e45e51,#fbaf84);transition:width .12s}#count{color:#e7ded0;margin-left:4px}#minimapShell{padding:7px;background:rgba(9,17,23,.67);border:1px solid rgba(221,205,170,.21);box-shadow:0 5px 20px #0008;border-radius:10px}#minimap{display:block;width:138px;height:138px;image-rendering:pixelated}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:19px;height:19px;pointer-events:none;opacity:.82}#crosshair:before,#crosshair:after{content:"";position:absolute;background:#f3ead8;box-shadow:0 0 3px #100c0c}#crosshair:before{width:2px;height:15px;left:8px;top:2px}#crosshair:after{height:2px;width:15px;left:2px;top:8px}#objective{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);max-width:calc(100% - 20px);font-size:12px;line-height:1.6;font-weight:700;text-align:center;padding:10px 17px;border:1px solid rgba(255,202,128,.26);border-radius:8px;background:rgba(13,21,27,.78);box-shadow:0 6px 24px #0005;white-space:nowrap;pointer-events:none}#objective em{font-style:normal;color:#ffcd83}#toast{position:absolute;top:23%;left:50%;transform:translateX(-50%);text-align:center;color:#ffe0a9;font-size:17px;font-weight:900;text-shadow:0 3px 10px #000;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;background:linear-gradient(135deg,rgba(5,12,18,.87),rgba(15,24,28,.79) 55%,rgba(28,18,15,.84));padding:20px}#menu.hidden{display:none}.panel{position:relative;width:min(480px,100%);background:linear-gradient(150deg,#1c2b30,#121a23 62%,#161e22);border:1px solid #52605b;box-shadow:0 20px 70px #0009,0 0 0 6px #0b1217a8;border-radius:12px;padding:30px 30px 26px;text-align:center;overflow:hidden}.panel:before{content:"";position:absolute;left:0;top:0;right:0;height:5px;background:linear-gradient(90deg,#63503e,#ffca79,#66533c)}.panel .eyebrow{font-size:11px;letter-spacing:.24em;color:#a4b3b6;font-weight:700}.panel h1{font-size:clamp(26px,6vw,36px);margin:12px 0 0;line-height:1.16;letter-spacing:.025em}.panel h1 span{display:block;font-size:17px;letter-spacing:.25em;color:#f7bc6b;margin-top:8px}.panel p{font-size:13px;color:#c6d0cc;line-height:1.85;margin:21px 0}.panel .tip{font-size:12px;color:#bbc3c6;line-height:1.9;margin-bottom:19px;background:#0d181c;padding:13px;border-radius:7px;border:1px solid #334044}.panel .tip strong{color:#ffe0a6}.mainBtn{appearance:none;border:1px solid #ffdb9e;border-radius:7px;background:linear-gradient(#efc076,#c98f46);color:#1d1915;box-shadow:0 5px 0 #765128;font-size:15px;font-weight:900;padding:13px 30px;cursor:pointer;width:100%;letter-spacing:.08em}.mainBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #765128}#touchUi{display:none;position:absolute;inset:0;pointer-events:none}#touchUi.active{display:block}#touchUi.active #pauseBtn{display:block}#movePad{position:absolute;left:24px;bottom:50px;width:130px;height:130px;border-radius:100%;background:#ced6c011;border:2px solid #c7d2c43e;pointer-events:auto;touch-action:none}#stick{position:absolute;top:39px;left:39px;width:48px;height:48px;border-radius:50%;background:#e2caa777;border:2px solid #ead5ad88;box-shadow:0 0 20px #0005}#hitBtn{position:absolute;bottom:62px;right:27px;width:92px;height:92px;border-radius:50%;border:2px solid #ffdcaf8a;background:linear-gradient(160deg,#a67b49bb,#704829aa);color:#ffebcb;font-size:18px;font-weight:900;pointer-events:auto;touch-action:none;box-shadow:0 6px 20px #0008}#touchHint{position:absolute;bottom:167px;right:24px;font-size:11px;color:#f5e8cb;text-shadow:1px 1px 4px #000;line-height:1.5;text-align:right}#pauseBtn{position:absolute;right:20px;bottom:20px;display:none;padding:8px 12px;border-radius:8px;border:1px solid #9998;background:#0e1923be;color:#eee;font-weight:600;pointer-events:auto}#compat{position:absolute;z-index:8;inset:0;background:#090d11;color:#fff;display:none;padding:30px;text-align:center;align-items:center;justify-content:center}#compat.show{display:flex}@media(pointer:coarse){#touchUi.active{display:block}#pauseBtn{display:block}#objective{bottom:8px;font-size:11px;padding:6px 10px}#topBar{padding:13px}#minimap{width:96px;height:96px}#stats{font-size:11px;gap:6px}#healthTrack{width:84px}#brand{font-size:11px}#heart{font-size:16px}}@media(max-height:460px){#objective{bottom:5px}#topBar{padding:9px 15px}#movePad{width:98px;height:98px;bottom:22px;left:16px}#stick{left:28px;top:28px;width:39px;height:39px}#hitBtn{width:76px;height:76px;right:20px;bottom:28px}#touchHint{bottom:110px}#menu .panel{padding:17px 24px}#menu .panel p{margin:8px 0}#menu .panel .tip{margin-bottom:12px;padding:5px}#minimap{width:82px;height:82px}#stats{margin-top:5px}} 
+</style>
+</head>
+<body>
+<canvas id="game"></canvas><canvas id="sword"></canvas><div id="vignette"></div><div id="hurt"></div>
+<div id="topBar"><div><div id="brand">NEXACRAFT <small>D U N G E O N S · P R O T O T Y P E</small></div><div id="stats"><span id="heart">♥</span><div id="healthTrack"><div id="healthFill"></div></div><span id="hpText">100 / 100</span><span id="count">☠ 0 / 4</span></div></div><div id="minimapShell"><canvas id="minimap" width="170" height="170"></canvas></div></div>
+<div id="crosshair"></div><div id="toast"></div><div id="objective"><em>目標：</em>ゾンビを4体倒し、地下迷宮の出口へ向かえ</div>
+<div id="touchUi"><div id="movePad"><div id="stick"></div></div><button id="hitBtn" type="button">⚔ 攻撃</button><div id="touchHint">右側をスワイプして視点移動</div><button id="pauseBtn" type="button">Ⅱ</button></div>
+<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">ブロックで構成された小さな地下迷宮。<br>ゾンビを4体倒して、出口の封印を解こう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・画面右で視点・攻撃ボタン</div><button class="mainBtn" id="startBtn">ダンジョンに入る</button></div></div>
+<div id="compat">この端末ではWebGLが利用できません。WebGL対応のブラウザ（Chrome / Safariなど）で開いてください。</div>
+<script>
+(()=>{'use strict';
+const canvas=document.querySelector('#game'),swordCanvas=document.querySelector('#sword'),mini=document.querySelector('#minimap');
+const sc=swordCanvas.getContext('2d'),mc=mini.getContext('2d');
+const webgl=(!(navigator.maxTouchPoints>0||/iPad|iPhone|iPod|Android/i.test(navigator.userAgent))?canvas.getContext('webgl',{antialias:true,alpha:false,powerPreference:'high-performance'}):null);
+const fallbackContext=webgl?null:canvas.getContext('2d',{alpha:false});
+const gl=webgl||new Proxy({getShaderParameter:()=>true,getProgramParameter:()=>true,getAttribLocation:()=>0,createBuffer:()=>({}),createProgram:()=>({}),createShader:()=>({})},{get:(target,key)=>target[key]??(()=>null)});
+const level=[
+'#################',
+'#P....#.........#',
+'#.##..#.###.###.#',
+'#...#...#...#...#',
+'###.#.###.###.#.#',
+'#...#..Z#.....#.#',
+'#.#####.#####.#.#',
+'#.....#.....#.#.#',
+'#.###.###.#.#...#',
+'#.#...#...#.#.###',
+'#.#.###.###.....#',
+'#...#...#..Z##..#',
+'###.#.#.#.#####.#',
+'#...#.#...#...#.#',
+'#.###.#####.#.#.#',
+'#...Z....Z..#..E#',
+'#################'];
+const W=level[0].length,H=level.length,C=2.5,WALL=3.15,eyeHeight=1.50;
+const grid=level.map(r=>r.split(''));
+const point=(x,z)=>[(x+.5)*C,(z+.5)*C];
+const initial=[];let entrance,exit;
+for(let z=0;z<H;z++)for(let x=0;x<W;x++){
+ const c=grid[z][x];if(c==='P')entrance=point(x,z);if(c==='E')exit=point(x,z);if(c==='Z')initial.push({x:point(x,z)[0],z:point(x,z)[1]});if(c!=='#')grid[z][x]='.';
+}
+const camera={x:entrance[0],z:entrance[1],yaw:Math.PI,pitch:0}; // First view points into labyrinth.
+let hp=100,kills=0,phase='menu',entities=[],elapsed=0,lastTime=0,swing=0,swingCd=0,swingHit=false,damageFlash=0,walkTime=0,toastUntil=0,toastText='',hitShake=0;
+const keys={},seen=Array.from({length:H},()=>Array(W).fill(false));
+const touch={moveX:0,moveY:0,lookId:null,lastX:0,lastY:0,moveId:null};const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
+const vsh=`attribute vec3 aPosition;attribute vec3 aColor;uniform mat4 uVP;varying vec3 vColor;varying vec3 vPos;void main(){vColor=aColor;vPos=aPosition;gl_Position=uVP*vec4(aPosition,1.0);}`;
+const fsh=`precision mediump float;varying vec3 vColor;varying vec3 vPos;uniform vec3 uEye;uniform vec3 uLightPos[7];uniform float uTime;void main(){float d=distance(vPos,uEye);float illumination=0.36 + 0.37/(1.0+0.014*d*d);for(int i=0;i<7;i++){float l=distance(vPos,uLightPos[i]);illumination += (1.25+0.035*sin(uTime*4.0+float(i)*7.2))/(1.0+0.43*l+0.16*l*l);}vec3 base=vColor*min(illumination,1.55);float fog=clamp((d-11.0)/27.0,0.0,0.80);vec3 fogColor=vec3(0.035,0.058,0.076);gl_FragColor=vec4(mix(base,fogColor,fog),1.0);}`;
+function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
+const prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vsh));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,fsh));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));gl.useProgram(prog);
+const aPosition=gl.getAttribLocation(prog,'aPosition'),aColor=gl.getAttribLocation(prog,'aColor'),uVP=gl.getUniformLocation(prog,'uVP'),uEye=gl.getUniformLocation(prog,'uEye'),uLightPos=gl.getUniformLocation(prog,'uLightPos'),uTime=gl.getUniformLocation(prog,'uTime');
+gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.clearColor(.027,.046,.06,1);
+const staticBuffer=gl.createBuffer(),dynamicBuffer=gl.createBuffer();
+function hash(a,b,c=0){let n=Math.sin(a*127.1+b*311.7+c*71.93)*43758.5453;return n-Math.floor(n)}
+function mul(color,m){return [color[0]*m,color[1]*m,color[2]*m]}
+function quad(out,p1,p2,p3,p4,color){const pts=[p1,p2,p3,p1,p3,p4];for(const p of pts)out.push(p[0],p[1],p[2],color[0],color[1],color[2])}
+function box(out,x0,y0,z0,x1,y1,z1,c,em=1){const shade=[.91,.70,.83,1.05,.83,.73].map(k=>k*em);quad(out,[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1],mul(c,shade[0]));quad(out,[x0,y0,z1],[x1,y0,z1],[x1,y0,z0],[x0,y0,z0],mul(c,shade[1]));quad(out,[x0,y0,z0],[x0,y1,z0],[x0,y1,z1],[x0,y0,z1],mul(c,shade[2]));quad(out,[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],[x1,y0,z0],mul(c,shade[3]));quad(out,[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z0],mul(c,shade[4]));quad(out,[x0,y0,z1],[x0,y1,z1],[x1,y1,z1],[x1,y0,z1],mul(c,shade[5]))}
+function wallAt(x,z){return z<0||x<0||x>=W||z>=H||grid[z][x]==='#'}
+function wallSurface(out,x,z,side){const x0=x*C,z0=z*C,base=side===0?x0:side===1?x0+C:z0,dir=side<2?'x':'z';const start=dir==='x'?z0:x0;const offset=side===0?-.013:side===1?.013:side===2?-.013:.013;const edge=base+offset;
+ const dark=[.11,.17,.19];
+ function patch(t0,v0,t1,v1,col,offset2=0){let A,B,D,E;if(dir==='x'){A=[edge+offset2,v0,t0];B=[edge+offset2,v0,t1];D=[edge+offset2,v1,t1];E=[edge+offset2,v1,t0]}else{A=[t0,v0,edge+offset2];B=[t1,v0,edge+offset2];D=[t1,v1,edge+offset2];E=[t0,v1,edge+offset2]};quad(out,A,B,D,E,col)}
+ patch(start,0,start+C,WALL,dark);
+ const rows=5,cols=3;
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+  const off=(r%2)*.31;let a=start+(c+off)*C/cols,b=start+(c+1+off)*C/cols;a=Math.max(start,a);b=Math.min(start+C,b);if(b<=a)continue;
+  const margin=.035;let v0=r*WALL/rows+.027,v1=(r+1)*WALL/rows-.028;
+  const v=hash(x*23+c,z*19+r,side),m=.82+.32*v;
+  let color=[.25*m,.30*m,.30*m];if(hash(x+c,z+r,side+14)<.12)color=[.19*m,.31*m,.25*m];
+  patch(a+margin,v0,b-margin,v1,color,Math.sign(offset)*.02);
+ }
+}
+const staticVerts=[];
+for(let z=0;z<H;z++)for(let x=0;x<W;x++){
+ const x0=x*C,z0=z*C;
+ if(wallAt(x,z)){
+  if(!wallAt(x-1,z))wallSurface(staticVerts,x,z,0);
+  if(!wallAt(x+1,z))wallSurface(staticVerts,x,z,1);
+  if(!wallAt(x,z-1))wallSurface(staticVerts,x,z,2);
+  if(!wallAt(x,z+1))wallSurface(staticVerts,x,z,3);
+  continue;
+ }
+ const stone=[.20,.24,.25],k=hash(x,z),m=.92+.22*k;
+ quad(staticVerts,[x0,0,z0],[x0+C,0,z0],[x0+C,0,z0+C],[x0,0,z0+C],[.09,.12,.14]);
+ for(let dz=0;dz<2;dz++)for(let dx=0;dx<2;dx++){
+  const a=x0+dx*C/2+.034,b=x0+(dx+1)*C/2-.035,p=z0+dz*C/2+.034,q=z0+(dz+1)*C/2-.035;
+  const moss=hash(x*3+dx,z*5+dz)>0.87;const col=moss?[.18,.25,.20]:mul(stone,m*(.86+.20*hash(x+dx,z+dz,5)));
+  quad(staticVerts,[a,.015,p],[b,.015,p],[b,.015,q],[a,.015,q],col);
+ }
+ // Dark slab ceiling with checker tiles and heavy support beams.
+ quad(staticVerts,[x0,WALL,z0+C],[x0+C,WALL,z0+C],[x0+C,WALL,z0],[x0,WALL,z0],[.10,.15,.18]);
+ for(let dz=0;dz<2;dz++)for(let dx=0;dx<2;dx++){
+  let a=x0+dx*C/2+.035,b=x0+(dx+1)*C/2-.035,p=z0+dz*C/2+.035,q=z0+(dz+1)*C/2-.035;let c=[.14,.19,.22];
+  quad(staticVerts,[a,WALL-.01,q],[b,WALL-.01,q],[b,WALL-.01,p],[a,WALL-.01,p],mul(c,.8+.20*hash(x+dx,z+dz,21)));
+ }
+ if(hash(x,z,18)<.16){const v=.15;box(staticVerts,x0+C*.45,WALL-.12,z0,x0+C*.55,WALL-.01,z0+C,[.16,.21,.24])}
+}
+// Cubic sconces, each containing a glowing block flame.
+const sconces=[[3,1],[8,3],[4,5],[3,7],[13,7],[12,9],[4,11],[13,13],[14,15]];
+const lights=[];
+for(const [tx,tz] of sconces){const [x,z]=point(tx,tz);if(wallAt(tx,tz))continue;let px=x,pz=z;if(wallAt(tx-1,tz))px=tx*C+.25;else if(wallAt(tx+1,tz))px=(tx+1)*C-.25;else if(wallAt(tx,tz-1))pz=tz*C+.25;else if(wallAt(tx,tz+1))pz=(tz+1)*C-.25;
+ box(staticVerts,px-.11,1.25,pz-.11,px+.11,1.62,pz+.11,[.28,.20,.12]);box(staticVerts,px-.16,1.6,pz-.16,px+.16,1.69,pz+.16,[.39,.28,.16]);box(staticVerts,px-.135,1.69,pz-.135,px+.135,1.99,pz+.135,[1.3,.54,.15],1.15);box(staticVerts,px-.07,1.99,pz-.07,px+.07,2.17,pz+.07,[1.6,.91,.36],1.22);lights.push(px,1.95,pz)
+}
+// Exit doorway constructed from thick blocks. It turns gold once the zombies are gone.
+let [ex,ez]=exit;const gateColor=[.31,.37,.40];box(staticVerts,ex-C*.40,0,ez-C*.33,ex-C*.28,2.8,ez+C*.33,gateColor);box(staticVerts,ex+C*.28,0,ez-C*.33,ex+C*.40,2.8,ez+C*.33,gateColor);box(staticVerts,ex-C*.40,2.65,ez-C*.33,ex+C*.40,2.95,ez+C*.33,gateColor);
+const staticData=new Float32Array(staticVerts);gl.bindBuffer(gl.ARRAY_BUFFER,staticBuffer);gl.bufferData(gl.ARRAY_BUFFER,staticData,gl.STATIC_DRAW);
+function rotated(lx,lz,x,z,a){let c=Math.cos(a),s=Math.sin(a);return[x+lx*c-lz*s,z+lx*s+lz*c]}
+function bodyBox(out,entity,x0,y0,z0,x1,y1,z1,color,brightness=1){let corners=[];const a=entity.angle;for(const [lx,lz] of [[x0,z0],[x1,z0],[x1,z1],[x0,z1]])corners.push(rotated(lx,lz,entity.x,entity.z,a));const A=corners;let c=mul(color,brightness);quad(out,[A[0][0],y1,A[0][1]],[A[1][0],y1,A[1][1]],[A[2][0],y1,A[2][1]],[A[3][0],y1,A[3][1]],mul(c,.96));quad(out,[A[3][0],y0,A[3][1]],[A[2][0],y0,A[2][1]],[A[1][0],y0,A[1][1]],[A[0][0],y0,A[0][1]],mul(c,.7));for(let i=0;i<4;i++){const j=(i+1)%4;quad(out,[A[i][0],y0,A[i][1]],[A[j][0],y0,A[j][1]],[A[j][0],y1,A[j][1]],[A[i][0],y1,A[i][1]],mul(c,[.81,.72,.94,1][i]))}}
+function zombieModel(out,e){const walk=Math.sin(elapsed*8+e.seed)*Math.min(1,e.speed/1.5),yBob=e.speed>.2?Math.abs(walk)*.045:0,flash=e.flash>0?1.7:1;
+ const skin=[.39,.66,.35],skinDark=[.27,.49,.29],shirt=[.16,.47,.45],pants=[.17,.24,.37],hair=[.18,.24,.15];
+ bodyBox(out,e,-.39,.78+yBob,-.22,.39,1.55+yBob,.24,shirt,flash);
+ bodyBox(out,e,-.32,1.51+yBob,-.33,.32,2.14+yBob,.32,skin,flash);
+ bodyBox(out,e,-.31,2.04+yBob,-.335,.31,2.16+yBob,.15,hair,flash);
+ // Eyes, black pixels on the forward face (-Z)
+ for(const s of [-1,1]){bodyBox(out,e,s*.15-.075,1.84+yBob,-.348,s*.15+.075,1.92+yBob,-.339,[.76,.13,.12],1.6);bodyBox(out,e,s*.15-.042,1.86+yBob,-.356,s*.15+.042,1.9+yBob,-.349,[.12,.08,.08])}
+ bodyBox(out,e,-.12,1.68+yBob,-.35,.12,1.73+yBob,-.34,skinDark);
+ const atk=e.attackPose>0?-.17:-.03;
+ for(const s of [-1,1]){
+  bodyBox(out,e,s*.47-.12,.82+yBob,-.24+atk+walk*.06,s*.47+.12,1.49+yBob,-.03+atk+walk*.06,skin,flash);
+  bodyBox(out,e,s*.47-.12,1.29+yBob,-.21+atk,s*.47+.12,1.49+yBob,.13+atk,shirt,flash);
+  bodyBox(out,e,s*.19-.14,.06+yBob,-.18+(s*walk*.13),s*.19+.14,.79+yBob,.23+(s*walk*.13),pants);
+  bodyBox(out,e,s*.19-.15,.04+yBob,-.3+(s*walk*.14),s*.19+.15,.24+yBob,.17+(s*walk*.14),[.14,.17,.19]);
+ }
+ // Small enemy health meter floats above its head.
+ if(e.hp<65){const f=Math.max(0,e.hp/65);bodyBox(out,e,-.37,2.34,-.022,.37,2.40,.024,[.20,.07,.07]);bodyBox(out,e,-.37,2.34,-.025,-.37+.74*f,2.40,.029,[.88,.24,.19],1.2)}
+}
+function matMul(a,b){let o=new Float32Array(16);for(let j=0;j<4;j++)for(let i=0;i<4;i++)o[j*4+i]=a[i]*b[j*4]+a[4+i]*b[j*4+1]+a[8+i]*b[j*4+2]+a[12+i]*b[j*4+3];return o}
+function perspective(fov,aspect,n,f){const t=1/Math.tan(fov/2),o=new Float32Array(16);o[0]=t/aspect;o[5]=t;o[10]=(f+n)/(n-f);o[11]=-1;o[14]=2*f*n/(n-f);return o}
+function lookAt(eye,target){let fx=target[0]-eye[0],fy=target[1]-eye[1],fz=target[2]-eye[2],fl=Math.hypot(fx,fy,fz);fx/=fl;fy/=fl;fz/=fl;let sx=-fz,sy=0,sz=fx,sl=Math.hypot(sx,sz);sx/=sl;sz/=sl;let ux=sy*fz-sz*fy,uy=sz*fx-sx*fz,uz=sx*fy-sy*fx;let o=new Float32Array(16);o[0]=sx;o[4]=sy;o[8]=sz;o[1]=ux;o[5]=uy;o[9]=uz;o[2]=-fx;o[6]=-fy;o[10]=-fz;o[12]=-(sx*eye[0]+sy*eye[1]+sz*eye[2]);o[13]=-(ux*eye[0]+uy*eye[1]+uz*eye[2]);o[14]=fx*eye[0]+fy*eye[1]+fz*eye[2];o[15]=1;return o}
+function bindBuffer(buffer){gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.vertexAttribPointer(aPosition,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(aColor,3,gl.FLOAT,false,24,12);gl.enableVertexAttribArray(aPosition);gl.enableVertexAttribArray(aColor)}
+function render(){if(!webgl){renderFallback();drawSword();drawMap();return}gl.viewport(0,0,canvas.width,canvas.height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const bob=(phase==='play'&&walkTime>0)?Math.sin(elapsed*11)*.035:0;let ey=[camera.x,eyeHeight+bob,camera.z],cp=Math.cos(camera.pitch),forward=[Math.sin(camera.yaw)*cp,Math.sin(camera.pitch),-Math.cos(camera.yaw)*cp],target=[ey[0]+forward[0],ey[1]+forward[1],ey[2]+forward[2]];
+ const vp=matMul(perspective(1.26,canvas.width/canvas.height,.04,120),lookAt(ey,target));gl.useProgram(prog);gl.uniformMatrix4fv(uVP,false,vp);gl.uniform3fv(uEye,ey);gl.uniform1f(uTime,elapsed);
+ let lightNums=[];const arr=[];for(let i=0;i<lights.length;i+=3){const dx=lights[i]-camera.x,dz=lights[i+2]-camera.z;arr.push([dx*dx+dz*dz,lights[i],lights[i+1],lights[i+2]])}arr.sort((a,b)=>a[0]-b[0]);for(let i=0;i<7;i++){let a=arr[i];if(a)lightNums.push(a[1],a[2],a[3]);else lightNums.push(-100,-100,-100)}gl.uniform3fv(uLightPos,new Float32Array(lightNums));
+ bindBuffer(staticBuffer);gl.drawArrays(gl.TRIANGLES,0,staticData.length/6);
+ const out=[];for(const e of entities)if(e.hp>0)zombieModel(out,e);
+ // Portal core switches from red to amber/gold when unlocked.
+ const col=kills===initial.length?[.95,.65,.19]:[.64,.17,.16],pulse=.75+.20*Math.sin(elapsed*2.5);
+ box(out,ex-.50,.55,ez-.045,ex+.50,2.22,ez+.045,mul(col,pulse),1.7);
+ for(let i=0;i<9;i++){let y=.55+i*.21;box(out,ex-.50,y,ez-.07,ex+.50,y+.018,ez+.07,mul(col,1.26),1.2)}
+ if(out.length){let data=new Float32Array(out);gl.bindBuffer(gl.ARRAY_BUFFER,dynamicBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);bindBuffer(dynamicBuffer);gl.drawArrays(gl.TRIANGLES,0,data.length/6)}
+ drawSword();drawMap();
+}
+// Ray-cast software renderer: a playable backup for devices with WebGL disabled.
+// Uses the same world layout, combat, enemies, camera and touch controls.
+function renderFallback(){
+ const ctx=fallbackContext,w=canvas.width,h=canvas.height;
+ const proj=h/(2*Math.tan(1.26/2)),aspect=w/h;
+ let horizon=h*.5+Math.tan(camera.pitch)*proj;
+ const upper=ctx.createLinearGradient(0,0,0,horizon);
+ upper.addColorStop(0,'#081018');upper.addColorStop(1,'#18232a');ctx.fillStyle=upper;ctx.fillRect(0,0,w,Math.max(0,horizon));
+ const lower=ctx.createLinearGradient(0,horizon,0,h);
+ lower.addColorStop(0,'#323b3a');lower.addColorStop(1,'#131d22');ctx.fillStyle=lower;ctx.fillRect(0,Math.max(0,horizon),w,h);
+ const strip=Math.max(2,Math.floor(w/350)),depth=[];
+ for(let x=0;x<w;x+=strip){
+  const angle=camera.yaw+Math.atan(((x+strip*.5)/w*2-1)*Math.tan(1.26/2)*aspect);
+  let rx=Math.sin(angle),rz=-Math.cos(angle),gx=Math.floor(camera.x/C),gz=Math.floor(camera.z/C);
+  let sx=rx>0?1:-1,sz=rz>0?1:-1;
+  let deltaX=rx===0?1e10:Math.abs(C/rx),deltaZ=rz===0?1e10:Math.abs(C/rz);
+  let ddx=rx>0?((gx+1)*C-camera.x)/rx:(gx*C-camera.x)/rx;
+  let ddz=rz>0?((gz+1)*C-camera.z)/rz:(gz*C-camera.z)/rz;
+  let axis=0,rayDist=70;
+  for(let iter=0;iter<75;iter++){
+   if(ddx<ddz){rayDist=ddx;ddx+=deltaX;gx+=sx;axis=0}
+   else{rayDist=ddz;ddz+=deltaZ;gz+=sz;axis=1}
+   if(wallAt(gx,gz))break;
+  }
+  const d=Math.max(.1,rayDist*Math.cos(angle-camera.yaw));depth[Math.floor(x/strip)]=d;
+  const top=horizon-(WALL-eyeHeight)*proj/d,bot=horizon+eyeHeight*proj/d,height=bot-top;
+  let u=((axis===0?camera.z+rayDist*rz:camera.x+rayDist*rx)/C)%1;
+  if(u<0)u+=1;
+  let dark=Math.max(.25,Math.min(1,1.45-d*.045))*(axis===0?.90:1),m=hash(gx,gz,axis);
+  ctx.fillStyle=`rgb(${Math.floor(36*dark)},${Math.floor(46*dark)},${Math.floor(49*dark)})`;
+  ctx.fillRect(x,Math.max(0,top),strip+1,Math.min(h,bot)-Math.max(0,top));
+  for(let r=0;r<5;r++){
+   let v0=top+r*height/5,v1=top+(r+1)*height/5;
+   if(v1<0||v0>h)continue;
+   let shifted=(u*3+(r%2)*.5),tile=Math.floor(shifted),joint=(shifted-Math.floor(shifted))<.065;
+   let noise=hash(gx*13+tile,gz*11+r,axis),moss=noise>.88,shade=(.86+noise*.28)*dark;
+   ctx.fillStyle=joint?`rgb(${(19*dark)|0},${(28*dark)|0},${(29*dark)|0})`:moss?`rgb(${(38*shade)|0},${(72*shade)|0},${(53*shade)|0})`:`rgb(${(74*shade)|0},${(84*shade)|0},${(82*shade)|0})`;
+   ctx.fillRect(x,Math.max(0,v0+Math.min(3,height/170)),strip+1,Math.max(0,Math.min(h,v1-2)-Math.max(0,v0+Math.min(3,height/170))));
+  }
+  // Mortar lines from the large block grid, and a dark floor contact edge.
+  if(bot>0&&bot<h){ctx.fillStyle=`rgba(7,13,13,${Math.min(.8,.2+.06*dark)})`;ctx.fillRect(x,bot-2,strip+1,3)}
+ }
+ // Perspective floor blocks create a voxel corridor instead of a plain solid ground.
+ ctx.lineWidth=1;
+ for(let y=Math.max(horizon+10,0);y<h;y+=Math.max(7,Math.floor(h/46))){
+   const dist=eyeHeight*proj/(y-horizon),fade=Math.max(0,.23-dist*.006);
+   if(dist>0&&dist<75){ctx.strokeStyle=`rgba(180,195,171,${fade})`;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ }
+ const billboards=[];
+ const screenPos=(wx,wz)=>{
+  const dx=wx-camera.x,dz=wz-camera.z,front=dx*Math.sin(camera.yaw)-dz*Math.cos(camera.yaw),side=dx*Math.cos(camera.yaw)+dz*Math.sin(camera.yaw);
+  if(front<.12)return null;return {x:w*.5+side/front*proj,d:front,scale:proj/front};
+ };
+ for(const e of entities){if(e.hp<=0)continue;let sp=screenPos(e.x,e.z);if(sp&&sp.x>-w*.2&&sp.x<w*1.2&&lineOfSight(camera.x,camera.z,e.x,e.z))billboards.push({sp,e,type:'zombie'})}
+ let gp=screenPos(ex,ez);if(gp&&lineOfSight(camera.x,camera.z,ex,ez))billboards.push({sp:gp,type:'gate'});
+ for(const [tx,tz] of sconces){let [wx,wz]=point(tx,tz),sp=screenPos(wx,wz);if(sp&&lineOfSight(camera.x,camera.z,wx,wz))billboards.push({sp,type:'flame'})}
+ billboards.sort((a,b)=>b.sp.d-a.sp.d);
+ for(const obj of billboards){let {sp}=obj;if(sp.x<-w*.2||sp.x>w*1.2)continue;
+  const cellIndex=Math.min(depth.length-1,Math.max(0,Math.floor(sp.x/strip)));
+  if(depth[cellIndex]&&sp.d>depth[cellIndex]+1.2)continue;
+  const unit=sp.scale,groundY=horizon+eyeHeight*unit,screenX=sp.x;
+  ctx.save();ctx.translate(screenX,groundY);
+  const block=(x,y,bw,bh,color)=>{ctx.fillStyle=color;ctx.fillRect(x*unit,-(y+bh)*unit,bw*unit,bh*unit)};
+  if(obj.type==='zombie'){
+   let e=obj.e,step=Math.sin(elapsed*8+e.seed)*.11,fl=e.flash>0;
+   block(-.39,.78,.78,.76,fl?'#f4c8a1':'#337e79');block(-.35,1.51,.70,.62,fl?'#fff0cf':'#79a55f');block(-.35,2.03,.70,.13,'#273b29');
+   block(-.29,1.84,.15,.085,'#f4473f');block(.14,1.84,.15,.085,'#f4473f');
+   block(-.21,1.67,.42,.065,'#45633b');
+   block(-.66,.77,.24,.68,fl?'#ffe6c7':'#5e9452');block(.42,.77,.24,.68,fl?'#ffe6c7':'#5e9452');
+   block(-.32,.06+step,.28,.72,'#3d5376');block(.05,.06-step,.28,.72,'#3d5376');
+   block(-.34,.035+step,.3,.23,'#25313d');block(.05,.035-step,.30,.23,'#25313d');
+   if(e.hp<65){block(-.37,2.30,.74,.07,'#63292a');block(-.37,2.30,.74*e.hp/65,.07,'#ed715e')}
+  }else if(obj.type==='gate'){
+   let c=kills===initial.length?'#f2b85e':'#be4345';block(-.59,0,.12,2.7,'#657374');block(.47,0,.12,2.7,'#657374');block(-.6,2.57,1.2,.21,'#6d7674');block(-.44,.55,.88,1.89,c);for(let i=0;i<8;i++)block(-.44,.60+i*.24,.88,.018,'#f6ddab')
+  }else if(obj.type==='flame'){
+   block(-.12,1.20,.24,.4,'#816448');block(-.16,1.55,.32,.09,'#978068');block(-.13,1.64,.26,.30,'#dc7532');block(-.065,1.84,.13,.34,'#ffe29e');
+  }
+  ctx.restore();
+ }
+}
+
+function drawSword(){const w=swordCanvas.clientWidth,h=swordCanvas.clientHeight;sc.clearRect(0,0,w,h);if(phase==='menu')return;
+ const scale=Math.min(w/850,h/560)*1.1,baseX=w*.70,baseY=h*.96;
+ const a=swing>0?Math.sin((1-swing/.31)*Math.PI):0;
+ sc.save();sc.translate(baseX-a*w*.19,baseY-a*h*.16);sc.rotate(-.23-a*1.22+Math.sin(elapsed*11)*walkTime*.014);sc.scale(scale,scale);
+ sc.shadowColor='#000b';sc.shadowBlur=28;sc.shadowOffsetX=13;sc.shadowOffsetY=12;
+ // Block-built steel sword: sharp, readable silhouette even on a small screen.
+ const polygon=(pts,color)=>{sc.fillStyle=color;sc.beginPath();sc.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)sc.lineTo(pts[i][0],pts[i][1]);sc.closePath();sc.fill()};
+ polygon([[0,46],[27,44],[26,-63],[17,-173],[7,-206],[-4,-173],[-12,-62],[-12,44]],'#a5b6bf');
+ polygon([[7,-202],[18,-168],[22,-66],[9,-67]],'#e4e9dc');
+ polygon([[-11,-62],[7,-71],[6,-187],[-5,-171]],'#667c88');
+ sc.shadowBlur=0;sc.shadowOffsetX=0;sc.shadowOffsetY=0;
+ polygon([[-36,31],[47,31],[46,52],[-35,52]],'#b88643');polygon([[-33,30],[45,30],[40,37],[-30,37]],'#ffe0a0');
+ polygon([[-11,49],[20,49],[18,124],[-8,124]],'#48372d');for(let i=0;i<5;i++)polygon([[-9,56+i*12],[18,56+i*12],[18,62+i*12],[-8,62+i*12]],'#86704a');polygon([[-17,121],[26,121],[23,141],[-14,141]],'#c5a467');polygon([[-14,125],[23,125],[20,129],[-11,129]],'#ffdc94');
+ sc.restore();
+}
+function drawMap(){const size=170,cell=size/W;mc.clearRect(0,0,size,size);mc.fillStyle='#111b22';mc.fillRect(0,0,size,size);let px=Math.floor(camera.x/C),pz=Math.floor(camera.z/C);for(let z=0;z<H;z++)for(let x=0;x<W;x++){
+ if(!seen[z][x])continue;mc.fillStyle=wallAt(x,z)?'#35424a':'#68716c';mc.fillRect(x*cell+.7,z*cell+.7,cell-.7,cell-.7)
+ }
+ if(seen[Math.floor(exit[1]/C)][Math.floor(exit[0]/C)]){mc.fillStyle=kills===initial.length?'#f7c15a':'#d65f55';mc.fillRect((exit[0]/C-.5)*cell+cell*.25,(exit[1]/C-.5)*cell+cell*.25,cell*.5,cell*.5)}
+ for(const e of entities)if(e.hp>0&&Math.hypot(e.x-camera.x,e.z-camera.z)<C*3.3){mc.fillStyle='#eb665f';mc.fillRect(e.x/C*cell-2,e.z/C*cell-2,4,4)}
+ mc.save();mc.translate(camera.x/C*cell,camera.z/C*cell);mc.rotate(camera.yaw);mc.beginPath();mc.moveTo(0,-7);mc.lineTo(-4,5);mc.lineTo(4,5);mc.closePath();mc.fillStyle='#f8df9d';mc.fill();mc.restore()
+}
+function updateVisited(){let tx=Math.floor(camera.x/C),tz=Math.floor(camera.z/C);for(let z=Math.max(0,tz-2);z<=Math.min(H-1,tz+2);z++)for(let x=Math.max(0,tx-2);x<=Math.min(W-1,tx+2);x++)if(Math.hypot(x-tx,z-tz)<2.65)seen[z][x]=true}
+function passable(x,z,r=.27){for(let zz=Math.floor((z-r)/C);zz<=Math.floor((z+r)/C);zz++)for(let xx=Math.floor((x-r)/C);xx<=Math.floor((x+r)/C);xx++)if(wallAt(xx,zz)){const nearestX=Math.max(xx*C,Math.min(x,(xx+1)*C)),nearestZ=Math.max(zz*C,Math.min(z,(zz+1)*C));if(Math.hypot(nearestX-x,nearestZ-z)<r)return false}return true}
+function walkEntity(obj,dx,dz,r){if(passable(obj.x+dx,obj.z,r))obj.x+=dx;if(passable(obj.x,obj.z+dz,r))obj.z+=dz}
+function shortestPath(sx,sz,tx,tz){if(sx===tx&&sz===tz)return [[tx,tz]];const queue=[[sx,sz]],prev=new Map(),id=(x,z)=>z*W+x;prev.set(id(sx,sz),-1);let head=0,end=-1;
+ while(head<queue.length){let [x,z]=queue[head++];if(x===tx&&z===tz){end=id(x,z);break}for(let [nx,nz] of [[x+1,z],[x,z+1],[x-1,z],[x,z-1]]){let key=id(nx,nz);if(!wallAt(nx,nz)&&!prev.has(key)){prev.set(key,id(x,z));queue.push([nx,nz])}}}
+ if(end<0)return [];let out=[];while(end!==-1){out.push([end%W,Math.floor(end/W)]);end=prev.get(end)}out.reverse();return out
+}
+function lineOfSight(x0,z0,x1,z1){let d=Math.hypot(x1-x0,z1-z0);for(let t=.35;t<d-.3;t+=.23){let x=x0+(x1-x0)*t/d,z=z0+(z1-z0)*t/d;if(wallAt(Math.floor(x/C),Math.floor(z/C)))return false}return true}
+function notify(text,time=2.2){toastText=text;toastUntil=elapsed+time;document.querySelector('#toast').textContent=text;document.querySelector('#toast').style.opacity='1'}
+function playSound(kind){try{let A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!playSound.ctx)playSound.ctx=new A();let ctx=playSound.ctx;if(ctx.state==='suspended')ctx.resume();let t=ctx.currentTime,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type=kind==='hit'?'sawtooth':kind==='hurt'?'triangle':'square';let f=kind==='slash'?260:kind==='hit'?125:kind==='hurt'?70:520;osc.frequency.setValueAtTime(f,t);osc.frequency.exponentialRampToValueAtTime(kind==='slash'?100:kind==='hit'?45:kind==='hurt'?34:820,t+.12);gain.gain.setValueAtTime(kind==='slash'?.08:.11,t);gain.gain.exponentialRampToValueAtTime(.001,t+.14);osc.connect(gain);gain.connect(ctx.destination);osc.start(t);osc.stop(t+.145)}catch{}}
+function attack(){if(phase!=='play'||swingCd>0)return;swing=.31;swingCd=.50;swingHit=false;playSound('slash')}
+function doHit(){let cand=[];for(const e of entities){if(e.hp<=0)continue;let dx=e.x-camera.x,dz=e.z-camera.z,dist=Math.hypot(dx,dz),ang=Math.atan2(dx,-dz),delta=Math.atan2(Math.sin(ang-camera.yaw),Math.cos(ang-camera.yaw));if(dist<2.55&&Math.abs(delta)<.88&&lineOfSight(camera.x,camera.z,e.x,e.z))cand.push({e,dist})}cand.sort((a,b)=>a.dist-b.dist);if(cand.length){let e=cand[0].e;e.hp-=36;e.flash=.22;hitShake=.12;playSound('hit');if(e.hp<=0){kills++;notify('ゾンビを倒した！  '+kills+' / '+initial.length,1.5);if(kills===initial.length){notify('出口の封印が解けた！ 金色の門を目指そう',3.5);document.querySelector('#objective').innerHTML='<em>目標：</em>金色に輝く出口へ向かえ！'} }updateHUD()}}
+function updateHUD(){document.querySelector('#healthFill').style.width=hp+'%';document.querySelector('#hpText').textContent=hp+' / 100';document.querySelector('#count').textContent='☠ '+kills+' / '+initial.length}
+function end(mode){phase=mode;document.exitPointerLock?.();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#touchUi').classList.remove('active');document.querySelector('#startBtn').textContent='もう一度挑戦する';document.querySelector('#menuText').innerHTML=mode==='win'?'クリア！ ゾンビ4体を倒して、<br>地下迷宮から脱出した！':'ゲームオーバー。<br>ゾンビに倒されてしまった。';document.querySelector('#helpText').innerHTML=mode==='win'?'⚔ 剣だけで小さな迷宮を攻略できた！<br>次は新たな武器や敵、階層を追加できる。':'⚔ ゾンビは2回攻撃すると倒せる。<br>攻撃が届く距離を保って戦おう。'}
+function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI;camera.pitch=0;hp=100;kills=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:0,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>ゾンビを4体倒し、地下迷宮の出口へ向かえ';document.querySelector('#toast').style.opacity='0'}
+function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;
+ let forward=0,strafe=0;if(keys.KeyW||keys.ArrowUp)forward++;if(keys.KeyS||keys.ArrowDown)forward--;if(keys.KeyA||keys.ArrowLeft)strafe--;if(keys.KeyD||keys.ArrowRight)strafe++;
+ forward-=touch.moveY;strafe+=touch.moveX;let l=Math.hypot(forward,strafe);if(l>.02){forward/=Math.max(1,l);strafe/=Math.max(1,l);let s=keys.ShiftLeft?5.0:3.60,dx=(Math.sin(camera.yaw)*forward+Math.cos(camera.yaw)*strafe)*s*dt,dz=(-Math.cos(camera.yaw)*forward+Math.sin(camera.yaw)*strafe)*s*dt;walkEntity(camera,dx,dz,.31);walkTime=1}
+ updateVisited();if(keys.Space)attack();
+ if(swing>0){swing=Math.max(0,swing-dt);if(!swingHit&&swing<.19){swingHit=true;doHit()}}swingCd=Math.max(0,swingCd-dt);
+ damageFlash=Math.max(0,damageFlash-dt*2.5);document.querySelector('#hurt').style.opacity=damageFlash.toFixed(2);
+ for(const e of entities){if(e.hp<=0)continue;const dist=Math.hypot(camera.x-e.x,camera.z-e.z);e.angle=Math.atan2(camera.x-e.x,-(camera.z-e.z));e.flash=Math.max(0,e.flash-dt);e.attackPose=Math.max(0,e.attackPose-dt*1.8);e.attackTimer=Math.max(0,e.attackTimer-dt);e.speed=0;
+ if(dist<1.25){if(e.attackTimer<=0&&lineOfSight(e.x,e.z,camera.x,camera.z)){e.attackTimer=1.3;e.attackPose=1;hp=Math.max(0,hp-14);damageFlash=.85;playSound('hurt');updateHUD();if(hp<=0){end('lose');return}}}
+ else if(dist<16){e.repath-=dt;if(e.repath<=0){e.path=shortestPath(Math.floor(e.x/C),Math.floor(e.z/C),Math.floor(camera.x/C),Math.floor(camera.z/C));e.repath=.6+hash(e.seed,elapsed)*.2}if(e.path.length){let t=e.path[Math.min(1,e.path.length-1)],[tx,tz]=point(t[0],t[1]);if(Math.hypot(tx-e.x,tz-e.z)<.22&&e.path.length>1)e.path.shift();t=e.path[Math.min(1,e.path.length-1)];[tx,tz]=point(t[0],t[1]);const d=Math.hypot(tx-e.x,tz-e.z);if(d>.06){let vx=(tx-e.x)/d,vz=(tz-e.z)/d;walkEntity(e,vx*dt*.99,vz*dt*.99,.29);e.speed=1}}}
+ }
+ if(kills===initial.length&&Math.hypot(camera.x-ex,camera.z-ez)<1.16){end('win');return}
+ if(elapsed>toastUntil)document.querySelector('#toast').style.opacity='0';
+}
+function resize(){let r=Math.min(window.devicePixelRatio||1,webgl?1.7:1.0);canvas.width=Math.floor(innerWidth*r);canvas.height=Math.floor(innerHeight*r);swordCanvas.width=Math.floor(innerWidth*r);swordCanvas.height=Math.floor(innerHeight*r);swordCanvas.style.width=innerWidth+'px';swordCanvas.style.height=innerHeight+'px';sc.setTransform(r,0,0,r,0,0)}
+window.addEventListener('resize',resize);resize();reset();
+function loop(ts){if(!lastTime)lastTime=ts;let dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;update(dt);render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+function safeLock(){try{if(!canvas.requestPointerLock)return;const request=canvas.requestPointerLock();if(request&&typeof request.catch==='function')request.catch(()=>{});}catch(e){/* Browser may deny pointer lock; touch/drag still works. */}}
+function start(){if(phase==='pause'){phase='play';document.querySelector('#menu').classList.add('hidden');if(!coarse)safeLock();return}reset();phase='play';document.querySelector('#menu').classList.add('hidden');if(coarse)document.querySelector('#touchUi').classList.add('active');else safeLock();notify('迷宮に入った。ゾンビを4体倒そう',2.4)}
+document.querySelector('#startBtn').addEventListener('click',start);
+window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();keys[e.code]=true;if((e.code==='KeyR'&&phase!=='play')||(e.code==='Enter'&&phase!=='play'))start();if(e.code==='Escape'&&phase==='play'&&document.pointerLockElement!==canvas){phase='pause';document.querySelector('#menu').classList.remove('hidden');document.querySelector('#menuText').textContent='一時停止中';document.querySelector('#startBtn').textContent='再開する'}});
+window.addEventListener('keyup',e=>keys[e.code]=false);
+canvas.addEventListener('click',()=>{if(phase==='play'&&!coarse){if(document.pointerLockElement!==canvas)safeLock();attack()}});
+let dragging=false,lastMouseX=0,lastMouseY=0;
+canvas.addEventListener('mousedown',e=>{if(!coarse){dragging=true;lastMouseX=e.clientX;lastMouseY=e.clientY}});window.addEventListener('mouseup',()=>dragging=false);
+window.addEventListener('mousemove',e=>{if(phase!=='play'||coarse)return;if(document.pointerLockElement===canvas){camera.yaw+=e.movementX*.0023;camera.pitch=Math.max(-1.05,Math.min(1.05,camera.pitch-e.movementY*.0023))}else if(dragging){camera.yaw+=(e.clientX-lastMouseX)*.004;camera.pitch=Math.max(-1.05,Math.min(1.05,camera.pitch-(e.clientY-lastMouseY)*.004));lastMouseX=e.clientX;lastMouseY=e.clientY}});
+document.addEventListener('pointerlockchange',()=>{if(phase==='play'&&!coarse&&document.pointerLockElement!==canvas){ // Clicking the game can acquire pointer lock again; do not reset progress.
+ document.querySelector('#objective').innerHTML='<em>操作：</em>画面をクリックすると視点操作を再開できます';setTimeout(()=>{if(phase==='play')document.querySelector('#objective').innerHTML=kills===initial.length?'<em>目標：</em>金色に輝く出口へ向かえ！':'<em>目標：</em>ゾンビを4体倒し、地下迷宮の出口へ向かえ'},2300)
+ }});
+const movePad=document.querySelector('#movePad'),stick=document.querySelector('#stick');
+function stickMove(e){const r=movePad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,limit=r.width*.33,len=Math.hypot(dx,dy),k=Math.min(1,limit/Math.max(1,len));let mx=dx*k,my=dy*k;touch.moveX=mx/limit;touch.moveY=my/limit;stick.style.transform=`translate(${mx}px,${my}px)`}
+movePad.addEventListener('pointerdown',e=>{if(phase!=='play')return;e.preventDefault();touch.moveId=e.pointerId;movePad.setPointerCapture(e.pointerId);stickMove(e)});movePad.addEventListener('pointermove',e=>{if(e.pointerId===touch.moveId)stickMove(e)});function stickEnd(e){if(e.pointerId!==touch.moveId)return;touch.moveId=null;touch.moveX=touch.moveY=0;stick.style.transform='translate(0,0)'}movePad.addEventListener('pointerup',stickEnd);movePad.addEventListener('pointercancel',stickEnd);
+canvas.addEventListener('pointerdown',e=>{if(!coarse||phase!=='play'||e.clientX<innerWidth*.35)return;touch.lookId=e.pointerId;touch.lastX=e.clientX;touch.lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!coarse||e.pointerId!==touch.lookId||phase!=='play')return;camera.yaw+=(e.clientX-touch.lastX)*.006;camera.pitch=Math.max(-1.05,Math.min(1.05,camera.pitch-(e.clientY-touch.lastY)*.005));touch.lastX=e.clientX;touch.lastY=e.clientY});canvas.addEventListener('pointerup',e=>{if(e.pointerId===touch.lookId)touch.lookId=null});canvas.addEventListener('pointercancel',e=>{if(e.pointerId===touch.lookId)touch.lookId=null});document.querySelector('#hitBtn').addEventListener('pointerdown',e=>{e.preventDefault();attack()});document.querySelector('#pauseBtn').addEventListener('click',()=>{if(phase==='play'){phase='pause';document.querySelector('#menu').classList.remove('hidden');document.querySelector('#menuText').textContent='一時停止中';document.querySelector('#startBtn').textContent='再開する';}});
+})();
+</script></body></html>
