@@ -469,7 +469,7 @@ function updateHUD(){
  document.querySelector('#count').textContent='☠ '+kills+' / '+initial.length;
  document.querySelector('#keyStatus').textContent=keyFound?'🔓 出口の扉が開いた！':'🔑 鍵を探そう';
 }
-function end(mode){phase=mode;document.exitPointerLock?.();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#touchUi').classList.remove('active');document.querySelector('#startBtn').textContent='もう一度挑戦する';document.querySelector('#menuText').innerHTML=mode==='win'?'クリア！ 開いた出口の扉をくぐり、<br>地下迷宮を脱出した！':'ゲームオーバー。<br>ゾンビに倒されてしまった。';document.querySelector('#helpText').innerHTML=mode==='win'?'🔑 鍵で扉を開け、出口に入ってクリア！<br>ゾンビの全滅は必要ない。':'⚔ ゾンビは2回攻撃すると倒せる。<br>攻撃が届く距離を保って戦おう。'}
+function end(mode){if(mode==='lose'&&multiRole==='host')window.NEXA_MP?.fail();phase=mode;document.exitPointerLock?.();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#touchUi').classList.remove('active');document.querySelector('#startBtn').textContent='もう一度挑戦する';document.querySelector('#menuText').innerHTML=mode==='win'?'クリア！ 開いた出口の扉をくぐり、<br>地下迷宮を脱出した！':'ゲームオーバー。<br>ゾンビに倒されてしまった。';document.querySelector('#helpText').innerHTML=mode==='win'?'🔑 鍵で扉を開け、出口に入ってクリア！<br>ゾンビの全滅は必要ない。':'⚔ ゾンビは2回攻撃すると倒せる。<br>攻撃が届く距離を保って戦おう。'}
 function collectKey(){
  if(keyFound)return;
  keyFound=true;playSound('hit');updateHUD();
