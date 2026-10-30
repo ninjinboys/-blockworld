@@ -13,7 +13,7 @@ const roomPeerId=code=>'nexacraft-dungeons-v1-'+code;
 const safeName=s=>String(s||'冒険者').trim().slice(0,12)||'冒険者';
 const safeText=s=>String(s||'').trim().slice(0,160);
 const finite=v=>typeof v==='number'&&Number.isFinite(v);
-const validPose=p=>p&&finite(p.x)&&finite(p.z)&&finite(p.yaw)&&p.x>=0&&p.x<=72.5&&p.z>=0&&p.z<=72.5;
+const validPose=p=>p&&finite(p.x)&&finite(p.z)&&finite(p.yaw)&&p.x>=0&&p.x<=130.5&&p.z>=0&&p.z<=130.5;
 const limit=(x,a,b)=>Math.max(a,Math.min(b,x));
 const button=$('multiStatus'),setup=$('multiOptions'),nameInput=$('multiName'),codeInput=$('multiCode'),roomHud=$('multiRoomHud');
 const chatToggle=$('chatToggle'),chatPanel=$('chatPanel'),chatLog=$('chatLog'),chatForm=$('chatForm'),chatInput=$('chatInput');
