@@ -300,18 +300,52 @@ for(let z=0;z<H;z++)for(let x=0;x<W;x++){
   box(staticVerts,x0+C*.10,.20,z0+C*.10,x0+C*.20,.32,z0+C*.20,[.60,.34,.19]);
  }
 }
-// Cubic sconces, each containing a glowing block flame.
-const sconces=[];
-for(let z=1;z<H-1;z++)for(let x=1;x<W-1;x++){
- if(wallAt(x,z))continue;
- const walls=Number(wallAt(x-1,z))+Number(wallAt(x+1,z))+Number(wallAt(x,z-1))+Number(wallAt(x,z+1));
- if(walls>=1&&hash(x,z,41)>.78)sconces.push([x,z]);
+
+/* Wall-mounted dungeon torches. Every sconce is anchored to a genuine wall tile.
+ * Never use the center of a floor tile as the position of a torch.
+ * No torches are spawned at the player spawn, key altar or exit door.
+ */
+const sconces=[],lights=[];
+const spawnCell=[Math.floor(entrance[0]/C),Math.floor(entrance[1]/C)];
+const keyCell=[Math.floor(keyPos[0]/C),Math.floor(keyPos[1]/C)];
+const exitCell=[Math.floor(exit[0]/C),Math.floor(exit[1]/C)];
+function findTorchWall(tx,tz){
+ // [dx,dz] points from the supporting wall into the corridor.
+ if(wallAt(tx-1,tz))return {ax:tx*C+.015,az:(tz+.5)*C,nx:1,nz:0,wallX:tx-1,wallZ:tz};
+ if(wallAt(tx+1,tz))return {ax:(tx+1)*C-.015,az:(tz+.5)*C,nx:-1,nz:0,wallX:tx+1,wallZ:tz};
+ if(wallAt(tx,tz-1))return {ax:(tx+.5)*C,az:tz*C+.015,nx:0,nz:1,wallX:tx,wallZ:tz-1};
+ if(wallAt(tx,tz+1))return {ax:(tx+.5)*C,az:(tz+1)*C-.015,nx:0,nz:-1,wallX:tx,wallZ:tz+1};
+ return null;
 }
-// Entrance and exit get a welcoming pair of lamps, while corridors stay dark.
-sconces.push([Math.floor(entrance[0]/C),Math.floor(entrance[1]/C)],[Math.floor(exit[0]/C),Math.floor(exit[1]/C)]);
-const lights=[];
-for(const [tx,tz] of sconces){const [x,z]=point(tx,tz);if(wallAt(tx,tz))continue;let px=x,pz=z;if(wallAt(tx-1,tz))px=tx*C+.25;else if(wallAt(tx+1,tz))px=(tx+1)*C-.25;else if(wallAt(tx,tz-1))pz=tz*C+.25;else if(wallAt(tx,tz+1))pz=(tz+1)*C-.25;
- box(staticVerts,px-.11,1.25,pz-.11,px+.11,1.62,pz+.11,[.28,.20,.12]);box(staticVerts,px-.16,1.6,pz-.16,px+.16,1.69,pz+.16,[.39,.28,.16]);box(staticVerts,px-.135,1.69,pz-.135,px+.135,1.99,pz+.135,[1.3,.54,.15],1.15);box(staticVerts,px-.07,1.99,pz-.07,px+.07,2.17,pz+.07,[1.6,.91,.36],1.22);lights.push(px,1.95,pz)
+for(let tz=1;tz<H-1;tz++)for(let tx=1;tx<W-1;tx++){
+ if(wallAt(tx,tz))continue;
+ if(Math.hypot(tx-spawnCell[0],tz-spawnCell[1])<3.2)continue;
+ if(Math.hypot(tx-keyCell[0],tz-keyCell[1])<2.3)continue;
+ if(Math.hypot(tx-exitCell[0],tz-exitCell[1])<2.3)continue;
+ if(hash(tx,tz,41)<.78)continue;
+ const wall=findTorchWall(tx,tz);
+ if(!wall)continue; // A torch without a neighboring wall must never exist.
+ if(sconces.some(t=>Math.hypot(t.tx-tx,t.tz-tz)<3.5))continue;
+ const px=wall.ax+wall.nx*.43,pz=wall.az+wall.nz*.43;
+ sconces.push({tx,tz,...wall,px,pz});
+}
+for(const t of sconces){
+ const {ax,az,nx,nz,px,pz}=t;
+ // Stone-backed mounting plate overlaps its supporting wall.
+ const mount=[.30,.24,.17],iron=[.16,.14,.12],wood=[.32,.22,.13];
+ if(nx){
+   box(staticVerts,ax-.055,1.35,az-.23,ax+.055,1.86,az+.23,mount);
+   box(staticVerts,Math.min(ax,px)-.02,1.51,az-.070,Math.max(ax,px)+.02,1.67,az+.070,iron);
+ }else{
+   box(staticVerts,ax-.23,1.35,az-.055,ax+.23,1.86,az+.055,mount);
+   box(staticVerts,ax-.070,1.51,Math.min(az,pz)-.02,ax+.070,1.67,Math.max(az,pz)+.02,iron);
+ }
+ // Wooden holder and flame are physically joined to the wall bracket.
+ box(staticVerts,px-.105,1.59,pz-.105,px+.105,1.98,pz+.105,wood);
+ box(staticVerts,px-.175,1.89,pz-.175,px+.175,2.00,pz+.175,[.53,.39,.22]);
+ box(staticVerts,px-.135,1.98,pz-.135,px+.135,2.23,pz+.135,[1.28,.48,.13],1.2);
+ box(staticVerts,px-.080,2.16,pz-.080,px+.080,2.41,pz+.080,[1.62,.97,.43],1.25);
+ lights.push(px,2.19,pz);
 }
 // Ancient key rests on a small stone pedestal. No locked exit or kill quota.
 const [kx,kz]=keyPos,[ex,ez]=exit;
@@ -486,7 +520,7 @@ function renderFallback(){
  if(!keyFound){let gp=screenPos(kx,kz);if(gp&&lineOfSight(camera.x,camera.z,kx,kz))billboards.push({sp:gp,type:'key'});}
  {let dp=screenPos(ex,ez);if(dp&&lineOfSight(camera.x,camera.z,ex,ez))billboards.push({sp:dp,type:'door'});}
  for(const p of remotePlayers){if(p.hp<=0)continue;const sp=screenPos(p.x,p.z);if(sp&&lineOfSight(camera.x,camera.z,p.x,p.z))billboards.push({sp,p,type:'player'});}
- for(const [tx,tz] of sconces){let [wx,wz]=point(tx,tz),sp=screenPos(wx,wz);if(sp&&lineOfSight(camera.x,camera.z,wx,wz))billboards.push({sp,type:'flame'})}
+ for(const t of sconces){const sp=screenPos(t.px,t.pz);if(sp&&lineOfSight(camera.x,camera.z,t.px,t.pz))billboards.push({sp,type:'flame',torch:t})}
  billboards.sort((a,b)=>b.sp.d-a.sp.d);
  for(const obj of billboards){let {sp}=obj;if(sp.x<-w*.2||sp.x>w*1.2)continue;
   const cellIndex=Math.min(depth.length-1,Math.max(0,Math.floor(sp.x/strip)));
@@ -535,7 +569,15 @@ function renderFallback(){
      block(-.17,1.18+lift,.34,.40,keyFound?'#58e5c8':'#f8d36b');
    }
   }else if(obj.type==='flame'){
-   block(-.12,1.20,.24,.4,'#816448');block(-.16,1.55,.32,.09,'#978068');block(-.13,1.64,.26,.30,'#dc7532');block(-.065,1.84,.13,.34,'#ffe29e');
+   // Wall-anchored torch is projected from its real bracket position.
+   // No floating flame is rendered from the middle of a corridor.
+   block(-.20,1.35,.40,.49,'#554438');
+   block(-.11,1.48,.22,.15,'#382d24');
+   block(-.11,1.58,.22,.39,'#755032');
+   block(-.18,1.89,.36,.12,'#a77c3e');
+   ctx.shadowColor='#ffab38';ctx.shadowBlur=Math.min(22,12*unit);
+   block(-.15,2.00,.30,.23,'#dd6b22');block(-.075,2.18,.15,.23,'#ffda70');
+   ctx.shadowBlur=0;
   }
   ctx.restore();
  }
