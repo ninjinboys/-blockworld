@@ -116,7 +116,7 @@
 (()=>{'use strict';
 const canvas=document.querySelector('#game'),swordCanvas=document.querySelector('#sword'),mini=document.querySelector('#minimap');
 const sc=swordCanvas.getContext('2d'),mc=mini.getContext('2d');
-const webgl=(!(navigator.maxTouchPoints>0||/iPad|iPhone|iPod|Android/i.test(navigator.userAgent))?canvas.getContext('webgl',{antialias:true,alpha:false,powerPreference:'high-performance'}):null);
+const webgl=canvas.getContext('webgl',{antialias:true,alpha:false,powerPreference:'high-performance'})||canvas.getContext('experimental-webgl',{antialias:true,alpha:false});
 const fallbackContext=webgl?null:canvas.getContext('2d',{alpha:false});
 const gl=webgl||new Proxy({getShaderParameter:()=>true,getProgramParameter:()=>true,getAttribLocation:()=>0,createBuffer:()=>({}),createProgram:()=>({}),createShader:()=>({})},{get:(target,key)=>target[key]??(()=>null)});
 const level=[
