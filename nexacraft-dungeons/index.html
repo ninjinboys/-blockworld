@@ -878,7 +878,7 @@ window.NEXA_DUNGEON_BRIDGE={
  phase:()=>phase,getHealth:()=>hp,
  spawn:()=>({x:entrance[0],z:entrance[1]}),
  pose:()=>({x:camera.x,z:camera.z,y:cameraFloor,yaw:camera.yaw}),
- isPassable:(x,z)=>passable(x,z,.27,false)||(keyFound&&((z>=STAIR_START&&z<STAIR_END&&Math.abs(x-ex)<STAIR_HALF-.27)||(z>=STAIR_END&&upperClear(x,z,.27)))),
+ isPassable:(x,z)=>passable(x,z,.27,false)||(keyFound&&((z>=STAIR_START&&z<STAIR_END&&Math.abs(x-ex)<STAIR_HALF-.27)||(z>=STAIR_END&&(upperClear(x,z,.27)||(z<49*C+.42&&Math.abs(x-ex)<STAIR_HALF-.27))))),
  isKeyNear:(x,z)=>!keyFound&&Math.hypot(x-kx,z-kz)<1.15,
  isExitNear:(x,z)=>false /* no instant win on stair entry */,
  collectKey,remoteAttack:(x,z,yaw)=>{if(multiRole==='host')doHitFrom(x,z,yaw)},
@@ -925,7 +925,7 @@ let dragging=false,lastMouseX=0,lastMouseY=0;
 canvas.addEventListener('mousedown',e=>{if(!coarse){dragging=true;lastMouseX=e.clientX;lastMouseY=e.clientY}});window.addEventListener('mouseup',()=>dragging=false);
 window.addEventListener('mousemove',e=>{if(phase!=='play'||coarse)return;if(document.pointerLockElement===canvas){camera.yaw+=e.movementX*.0023;camera.pitch=Math.max(-1.05,Math.min(1.05,camera.pitch-e.movementY*.0023))}else if(dragging){camera.yaw+=(e.clientX-lastMouseX)*.004;camera.pitch=Math.max(-1.05,Math.min(1.05,camera.pitch-(e.clientY-lastMouseY)*.004));lastMouseX=e.clientX;lastMouseY=e.clientY}});
 document.addEventListener('pointerlockchange',()=>{if(phase==='play'&&!coarse&&document.pointerLockElement!==canvas){ // Clicking the game can acquire pointer lock again; do not reset progress.
- document.querySelector('#objective').innerHTML='<em>操作：</em>画面をクリックすると視点操作を再開できます';setTimeout(()=>{if(phase==='play')document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ'},2300)
+ document.querySelector('#objective').innerHTML='<em>操作：</em>画面をクリックすると視点操作を再開できます';setTimeout(()=>{if(phase==='play')document.querySelector('#objective').innerHTML=upperReached?'<em>目標：</em>2階の古代回廊を探索しよう':keyFound?'<em>目標：</em>扉の奥の階段を歩いて2階に登ろう':'<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ'},2300)
  }});
 const movePad=document.querySelector('#movePad'),stick=document.querySelector('#stick');
 function stickMove(e){const r=movePad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,limit=r.width*.33,len=Math.hypot(dx,dy),k=Math.min(1,limit/Math.max(1,len));let mx=dx*k,my=dy*k;touch.moveX=mx/limit;touch.moveY=my/limit;stick.style.transform=`translate(${mx}px,${my}px)`}
