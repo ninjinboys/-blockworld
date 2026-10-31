@@ -877,7 +877,7 @@ window.NEXA_DUNGEON_BRIDGE={
  phase:()=>phase,getHealth:()=>hp,
  spawn:()=>({x:entrance[0],z:entrance[1]}),
  pose:()=>({x:camera.x,z:camera.z,y:cameraFloor,yaw:camera.yaw}),
- isPassable:(x,z)=>passable(x,z,.27,true),
+ isPassable:(x,z)=>passable(x,z,.27,false)||(keyFound&&((z>=STAIR_START&&z<STAIR_END&&Math.abs(x-ex)<STAIR_HALF-.27)||(z>=STAIR_END&&upperClear(x,z,.27)))),
  isKeyNear:(x,z)=>!keyFound&&Math.hypot(x-kx,z-kz)<1.15,
  isExitNear:(x,z)=>false /* no instant win on stair entry */,
  collectKey,remoteAttack:(x,z,yaw)=>{if(multiRole==='host')doHitFrom(x,z,yaw)},
