@@ -716,15 +716,15 @@ function turnZombieTowardTravel(e,dx,dz,dt){
 function moveZombieTowards(e,tx,tz,dt){
  const dx=tx-e.x,dz=tz-e.z,len=Math.hypot(dx,dz);
  if(len<.07)return false;
- // Axis-aligned chase: move on one map axis at a time, never diagonally.
- // Keep the same straight-line pursuit goal; only the movement vector changes.
+ // Same direct, continuous pursuit as NEXACRAFT's updateZombie:
+ // target heading updates immediately as the player moves sideways.
+ // Do not axis-lock movement or interpolate heading behind the target.
  const step=Math.min(len,dt*2.5),oldX=e.x,oldZ=e.z;
- const useX=Math.abs(dx)>=Math.abs(dz);
- if(useX)walkEntity(e,Math.sign(dx)*Math.min(Math.abs(dx),step),0,.29);
- else walkEntity(e,0,Math.sign(dz)*Math.min(Math.abs(dz),step),.29);
+ const heading=Math.atan2(dx,-dz);
+ e.angle=heading;
+ walkEntity(e,Math.sin(heading)*step,-Math.cos(heading)*step,.29);
  const mx=e.x-oldX,mz=e.z-oldZ,moved=Math.hypot(mx,mz);
  if(moved<.0001)return false;
- turnZombieTowardTravel(e,mx,mz,dt);
  e.speed=moved/Math.max(.0001,dt);
  return true;
 }
