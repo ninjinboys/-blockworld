@@ -723,7 +723,7 @@ function moveZombieTowards(e,tx,tz,dt){
  const heading=Math.atan2(dx,-dz);
  // Slightly slower turning while retaining continuous, direct pursuit.
  const delta=Math.atan2(Math.sin(heading-e.angle),Math.cos(heading-e.angle));
- e.angle+=Math.sign(delta)*Math.min(Math.abs(delta),dt*4.2);
+ e.angle+=Math.sign(delta)*Math.min(Math.abs(delta),dt*1.68);
  walkEntity(e,Math.sin(heading)*step,-Math.cos(heading)*step,.29);
  const mx=e.x-oldX,mz=e.z-oldZ,moved=Math.hypot(mx,mz);
  if(moved<.0001)return false;
