@@ -407,7 +407,7 @@ const UPPER_HEIGHT=WALL;
 function upperOpen(tx,tz){return tz>=49&&tz<=65&&((tz<=55&&tx>=74&&tx<=78)||(tz>=55&&tz<=62&&tx>=71&&tx<=81)||(tz>=62&&tx>=73&&tx<=79))}
 function upperClear(x,z,r=.27){for(const xx of [x-r,x+r])for(const zz of [z-r,z+r])if(!upperOpen(Math.floor(xx/C),Math.floor(zz/C)))return false;return true}
 function staircaseHeight(z){return WALL*Math.max(0,Math.min(1,(z-STAIR_START)/(STAIR_END-STAIR_START)))}
-function playerFloorAt(x,z){if(!keyFound)return 0;if(z>=STAIR_START&&z<=STAIR_END&&Math.abs(x-ex)<STAIR_HALF+.03)return staircaseHeight(z);if(z>=STAIR_END&&upperClear(x,z,.30))return UPPER_HEIGHT;return 0}
+function playerFloorAt(x,z){if(!keyFound)return 0;if(z>=STAIR_START&&z<=STAIR_END&&Math.abs(x-ex)<STAIR_HALF+.03)return staircaseHeight(z);if(z>=STAIR_END&&(upperClear(x,z,.30)||(z<49*C+.42&&Math.abs(x-ex)<STAIR_HALF-.30)))return UPPER_HEIGHT;return 0}
 
 box(staticVerts,ex-1.08,0,doorZ-.18,ex-.82,2.78,doorZ+.22,[.49,.25,.14]);
 box(staticVerts,ex+.82,0,doorZ-.18,ex+1.08,2.78,doorZ+.22,[.30,.35,.38]);
@@ -721,7 +721,7 @@ function passable(x,z,r=.27,isPlayer=false){
   // 3D steps: no side escapes or jumping; the landing meets floor two at its real height.
   if(z>=STAIR_START&&z<STAIR_END)return Math.abs(x-ex)<STAIR_HALF-r;
   if(z>=STAIR_END){
-   if(upperClear(x,z,r))return true;
+   if(upperClear(x,z,r)||(z<49*C+r+.05&&Math.abs(x-ex)<STAIR_HALF-r))return true;
    if(cameraFloor>.20)return false;
   }
   if(cameraFloor>.20&&z>=STAIR_START-.20)return false;
