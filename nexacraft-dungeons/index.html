@@ -719,7 +719,7 @@ function moveZombieTowards(e,tx,tz,dt){
  // Same direct, continuous pursuit as NEXACRAFT's updateZombie:
  // target heading updates immediately as the player moves sideways.
  // Do not axis-lock movement or interpolate heading behind the target.
- const step=Math.min(len,dt*2.5),oldX=e.x,oldZ=e.z;
+ const step=Math.min(len,dt*1.65),oldX=e.x,oldZ=e.z;
  const heading=Math.atan2(dx,-dz);
  e.angle=heading;
  walkEntity(e,Math.sin(heading)*step,-Math.cos(heading)*step,.29);
