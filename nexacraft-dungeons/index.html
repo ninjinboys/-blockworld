@@ -716,8 +716,12 @@ function turnZombieTowardTravel(e,dx,dz,dt){
 function moveZombieTowards(e,tx,tz,dt){
  const dx=tx-e.x,dz=tz-e.z,len=Math.hypot(dx,dz);
  if(len<.07)return false;
+ // Axis-aligned chase: move on one map axis at a time, never diagonally.
+ // Keep the same straight-line pursuit goal; only the movement vector changes.
  const step=Math.min(len,dt*2.5),oldX=e.x,oldZ=e.z;
- walkEntity(e,dx/len*step,dz/len*step,.29);
+ const useX=Math.abs(dx)>=Math.abs(dz);
+ if(useX)walkEntity(e,Math.sign(dx)*Math.min(Math.abs(dx),step),0,.29);
+ else walkEntity(e,0,Math.sign(dz)*Math.min(Math.abs(dz),step),.29);
  const mx=e.x-oldX,mz=e.z-oldZ,moved=Math.hypot(mx,mz);
  if(moved<.0001)return false;
  turnZombieTowardTravel(e,mx,mz,dt);
