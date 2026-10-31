@@ -701,13 +701,28 @@ function collectKey(){
  document.querySelector('#objective').innerHTML='<em>目標：</em>開いた出口の扉へ向かい、中へ入ろう！';
  notify('🔑 古代の鍵を入手！ 出口の扉が開いた！',3.5);
 }
-function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI/2;camera.pitch=0;hp=100;kills=0;keyFound=false;doorOpen=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:hash(i,71)*Math.PI*2,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
+function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI/2;camera.pitch=0;hp=100;kills=0;keyFound=false;doorOpen=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:hash(i,71)*Math.PI*2,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0,alertTime:0,navStep:1,navGoal:'',lastKnownX:p.x,lastKnownZ:p.z}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
 // Change orientation only after an NPC physically moves. Never billboard towards a viewer.
 function turnZombieTowardTravel(e,dx,dz,dt){
  const len=Math.hypot(dx,dz);if(len<.0001)return;
  const desired=Math.atan2(dx,-dz);
  const delta=Math.atan2(Math.sin(desired-e.angle),Math.cos(desired-e.angle));
  e.angle+=Math.sign(delta)*Math.min(Math.abs(delta),dt*5.0);
+}
+
+/* Steer by the position actually traversed; keep facing when standing still.
+ * Pathfinding is only used when direct sight to the player is blocked.
+ */
+function moveZombieTowards(e,tx,tz,dt){
+ const dx=tx-e.x,dz=tz-e.z,len=Math.hypot(dx,dz);
+ if(len<.07)return false;
+ const step=Math.min(len,dt*2.5),oldX=e.x,oldZ=e.z;
+ walkEntity(e,dx/len*step,dz/len*step,.29);
+ const mx=e.x-oldX,mz=e.z-oldZ,moved=Math.hypot(mx,mz);
+ if(moved<.0001)return false;
+ turnZombieTowardTravel(e,mx,mz,dt);
+ e.speed=moved/Math.max(.0001,dt);
+ return true;
 }
 function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)doorOpen=Math.min(1,doorOpen+dt*1.25);
  let forward=0,strafe=0;if(keys.KeyW||keys.ArrowUp)forward++;if(keys.KeyS||keys.ArrowDown)forward--;if(keys.KeyA||keys.ArrowLeft)strafe--;if(keys.KeyD||keys.ArrowRight)strafe++;
@@ -716,22 +731,72 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)
  if(swing>0){swing=Math.max(0,swing-dt);if(!swingHit&&swing<.19){swingHit=true;doHit()}}swingCd=Math.max(0,swingCd-dt);
  damageFlash=Math.max(0,damageFlash-dt*2.5);document.querySelector('#hurt').style.opacity=damageFlash.toFixed(2);
  if(multiRole!=='guest')for(const e of entities){
- if(e.hp<=0)continue;
- const targets=[{x:camera.x,z:camera.z,hp,me:true},
+  if(e.hp<=0)continue;
+  e.flash=Math.max(0,e.flash-dt);
+  e.attackPose=Math.max(0,e.attackPose-dt*1.8);
+  e.attackTimer=Math.max(0,e.attackTimer-dt);
+  e.speed=0;
+  const targets=[{x:camera.x,z:camera.z,hp,me:true},
    ...remotePlayers.filter(p=>p.hp>0).map(p=>({...p,me:false}))];
- const target=targets.sort((a,b)=>Math.hypot(e.x-a.x,e.z-a.z)-Math.hypot(e.x-b.x,e.z-b.z))[0];
- if(!target)continue;
- const dist=Math.hypot(target.x-e.x,target.z-e.z);
- // Keep the last facing when idle, even when the camera circles this enemy.
- e.flash=Math.max(0,e.flash-dt);e.attackPose=Math.max(0,e.attackPose-dt*1.8);e.attackTimer=Math.max(0,e.attackTimer-dt);e.speed=0;
- if(dist<1.25){if(e.attackTimer<=0&&lineOfSight(e.x,e.z,target.x,target.z)){
-   // Only a new attack triggers a look at the target, never every frame.
-   e.angle=Math.atan2(target.x-e.x,-(target.z-e.z));
-   e.attackTimer=1.3;e.attackPose=1;
-   if(target.me){hp=Math.max(0,hp-14);damageFlash=.85;playSound('hurt');updateHUD();if(hp<=0){end('lose');return}}
-   else window.NEXA_MP?.hostDamage(target.id,14);
- }}
- else if(dist<16){e.repath-=dt;if(e.repath<=0){e.path=shortestPath(Math.floor(e.x/C),Math.floor(e.z/C),Math.floor(target.x/C),Math.floor(target.z/C));e.repath=.6+hash(e.seed,elapsed)*.2}if(e.path.length){let t=e.path[Math.min(1,e.path.length-1)],[tx,tz]=point(t[0],t[1]);if(Math.hypot(tx-e.x,tz-e.z)<.22&&e.path.length>1)e.path.shift();t=e.path[Math.min(1,e.path.length-1)];[tx,tz]=point(t[0],t[1]);const d=Math.hypot(tx-e.x,tz-e.z);if(d>.06){let vx=(tx-e.x)/d,vz=(tz-e.z)/d;const previousX=e.x,previousZ=e.z;walkEntity(e,vx*dt*.99,vz*dt*.99,.29);const movedX=e.x-previousX,movedZ=e.z-previousZ;if(Math.hypot(movedX,movedZ)>.0001){turnZombieTowardTravel(e,movedX,movedZ,dt);e.speed=1}}}}
+  const target=targets.sort((a,b)=>Math.hypot(e.x-a.x,e.z-a.z)-Math.hypot(e.x-b.x,e.z-b.z))[0];
+  if(!target)continue;
+  const dist=Math.hypot(target.x-e.x,target.z-e.z);
+  // An enemy that can SEE a player moves directly at that player. Never
+  // steer toward arbitrary grid-cell centers when the path is visibly clear.
+  const canSee=dist<49&&lineOfSight(e.x,e.z,target.x,target.z);
+  if(canSee){
+   e.alertTime=12;
+   e.lastKnownX=target.x;
+   e.lastKnownZ=target.z;
+  }else e.alertTime=Math.max(0,(e.alertTime||0)-dt);
+  if(!canSee&&dist>16&&e.alertTime<=0)continue;
+  if(dist<1.40&&canSee){
+   if(e.attackTimer<=0){
+    // Face a player only at the exact moment of striking, not constantly.
+    e.angle=Math.atan2(target.x-e.x,-(target.z-e.z));
+    e.attackTimer=1.3;e.attackPose=1;
+    if(target.me){
+     hp=Math.max(0,hp-14);damageFlash=.85;playSound('hurt');updateHUD();
+     if(hp<=0){end('lose');return}
+    }else window.NEXA_MP?.hostDamage(target.id,14);
+   }
+   continue;
+  }
+  if(canSee){
+   // Straight line chase, including within the same map cell.
+   // Discard old maze waypoints as soon as the player becomes visible.
+   e.path=[];e.navStep=1;e.navGoal='';e.repath=0;
+   moveZombieTowards(e,target.x,target.z,dt);
+  }else{
+   // When visibility is blocked, pursue the last known position via valid
+   // walkable cells, consuming each waypoint exactly once.
+   const tx=e.alertTime>0?e.lastKnownX:target.x;
+   const tz=e.alertTime>0?e.lastKnownZ:target.z;
+   const endX=Math.floor(tx/C),endZ=Math.floor(tz/C);
+   const goal=endX+','+endZ;
+   e.repath-=dt;
+   if(e.repath<=0||e.navGoal!==goal||!e.path?.length){
+    e.path=shortestPath(Math.floor(e.x/C),Math.floor(e.z/C),endX,endZ);
+    e.navStep=e.path.length>1?1:0;
+    e.navGoal=goal;e.repath=.7;
+   }
+   if(e.path.length){
+    while(e.navStep<e.path.length){
+     const [wx,wz]=point(e.path[e.navStep][0],e.path[e.navStep][1]);
+     if(Math.hypot(wx-e.x,wz-e.z)>.36)break;
+     e.navStep++;
+    }
+    if(e.navStep<e.path.length){
+     const [wx,wz]=point(e.path[e.navStep][0],e.path[e.navStep][1]);
+     if(!moveZombieTowards(e,wx,wz,dt)){
+      // Repath immediately if an obstacle prevents progress.
+      e.repath=0;
+     }
+    }else if(Math.hypot(tx-e.x,tz-e.z)>.45){
+     moveZombieTowards(e,tx,tz,dt);
+    }
+   }
+  }
  }
  if(multiRole!=='guest'&&!keyFound&&Math.hypot(camera.x-kx,camera.z-kz)<1.15)collectKey();
 if(multiRole!=='guest'&&keyFound&&doorOpen>.86&&Math.hypot(camera.x-ex,camera.z-ez)<.80){window.NEXA_MP?.clear();if(multiRole==='solo')end('win');return}
