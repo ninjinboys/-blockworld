@@ -429,7 +429,7 @@ for(let tz=49;tz<=65;tz++)for(let tx=71;tx<=81;tx++){
  for(let dx=0;dx<2;dx++)for(let dz=0;dz<2;dz++){const k=.87+hash(tx*3+dx,tz*5+dz,81)*.25;box(staticVerts,x+dx*C/2+.04,y+.018,z+dz*C/2+.04,x+(dx+1)*C/2-.04,y+.035,z+(dz+1)*C/2-.04,mul([.49,.44,.34],k))}
  box(staticVerts,x,y+WALL-.12,z,x+C,y+WALL,z+C,[.245,.24,.19]);
  for(const [dx,dz] of [[-1,0],[1,0],[0,-1],[0,1]]){
-  if(upperOpen(tx+dx,tz+dz))continue;
+  if(upperOpen(tx+dx,tz+dz)||(tz===49&&tx===76&&dz===-1))continue; // Stairwell doorway stays open.
   const ax=dx<0?x-.22:dx>0?x+C-.09:x,bx=dx<0?x+.09:dx>0?x+C+.22:x+C,az=dz<0?z-.22:dz>0?z+C-.09:z,bz=dz<0?z+.09:dz>0?z+C+.22:z+C;
   box(staticVerts,ax,y,az,bx,y+WALL,bz,[.42,.34,.24]);
   for(let j=1;j<=6;j++){const h=y+j*WALL/7;box(staticVerts,ax-.015,h,az-.015,bx+.015,h+.055,bz+.015,[.57,.45,.30])}
