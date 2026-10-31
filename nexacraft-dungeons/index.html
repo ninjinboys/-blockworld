@@ -696,8 +696,8 @@ function drawMap(){
  const xOff=Math.max(0,Math.min(W-view,px-Math.floor(view/2))),zOff=Math.max(0,Math.min(H-view,pz-Math.floor(view/2)));
  mc.clearRect(0,0,size,size);mc.fillStyle='#111b22';mc.fillRect(0,0,size,size);
  for(let z=zOff;z<zOff+view;z++)for(let x=xOff;x<xOff+view;x++){
-  if(cameraFloor<=WALL*.70&&!seen[z][x])continue;
-  mc.fillStyle=cameraFloor>WALL*.70?(upperOpen(x,z)?'#b8a582':'#272827'):(wallAt(x,z)?'#59553c':'#9b8f69');
+  if(!(cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END)&&!seen[z][x])continue;
+  mc.fillStyle=(cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END)?(upperOpen(x,z)?'#b8a582':'#272827'):(wallAt(x,z)?'#59553c':'#9b8f69');
   mc.fillRect((x-xOff)*cell+.15,(z-zOff)*cell+.15,cell-.25,cell-.25);
  }
  const mark=(x,z,color,scale=.7)=>{
@@ -705,9 +705,9 @@ function drawMap(){
   mc.fillStyle=color;mc.fillRect((col+(1-scale)/2)*cell,(row+(1-scale)/2)*cell,cell*scale,cell*scale);
  };
  const kgx=Math.floor(kx/C),kgz=Math.floor(kz/C),egx=Math.floor(ex/C),egz=Math.floor(ez/C);
- if(cameraFloor<WALL*.70&&!keyFound&&seen[kgz]?.[kgx])mark(kgx,kgz,'#f9cd52',.75);
- if(cameraFloor<WALL*.70&&seen[egz]?.[egx])mark(egx,egz,keyFound?'#5af2c4':'#de6958',.75);
- if(cameraFloor>WALL*.70)mark(76,49,'#7af3d5',.95);
+ if(!(cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END)&&!keyFound&&seen[kgz]?.[kgx])mark(kgx,kgz,'#f9cd52',.75);
+ if(!(cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END)&&seen[egz]?.[egx])mark(egx,egz,keyFound?'#5af2c4':'#de6958',.75);
+ if((cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END))mark(76,49,'#7af3d5',.95);
  for(const e of entities)if(e.hp>0&&Math.hypot(e.x-camera.x,e.z-camera.z)<C*4.5){
   mark(Math.floor(e.x/C),Math.floor(e.z/C),'#eb665f',.75);
  }
@@ -747,7 +747,7 @@ function updateHUD(){
  document.querySelector('#healthHud').setAttribute('aria-label','体力 '+(hp/10).toFixed(1)+' / 10');
  document.querySelector('#count').textContent='☠ '+kills+' / '+initial.length;
  document.querySelector('#keyStatus').textContent=keyFound?'🔓 階段の扉が開いた！':'🔑 鍵を探そう';
- document.querySelector('#floorStatus').textContent=cameraFloor>WALL*.70?'2F':cameraFloor>.15?'階段':'1F';
+ document.querySelector('#floorStatus').textContent=(cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END)?'2F':cameraFloor>.15?'階段':'1F';
 }
 function end(mode){if(mode==='lose'&&multiRole==='host')window.NEXA_MP?.fail();phase=mode;document.exitPointerLock?.();document.querySelector('#menu').classList.remove('hidden');document.querySelector('#touchUi').classList.remove('active');document.querySelector('#startBtn').textContent='もう一度挑戦する';document.querySelector('#menuText').innerHTML=mode==='win'?'クリア！ 開いた出口の扉をくぐり、<br>地下迷宮を脱出した！':'ゲームオーバー。<br>ゾンビに倒されてしまった。';document.querySelector('#helpText').innerHTML=mode==='win'?'🔑 鍵で扉を開け、出口に入ってクリア！<br>ゾンビの全滅は必要ない。':'⚔ ゾンビは2回攻撃すると倒せる。<br>攻撃が届く距離を保って戦おう。'}
 function collectKey(){
@@ -793,7 +793,7 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)
   upperReached=true;notify('🏰 2階に到着！ 上階の広間を探索しよう',4);
   document.querySelector('#objective').innerHTML='<em>目標：</em>2階の古代回廊を探索しよう';
  }
- document.querySelector('#floorStatus').textContent=cameraFloor>WALL*.70?'2F':cameraFloor>.15?'階段':'1F';
+ document.querySelector('#floorStatus').textContent=(cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END)?'2F':cameraFloor>.15?'階段':'1F';
  updateVisited();if(keys.Space)attack();
  if(swing>0){swing=Math.max(0,swing-dt);if(!swingHit&&swing<.19){swingHit=true;doHit()}}swingCd=Math.max(0,swingCd-dt);
  damageFlash=Math.max(0,damageFlash-dt*2.5);document.querySelector('#hurt').style.opacity=damageFlash.toFixed(2);
