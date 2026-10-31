@@ -491,9 +491,10 @@ function doorModel(out){
  const b=(x0,y0,z0,x1,y1,z1,col,bright=1)=>bodyBox(out,panel,x0,y0,z0,x1,y1,z1,col,bright);
  const localZ=doorZ-ez,lift=doorOpen*3.40;
  if(doorOpen>.24){
-   const alpha=.4+.6*doorOpen,glow=[.10*alpha,.55*alpha,.45*alpha];
-   b(-.60,.16,.43,.60,2.46,.48,glow,1.4);
-   b(-.48,.25,.38,.48,2.38,.43,[.14,.42,.36],1.15);
+  // The open gateway reveals real steps; only its edge runes glow.
+  const glow=[.12,.73,.55];
+  b(-.99,.31,localZ-.16,-.91,2.50,localZ-.08,glow,1.5);
+  b(.91,.31,localZ-.16,.99,2.50,localZ-.08,glow,1.5);
  }
  if(doorOpen<.995){
    b(-.79,.18+lift,localZ-.105,.79,2.65+lift,localZ+.105,dark);
@@ -665,7 +666,7 @@ function renderFallback(){
    const lift=doorOpen*3.40;
    block(-1.05,0,.20,2.75,'#55656a');block(.85,0,.20,2.75,'#55656a');
    block(-1.05,2.69,2.10,.34,'#657176');
-   if(doorOpen>.24){block(-.75,.16,1.50,2.36,'#1f574e');block(-.59,.23,1.18,2.20,'#327f6a');}
+   if(doorOpen>.24){block(-.99,.25,.09,2.38,'#46ae8b');block(.90,.25,.09,2.38,'#46ae8b');}
    if(doorOpen<.995){
      block(-.78,.18+lift,1.56,2.47,'#33454b');block(-.70,.32+lift,1.40,2.19,'#647878');
      for(let j=0;j<6;j++)block(-.70,.38+j*.35+lift,1.40,.05,'#c19b5c');
