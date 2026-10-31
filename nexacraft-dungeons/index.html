@@ -508,7 +508,7 @@ function allyModel(out,p){
  // Teammate has recognizable NEXACRAFT block limbs and a sword.
  const blue=[.14,.49,.61],blueSide=[.10,.32,.41],skin=[.83,.63,.47],pants=[.23,.33,.43],steel=[.79,.86,.90],gold=[.80,.61,.33];
  const q={x:p.x,z:p.z,angle:p.yaw};
- const b=(x0,y0,z0,x1,y1,z1,c)=>bodyBox(out,q,x0,y0,z0,x1,y1,z1,c);
+ const b=(x0,y0,z0,x1,y1,z1,c)=>bodyBox(out,q,x0,y0+(p.y||0),z0,x1,y1+(p.y||0),z1,c);
  b(-.30,.77,-.20,.30,1.43,.20,blue);
  b(-.24,1.44,-.23,.24,1.89,.23,skin);
  b(-.23,1.83,-.24,.23,1.93,.24,[.22,.25,.30]);
@@ -802,8 +802,8 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)
   e.attackPose=Math.max(0,e.attackPose-dt*1.8);
   e.attackTimer=Math.max(0,e.attackTimer-dt);
   e.speed=0;
-  const targets=[{x:camera.x,z:camera.z,hp,me:true},
-   ...remotePlayers.filter(p=>p.hp>0).map(p=>({...p,me:false}))];
+  const targets=[{x:camera.x,z:camera.z,y:cameraFloor,hp,me:true},
+   ...remotePlayers.filter(p=>p.hp>0).map(p=>({...p,me:false}))].filter(p=>(p.y||0)<WALL*.48);
   const target=targets.sort((a,b)=>Math.hypot(e.x-a.x,e.z-a.z)-Math.hypot(e.x-b.x,e.z-b.z))[0];
   if(!target)continue;
   const dist=Math.hypot(target.x-e.x,target.z-e.z);
@@ -876,15 +876,15 @@ window.NEXA_DUNGEON_BRIDGE={
  getRole:()=>multiRole,setRole:r=>{multiRole=r;},
  phase:()=>phase,getHealth:()=>hp,
  spawn:()=>({x:entrance[0],z:entrance[1]}),
- pose:()=>({x:camera.x,z:camera.z,yaw:camera.yaw}),
- isPassable:(x,z)=>passable(x,z,.27),
+ pose:()=>({x:camera.x,z:camera.z,y:cameraFloor,yaw:camera.yaw}),
+ isPassable:(x,z)=>passable(x,z,.27,true),
  isKeyNear:(x,z)=>!keyFound&&Math.hypot(x-kx,z-kz)<1.15,
- isExitNear:(x,z)=>keyFound&&doorOpen>.86&&Math.hypot(x-ex,z-ez)<.80,
+ isExitNear:(x,z)=>false /* no instant win on stair entry */,
  collectKey,remoteAttack:(x,z,yaw)=>{if(multiRole==='host')doHitFrom(x,z,yaw)},
  begin:()=>start(),finish:mode=>{if(phase==='play'||phase==='pause')end(mode)},
  setPeers:peers=>{remotePlayers=(Array.isArray(peers)?peers:[]).slice(0,3)
    .filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&Number.isFinite(p.yaw))
-   .map(p=>({id:p.id,name:String(p.name||'冒険者').slice(0,12),x:p.x,z:p.z,yaw:p.yaw,hp:p.hp||0}))},
+   .map(p=>({id:p.id,name:String(p.name||'冒険者').slice(0,12),x:p.x,z:p.z,y:Number.isFinite(p.y)?p.y:0,yaw:p.yaw,hp:p.hp||0}))},
  getPeers:()=>remotePlayers,
  snapshot:()=>({keyFound,doorOpen,kills,zombies:entities.map(e=>({
   x:e.x,z:e.z,hp:e.hp,angle:e.angle,flash:e.flash,attackPose:e.attackPose
@@ -908,8 +908,8 @@ window.NEXA_DUNGEON_BRIDGE={
     if(hp===0&&phase==='play'){end('lose');}
   }
   if(keyFound&&!oldKey){
-    document.querySelector('#objective').innerHTML='<em>目標：</em>開いた出口の扉へ向かい、中へ入ろう！';
-    notify('🔑 仲間が鍵を見つけた！ 出口が開いた！',2.6);
+    document.querySelector('#objective').innerHTML='<em>目標：</em>開いた扉の奥へ進み、階段を歩いて2階に登ろう！';
+    notify('🔑 仲間が鍵を見つけた！ 階段の扉が開いた！',2.6);
   }
   updateHUD();
  }
