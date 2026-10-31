@@ -91,7 +91,7 @@
 </head>
 <body>
 <canvas id="game"></canvas><canvas id="sword"></canvas><canvas id="exactSword" aria-label="NEXACRAFT本編の剣士の剣 3Dモデル"></canvas><div id="swordModelMessage" style="display:none"></div><div id="vignette"></div><div id="hurt"></div>
-<div id="topBar"><div><div id="brand">NEXACRAFT <small>D U N G E O N S · P R O T O T Y P E</small></div><div id="stats"><span id="keyStatus">🔑 鍵を探そう</span><span id="count">☠ 0 / 4</span></div></div><div id="minimapShell"><canvas id="minimap" width="170" height="170"></canvas></div></div>
+<div id="topBar"><div><div id="brand">NEXACRAFT <small>D U N G E O N S · P R O T O T Y P E</small></div><div id="stats"><span id="keyStatus">🔑 鍵を探そう</span><span id="floorStatus">1F</span><span id="count">☠ 0 / 4</span></div></div><div id="minimapShell"><canvas id="minimap" width="170" height="170"></canvas></div></div>
 <div id="healthHud" role="img" aria-label="体力 10 / 10"><div id="hearts"></div></div><div id="crosshair"></div><div id="toast"></div><div id="objective"><em>目標：</em>地下要塞に隠された古代の鍵を探せ</div>
 <div id="multiRoomHud" hidden></div>
 <button id="chatToggle" type="button" hidden>💬 チャット</button>
@@ -103,7 +103,7 @@
 <div id="multiActions"><button id="inviteLink" type="button" hidden>🔗 招待リンクをコピー</button><button id="leaveRoom" type="button" hidden>退出</button><span id="chatNotice" hidden>最大4人／ホスト退出で終了</span></div>
 </section>
 <div id="touchUi"><div id="movePad"><div id="stick"></div></div><button id="hitBtn" type="button">⚔ 攻撃</button><div id="touchHint">右側をスワイプして視点移動</div><button id="pauseBtn" type="button">Ⅱ</button></div>
-<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">石門回廊の奥に広がる、朽ちた地下要塞。<br>巨大な広間や暗い回廊を探索し、古代の鍵で出口の扉を開こう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・画面右で視点・攻撃ボタン</div><details id="multiOptions">
+<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">石門回廊の奥に広がる、朽ちた地下要塞。<br>巨大な広間や暗い回廊を探索し、古代の鍵で階段入口の扉を開き、歩いて2階へ登ろう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・画面右で視点・攻撃ボタン</div><details id="multiOptions">
 <summary>🌐 マルチプレイ（最大4人・チャット対応）</summary>
 <label>名前 <input id="multiName" maxlength="12" value="冒険者" autocomplete="nickname" aria-label="プレイヤー名"></label>
 <label>部屋コード <input id="multiCode" maxlength="6" placeholder="自動作成／入力" inputmode="text" autocapitalize="characters" aria-label="英数字6文字の部屋コード"></label>
@@ -231,7 +231,8 @@ const initial=[];let entrance,exit,keyPos;
 for(let z=0;z<H;z++)for(let x=0;x<W;x++){
  const c=grid[z][x];if(c==='P')entrance=point(x,z);if(c==='E')exit=point(x,z);if(c==='K')keyPos=point(x,z);if(c==='Z')initial.push({x:point(x,z)[0],z:point(x,z)[1]});if(c!=='#')grid[z][x]='.';
 }
-const camera={x:entrance[0],z:entrance[1],yaw:Math.PI/2,pitch:0}; // First view points into labyrinth.
+const camera={x:entrance[0],z:entrance[1],yaw:Math.PI/2,pitch:0};
+let cameraFloor=0,upperReached=false; // First view points into labyrinth.
 let multiRole="solo",remotePlayers=[];let hp=100,kills=0,keyFound=false,doorOpen=0,phase='menu',entities=[],elapsed=0,lastTime=0,swing=0,swingCd=0,swingHit=false,damageFlash=0,walkTime=0,toastUntil=0,toastText='',hitShake=0;
 const keys={},seen=Array.from({length:H},()=>Array(W).fill(false));
 const touch={moveX:0,moveY:0,lookId:null,lastX:0,lastY:0,moveId:null};const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
@@ -304,6 +305,8 @@ for(let z=0;z<H;z++)for(let x=0;x<W;x++){
   const moss=hash(x*3+dx,z*5+dz)>0.87;const col=moss?[.22,.25,.10]:mul(stone,m*(.86+.20*hash(x+dx,z+dz,5)));
   quad(staticVerts,[a,.015,p],[b,.015,p],[b,.015,q],[a,.015,q],col);
  }
+ // The stairs cut through the first floor ceiling.
+ if(x===76&&z>=46&&z<=48)continue;
  // Dark slab ceiling with checker tiles and heavy support beams.
  quad(staticVerts,[x0,WALL,z0+C],[x0+C,WALL,z0+C],[x0+C,WALL,z0],[x0,WALL,z0],[.23,.22,.17]);
  for(let dz=0;dz<2;dz++)for(let dx=0;dx<2;dx++){
@@ -399,10 +402,50 @@ const [kx,kz]=keyPos,[ex,ez]=exit;
 box(staticVerts,kx-.43,0,kz-.43,kx+.43,.32,kz+.43,[.46,.22,.13]);
 box(staticVerts,kx-.34,.32,kz-.34,kx+.34,.57,kz+.34,[.66,.38,.18]);
 const doorZ=ez-.80;
+const STAIR_START=ez+.45,STAIR_END=49*C+.20,STAIR_STEPS=18,STAIR_HALF=1.46;
+const UPPER_HEIGHT=WALL;
+function upperOpen(tx,tz){return tz>=49&&tz<=65&&((tz<=55&&tx>=74&&tx<=78)||(tz>=55&&tz<=62&&tx>=71&&tx<=81)||(tz>=62&&tx>=73&&tx<=79))}
+function upperClear(x,z,r=.27){for(const xx of [x-r,x+r])for(const zz of [z-r,z+r])if(!upperOpen(Math.floor(xx/C),Math.floor(zz/C)))return false;return true}
+function staircaseHeight(z){return WALL*Math.max(0,Math.min(1,(z-STAIR_START)/(STAIR_END-STAIR_START)))}
+function playerFloorAt(x,z){if(!keyFound)return 0;if(z>=STAIR_START&&z<=STAIR_END&&Math.abs(x-ex)<STAIR_HALF+.03)return staircaseHeight(z);if(z>=STAIR_END&&upperClear(x,z,.30))return UPPER_HEIGHT;return 0}
+
 box(staticVerts,ex-1.08,0,doorZ-.18,ex-.82,2.78,doorZ+.22,[.49,.25,.14]);
 box(staticVerts,ex+.82,0,doorZ-.18,ex+1.08,2.78,doorZ+.22,[.30,.35,.38]);
 box(staticVerts,ex-1.11,2.68,doorZ-.20,ex+1.11,3.08,doorZ+.24,[.63,.34,.19]);
 box(staticVerts,ex-1.0,.06,doorZ-.23,ex+1.0,.19,doorZ+.30,[.60,.35,.19]);
+
+// Actual 3D treads and protective stair rails.
+for(let i=0;i<STAIR_STEPS;i++){
+ const a=STAIR_START+(STAIR_END-STAIR_START)*i/STAIR_STEPS,b=STAIR_START+(STAIR_END-STAIR_START)*(i+1)/STAIR_STEPS,h=UPPER_HEIGHT*(i+1)/STAIR_STEPS;
+ box(staticVerts,ex-1.31,0,a,ex+1.31,h,b,[.49,.43,.32]);
+ box(staticVerts,ex-1.33,Math.max(0,h-.10),a-.025,ex+1.33,h+.012,a+.08,[.66,.51,.32]);
+ for(const side of [-1,1]){const xx=ex+side*1.48;box(staticVerts,xx-.15,h-.04,a,xx+.15,h+1.10,b,[.34,.29,.22]);box(staticVerts,xx-.19,h+1.04,a,xx+.19,h+1.19,b,[.66,.51,.32])}
+}
+// The upper gallery is an explorable second-storey space, not a win trigger.
+for(let tz=49;tz<=65;tz++)for(let tx=71;tx<=81;tx++){
+ if(!upperOpen(tx,tz))continue;
+ const x=tx*C,z=tz*C,y=UPPER_HEIGHT;
+ box(staticVerts,x,y-.15,z,x+C,y+.015,z+C,[.35,.32,.24]);
+ for(let dx=0;dx<2;dx++)for(let dz=0;dz<2;dz++){const k=.87+hash(tx*3+dx,tz*5+dz,81)*.25;box(staticVerts,x+dx*C/2+.04,y+.018,z+dz*C/2+.04,x+(dx+1)*C/2-.04,y+.035,z+(dz+1)*C/2-.04,mul([.49,.44,.34],k))}
+ box(staticVerts,x,y+WALL-.12,z,x+C,y+WALL,z+C,[.245,.24,.19]);
+ for(const [dx,dz] of [[-1,0],[1,0],[0,-1],[0,1]]){
+  if(upperOpen(tx+dx,tz+dz))continue;
+  const ax=dx<0?x-.22:dx>0?x+C-.09:x,bx=dx<0?x+.09:dx>0?x+C+.22:x+C,az=dz<0?z-.22:dz>0?z+C-.09:z,bz=dz<0?z+.09:dz>0?z+C+.22:z+C;
+  box(staticVerts,ax,y,az,bx,y+WALL,bz,[.42,.34,.24]);
+  for(let j=1;j<=6;j++){const h=y+j*WALL/7;box(staticVerts,ax-.015,h,az-.015,bx+.015,h+.055,bz+.015,[.57,.45,.30])}
+ }
+}
+for(const [tx,tz] of [[74,53],[78,53],[72,56],[80,56],[72,61],[80,61],[74,64],[78,64]]){
+ if(!upperOpen(tx,tz))continue;
+ const x=(tx+.5)*C,z=(tz+.5)*C,y=UPPER_HEIGHT;
+ box(staticVerts,x-.23,y,z-.23,x+.23,y+2.45,z+.23,[.50,.38,.25]);
+ box(staticVerts,x-.35,y+2.37,z-.35,x+.35,y+2.59,z+.35,[.68,.52,.30]);
+ box(staticVerts,x-.22,y+2.55,z-.22,x+.22,y+2.85,z+.22,[1.08,.48,.16],1.3);
+ box(staticVerts,x-.13,y+2.75,z-.13,x+.13,y+3.05,z+.13,[1.55,.89,.36],1.5);
+ lights.push(x,y+2.8,z);
+}
+box(staticVerts,ex-1.40,UPPER_HEIGHT-.19,STAIR_END-.12,ex+1.40,UPPER_HEIGHT+.035,49*C+C,[.55,.45,.31]);
+
 const staticData=new Float32Array(staticVerts);gl.bindBuffer(gl.ARRAY_BUFFER,staticBuffer);gl.bufferData(gl.ARRAY_BUFFER,staticData,gl.STATIC_DRAW);
 function rotated(lx,lz,x,z,a){let c=Math.cos(a),s=Math.sin(a);return[x+lx*c-lz*s,z+lx*s+lz*c]}
 function bodyBox(out,entity,x0,y0,z0,x1,y1,z1,color,brightness=1){let corners=[];const a=entity.angle;for(const [lx,lz] of [[x0,z0],[x1,z0],[x1,z1],[x0,z1]])corners.push(rotated(lx,lz,entity.x,entity.z,a));const A=corners;let c=mul(color,brightness);quad(out,[A[0][0],y1,A[0][1]],[A[1][0],y1,A[1][1]],[A[2][0],y1,A[2][1]],[A[3][0],y1,A[3][1]],mul(c,.96));quad(out,[A[3][0],y0,A[3][1]],[A[2][0],y0,A[2][1]],[A[1][0],y0,A[1][1]],[A[0][0],y0,A[0][1]],mul(c,.7));for(let i=0;i<4;i++){const j=(i+1)%4;quad(out,[A[i][0],y0,A[i][1]],[A[j][0],y0,A[j][1]],[A[j][0],y1,A[j][1]],[A[i][0],y1,A[i][1]],mul(c,[.81,.72,.94,1][i]))}}
