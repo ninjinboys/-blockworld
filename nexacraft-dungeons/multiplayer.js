@@ -57,7 +57,7 @@ function snapshot(){
  return {
   t:'snapshot',world:bridge.snapshot(),players:[
    {...bridge.pose(),id:'host',name:myName,hp:bridge.getHealth()},
-   ...[...players.values()].map(({id,name,x,z,yaw,hp})=>({id,name,x,z,yaw,hp}))
+   ...[...players.values()].map(({id,name,x,z,y,yaw,hp})=>({id,name,x,z,y,yaw,hp}))
   ]
  };
 }
@@ -82,7 +82,7 @@ function hostMessage(id,raw){
   if(!bridge.isPassable(raw.x,raw.z))return;
   const now=performance.now(),dt=Math.max(.05,(now-(p.lastPose||now))/1000);
   if(p.lastPose&&Math.hypot(raw.x-p.x,raw.z-p.z)>Math.max(1.75,9*dt))return;
-  p.x=raw.x;p.z=raw.z;p.yaw=raw.yaw;p.lastPose=now;
+  p.x=raw.x;p.z=raw.z;p.y=Math.max(0,Math.min(5.15,Number(raw.y)||0));p.yaw=raw.yaw;p.lastPose=now;
   if(p.hp>0 && bridge.isKeyNear(p.x,p.z))bridge.collectKey();
   if(p.hp>0 && bridge.isExitNear(p.x,p.z))clearRoom();
   return;
@@ -183,7 +183,7 @@ async function begin(asHost){
    peer.on('connection',conn=>{
     if(mode!=='host')return conn.close();
     if(players.size>=3){conn.on('open',()=>{conn.send({t:'reject',reason:'満員です（最大4人）'});conn.close()});return;}
-    players.set(conn.peer,{id:conn.peer,conn,name:'冒険者',x:bridge.spawn().x,z:bridge.spawn().z,yaw:Math.PI,hp:100,hello:false,lastPose:0,lastAttack:0,lastChat:0});
+    players.set(conn.peer,{id:conn.peer,conn,name:'冒険者',x:bridge.spawn().x,z:bridge.spawn().z,y:0,yaw:Math.PI,hp:100,hello:false,lastPose:0,lastAttack:0,lastChat:0});
     wireConnection(conn,conn.peer);
     conn.on('open',()=>refreshWorld());
    });
