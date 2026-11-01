@@ -26,13 +26,35 @@ body{background:#fff;color:#24282d;font-family:system-ui,-apple-system,"Hiragino
 .panelToggle{display:none;background:#fff;border:1px solid #e5e8ea;border-radius:8px;padding:6px 9px;color:#37434e}
 @media(max-width:1160px){.layout{grid-template-columns:220px minmax(0,1fr)}.rightcol{display:none}.panelToggle{display:inline-block}.layout.showRight{grid-template-columns:220px minmax(0,1fr) 260px}.layout.showRight .rightcol{display:flex;grid-column:auto;flex-direction:column}}
 @media(max-width:780px){.layout,.layout.showRight{display:block}.leftcol,.rightcol{display:none!important}.layout.showLeft .leftcol,.layout.showRight .rightcol{display:flex!important;flex-direction:column}.chatCard{height:calc(100dvh - 70px);min-height:420px}.chatArea{padding:18px 14px}.composer{padding:10px 12px}.chatHead{padding:13px}.chatHead p{display:none}.quick{flex-wrap:nowrap;overflow-x:auto}.quick button{white-space:nowrap}.composer input{font-size:16px}}
+
+/* Chat-first application shell */
+:root{--bg:#fff;--panel:#fff;--line:#e9eaec;--ink:#202124;--muted:#737981}
+body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px solid #eceef0;position:relative;z-index:3}
+.layout,.layout.showRight{display:grid;grid-template-columns:258px minmax(0,1fr);gap:0;min-height:calc(100dvh - 58px)}
+.leftcol{display:flex;flex-direction:column;gap:10px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;max-height:calc(100dvh - 58px);overflow-y:auto}
+.leftcol .profile{padding:15px}.leftcol .lifeOrb{width:78px;height:78px;margin:4px auto}.leftcol .lifeOrb .core{transform:scale(.65);transform-origin:center}.leftcol .lifeOrb .ring{display:none}.leftcol .lifeOrb .spark{display:none}.leftcol .name{font-size:20px}.leftcol .persona{display:none}.leftcol .kpi{margin-top:8px}.leftcol .cardTitle{margin-bottom:8px}
+.rightcol,.layout.showRight .rightcol{position:fixed;z-index:6;right:0;top:58px;bottom:0;width:min(350px,92vw);background:#fafafa;box-shadow:-12px 0 40px #00000016;overflow-y:auto;display:none;grid-column:auto;padding:16px;flex-direction:column}
+.layout.showRight .rightcol{display:flex}.layout.showRight:after{content:"";position:fixed;inset:58px 0 0;background:#0003;z-index:5;pointer-events:none}
+.chatCard{height:calc(100dvh - 58px);min-height:420px;border:0;border-radius:0;max-width:none}
+.chatHead{border:0;padding:15px 24px}.chatHead h2{font-size:17px}.chatHead p{display:none}
+.chatArea{width:100%;padding:26px max(22px,calc((100% - 790px)/2)) 24px;gap:27px}
+.msg{width:100%;max-width:100%;gap:13px}.msg.user{max-width:85%;width:auto;align-self:flex-end}.msg.user .avatar{display:none}
+.avatar{width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:#20292f;color:#fff}
+.bubble{font-size:15px;line-height:1.85;max-width:100%;padding:2px 0;background:transparent;border:0;color:#25292e}
+.msg.user .bubble{background:#f1f2f4;border-radius:22px;padding:12px 17px}
+.msgMeta{font-size:10px;color:#9299a0}.composer{padding:12px max(18px,calc((100% - 820px)/2)) 22px;border:0}
+.composerBox{border-radius:26px;border:1px solid #e1e4e8;padding:7px 8px 7px 14px;box-shadow:0 2px 15px #0000000a}.composer input{background:transparent;border:0;font-size:15px;color:#252a2f}.send{border-radius:50%;width:42px;height:42px;background:#222a31;color:#fff}
+.quick{margin:0 0 9px;gap:7px}.quick button{background:#fff;border:1px solid #e5e6e8;color:#636b75;padding:6px 10px;border-radius:999px}
+.panelToggle{display:inline-block;background:#fff;border:1px solid #e6e7e9;color:#4b5560;border-radius:9px;padding:6px 10px}
+.card{box-shadow:none}.chip{background:#f7f8f9;color:#6a727a;border-color:#e6e9ec}.brandName{font-size:18px}
+@media(max-width:850px){.layout,.layout.showRight{display:block}.leftcol{position:fixed;z-index:7;top:58px;bottom:0;left:0;width:min(310px,90vw);max-height:none;display:none}.layout.showLeft .leftcol{display:flex}.chatCard{height:calc(100dvh - 58px)}.chatArea{padding:20px 16px}.composer{padding:10px 14px 18px}.chatHead{padding:12px 17px}.quick{overflow-x:auto;flex-wrap:nowrap}.quick button{white-space:nowrap}.composer input{font-size:16px}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header class="top">
   <div class="brand"><div class="brandMark">✧</div><div><div class="brandName">NOMA <span style="font-size:11px;color:#a5b4c6;font-weight:500">/ α</span></div><div class="eyebrow">A GROWING LITTLE MIND</div></div></div>
-  <div class="headerRight"><button class="panelToggle" id="leftToggle" type="button">☰ 個性</button><button class="panelToggle" id="rightToggle" type="button">✧ 思考</button><span id="mode" class="chip dot">オフライン試作</span><span id="dayChip" class="chip">思考 0 回</span></div>
+  <div class="headerRight"><button class="panelToggle" id="leftToggle" type="button">☰ 個性</button><button class="panelToggle" id="rightToggle" type="button">✧ 記憶・思考</button><span id="mode" class="chip dot">オフライン試作</span><span id="dayChip" class="chip">思考 0 回</span></div>
 </header>
 <div class="layout">
 <aside class="leftcol">
@@ -52,7 +74,7 @@ body{background:#fff;color:#24282d;font-family:system-ui,-apple-system,"Hiragino
   </section>
 </aside>
 <main class="card chatCard">
-  <div class="chatHead"><div><h2 id="chatTitle">NOMAと話す</h2><p>あなたとの会話を優先。自主思考は右側に記録します。</p></div><span class="chip live" id="status">● 起動中</span></div>
+  <div class="chatHead"><div><h2 id="chatTitle">NOMAと話す</h2><p>会話を中心に。興味や記憶はサイドパネルで確認できます。</p></div><span class="chip live" id="status">● 起動中</span></div>
   <div class="chatArea" id="chatArea" role="log" aria-live="polite"></div>
   <div class="composer">
     <div class="quick"><button data-say="最近、何に興味があるの？">興味を聞く</button><button data-say="今の目標を教えて">目標を聞く</button><button data-say="恐竜と進化って面白いと思わない？">恐竜について話す</button><button data-say="宇宙のことを考えてみよう">宇宙について話す</button></div>
