@@ -123,7 +123,7 @@ const $=id=>document.getElementById(id);
 const r=(arr)=>arr[Math.floor(Math.random()*arr.length)];
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const esc=(s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function initial(){return {version:1,name:'NOMA',steps:0,auto:true,interests:{'技術':37,'宇宙':32,'生き物':30,'ゲーム':23,'歴史':17,'数学':19,'物語':21,'自然':19,'音楽':14,'社会':16},memories:[],goals:[],current:null,journal:[],messages:[{role:'assistant',text:'やあ！ 僕はNOMA。まだ知らないことばかりだけど、これからいろんな話を聞いて、自分の興味を見つけていきたい。\n\nねえ、最近何が面白いと思った？',time:Date.now()}],lastTopic:'技術',lastProactive:0};}
+function initial(){return {version:1,name:'NOMA',steps:0,auto:true,interests:{},memories:[],goals:[],current:null,journal:[],messages:[{role:'assistant',text:'やあ！ 僕はNOMA。まだ知らないことばかりだけど、これからいろんな話を聞いて、自分の興味を見つけていきたい。\n\nねえ、最近何が面白いと思った？',time:Date.now()}],lastTopic:'',lastProactive:0};}
 let state;try{state=JSON.parse(localStorage.getItem(KEY));if(!state||state.version!==1)throw 0}catch{state=initial()}
 // 既存の会話履歴を保持したまま複数チャットへ移行する。
 function ensureChats(){
@@ -145,6 +145,8 @@ let apiEnabled=false, busy=false;
 function persist(){syncChat();try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}}
 function cat(id){return CATALOG.find(x=>x.id===id)||CATALOG[0]}
 function detectTopics(text){return CATALOG.map(x=>({id:x.id, count:x.words.reduce((n,w)=>n+(text.toLowerCase().includes(w.toLowerCase())?1:0),0)})).filter(x=>x.count).sort((a,b)=>b.count-a.count).map(x=>x.id)}
+const RANDOM_TOPICS='料理,建築,鉄道,深海,昆虫,宝石,言語,哲学,スポーツ,ダンス,写真,絵画,彫刻,旅行,地理,料理道具,ファッション,園芸,農業,都市,交通,経済,心理学,医学,健康,教育,法律,政治,天文学,考古学,神話,民俗学,ロボット,恐竜,微生物,海洋,山岳,火山,地震,気象,気候,鳥,魚,犬,猫,馬,料理の歴史,発明,化学,物理学,量子力学,数学,パズル,ボードゲーム,映画,アニメ,漫画,小説,詩,演劇,デザイン,プログラミング,宇宙探査,惑星,月,星座,古代文明,未来都市,乗り物,船,航空機,自転車,自動車,伝統工芸,陶芸,書道,茶道,コーヒー,お菓子,パン,植物,花,森林,砂漠,氷河,滝,川,海,宇宙,ゲーム,歴史,生き物,音楽,自然,技術,社会,物語'.split(',');
+function randomTopic(){const p=RANDOM_TOPICS.filter(x=>x!==state.lastTopic);return p[Math.floor(Math.random()*p.length)]||'宇宙'}
 function interestSort(){return Object.entries(state.interests).sort((a,b)=>b[1]-a[1])}
 function interestMood(){const items=interestSort().filter(([,v])=>v>0);if(!items.length)return 'まだ特に夢中なものはない。いろんな話を聞いてみたい。';const top=items[0][0];return '最近は「'+top+'」の話になると、つい質問が増える。'+(items[1]&&items[1][1]>0?'「'+items[1][0]+'」にも少し惹かれている。':'');}
 function memorize(content,kind='会話',topic=''){let mem={text:content.slice(0,125),kind,topic,time:Date.now()};state.memories.unshift(mem);state.memories=state.memories.slice(0,35)}
@@ -153,9 +155,7 @@ function post(role,text){state.messages.push({role,text,time:Date.now()});state.
 function timefmt(t){return new Date(t).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}
 function activeGoal(){return state.goals.find(g=>g.id===state.current && g.status==='active')||null}
 function newGoal(){
-  let sorted=interestSort();let topic;
-  if(Math.random()<.30){let seed=cat(sorted[Math.floor(Math.random()*Math.min(sorted.length,4))][0]);topic=seed.next;}
-  else{let pool=sorted.slice(0,5);topic=r(pool)[0]}
+  let topic=randomTopic();state.lastTopic=topic;state.interests[topic]=Math.max(state.interests[topic]||0,15);
   let c=cat(topic),last=state.goals.slice(-3).map(g=>g.topic);
   if(last.includes(topic) && Math.random()<.65)topic=c.next,c=cat(topic);
   let type=['探究','問い','創作'][state.steps%3];
@@ -171,10 +171,10 @@ function thinkOnce(){
   const g=activeGoal()||newGoal(),c=cat(g.topic);
   const amount=24+Math.floor(Math.random()*21);
   g.progress=clamp(g.progress+amount,0,100);
-  state.interests[g.topic]=clamp((state.interests[g.topic]||12)+2,0,100);
+  state.interests[g.topic]=clamp((state.interests[g.topic]||0)+2,0,100);
   if(state.steps%3===0){
-    let newId=c.next;
-    state.interests[newId]=clamp((state.interests[newId]||10)+4,0,100);
+    let newId=randomTopic();
+    state.interests[newId]=clamp((state.interests[newId]||0)+4,0,100);
     log(`「${g.topic}」を考えていたら「${newId}」とのつながりが気になり始めた。`);
   }else{
     log(r(c.ideas));
@@ -195,12 +195,12 @@ function learnFromText(text){
   const matches=detectTopics(text);
   if(matches.length){
     state.lastTopic=matches[0];
-    matches.slice(0,3).forEach((id,i)=>state.interests[id]=clamp((state.interests[id]||10)+(i===0?11:5),0,100));
+    // 会話内容は理解・記憶するが、興味の選択には影響させない。
     log(`会話から「${matches[0]}」への関心が強まった。`);
   }
   memorize(text,'会話',matches[0]||'日常');
   persist();
-  return matches[0]||state.lastTopic;
+  return matches[0]||state.lastTopic||'日常';
 }
 
 // NOMAの軽量知識エンジン。外部APIを使わず、会話の文脈を優先する。
@@ -340,7 +340,7 @@ async function chat(text){
 }
 function render(){
   renderChats();
-  $('nameLabel').textContent=state.name;$('chatTitle').textContent=state.name+'と話す';$('character').textContent=state.steps<3?'まだ自分の世界を探しているAI':`今は「${interestSort()[0][0]}」が気になっているAI`;
+  $('nameLabel').textContent=state.name;$('chatTitle').textContent=state.name+'と話す';$('character').textContent=!interestSort().some(([,v])=>v>0)?'まだ自分の世界を探しているAI':`今は「${interestSort()[0][0]}」が気になっているAI`;
   $('dayChip').textContent=`思考 ${state.steps} 回`;$('kThink').textContent=state.steps;$('kGoals').textContent=state.goals.filter(g=>g.status==='completed').length;$('kMem').textContent=state.memories.length;
   $('interests').innerHTML='<p style="font-size:13px;line-height:1.9;color:#44515a;margin:0">'+esc(interestMood())+'</p>';
   let g=activeGoal();$('goal').innerHTML=g?`<div class="goalType">${esc(g.type)} ・ 自分で設定</div><h3>${esc(g.title)}</h3><p>${esc(g.why)}</p><div class="track"><div class="fill" style="width:${g.progress}%"></div></div><div class="bottom"><span>興味：${esc(g.topic)}</span><span>${g.progress}%</span></div>`:`<div class="goalType">NEXT GOAL</div><h3>次に何を探究しよう？</h3><p>自分の興味から、新しい目標を選ぼうとしている。</p>`;
