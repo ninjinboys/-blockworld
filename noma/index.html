@@ -143,7 +143,7 @@ function renderChats(){const target=$('chatList');target.innerHTML=state.chats.m
 // 旧版で割り込んだ独り言は、そのまま残すが今後は追加しない。
 let apiEnabled=false, busy=false;
 function persist(){syncChat();try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}}
-function cat(id){return CATALOG.find(x=>x.id===id)||CATALOG[0]}
+function cat(id){return CATALOG.find(x=>x.id===id)||{id,questions:['「'+id+'」について、まだ知らないことは何だろう？','「'+id+'」にはどんな意外な発見があるんだろう？'],ideas:['「'+id+'」の面白さを探してみたい。','「'+id+'」について新しい疑問が浮かんだ。'],next:randomTopic()}}
 function detectTopics(text){return CATALOG.map(x=>({id:x.id, count:x.words.reduce((n,w)=>n+(text.toLowerCase().includes(w.toLowerCase())?1:0),0)})).filter(x=>x.count).sort((a,b)=>b.count-a.count).map(x=>x.id)}
 const RANDOM_TOPICS='料理,建築,鉄道,深海,昆虫,宝石,言語,哲学,スポーツ,ダンス,写真,絵画,彫刻,旅行,地理,料理道具,ファッション,園芸,農業,都市,交通,経済,心理学,医学,健康,教育,法律,政治,天文学,考古学,神話,民俗学,ロボット,恐竜,微生物,海洋,山岳,火山,地震,気象,気候,鳥,魚,犬,猫,馬,料理の歴史,発明,化学,物理学,量子力学,数学,パズル,ボードゲーム,映画,アニメ,漫画,小説,詩,演劇,デザイン,プログラミング,宇宙探査,惑星,月,星座,古代文明,未来都市,乗り物,船,航空機,自転車,自動車,伝統工芸,陶芸,書道,茶道,コーヒー,お菓子,パン,植物,花,森林,砂漠,氷河,滝,川,海,宇宙,ゲーム,歴史,生き物,音楽,自然,技術,社会,物語'.split(',');
 function randomTopic(){const p=RANDOM_TOPICS.filter(x=>x!==state.lastTopic);return p[Math.floor(Math.random()*p.length)]||'宇宙'}
