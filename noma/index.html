@@ -279,7 +279,11 @@ async function nomaEncyclopedia(t){
   const data=await response.json();
   const hits=data?.query?.search||[];
   if(!hits.length)return null;
-  const hit=hits.find(h=>h.title===subject)||hits[0];
+  // 関連性が不明な検索結果を「答え」として表示しない。
+  const norm=x=>String(x).normalize('NFKC').toLowerCase().replace(/[\\s・「」『』（）()]/g,'');
+  const wanted=norm(subject);
+  const hit=hits.find(h=>{const title=norm(h.title);return title===wanted||title.includes(wanted)&&wanted.length>=3||wanted.includes(title)&&title.length>=3;});
+  if(!hit)return null;
   const detailUrl=base+'action=query&prop=extracts&exintro=1&explaintext=1&redirects=1&titles='+encodeURIComponent(hit.title);
   const details=await (await fetch(detailUrl,{signal:controller.signal})).json();
   const page=details?.query?.pages?.[0],raw=page?.extract||'';
@@ -287,7 +291,7 @@ async function nomaEncyclopedia(t){
   if(clean.length<45)return null;
   const limit=/(詳しく|もっと|説明)/.test(t)?700:420;
   const excerpt=clean.slice(0,limit).replace(/[^。！？]*$/,'').trim()||clean.slice(0,limit);
-  const result='「'+hit.title+'」について調べたよ。'+excerpt+'\\n\\n出典：日本語版Wikipedia（'+hit.title+'）';
+  const result='「'+hit.title+'」について分かっていることは次の通りだよ。'+excerpt+'\\n\\n出典：日本語版Wikipedia（'+hit.title+'）。質問への直接の答えになっていない場合は、その点を教えてね。';
   nomaLookupCache.set(subject,result);
   return result;
  }catch(e){return null}finally{clearTimeout(timer)}
