@@ -396,7 +396,7 @@ function playerFloorAt(x,z){
  // Merely walking beneath the second floor can NEVER snap the camera upstairs.
  if(!keyFound||doorOpen<.86)return 0;
  if(z>=STAIR_START&&z<STAIR_END&&Math.abs(x-ex)<STAIR_HALF-.30)return staircaseHeight(z);
- if(z>=STAIR_END&&upperClear(x,z,.30)&&cameraFloor>=UPPER_HEIGHT-.40)return UPPER_HEIGHT;
+ if(z>=STAIR_END&&(upperClear(x,z,.30)||(z<49*C+.39&&Math.abs(x-ex)<STAIR_HALF-.30))&&cameraFloor>=UPPER_HEIGHT-.40)return UPPER_HEIGHT;
  return 0;
 }
 
@@ -519,13 +519,18 @@ function doorModel(out){
   b(.91,.31,localZ-.16,.99,2.50,localZ-.08,glow,1.5);
  }
  if(doorOpen<.995){
-   b(-.79,.18+lift,localZ-.105,.79,2.65+lift,localZ+.105,dark);
-   b(-.70,.29+lift,localZ-.14,.70,2.48+lift,localZ-.105,steel);
-   for(let j=0;j<6;j++){const y=.39+j*.34+lift;b(-.70,y,localZ-.16,.70,y+.055,localZ-.13,trim);}
-   for(const x of [-.62,.62])b(x-.055,.28+lift,localZ-.18,x+.055,2.48+lift,localZ-.13,trim);
-   b(-.19,1.18+lift,localZ-.23,.19,1.60+lift,localZ-.17,keyFound?aqua:gold,1.6);
-   b(-.09,1.30+lift,localZ-.25,.09,1.47+lift,localZ-.22,dark);
- }
+   // Heavy portcullis spans the entire central opening until the key lifts it.
+   b(-1.39,.14+lift,localZ-.105,1.39,3.00+lift,localZ+.105,dark);
+   b(-1.30,.26+lift,localZ-.15,1.30,2.89+lift,localZ-.105,steel);
+   for(let j=0;j<8;j++){
+    const y=.32+j*.34+lift;
+    b(-1.31,y,localZ-.18,1.31,y+.055,localZ-.13,trim);
+   }
+   for(let x=-1.21;x<=1.22;x+=.403)
+    b(x-.045,.25+lift,localZ-.19,x+.045,2.87+lift,localZ-.13,trim);
+   b(-.23,1.21+lift,localZ-.25,.23,1.76+lift,localZ-.17,keyFound?aqua:gold,1.7);
+   b(-.11,1.37+lift,localZ-.28,.11,1.59+lift,localZ-.22,dark);
+  }
 }
 function allyModel(out,p){
  // Teammate has recognizable NEXACRAFT block limbs and a sword.
@@ -690,9 +695,9 @@ function renderFallback(){
    block(-1.05,2.69,2.10,.34,'#657176');
    if(doorOpen>.24){block(-.99,.25,.09,2.38,'#46ae8b');block(.90,.25,.09,2.38,'#46ae8b');}
    if(doorOpen<.995){
-     block(-.78,.18+lift,1.56,2.47,'#33454b');block(-.70,.32+lift,1.40,2.19,'#647878');
-     for(let j=0;j<6;j++)block(-.70,.38+j*.35+lift,1.40,.05,'#c19b5c');
-     block(-.17,1.18+lift,.34,.40,keyFound?'#58e5c8':'#f8d36b');
+     block(-1.39,.14+lift,2.78,2.86,'#33454b');block(-1.30,.26+lift,2.60,2.62,'#647878');
+     for(let j=0;j<6;j++)block(-1.30,.38+j*.35+lift,2.60,.06,'#c19b5c');
+     block(-.20,1.18+lift,.40,.49,keyFound?'#58e5c8':'#f8d36b');
    }
   }else if(obj.type==='flame'){
    // Wall-anchored torch is projected from its real bracket position.
@@ -739,17 +744,31 @@ function drawMap(){
 }
 function updateVisited(){let tx=Math.floor(camera.x/C),tz=Math.floor(camera.z/C);for(let z=Math.max(0,tz-2);z<=Math.min(H-1,tz+2);z++)for(let x=Math.max(0,tx-2);x<=Math.min(W-1,tx+2);x++)if(Math.hypot(x-tx,z-tz)<2.65)seen[z][x]=true}
 function passable(x,z,r=.27,isPlayer=false){
- if((!keyFound||doorOpen<.86)&&x>ex-C*.40-r&&x<ex+C*.40+r&&z>ez-C*.40-r&&z<ez+C*.40+r)return false;
- if(isPlayer&&keyFound){
-  // 3D steps: no side escapes or jumping; the landing meets floor two at its real height.
-  if(z>=STAIR_START&&z<STAIR_END)return Math.abs(x-ex)<STAIR_HALF-r;
-  if(z>=STAIR_END){
-   if(upperClear(x,z,r)||(z<49*C+r+.05&&Math.abs(x-ex)<STAIR_HALF-r))return true;
-   if(cameraFloor>.20)return false;
-  }
-  if(cameraFloor>.20&&z>=STAIR_START-.20)return false;
+ // Fixed stone wings span the whole five-cell hall; ONLY the center doorway opens.
+ if(z>doorZ-.28-r&&z<doorZ+.28+r&&Math.abs(x-ex)<GATE_HALF+r){
+  if(Math.abs(x-ex)>GATE_PASS_HALF-r)return false;
+  if(!keyFound||doorOpen<.86)return false;
  }
- for(let zz=Math.floor((z-r)/C);zz<=Math.floor((z+r)/C);zz++)for(let xx=Math.floor((x-r)/C);xx<=Math.floor((x+r)/C);xx++)if(wallAt(xx,zz)){const nearestX=Math.max(xx*C,Math.min(x,(xx+1)*C)),nearestZ=Math.max(zz*C,Math.min(z,(zz+1)*C));if(Math.hypot(nearestX-x,nearestZ-z)<r)return false}return true}
+ if(isPlayer){
+  // Walk through the stairwell, never through its side rails.
+  if(z>=STAIR_START&&z<STAIR_END)return keyFound&&doorOpen>=.86&&Math.abs(x-ex)<STAIR_HALF-r;
+  if(z>=STAIR_END){
+   const landing=upperClear(x,z,r)||(z<49*C+r+.05&&Math.abs(x-ex)<STAIR_HALF-r);
+   // Floor two is available only after physically climbing all the treads.
+   return landing&&cameraFloor>=UPPER_HEIGHT-.40;
+  }
+  // Prevent exiting sideways while on the elevated staircase.
+  if(cameraFloor>.24&&z>=STAIR_START-.20)return false;
+ }
+ for(let zz=Math.floor((z-r)/C);zz<=Math.floor((z+r)/C);zz++)
+ for(let xx=Math.floor((x-r)/C);xx<=Math.floor((x+r)/C);xx++)
+ if(wallAt(xx,zz)){
+  const nearestX=Math.max(xx*C,Math.min(x,(xx+1)*C));
+  const nearestZ=Math.max(zz*C,Math.min(z,(zz+1)*C));
+  if(Math.hypot(nearestX-x,nearestZ-z)<r)return false;
+ }
+ return true;
+}
 function walkEntity(obj,dx,dz,r){const player=obj===camera;if(passable(obj.x+dx,obj.z,r,player))obj.x+=dx;if(passable(obj.x,obj.z+dz,r,player))obj.z+=dz}
 function shortestPath(sx,sz,tx,tz){if(sx===tx&&sz===tz)return [[tx,tz]];const queue=[[sx,sz]],prev=new Map(),id=(x,z)=>z*W+x;prev.set(id(sx,sz),-1);let head=0,end=-1;
  while(head<queue.length){let [x,z]=queue[head++];if(x===tx&&z===tz){end=id(x,z);break}for(let [nx,nz] of [[x+1,z],[x,z+1],[x-1,z],[x,z-1]]){let key=id(nx,nz);if(!wallAt(nx,nz)&&!prev.has(key)){prev.set(key,id(x,z));queue.push([nx,nz])}}}
