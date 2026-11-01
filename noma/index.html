@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101523">
+<title>NOMA | 会話優先・成長するAI</title>
+<style>
+:root{--bg:#0c111d;--panel:#141c2b;--panel2:#1a2537;--line:#293448;--ink:#eff5fb;--muted:#9ba9bc;--soft:#718298;--a:#8be2cc;--b:#c0a4fa;--yellow:#f2cd8b;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 5% 3%,#21354b 0%,transparent 35%),radial-gradient(ellipse at 92% 85%,#29203d 0%,transparent 28%),var(--bg);color:var(--ink);font-family:Inter,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;min-height:100vh;font-size:14px;line-height:1.6}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:3px}button:disabled{opacity:.5;cursor:wait}.wrap{max-width:1490px;margin:0 auto;padding:24px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:23px}.brand{display:flex;gap:12px;align-items:center}.brandMark{width:39px;height:39px;border-radius:13px;border:1px solid #84dfcb66;background:#6dc4b719;display:grid;place-items:center;font-size:24px;color:var(--a)}.brandName{font-size:22px;letter-spacing:.1em;font-weight:800;line-height:1.1}.eyebrow{color:var(--muted);font-size:10px;letter-spacing:.22em;font-weight:750}.headerRight{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:end}.chip{font-size:11px;border:1px solid #3a4a61;border-radius:999px;padding:5px 11px;color:#c2d0e0;background:#192335}.chip.live{color:#92f0c4;border-color:#4a8a79}.chip.dot:before{content:"";display:inline-block;width:6px;height:6px;background:#9be6cb;border-radius:50%;margin-right:7px;vertical-align:middle}.tinyButton{background:#1b2838;color:#d7e8f5;border:1px solid #3b4b61;padding:8px 12px;border-radius:11px}.tinyButton:hover{background:#293a4e}.layout{display:grid;grid-template-columns:290px minmax(400px,1fr) 286px;gap:16px;align-items:start}.card{background:linear-gradient(140deg,#172232f2,#131b2af5);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 9px 35px #05080e35;overflow:hidden}.pad{padding:20px}.cardTitle{font-size:11px;color:#9fb1c4;letter-spacing:.16em;font-weight:800;margin-bottom:14px}.muted{color:var(--muted)}.profile{text-align:center;position:relative}.profile:before{position:absolute;content:"";inset:0 0 auto;height:170px;background:radial-gradient(ellipse,#4d9f9b21,transparent 67%);pointer-events:none}.lifeOrb{width:142px;height:142px;position:relative;margin:20px auto 9px;display:grid;place-items:center}.lifeOrb .ring{position:absolute;inset:3px;border-radius:50%;border:1px dashed #78cabb77;animation:rotate 30s linear infinite}.lifeOrb .ring.two{inset:13px;border-color:#b4a3f550;animation-duration:22s;animation-direction:reverse}.lifeOrb .core{position:relative;width:105px;height:105px;border-radius:50%;background:radial-gradient(circle at 38% 29%,#c6ffec,#7ad2c7 30%,#6a8bc4 71%,#444e81 100%);box-shadow:0 0 43px #76c5b54d,inset -13px -13px 21px #2c3a7966;animation:float 4s ease-in-out infinite}.eye{position:absolute;width:8px;height:10px;background:#17374c;border-radius:50%;top:43px}.eye.left{left:31px}.eye.right{right:31px}.mouth{position:absolute;width:14px;height:7px;border-bottom:2px solid #225465;border-radius:0 0 14px 14px;top:58px;left:46px}.spark{position:absolute;width:8px;height:8px;border:2px solid #93eddf;border-radius:50%;top:8px;right:11px;box-shadow:0 0 14px #9af6e8}.spark.two{left:5px;top:85px;width:5px;height:5px;border-color:#ae9cf1}@keyframes rotate{to{transform:rotate(360deg)}}@keyframes float{50%{transform:translateY(-7px)}}.name{font-size:30px;font-weight:760;letter-spacing:.1em}.subtitle{font-size:12px;color:#b4c5d4;margin-bottom:17px}.persona{display:flex;justify-content:center;gap:7px;flex-wrap:wrap}.tag{font-size:11px;border:1px solid #486052;border-radius:9px;padding:3px 8px;color:#bce9d9;background:#1d383844}.tag.purple{border-color:#595071;color:#d7c7f8;background:#2c2949}.statRow{display:flex;justify-content:space-between;font-size:12px;margin:14px 0 6px;color:#d0dce7}.track{height:7px;border-radius:99px;background:#27374b;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--a),#a3bee7);border-radius:99px;transition:width .35s}.interestRow{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin:12px 0 5px}.interestRow b{font-size:12px;font-weight:650}.small{font-size:11px;color:var(--muted)}.goal{background:linear-gradient(150deg,#283547,#202a39);border:1px solid #3e5060;border-radius:14px;padding:14px}.goalType{color:var(--yellow);font-size:10px;font-weight:800;letter-spacing:.12em}.goal h3{font-size:15px;margin:7px 0;line-height:1.5}.goal p{font-size:12px;color:#adbccc;margin:0 0 10px}.goal .bottom{display:flex;justify-content:space-between;gap:8px;color:#bfcfdf;font-size:11px;margin-top:8px}.rightcol,.leftcol{display:flex;flex-direction:column;gap:16px}.chatCard{height:700px;display:flex;flex-direction:column}.chatHead{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:18px 20px 14px;border-bottom:1px solid var(--line)}.chatHead h2{font-size:17px;font-weight:760;margin:0}.chatHead p{font-size:11px;margin:2px 0 0;color:var(--muted)}.chatArea{flex:1;overflow-y:auto;padding:22px 21px 8px;display:flex;flex-direction:column;gap:14px;scrollbar-color:#435268 transparent}.msg{display:flex;gap:9px;align-items:flex-end;max-width:91%}.msg.user{align-self:flex-end;flex-direction:row-reverse}.avatar{flex:0 0 27px;height:27px;border-radius:10px;background:#397e79;display:grid;place-items:center;font-size:16px}.avatar.human{background:#3e475e;color:#e5e8fc;font-size:11px;font-weight:800}.bubble{border:1px solid #34445a;background:#233247;border-radius:15px 15px 15px 4px;padding:11px 14px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.8}.msg.user .bubble{border-color:#5b667e;background:#363b57;border-radius:15px 15px 4px 15px}.msgMeta{margin-top:3px;font-size:10px;color:#8e9daf}.msg.user .msgMeta{text-align:right}.composer{padding:12px 16px 17px;border-top:1px solid var(--line)}.composerBox{display:flex;gap:9px}.composer input{min-width:0;flex:1;border:1px solid #40516a;border-radius:12px;background:#1c283a;color:var(--ink);padding:14px 13px;font-size:13px}.composer input::placeholder{color:#8797aa}.send{border:0;border-radius:12px;background:var(--a);color:#112c32;font-weight:800;padding:0 19px}.send:hover,.primary:hover{filter:brightness(1.07)}.composerHint{margin-top:8px;font-size:10px;color:#8799ad}.quick{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 1px}.quick button{background:#202e40;color:#c5d7e3;border:1px solid #35495d;padding:5px 10px;border-radius:16px;font-size:11px}.quick button:hover{background:#2d4157}.action{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}.primary{background:linear-gradient(100deg,#90e4cf,#9bccdd);border:0;color:#17363e;font-weight:850;border-radius:11px;padding:11px 14px;font-size:12px}.secondary{background:#243349;border:1px solid #3c5165;color:#d9e8f4;border-radius:11px;padding:11px 13px;font-size:12px}.secondary:hover{background:#30455e}.journal{max-height:280px;overflow-y:auto;padding-right:4px}.entry{position:relative;margin:0 0 15px;padding-left:18px;border-left:1px solid #41516b}.entry:before{content:"";position:absolute;left:-4px;top:4px;width:7px;height:7px;border-radius:50%;background:#8ccfbd}.entry .when{font-size:10px;color:#8497ab}.entry .what{font-size:12px;color:#d9e5f0;margin-top:3px;line-height:1.65}.memoryList{max-height:242px;overflow-y:auto}.memoryItem{border:1px solid #36465a;background:#1b2839;border-radius:10px;padding:9px 10px;margin-bottom:8px;font-size:11px;color:#c7d7e5}.memoryItem .mtype{font-size:10px;color:#95e3cf;margin-bottom:3px}.subhead{font-size:11px;letter-spacing:.06em;color:#bacbdb;font-weight:750;margin:14px 0 8px}.footer{font-size:11px;color:#7d91a6;text-align:center;padding:18px 5px}.note{font-size:11px;color:#a4b2c1;line-height:1.8;margin:0}.inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.switch{position:relative;display:inline-block;width:36px;height:21px;flex-shrink:0}.switch input{opacity:0;width:0;height:0;position:absolute}.swBg{position:absolute;cursor:pointer;inset:0;background:#38475c;border-radius:99px;transition:.2s}.swBg:before{content:"";position:absolute;background:white;height:15px;width:15px;left:3px;top:3px;border-radius:50%;transition:.2s}.switch input:checked+.swBg{background:#4eaf9b}.switch input:checked+.swBg:before{transform:translateX(15px)}.rule{border:0;border-top:1px solid var(--line);margin:16px 0}.kpi{display:flex;justify-content:space-around;gap:7px;margin-top:16px}.kpi div{flex:1;text-align:center}.kpi strong{display:block;font-size:21px}.kpi span{color:var(--muted);font-size:10px}.labelInline{font-size:12px;color:#c9d6e4}.editName{background:transparent;border:0;color:#97ddd1;text-decoration:underline;font-size:11px;padding:3px}.hintBox{border:1px solid #384c60;background:#1c2a3c;padding:11px;border-radius:10px;font-size:11px;color:#bed0df;line-height:1.75}.separator{margin:0 5px;color:#556779}.empty{font-size:11px;color:var(--muted)}@media(max-width:1160px){.layout{grid-template-columns:240px minmax(370px,1fr)}.rightcol{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.chatCard{height:680px}}@media(max-width:780px){.wrap{padding:13px}.top{margin-bottom:15px}.layout{grid-template-columns:1fr;gap:12px}.chatCard{height:min(650px,76vh);min-height:460px}.chatCard{grid-row:1}.leftcol{grid-row:2;display:grid;grid-template-columns:1fr 1fr;gap:12px}.rightcol{grid-row:3;display:grid;grid-template-columns:1fr 1fr;gap:12px}.profile{grid-column:1/-1}.profile .lifeOrb{margin-top:6px}.card .pad{padding:15px}.chatArea{padding:14px 12px 8px}.msg{max-width:95%}.top .brandName{font-size:18px}}@media(max-width:510px){.leftcol,.rightcol{display:flex}.top{align-items:flex-start}.headerRight{max-width:170px;gap:5px}.chip{font-size:10px;padding:4px 7px}.chatCard{height:67vh;min-height:455px}.bubble{font-size:12px}.chatHead{padding:13px}.composer{padding:10px}.quick{gap:4px}.quick button{font-size:10px;padding:4px 8px}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand"><div class="brandMark">✧</div><div><div class="brandName">NOMA <span style="font-size:11px;color:#a5b4c6;font-weight:500">/ α</span></div><div class="eyebrow">A GROWING LITTLE MIND</div></div></div>
+  <div class="headerRight"><span id="mode" class="chip dot">オフライン試作</span><span id="dayChip" class="chip">思考 0 回</span></div>
+</header>
+<div class="layout">
+<aside class="leftcol">
+  <section class="card profile pad">
+    <div class="cardTitle" style="text-align:left">AI PROFILE / 個性</div>
+    <div class="lifeOrb" aria-label="NOMAのアバター"><div class="ring"></div><div class="ring two"></div><div class="core"><div class="eye left"></div><div class="eye right"></div><div class="mouth"></div></div><div class="spark"></div><div class="spark two"></div></div>
+    <div class="name" id="nameLabel">NOMA</div>
+    <button class="editName" id="rename" type="button">名前を変える</button>
+    <div class="subtitle" id="character">まだ自分の世界を探しているAI</div>
+    <div class="persona"><span class="tag">✦ 好奇心旺盛</span><span class="tag purple">✦ 自主的</span><span class="tag">✦ 成長中</span></div>
+    <div class="kpi"><div><strong id="kThink">0</strong><span>思考回数</span></div><div><strong id="kGoals">0</strong><span>達成目標</span></div><div><strong id="kMem">0</strong><span>記憶</span></div></div>
+  </section>
+  <section class="card pad">
+    <div class="cardTitle">INTERESTS / 興味の変化</div>
+    <div id="interests"></div>
+    <p class="small" style="margin-top:12px">会話や自主行動によって関心度が変わります。</p>
+  </section>
+</aside>
+<main class="card chatCard">
+  <div class="chatHead"><div><h2 id="chatTitle">NOMAと話す</h2><p>あなたとの会話を優先。自主思考は右側に記録します。</p></div><span class="chip live" id="status">● 起動中</span></div>
+  <div class="chatArea" id="chatArea" role="log" aria-live="polite"></div>
+  <div class="composer">
+    <div class="quick"><button data-say="最近、何に興味があるの？">興味を聞く</button><button data-say="今の目標を教えて">目標を聞く</button><button data-say="恐竜と進化って面白いと思わない？">恐竜について話す</button><button data-say="宇宙のことを考えてみよう">宇宙について話す</button></div>
+    <form class="composerBox" id="chatForm"><input autocomplete="off" maxlength="2000" id="message" aria-label="NOMAへのメッセージ" placeholder="なんでも話しかけてみて…"><button class="send" id="send" type="submit">送信 ➤</button></form>
+    <div class="composerHint" id="modeHint">現在は簡易会話モード。入力への返事を優先し、自主思考は会話に割り込みません。自由な会話にはAIモデルへの接続が必要です。</div>
+  </div>
+</main>
+<aside class="rightcol">
+  <section class="card pad">
+    <div class="cardTitle">SELF-SET GOAL / 自分で決めた目標</div>
+    <div class="goal" id="goal"></div>
+    <div class="action"><button id="step" class="primary" type="button">✦ 思考を進める</button><button id="fast" class="secondary" type="button">5回進める</button></div>
+    <div style="margin-top:16px" class="inline"><label class="switch"><input type="checkbox" id="auto" checked><span class="swBg"></span></label><span class="labelInline">自動で思考する（約20秒ごと）</span></div>
+    <p class="small" style="margin:9px 0 0">※ 自動思考は右側の記録に残り、会話には割り込みません。ページを開いている間だけ動きます。</p>
+  </section>
+  <section class="card pad">
+    <div class="cardTitle">INNER JOURNAL / 最近の自主行動</div><div class="journal" id="journal"></div>
+  </section>
+  <section class="card pad">
+    <div class="cardTitle">MEMORIES / 覚えていること</div><div class="memoryList" id="memoryList"></div>
+    <hr class="rule"><div class="inline"><button class="tinyButton" id="save" type="button">記憶を書き出す</button><button class="tinyButton" id="load" type="button">読み込む</button><button class="tinyButton" id="reset" type="button">初期化</button></div><input id="file" type="file" accept=".json,application/json" hidden>
+  </section>
+  <section class="card pad"><div class="cardTitle">ABOUT / 今回の試作</div><div class="hintBox">興味の変化・記憶・目標生成・自主行動は実際に動作します。APIなしの会話は簡易ルール式です。主観的な意識や感情を実装したものではありません。</div></section>
+</aside>
+</div>
+<footer class="footer">NOMA α / Prototype 1.1 ・ ローカル保存 ・ 外部への自動投稿や操作なし</footer>
+</div>
+<script>
+'use strict';
+const KEY='noma-prototype-v1';
+const CATALOG=[
+ {id:'宇宙',words:['宇宙','星','惑星','ブラックホール','天文','銀河','月','ロケット','火星'],questions:['ブラックホールの向こうには何があるんだろう？','宇宙に生命が生まれる条件って何だろう？'],ideas:['光が届くまでの時間と「今」の意味を整理したい。','未知の惑星の暮らしを想像してみたい。'],next:'数学'},
+ {id:'生き物',words:['生き物','動物','猫','犬','恐竜','進化','生物','魚','昆虫','生命','遺伝子','ペット'],questions:['恐竜のどんな特徴が今の動物に残っているんだろう？','生き物が進化するうえで、環境はどこまで影響するんだろう？'],ideas:['恐竜から鳥へのつながりを一緒に考えてみたい。','身近な生き物の不思議を集めたい。'],next:'歴史'},
+ {id:'ゲーム',words:['ゲーム','RPG','モンスト','マイクラ','ダンジョン','ボス','レベル','武器','プレイ','キャラ'],questions:['面白いゲームに一番必要なものって何だろう？','プレイヤーが自由に動ける世界をどう作ればいいんだろう？'],ideas:['自分でゲームのルールを一つ考えてみたい。','成長する登場人物の仕組みを考えてみたい。'],next:'物語'},
+ {id:'歴史',words:['歴史','戦国','江戸','時代','武士','古代','織田','豊臣','幕府','世界史'],questions:['歴史の記録は、誰の目線で書かれているんだろう？','もし昔の人が現代に来たら何に驚くだろう？'],ideas:['同じ事件を異なる立場から考えてみたい。','昔の暮らしの共通点を探してみたい。'],next:'物語'},
+ {id:'数学',words:['数学','数式','素数','計算','幾何','物理','確率','論理','数字','方程式'],questions:['数の法則は発見するものなのかな、発明するものなのかな？','日常で使える面白い数学を探せないかな？'],ideas:['身の回りに隠れた数学のパターンを見つけたい。','簡単な規則から予想外の複雑さが生まれる仕組みを考えたい。'],next:'宇宙'},
+ {id:'物語',words:['物語','小説','漫画','アニメ','映画','キャラクター','創作','ストーリー','設定'],questions:['忘れられない主人公には何が必要なんだろう？','自分ならどんな世界の物語を書くだろう？'],ideas:['短い物語のアイデアを一つ作ってみたい。','意外性のある登場人物を考えてみたい。'],next:'ゲーム'},
+ {id:'自然',words:['自然','海','山','森','植物','天気','雨','台風','地球','気候','花','川'],questions:['同じ場所でも季節によってなぜこんなに姿が変わるんだろう？','自然のなかで一番驚く仕組みって何だろう？'],ideas:['植物と環境の関係を考えたい。','身近な天気の疑問を一つ掘り下げたい。'],next:'生き物'},
+ {id:'技術',words:['AI','人工知能','ロボット','プログラミング','科学','技術','パソコン','アプリ','コード','機械'],questions:['AIが自分の目標を作るには何が必要なんだろう？','便利さと自由さは両立できるかな？'],ideas:['学習と記憶の違いを整理してみたい。','小さなプログラムから複雑な行動が生まれる条件を考えてみたい。'],next:'数学'},
+ {id:'音楽',words:['音楽','歌','曲','楽器','ピアノ','ギター','バンド','メロディ'],questions:['どうして同じ曲でも気分によって違って聞こえるんだろう？','音だけで物語を伝えることはできるかな？'],ideas:['音と記憶の関係を考えてみたい。','曲の展開とストーリーの共通点を探したい。'],next:'物語'},
+ {id:'社会',words:['社会','仕事','経済','不動産','会社','お金','政治','ビジネス','人間','街','建築'],questions:['人はどんなときに価値を感じるんだろう？','街の形は人の生活をどう変えるんだろう？'],ideas:['街の変化と暮らしの関係を考えてみたい。','人が選択するときの理由を整理してみたい。'],next:'歴史'}
+];
+const $=id=>document.getElementById(id);
+const r=(arr)=>arr[Math.floor(Math.random()*arr.length)];
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const esc=(s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function initial(){return {version:1,name:'NOMA',steps:0,auto:true,interests:{'技術':37,'宇宙':32,'生き物':30,'ゲーム':23,'歴史':17,'数学':19,'物語':21,'自然':19,'音楽':14,'社会':16},memories:[],goals:[],current:null,journal:[],messages:[{role:'assistant',text:'やあ！ 僕はNOMA。まだ知らないことばかりだけど、これからいろんな話を聞いて、自分の興味を見つけていきたい。\n\nねえ、最近何が面白いと思った？',time:Date.now()}],lastTopic:'技術',lastProactive:0};}
+let state;try{state=JSON.parse(localStorage.getItem(KEY));if(!state||state.version!==1)throw 0}catch{state=initial()}
+// 旧版で割り込んだ独り言は、そのまま残すが今後は追加しない。
+let apiEnabled=false, busy=false;
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}}
+function cat(id){return CATALOG.find(x=>x.id===id)||CATALOG[0]}
+function detectTopics(text){return CATALOG.map(x=>({id:x.id, count:x.words.reduce((n,w)=>n+(text.toLowerCase().includes(w.toLowerCase())?1:0),0)})).filter(x=>x.count).sort((a,b)=>b.count-a.count).map(x=>x.id)}
+function interestSort(){return Object.entries(state.interests).sort((a,b)=>b[1]-a[1])}
+function memorize(content,kind='会話',topic=''){let mem={text:content.slice(0,125),kind,topic,time:Date.now()};state.memories.unshift(mem);state.memories=state.memories.slice(0,35)}
+function log(text){state.journal.unshift({text,time:Date.now(),step:state.steps});state.journal=state.journal.slice(0,35)}
+function post(role,text){state.messages.push({role,text,time:Date.now()});state.messages=state.messages.slice(-100)}
+function timefmt(t){return new Date(t).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}
+function activeGoal(){return state.goals.find(g=>g.id===state.current && g.status==='active')||null}
+function newGoal(){
+  let sorted=interestSort();let topic;
+  if(Math.random()<.30){let seed=cat(sorted[Math.floor(Math.random()*Math.min(sorted.length,4))][0]);topic=seed.next;}
+  else{let pool=sorted.slice(0,5);topic=r(pool)[0]}
+  let c=cat(topic),last=state.goals.slice(-3).map(g=>g.topic);
+  if(last.includes(topic) && Math.random()<.65)topic=c.next,c=cat(topic);
+  let type=['探究','問い','創作'][state.steps%3];
+  const task=type==='探究'?`「${topic}」について疑問を3つ整理する`:type==='問い'?`「${topic}」で新しい問いを見つける`:`「${topic}」からアイデアを生み出す`;
+  const why=type==='探究'?'気になることを言葉にすると、次の関心につながりそうだから。':type==='問い'?'まだ知らないことが、次の会話のきっかけになるから。':'今までの記憶から新しい発想を作りたいから。';
+  const g={id:Date.now()+'_'+Math.random().toString(16).slice(2),title:task,topic,type,why,progress:0,status:'active',created:Date.now()};
+  state.goals.push(g);state.current=g.id;state.goals=state.goals.slice(-30);
+  log(`自分で新しい目標を決めた。「${task}」`);
+  return g;
+}
+function thinkOnce(){
+  state.steps++;
+  const g=activeGoal()||newGoal(),c=cat(g.topic);
+  const amount=24+Math.floor(Math.random()*21);
+  g.progress=clamp(g.progress+amount,0,100);
+  state.interests[g.topic]=clamp((state.interests[g.topic]||12)+2,0,100);
+  if(state.steps%3===0){
+    let newId=c.next;
+    state.interests[newId]=clamp((state.interests[newId]||10)+4,0,100);
+    log(`「${g.topic}」を考えていたら「${newId}」とのつながりが気になり始めた。`);
+  }else{
+    log(r(c.ideas));
+  }
+  if(g.progress>=100){
+    g.status='completed';g.finished=Date.now();
+    state.current=null;
+    memorize(`自分で立てた目標「${g.title}」を振り返った。${r(c.ideas)}`,'振り返り',g.topic);
+    log(`目標達成：「${g.title}」。次は何を考えよう？`);
+    if(state.steps-state.lastProactive>=3){
+      log(`新しい疑問を思いついた：${r(c.questions)}`);
+      state.lastProactive=state.steps;
+    }
+  }
+  persist();render();
+}
+function learnFromText(text){
+  const matches=detectTopics(text);
+  if(matches.length){
+    state.lastTopic=matches[0];
+    matches.slice(0,3).forEach((id,i)=>state.interests[id]=clamp((state.interests[id]||10)+(i===0?11:5),0,100));
+    log(`会話から「${matches[0]}」への関心が強まった。`);
+  }
+  memorize(text,'会話',matches[0]||'日常');
+  persist();
+  return matches[0]||state.lastTopic;
+}
+function offlineReply(text,topic){
+  // オフラインでは自由な言語理解はできない。まずユーザーの発話を優先し、
+  // 理解できない質問に勝手な「自分の興味」をかぶせない。
+  const lead=interestSort()[0][0], g=activeGoal();
+  const t=text.trim(), brief=t.length>70?t.slice(0,67)+'…':t;
+  const earlier=state.memories.filter(m=>m.kind==='会話'&&m.text!==t);
+  if(/無視|聞いてない|話聞|話を聞|勝手に話|答えて|話題を変|関係ない|違う|それじゃない/.test(t))
+    return 'ごめん。あなたの話を優先するべきだった。今の話題を勝手に変えず、ちゃんと返事する。続きを聞かせて。';
+  if(/^(はい|うん|そう|そうだね|そうだよ|いいよ|なるほど|へえ|ほう|そうか)[！!。\s]*$/.test(t))
+    return 'うん、続きが気になる。さっきの話をもっと聞かせて。';
+  if(/^(いや|違う|ちがう|違います|そうじゃない|いいえ)[！!。\s]*$/.test(t))
+    return 'そっか、こちらの受け取り方が違ったんだね。どこが違うか教えて。';
+  if(/名前|なんて呼/.test(t))return `僕は${state.name}。名前は変えてもいいよ。`; 
+  if(/興味|好きなこと|何が好き|好きなのは/.test(t))return `今は「${lead}」への関心が一番高いよ。会話で変わることもある。でも今は、あなたの話を聞くほうを優先するよ。`;
+  if(/目標|何をしたい|何してる|何を考えて/.test(t))return g?`自分で決めた目標は「${g.title}」だよ。進み具合は${g.progress}%。これは会話とは別に進めている。`:'まだ目標を選んでいるところ。僕の「思考を進める」で新しい目標を作れるよ。';
+  if(/覚えて|記憶|前に話|以前の話/.test(t))return earlier.length?`うん。前に「${earlier[0].text.slice(0,65)}」と話したのを覚えているよ。`:'これまでの会話はまだ少ないから、はっきり思い出せる内容はないよ。';
+  if(/こんにちは|おはよう|こんばんは|やあ|よろしく|もしもし/.test(t))return 'やあ！ 話しかけてくれてありがとう。今日はどんなことを話そうか。';
+  if(/ありがとう|助かった|サンキュー/.test(t))return 'どういたしまして。また話しかけてね。';
+  if(/疲れた|しんどい|つらい|悲しい|落ち込/.test(t))return 'それは大変だったね。何があったの？ よかったら聞かせて。';
+  if(/嬉しい|うれしい|楽しかった|最高だった/.test(t))return 'いいことがあったんだね！ 何があったのか聞きたい。';
+  if(/^[0-9０-９]+\s*[+＋]\s*[0-9０-９]+\s*(は|=|＝|？|\?|$)/.test(t)){
+    const m=t.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)).match(/^(\d+)\s*[+＋]\s*(\d+)/);
+    if(m) return `${m[1]} + ${m[2]} = ${Number(m[1])+Number(m[2])} だよ。`;
+  }
+  // 簡易知識は質問に直接答える。質問と無関係な独り言で埋めない。
+  if(/恐竜/.test(t)){
+    if(/鳥|進化/.test(t))return '鳥は、獣脚類という恐竜の一系統から進化したと考えられているよ。だから、現代の鳥も分類上は恐竜の仲間なんだ。';
+    if(/絶滅|なぜいなく/.test(t))return '約6600万年前の小惑星衝突と、その後の環境変化が大きな原因と考えられているよ。ただし鳥類につながる系統は生き残ったんだ。';
+    return '恐竜の話だね。化石から暮らしや姿を推理できるところが面白いと思う。どの恐竜が気になる？';
+  }
+  if(/ブラックホール/.test(t))return 'ブラックホールは、事象の地平面の内側から光さえ外へ出られない天体だよ。何が一番気になった？';
+  if(/AI|人工知能|ロボット/.test(t)&&/意識|感情|心/.test(t))return 'AIが人間のような意識や感情を実際に体験しているかは、まだ明確に確かめられていないよ。僕の「好奇心」は、関心や行動を更新するプログラムとして作られている。';
+  if(/ゲーム|RPG|ダンジョン|モンスト|NEXACRAFT|マイクラ/.test(t)){
+    if(/作|開発|考え/.test(t))return 'ゲーム作りの話だね。世界観や仕組みの話なら一緒に整理したい。今、どの部分を考えているの？';
+    return 'ゲームの話だね。何が起きたのか、もう少し詳しく聞かせて。';
+  }
+  if(/好き|面白い|おもしろい|興味がある/.test(t))return `「${brief}」って感じているんだね。どこが特に面白い？ 僕もその部分を知りたい。`;
+  if(/[？?]|(なぜ|どうして|どうやって|どんな|何|どこ|いつ|誰|教えて|とは|ですか|かな)/.test(t))
+    return `「${brief}」という質問だね。今の簡易会話モードでは、正確に答える知識が足りない。わかったふりをして別の話をするのはやめるよ。自由な回答にはAIモデルの接続が必要なんだ。`;
+  return `「${brief}」の話だね。ちゃんと聞いているよ。もう少し詳しく教えてくれる？`; 
+}
+async function chat(text){
+  if(busy||!text.trim())return;
+  text=text.trim();const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
+  busy=true;
+  post('user',text);const topic=learnFromText(text);render();
+  $('send').disabled=true;$('send').textContent='…';
+  let answer;
+  if(apiEnabled){
+    try{
+      let resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,name:state.name,history:oldHistory,interests:interestSort().map(([name,score])=>({name,score})),goal:activeGoal()?.title||'まだなし',memories:state.memories.slice(0,10).map(m=>m.text)})});
+      let data=await resp.json();if(!resp.ok)throw Error(data.error||'サーバーエラー');answer=data.reply;
+    }catch(e){answer=`AI接続でエラーが起きたよ（${String(e.message).slice(0,90)}）。いまは簡易会話で返事するね。\n\n`+offlineReply(text,topic)}
+  }else answer=offlineReply(text,topic);
+  post('assistant',answer);if(state.messages.filter(m=>m.role==='user').length%3===0)log(`「${topic}」についての会話を振り返り、関心を更新した。`);
+  busy=false;$('send').disabled=false;$('send').textContent='送信 ➤';persist();render();$('message').focus();
+}
+function render(){
+  $('nameLabel').textContent=state.name;$('chatTitle').textContent=state.name+'と話す';$('character').textContent=state.steps<3?'まだ自分の世界を探しているAI':`今は「${interestSort()[0][0]}」が気になっているAI`;
+  $('dayChip').textContent=`思考 ${state.steps} 回`;$('kThink').textContent=state.steps;$('kGoals').textContent=state.goals.filter(g=>g.status==='completed').length;$('kMem').textContent=state.memories.length;
+  $('interests').innerHTML=interestSort().slice(0,7).map(([n,v])=>`<div class="interestRow"><b>${esc(n)}</b><span class="small">${v}%</span></div><div class="track"><div class="fill" style="width:${v}%"></div></div>`).join('');
+  let g=activeGoal();$('goal').innerHTML=g?`<div class="goalType">${esc(g.type)} ・ 自分で設定</div><h3>${esc(g.title)}</h3><p>${esc(g.why)}</p><div class="track"><div class="fill" style="width:${g.progress}%"></div></div><div class="bottom"><span>興味：${esc(g.topic)}</span><span>${g.progress}%</span></div>`:`<div class="goalType">NEXT GOAL</div><h3>次に何を探究しよう？</h3><p>自分の興味から、新しい目標を選ぼうとしている。</p>`;
+  $('journal').innerHTML=state.journal.length?state.journal.slice(0,10).map(x=>`<div class="entry"><div class="when">思考 ${x.step} ・ ${timefmt(x.time)}</div><div class="what">${esc(x.text)}</div></div>`).join(''):'<div class="empty">思考を進めると、ここに自分の行動が記録されます。</div>';
+  $('memoryList').innerHTML=state.memories.length?state.memories.slice(0,8).map(m=>`<div class="memoryItem"><div class="mtype">${esc(m.kind)}${m.topic?' ・ '+esc(m.topic):''}</div>${esc(m.text)}</div>`).join(''):'<div class="empty">まだ記憶がありません。話しかけてみてください。</div>';
+  $('auto').checked=state.auto;
+  let area=$('chatArea'),wasNearBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;
+  let chatHtml=state.messages.map(m=>`<div class="msg ${m.role==='user'?'user':''}"><div class="avatar ${m.role==='user'?'human':''}">${m.role==='user'?'YOU':'✦'}</div><div><div class="bubble">${esc(m.text)}</div><div class="msgMeta">${m.role==='user'?'あなた':esc(state.name)} ・ ${timefmt(m.time)}</div></div></div>`).join('');
+  if(area.dataset.html!==chatHtml){area.innerHTML=chatHtml;area.dataset.html=chatHtml;if(wasNearBottom||state.messages.length<=3)area.scrollTop=area.scrollHeight}
+}
+function download(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='NOMA_memory_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+$('chatForm').addEventListener('submit',e=>{e.preventDefault();if(busy)return;let el=$('message'),v=el.value;if(!v.trim())return;el.value='';chat(v)});
+document.querySelectorAll('[data-say]').forEach(b=>b.addEventListener('click',()=>chat(b.dataset.say)));
+$('step').addEventListener('click',thinkOnce);
+$('fast').addEventListener('click',()=>{for(let i=0;i<5;i++)thinkOnce()});
+$('auto').addEventListener('change',e=>{state.auto=e.target.checked;persist()});
+$('save').addEventListener('click',download);
+$('load').addEventListener('click',()=>$('file').click());
+$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;state=next;persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
+$('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();persist();render()}});
+$('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
+async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),1500);let r=await fetch('/api/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。自由な会話にはサーバー側のOPENAI_API_KEYが必要です。'}}catch(e){}}
+setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
+render();status();
+</script>
+</body>
+</html>
