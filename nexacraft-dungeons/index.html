@@ -586,6 +586,8 @@ function render(){if(!webgl){renderFallback();drawSword();drawMap();return}gl.vi
 function renderFallback(){
  const ctx=fallbackContext,w=canvas.width,h=canvas.height;
  const proj=h/(2*Math.tan(1.26/2)),aspect=w/h;
+ const upstairsView=cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END;
+ const relativeEye=upstairsView?eyeHeight:eyeHeight+cameraFloor;
  let horizon=h*.5+Math.tan(camera.pitch)*proj;
  const upper=ctx.createLinearGradient(0,0,0,horizon);
  upper.addColorStop(0,'#22241c');upper.addColorStop(1,'#484735');ctx.fillStyle=upper;ctx.fillRect(0,0,w,Math.max(0,horizon));
@@ -603,10 +605,10 @@ function renderFallback(){
   for(let iter=0;iter<75;iter++){
    if(ddx<ddz){rayDist=ddx;ddx+=deltaX;gx+=sx;axis=0}
    else{rayDist=ddz;ddz+=deltaZ;gz+=sz;axis=1}
-   if(cameraFloor>WALL*.65?!upperOpen(gx,gz):wallAt(gx,gz))break;
+   if(upstairsView?!upperOpen(gx,gz):wallAt(gx,gz))break;
   }
   const d=Math.max(.1,rayDist*Math.cos(angle-camera.yaw));depth[Math.floor(x/strip)]=d;
-  const top=horizon-(WALL-eyeHeight)*proj/d,bot=horizon+eyeHeight*proj/d,height=bot-top;
+  const top=horizon-(WALL-relativeEye)*proj/d,bot=horizon+relativeEye*proj/d,height=bot-top;
   let u=((axis===0?camera.z+rayDist*rz:camera.x+rayDist*rx)/C)%1;
   if(u<0)u+=1;
   let dark=Math.max(.52,Math.min(1.45,1.73-d*.020))*(axis===0?.90:1),m=hash(gx,gz,axis);
@@ -626,7 +628,7 @@ function renderFallback(){
  // Perspective floor blocks create a voxel corridor instead of a plain solid ground.
  ctx.lineWidth=1;
  for(let y=Math.max(horizon+10,0);y<h;y+=Math.max(7,Math.floor(h/46))){
-   const dist=eyeHeight*proj/(y-horizon),fade=Math.max(0,.23-dist*.006);
+   const dist=relativeEye*proj/(y-horizon),fade=Math.max(0,.23-dist*.006);
    if(dist>0&&dist<75){ctx.strokeStyle=`rgba(190,121,76,${fade})`;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
  }
  const billboards=[];
@@ -637,13 +639,20 @@ function renderFallback(){
  for(const e of entities){if(e.hp<=0)continue;let sp=screenPos(e.x,e.z);if(sp&&sp.x>-w*.2&&sp.x<w*1.2&&lineOfSight(camera.x,camera.z,e.x,e.z))billboards.push({sp,e,type:'zombie'})}
  if(!keyFound){let gp=screenPos(kx,kz);if(gp&&lineOfSight(camera.x,camera.z,kx,kz))billboards.push({sp:gp,type:'key'});}
  {let dp=screenPos(ex,ez);if(dp&&lineOfSight(camera.x,camera.z,ex,ez))billboards.push({sp:dp,type:'door'});}
+ // Canvas fallback now draws every visible stair riser at its true physical position.
+ if(keyFound&&!upstairsView&&Math.hypot(camera.x-ex,camera.z-ez)<52)
+ for(let i=0;i<STAIR_STEPS;i++){
+  const z=STAIR_START+(STAIR_END-STAIR_START)*(i+.5)/STAIR_STEPS;
+  const sp=screenPos(ex,z);
+  if(sp&&lineOfSight(camera.x,camera.z,ex,z))billboards.push({sp,type:'stair',step:i});
+ }
  for(const p of remotePlayers){if(p.hp<=0)continue;const sp=screenPos(p.x,p.z);if(sp&&lineOfSight(camera.x,camera.z,p.x,p.z))billboards.push({sp,p,type:'player'});}
  for(const t of sconces){const sp=screenPos(t.px,t.pz);if(sp&&lineOfSight(camera.x,camera.z,t.px,t.pz))billboards.push({sp,type:'flame',torch:t})}
  billboards.sort((a,b)=>b.sp.d-a.sp.d);
  for(const obj of billboards){let {sp}=obj;if(sp.x<-w*.2||sp.x>w*1.2)continue;
   const cellIndex=Math.min(depth.length-1,Math.max(0,Math.floor(sp.x/strip)));
   if(depth[cellIndex]&&sp.d>depth[cellIndex]+1.2)continue;
-  const unit=sp.scale,groundY=horizon+eyeHeight*unit,screenX=sp.x;
+  const unit=sp.scale,groundY=horizon+relativeEye*unit,screenX=sp.x;
   ctx.save();ctx.translate(screenX,groundY);
   const block=(x,y,bw,bh,color)=>{ctx.fillStyle=color;ctx.fillRect(x*unit,-(y+bh)*unit,bw*unit,bh*unit)};
   if(obj.type==='zombie'){
@@ -689,6 +698,12 @@ function renderFallback(){
    block(-.05,1.39,.68,.12,'#ffe46a');block(.37,1.15,.13,.28,'#dca02d');block(.54,1.20,.12,.23,'#dca02d');
    ctx.shadowBlur=0;
 
+   }else if(obj.type==='stair'){
+   const treadHeight=UPPER_HEIGHT*(obj.step+1)/STAIR_STEPS;
+   block(-1.31,0,2.62,treadHeight,'#645642');
+   block(-1.33,treadHeight-.10,2.66,.12,'#b59d74');
+   block(-1.62,treadHeight-.08,.23,1.06,'#635041');
+   block(1.39,treadHeight-.08,.23,1.06,'#635041');
   }else if(obj.type==='door'){
    const lift=doorOpen*3.40;
    block(-1.05,0,.20,2.75,'#55656a');block(.85,0,.20,2.75,'#55656a');
