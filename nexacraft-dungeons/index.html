@@ -706,8 +706,18 @@ function renderFallback(){
    block(1.39,treadHeight-.08,.23,1.06,'#635041');
   }else if(obj.type==='door'){
    const lift=doorOpen*3.40;
-   block(-1.05,0,.20,2.75,'#55656a');block(.85,0,.20,2.75,'#55656a');
-   block(-1.05,2.69,2.10,.34,'#657176');
+   // Draw the full-width gate and monumental arch in Canvas fallback too.
+   block(-GATE_HALF,0,GATE_HALF-1.64,WALL,'#65513b');
+   block(1.64,0,GATE_HALF-1.64,WALL,'#65513b');
+   for(let y=.26;y<WALL;y+=.57){
+    block(-GATE_HALF,y,GATE_HALF-1.64,.065,'#9e8057');
+    block(1.64,y,GATE_HALF-1.64,.065,'#9e8057');
+   }
+   block(-1.73,0,.30,3.27,'#9b7955');block(1.43,0,.30,3.27,'#9b7955');
+   block(-1.75,3.2,3.50,WALL-3.2,'#65513b');
+   block(-1.75,3.18,3.50,.20,'#c7a475');
+   block(-.15,3.66,.30,.72,'#41d9a5');
+   block(-.40,4.17,.80,.18,'#41d9a5');
    if(doorOpen>.24){block(-.99,.25,.09,2.38,'#46ae8b');block(.90,.25,.09,2.38,'#46ae8b');}
    if(doorOpen<.995){
      block(-1.39,.14+lift,2.78,2.86,'#33454b');block(-1.30,.26+lift,2.60,2.62,'#647878');
@@ -852,6 +862,10 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)
   document.querySelector('#objective').innerHTML='<em>目標：</em>2階の古代回廊を探索しよう';
  }
  document.querySelector('#floorStatus').textContent=(cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END)?'2F':cameraFloor>.15?'階段':'1F';
+ if(upperReached&&cameraFloor===0&&camera.z<STAIR_START){
+  upperReached=false;
+  document.querySelector('#objective').innerHTML='<em>目標：</em>開いた扉の階段から2階へ登ろう';
+ }
  updateVisited();if(keys.Space)attack();
  if(swing>0){swing=Math.max(0,swing-dt);if(!swingHit&&swing<.19){swingHit=true;doHit()}}swingCd=Math.max(0,swingCd-dt);
  damageFlash=Math.max(0,damageFlash-dt*2.5);document.querySelector('#hurt').style.opacity=damageFlash.toFixed(2);
