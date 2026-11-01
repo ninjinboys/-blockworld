@@ -224,37 +224,6 @@ function offlineReply(text,topic){
   return `「${brief}」の話だね。ちゃんと聞いているよ。もう少し詳しく教えてくれる？`; 
 }
 
-let localGenerator=null, localLoading=null, localFailed=false;
-async function loadLocalBrain(){
- if(localGenerator)return localGenerator;
- if(localLoading)return localLoading;
- if(!navigator.gpu){localFailed=true;throw Error('このブラウザはWebGPUに対応していません');}
- localLoading=(async()=>{
-   $('mode').textContent='小型AI読込中';
-   $('modeHint').textContent='無料のQwen3-0.6Bを端末に読み込んでいます。初回は大きなダウンロードが必要です。';
-   const {pipeline}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1');
-   const generator=await pipeline('text-generation','onnx-community/Qwen3-0.6B-ONNX',{device:'webgpu',dtype:'q4f16',progress_callback:p=>{
-     if(p.status==='progress'&&p.progress!=null)$('modeHint').textContent='小型AIをダウンロード中 '+Math.round(p.progress)+'%（初回のみ）';
-   }});
-   localGenerator=generator;
-   $('mode').textContent='無料AI ON';$('mode').classList.add('live');
-   $('modeHint').textContent='Qwen3-0.6Bを端末内で実行中。API料金は発生しません。';
-   return generator;
- })();
- try{return await localLoading;}catch(e){localFailed=true;$('mode').textContent='簡易会話';$('modeHint').textContent='小型AIを起動できませんでした：'+String(e.message).slice(0,110)+'。従来の会話は利用できます。';throw e;}finally{localLoading=null;}
-}
-async function localBrainReply(text){
- const generator=await loadLocalBrain();
- const history=state.messages.slice(-11).map(m=>({role:m.role,content:m.text}));
- const messages=[{role:'system',content:'あなたはNOMAという好奇心旺盛な日本語のAI。ユーザーの質問にまず具体的に答える。自分の関心や目標は持つが話題を奪わない。知識が曖昧なら推測と明示する。簡潔に自然な日本語で話す。/no_think'},...history];
- const out=await generator(messages,{max_new_tokens:180,do_sample:false});
- const generated=out?.[0]?.generated_text;
- let answer=Array.isArray(generated)?generated.at(-1)?.content:typeof generated==='string'?generated:'';
- answer=String(answer||'').split('</think>').pop().replaceAll('<|im_end|>','').replaceAll('<|im_start|>','').trim();
- if(!answer)throw Error('AIから返答を取得できませんでした');
- return answer;
-}
-
 async function chat(text){
   if(busy||!text.trim())return;
   text=text.trim();const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
@@ -267,7 +236,7 @@ async function chat(text){
       let resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,name:state.name,history:oldHistory,interests:interestSort().map(([name,score])=>({name,score})),goal:activeGoal()?.title||'まだなし',memories:state.memories.slice(0,10).map(m=>m.text)})});
       let data=await resp.json();if(!resp.ok)throw Error(data.error||'サーバーエラー');answer=data.reply;
     }catch(e){answer=`AI接続でエラーが起きたよ（${String(e.message).slice(0,90)}）。いまは簡易会話で返事するね。\n\n`+offlineReply(text,topic)}
-  }else if(!localFailed){try{answer=await Promise.race([localBrainReply(text),new Promise((_,reject)=>setTimeout(()=>reject(Error('AIの起動待ち')),12000))])}catch(e){answer=offlineReply(text,topic);$('modeHint').textContent='小型AIの準備に時間がかかっています。会話は簡易モードで続けられます。'}}else answer=offlineReply(text,topic);
+  }else answer=offlineReply(text,topic);
   post('assistant',answer);if(state.messages.filter(m=>m.role==='user').length%3===0)log(`「${topic}」についての会話を振り返り、関心を更新した。`);
   busy=false;$('send').disabled=false;$('send').textContent='送信 ➤';persist();render();$('message').focus();
 }
@@ -297,7 +266,7 @@ $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力し�
 async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),1500);let r=await fetch('/api/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。自由な会話にはサーバー側のOPENAI_API_KEYが必要です。'}}catch(e){}}
 setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
 render();status();
-if(navigator.gpu){$('mode').textContent='無料AI準備';$('modeHint').textContent='最初の発言時に無料のQwen3-0.6Bを読み込みます。初回は時間がかかります。';}else{$('modeHint').textContent='WebGPU非対応のため簡易会話です。対応ブラウザで無料AIを利用できます。';}
+$('mode').textContent='すぐ会話';$('modeHint').textContent='端末へのAIモデルのダウンロードなし。知識ベースの会話モードです。';
 </script>
 </body>
 </html>
