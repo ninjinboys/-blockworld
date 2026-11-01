@@ -259,7 +259,7 @@ async function chat(text){
   if(busy||!text.trim())return;
   text=text.trim();const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
   busy=true;
-  post('user',text);const topic=learnFromText(text);render();
+  post('user',text);const topic=learnFromText(text);persist();render();
   $('send').disabled=true;$('send').textContent='…';
   let answer;
   if(apiEnabled){
@@ -267,7 +267,7 @@ async function chat(text){
       let resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,name:state.name,history:oldHistory,interests:interestSort().map(([name,score])=>({name,score})),goal:activeGoal()?.title||'まだなし',memories:state.memories.slice(0,10).map(m=>m.text)})});
       let data=await resp.json();if(!resp.ok)throw Error(data.error||'サーバーエラー');answer=data.reply;
     }catch(e){answer=`AI接続でエラーが起きたよ（${String(e.message).slice(0,90)}）。いまは簡易会話で返事するね。\n\n`+offlineReply(text,topic)}
-  }else if(!localFailed){try{answer=await localBrainReply(text)}catch(e){answer=offlineReply(text,topic)}}else answer=offlineReply(text,topic);
+  }else if(!localFailed){try{answer=await Promise.race([localBrainReply(text),new Promise((_,reject)=>setTimeout(()=>reject(Error('AIの起動待ち')),12000))])}catch(e){answer=offlineReply(text,topic);$('modeHint').textContent='小型AIの準備に時間がかかっています。会話は簡易モードで続けられます。'}}else answer=offlineReply(text,topic);
   post('assistant',answer);if(state.messages.filter(m=>m.role==='user').length%3===0)log(`「${topic}」についての会話を振り返り、関心を更新した。`);
   busy=false;$('send').disabled=false;$('send').textContent='送信 ➤';persist();render();$('message').focus();
 }
