@@ -1,4 +1,4 @@
-const MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8-fast";
 const headers = {"content-type":"application/json; charset=utf-8","cache-control":"no-store","access-control-allow-origin":"*"};
 export async function onRequestPost({request,env}) {
   if (!env.AI) return new Response(JSON.stringify({error:"CloudflareでWorkers AIバインディング「AI」を設定してください。"}),{status:503,headers});
