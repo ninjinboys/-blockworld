@@ -255,6 +255,7 @@ function nomaSubject(t){
  q=q.replace(/^(ねえ|ところで|教えて|ちょっと|NOMA|ノマ)[、\\s]*/i,'');
  q=q.replace(/(について|に関して|とは何|とは|って何|ってなに|は何|はなに|は誰|はだれ|を教えて|について教えて|教えてください|説明して|ってどんなもの|って何なの|はいつ|はどこ|のことを知りたい).*$/,'');
  q=q.replace(/^(何故|なぜ|なんで|どうして|どうやって)\\s*/,'').replace(/(が|は|を|に|で)(起こる|できる|存在する|生まれた|発明された|起きた|動く|変わる|作られた).*$/,'');
+ q=q.replace(/^(最近|この頃|いま|今)/,'').replace(/(に|が|は|を)?(ハマってる|ハマっている|好き|気になっている|気になる|面白い|おもしろい)(んだ|よ|です|ね)?$/,'');
  return q.trim().slice(0,55);
 }
 function nomaShouldLookup(t){
@@ -267,6 +268,7 @@ async function nomaEncyclopedia(t){
  const last=state.messages.slice(0,-1).reverse().find(m=>m.role==='user'&&!/^(なぜ|どうして|それ|もっと|詳しく)/.test(m.text))?.text||'';
  if((subject.length<2||/^(それ|なぜ|なんで|どうして|詳しく|もっと)/.test(subject))&&last)subject=nomaSubject(last);
  if(subject.length<2||subject.length>55)return null;
+ if(/(宇宙|銀河|太陽系|惑星|ブラックホール|恐竜|進化|AI|人工知能|歴史)/.test(subject)){const known=NOMA_FACTS.find(f=>f.re.test(subject));if(known)return known.overview;}
  if(nomaLookupCache.has(subject))return nomaLookupCache.get(subject);
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6500);
  try{
