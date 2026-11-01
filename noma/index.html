@@ -38,6 +38,7 @@
   <div class="chatArea" id="chatArea" role="log" aria-live="polite"></div>
   <div class="composer">
     <div class="quick"><button data-say="最近、何に興味があるの？">興味を聞く</button><button data-say="今の目標を教えて">目標を聞く</button><button data-say="恐竜と進化って面白いと思わない？">恐竜について話す</button><button data-say="宇宙のことを考えてみよう">宇宙について話す</button></div>
+    <div style="display:flex;justify-content:flex-end;margin:6px 0 10px"><button class="tinyButton" id="clearChat" type="button">🗑 会話をリセット</button></div>
     <form class="composerBox" id="chatForm"><input autocomplete="off" maxlength="2000" id="message" aria-label="NOMAへのメッセージ" placeholder="なんでも話しかけてみて…"><button class="send" id="send" type="submit">送信 ➤</button></form>
     <div class="composerHint" id="modeHint">現在は簡易会話モード。入力への返事を優先し、自主思考は会話に割り込みません。自由な会話にはAIモデルへの接続が必要です。</div>
   </div>
@@ -286,6 +287,7 @@ $('auto').addEventListener('change',e=>{state.auto=e.target.checked;persist()});
 $('save').addEventListener('click',download);
 $('load').addEventListener('click',()=>$('file').click());
 $('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;state=next;persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
+$('clearChat').addEventListener('click',()=>{if(!confirm('会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;state.messages=[];if($('message'))$('message').value='';persist();render();});
 $('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();persist();render()}});
 $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
 async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),1500);let r=await fetch('/api/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。自由な会話にはサーバー側のOPENAI_API_KEYが必要です。'}}catch(e){}}
