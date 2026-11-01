@@ -206,6 +206,49 @@ function offlineReply(text,topic){
  return 'なるほど。もう少し詳しく聞かせて。';
 }
 
+
+// 無料の公開百科事典を必要時に参照。モデルのダウンロードもAPIキーも不要。
+const nomaLookupCache=new Map();
+function nomaSubject(t){
+ let q=t.replace(/[？?！!。、]/g,'').trim();
+ q=q.replace(/^(ねえ|ところで|教えて|ちょっと|NOMA|ノマ)[、\\s]*/i,'');
+ q=q.replace(/(について|に関して|とは何|とは|って何|ってなに|は何|はなに|は誰|はだれ|を教えて|について教えて|教えてください|説明して|ってどんなもの|って何なの|はいつ|はどこ|のことを知りたい).*$/,'');
+ q=q.replace(/^(何故|なぜ|なんで|どうして|どうやって)\\s*/,'').replace(/(が|は|を|に|で)(起こる|できる|存在する|生まれた|発明された|起きた|動く|変わる|作られた).*$/,'');
+ return q.trim().slice(0,55);
+}
+function nomaShouldLookup(t){
+ if(/(好き|興味|目標|覚えて|記憶|名前|何してる|気持ち|嬉しい|悲しい|疲れた|ありがとう|こんにちは|おはよう|こんばんは|あなた|君|NOMA|ノマ)/i.test(t))return false;
+ return /(教えて|説明|とは|って何|ってなに|何者|誰|だれ|いつ|どこ|なぜ|なんで|どうして|どうやって|歴史|仕組み|意味|原因|理由|どんな|？|\\?)/.test(t);
+}
+async function nomaEncyclopedia(t){
+ if(!nomaShouldLookup(t))return null;
+ let subject=nomaSubject(t);
+ const last=state.messages.slice(0,-1).reverse().find(m=>m.role==='user'&&!/^(なぜ|どうして|それ|もっと|詳しく)/.test(m.text))?.text||'';
+ if((subject.length<2||/^(それ|なぜ|なんで|どうして|詳しく|もっと)/.test(subject))&&last)subject=nomaSubject(last);
+ if(subject.length<2||subject.length>55)return null;
+ if(nomaLookupCache.has(subject))return nomaLookupCache.get(subject);
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6500);
+ try{
+  const base='https://ja.wikipedia.org/w/api.php?origin=*&format=json&formatversion=2&';
+  const searchUrl=base+'action=query&list=search&srlimit=3&srsearch='+encodeURIComponent(subject);
+  const response=await fetch(searchUrl,{signal:controller.signal});
+  if(!response.ok)throw Error('検索エラー');
+  const data=await response.json();
+  const hits=data?.query?.search||[];
+  if(!hits.length)return null;
+  const hit=hits.find(h=>h.title===subject)||hits[0];
+  const detailUrl=base+'action=query&prop=extracts&exintro=1&explaintext=1&redirects=1&titles='+encodeURIComponent(hit.title);
+  const details=await (await fetch(detailUrl,{signal:controller.signal})).json();
+  const page=details?.query?.pages?.[0],raw=page?.extract||'';
+  const clean=raw.replace(/\\s+/g,' ').trim();
+  if(clean.length<45)return null;
+  const limit=/(詳しく|もっと|説明)/.test(t)?700:420;
+  const excerpt=clean.slice(0,limit).replace(/[^。！？]*$/,'').trim()||clean.slice(0,limit);
+  const result='「'+hit.title+'」について調べたよ。'+excerpt+'\\n\\n出典：日本語版Wikipedia（'+hit.title+'）';
+  nomaLookupCache.set(subject,result);
+  return result;
+ }catch(e){return null}finally{clearTimeout(timer)}
+}
 async function chat(text){
   if(busy||!text.trim())return;
   text=text.trim();const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
@@ -218,7 +261,7 @@ async function chat(text){
       let resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,name:state.name,history:oldHistory,interests:interestSort().map(([name,score])=>({name,score})),goal:activeGoal()?.title||'まだなし',memories:state.memories.slice(0,10).map(m=>m.text)})});
       let data=await resp.json();if(!resp.ok)throw Error(data.error||'サーバーエラー');answer=data.reply;
     }catch(e){answer=`AI接続でエラーが起きたよ（${String(e.message).slice(0,90)}）。いまは簡易会話で返事するね。\n\n`+offlineReply(text,topic)}
-  }else answer=offlineReply(text,topic);
+  }else {answer=await nomaEncyclopedia(text);if(!answer)answer=offlineReply(text,topic);}
   post('assistant',answer);if(state.messages.filter(m=>m.role==='user').length%3===0)log(`「${topic}」についての会話を振り返り、関心を更新した。`);
   busy=false;$('send').disabled=false;$('send').textContent='送信 ➤';persist();render();$('message').focus();
 }
@@ -248,7 +291,7 @@ $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力し�
 async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),1500);let r=await fetch('/api/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。自由な会話にはサーバー側のOPENAI_API_KEYが必要です。'}}catch(e){}}
 setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
 render();status();
-$('mode').textContent='すぐ会話';$('modeHint').textContent='端末へのAIモデルのダウンロードなし。知識ベースの会話モードです。';
+$('mode').textContent='無料知識検索';$('modeHint').textContent='質問に応じて公開百科事典を参照します。大きなAIのダウンロードや課金はありません。';
 </script>
 </body>
 </html>
