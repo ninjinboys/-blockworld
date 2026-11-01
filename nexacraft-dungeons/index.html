@@ -744,21 +744,23 @@ function drawMap(){
 }
 function updateVisited(){let tx=Math.floor(camera.x/C),tz=Math.floor(camera.z/C);for(let z=Math.max(0,tz-2);z<=Math.min(H-1,tz+2);z++)for(let x=Math.max(0,tx-2);x<=Math.min(W-1,tx+2);x++)if(Math.hypot(x-tx,z-tz)<2.65)seen[z][x]=true}
 function passable(x,z,r=.27,isPlayer=false){
- // Fixed stone wings span the whole five-cell hall; ONLY the center doorway opens.
+ // Stone wings are solid; only the central gate opens with the key.
  if(z>doorZ-.28-r&&z<doorZ+.28+r&&Math.abs(x-ex)<GATE_HALF+r){
   if(Math.abs(x-ex)>GATE_PASS_HALF-r)return false;
   if(!keyFound||doorOpen<.86)return false;
  }
  if(isPlayer){
-  // Walk through the stairwell, never through its side rails.
-  if(z>=STAIR_START&&z<STAIR_END)return keyFound&&doorOpen>=.86&&Math.abs(x-ex)<STAIR_HALF-r;
-  if(z>=STAIR_END){
-   const landing=upperClear(x,z,r)||(z<49*C+r+.05&&Math.abs(x-ex)<STAIR_HALF-r);
-   // Floor two is available only after physically climbing all the treads.
-   return landing&&cameraFloor>=UPPER_HEIGHT-.40;
+  const lateral=Math.abs(x-ex);
+  // Limit staircase rules to the actual narrow stair shaft, not ALL 1F rooms
+  // at the same z-coordinate. The rest of the maze stays walkable.
+  if(z>=STAIR_START&&z<STAIR_END&&lateral<STAIR_HALF+.48)
+   return keyFound&&doorOpen>=.86&&lateral<STAIR_HALF-r;
+  // On 2F, stay inside the real upper-room collision footprint.
+  if(z>=STAIR_END&&cameraFloor>UPPER_HEIGHT-.42){
+   if(z<66*C&&x>=70*C&&x<82*C)
+    return upperClear(x,z,r)||(z<49*C+r+.05&&lateral<STAIR_HALF-r);
   }
-  // Prevent exiting sideways while on the elevated staircase.
-  if(cameraFloor>.24&&z>=STAIR_START-.20)return false;
+  // From 1F no direct access to the upstairs floor through its underside.
  }
  for(let zz=Math.floor((z-r)/C);zz<=Math.floor((z+r)/C);zz++)
  for(let xx=Math.floor((x-r)/C);xx<=Math.floor((x+r)/C);xx++)
