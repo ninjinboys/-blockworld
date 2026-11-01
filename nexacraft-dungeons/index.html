@@ -169,7 +169,7 @@ const level=[
 '####..Z............#####.....#####.................###...............#####..E..#####.##',
 '####...............#####.....#####.................###...............#####.....#####.##',
 '####...............#####.....#####.................###...............#####.....#####.##',
-'####.....#####.....###############.....###.........###.....############################',
+'####.....#####.....###############.....###.........###.....#################.##########',
 '####.....#####.....###############.....###.........###.....############################',
 '####.....#####.....###############.....#####.....#####.....############################',
 '####.....#####.....###############.....#####.....#####.....############################',
@@ -290,7 +290,7 @@ for(let z=0;z<H;z++)for(let x=0;x<W;x++){
   quad(staticVerts,[a,.015,p],[b,.015,p],[b,.015,q],[a,.015,q],col);
  }
  // The stairs cut through the first floor ceiling.
- if(x===76&&z>=46&&z<=48)continue;
+ if(x===76&&z>=46&&z<=49)continue;
  // Dark slab ceiling with checker tiles and heavy support beams.
  quad(staticVerts,[x0,WALL,z0+C],[x0+C,WALL,z0+C],[x0+C,WALL,z0],[x0,WALL,z0],[.23,.22,.17]);
  for(let dz=0;dz<2;dz++)for(let dx=0;dx<2;dx++){
@@ -390,9 +390,47 @@ const STAIR_START=ez+.45,STAIR_END=49*C+.20,STAIR_STEPS=18,STAIR_HALF=1.46;
 const UPPER_HEIGHT=WALL;
 function upperOpen(tx,tz){return tz>=49&&tz<=65&&((tz<=55&&tx>=74&&tx<=78)||(tz>=55&&tz<=62&&tx>=71&&tx<=81)||(tz>=62&&tx>=73&&tx<=79))}
 function upperClear(x,z,r=.27){for(const xx of [x-r,x+r])for(const zz of [z-r,z+r])if(!upperOpen(Math.floor(xx/C),Math.floor(zz/C)))return false;return true}
-function staircaseHeight(z){return WALL*Math.max(0,Math.min(1,(z-STAIR_START)/(STAIR_END-STAIR_START)))}
-function playerFloorAt(x,z){if(!keyFound)return 0;if(z>=STAIR_START&&z<=STAIR_END&&Math.abs(x-ex)<STAIR_HALF+.03)return staircaseHeight(z);if(z>=STAIR_END&&(upperClear(x,z,.30)||(z<49*C+.42&&Math.abs(x-ex)<STAIR_HALF-.30)))return UPPER_HEIGHT;return 0}
+function staircaseHeight(z){const t=Math.max(0,Math.min(1,(z-STAIR_START)/(STAIR_END-STAIR_START)));return t<=0?0:UPPER_HEIGHT*Math.min(STAIR_STEPS,Math.ceil(t*STAIR_STEPS))/STAIR_STEPS}
+function playerFloorAt(x,z){
+ // Vertical progress comes only from stepping onto the stair treads.
+ // Merely walking beneath the second floor can NEVER snap the camera upstairs.
+ if(!keyFound||doorOpen<.86)return 0;
+ if(z>=STAIR_START&&z<STAIR_END&&Math.abs(x-ex)<STAIR_HALF-.30)return staircaseHeight(z);
+ if(z>=STAIR_END&&upperClear(x,z,.30)&&cameraFloor>=UPPER_HEIGHT-.40)return UPPER_HEIGHT;
+ return 0;
+}
 
+// This locked gate closes the ENTIRE 5-tile-wide passage, not a floating tiny door.
+ // The central opening stays visibly framed even when unlocked.
+ const GATE_HALF=C*2.5, GATE_PASS_HALF=1.43;
+ const gateMasonry=[.39,.33,.24], gateTrim=[.60,.45,.27], gateIron=[.27,.32,.31];
+ box(staticVerts,ex-GATE_HALF,0,doorZ-.25,ex-1.64,WALL,doorZ+.27,gateMasonry);
+ box(staticVerts,ex+1.64,0,doorZ-.25,ex+GATE_HALF,WALL,doorZ+.27,gateMasonry);
+ for(let i=0;i<9;i++){
+  const h=.27+i*.56;
+  for(const side of [-1,1]){
+   const ax=side<0?ex-GATE_HALF:ex+1.64;
+   const bx=side<0?ex-1.64:ex+GATE_HALF;
+   box(staticVerts,ax,h,doorZ-.285,bx,Math.min(WALL,h+.075),doorZ-.25,gateTrim);
+  }
+ }
+ // Heavy jambs, overhead lintel and a visible ascent emblem.
+ box(staticVerts,ex-1.73,0,doorZ-.38,ex-1.43,3.29,doorZ+.32,gateTrim);
+ box(staticVerts,ex+1.43,0,doorZ-.38,ex+1.73,3.29,doorZ+.32,gateTrim);
+ box(staticVerts,ex-1.75,3.20,doorZ-.38,ex+1.75,WALL,doorZ+.32,gateMasonry);
+ box(staticVerts,ex-1.75,3.18,doorZ-.41,ex+1.75,3.42,doorZ-.31,gateTrim);
+ // Upward stone arrow on the lintel: signposts the stairs, not a warp portal.
+ box(staticVerts,ex-.13,3.66,doorZ-.43,ex+.13,4.38,doorZ-.34,[.18,.82,.59],1.3);
+ box(staticVerts,ex-.41,4.15,doorZ-.43,ex+.41,4.37,doorZ-.34,[.18,.82,.59],1.3);
+ box(staticVerts,ex-.30,3.95,doorZ-.43,ex+.30,4.16,doorZ-.34,[.18,.82,.59],1.3);
+ // Two fire braziers beside the stair entrance remain visible when the gate opens.
+ for(const side of [-1,1]){
+  const fx=ex+side*2.16;
+  box(staticVerts,fx-.23,1.67,doorZ-.47,fx+.23,2.01,doorZ-.10,gateIron);
+  box(staticVerts,fx-.16,1.95,doorZ-.39,fx+.16,2.37,doorZ-.16,[1.15,.48,.17],1.3);
+  box(staticVerts,fx-.09,2.21,doorZ-.33,fx+.09,2.48,doorZ-.23,[1.62,.94,.38],1.4);
+  lights.push(fx,2.3,doorZ-.25);
+ }
 box(staticVerts,ex-1.08,0,doorZ-.18,ex-.82,2.78,doorZ+.22,[.49,.25,.14]);
 box(staticVerts,ex+.82,0,doorZ-.18,ex+1.08,2.78,doorZ+.22,[.30,.35,.38]);
 box(staticVerts,ex-1.11,2.68,doorZ-.20,ex+1.11,3.08,doorZ+.24,[.63,.34,.19]);
