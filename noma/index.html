@@ -32,7 +32,7 @@ body{background:#fff;color:#24282d;font-family:system-ui,-apple-system,"Hiragino
 body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px solid #eceef0;position:relative;z-index:3}
 .layout,.layout.showRight{display:grid;grid-template-columns:258px minmax(0,1fr);gap:0;min-height:calc(100dvh - 58px)}
 .leftcol{display:flex;flex-direction:column;gap:10px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;max-height:calc(100dvh - 58px);overflow-y:auto}
-.leftcol .profile{padding:15px}.leftcol .lifeOrb{width:78px;height:78px;margin:4px auto}.leftcol .lifeOrb .core{transform:scale(.65);transform-origin:center}.leftcol .lifeOrb .ring{display:none}.leftcol .lifeOrb .spark{display:none}.leftcol .name{font-size:20px}.leftcol .persona{display:none}.leftcol .kpi{margin-top:8px}.leftcol .cardTitle{margin-bottom:8px}
+.chatThread{display:flex;gap:5px;align-items:center;margin:5px 0}.chatThread .openThread{flex:1;min-width:0;text-align:left;background:transparent;border:1px solid transparent;border-radius:9px;padding:9px;color:#47515a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chatThread.active .openThread{background:#e9eeed;border-color:#dce5e2;font-weight:700}.chatThread .removeThread{border:0;background:transparent;color:#88929b;padding:7px}.leftcol .profile{padding:15px}.leftcol .lifeOrb{width:78px;height:78px;margin:4px auto}.leftcol .lifeOrb .core{transform:scale(.65);transform-origin:center}.leftcol .lifeOrb .ring{display:none}.leftcol .lifeOrb .spark{display:none}.leftcol .name{font-size:20px}.leftcol .persona{display:none}.leftcol .kpi{margin-top:8px}.leftcol .cardTitle{margin-bottom:8px}
 .rightcol,.layout.showRight .rightcol{position:fixed;z-index:6;right:0;top:58px;bottom:0;width:min(350px,92vw);background:#fafafa;box-shadow:-12px 0 40px #00000016;overflow-y:auto;display:none;grid-column:auto;padding:16px;flex-direction:column}
 .layout.showRight .rightcol{display:flex}.layout.showRight:after{content:"";position:fixed;inset:58px 0 0;background:#0003;z-index:5;pointer-events:none}
 .chatCard{height:calc(100dvh - 58px);min-height:420px;border:0;border-radius:0;max-width:none}
@@ -58,6 +58,7 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
 </header>
 <div class="layout">
 <aside class="leftcol">
+  <section class="card pad"><div class="cardTitle" style="display:flex;justify-content:space-between;align-items:center"><span>CHATS / 会話</span><button class="editName" id="newChat" type="button">＋ 新規</button></div><div id="chatList"></div></section>
   <section class="card profile pad">
     <div class="cardTitle" style="text-align:left">AI PROFILE / 個性</div>
     
@@ -68,7 +69,7 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
     <div class="kpi"><div><strong id="kThink">0</strong><span>思考回数</span></div><div><strong id="kGoals">0</strong><span>達成目標</span></div><div><strong id="kMem">0</strong><span>記憶</span></div></div>
   </section>
   <section class="card pad">
-    <div class="cardTitle">INTERESTS / 興味の変化</div>
+    <div class="cardTitle" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>INTERESTS / 興味の変化</span><button class="editName" id="resetInterests" type="button">リセット</button></div>
     <div id="interests"></div>
     <p class="small" style="margin-top:12px">会話や自主行動によって関心度が変わります。</p>
   </section>
@@ -124,9 +125,24 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const esc=(s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function initial(){return {version:1,name:'NOMA',steps:0,auto:true,interests:{'技術':37,'宇宙':32,'生き物':30,'ゲーム':23,'歴史':17,'数学':19,'物語':21,'自然':19,'音楽':14,'社会':16},memories:[],goals:[],current:null,journal:[],messages:[{role:'assistant',text:'やあ！ 僕はNOMA。まだ知らないことばかりだけど、これからいろんな話を聞いて、自分の興味を見つけていきたい。\n\nねえ、最近何が面白いと思った？',time:Date.now()}],lastTopic:'技術',lastProactive:0};}
 let state;try{state=JSON.parse(localStorage.getItem(KEY));if(!state||state.version!==1)throw 0}catch{state=initial()}
+// 既存の会話履歴を保持したまま複数チャットへ移行する。
+function ensureChats(){
+ if(!Array.isArray(state.chats)||!state.chats.length){
+  state.chats=[{id:'chat-original',title:'最初のチャット',messages:Array.isArray(state.messages)?state.messages:[]}];
+  state.activeChat='chat-original';
+ }
+ if(!state.chats.some(c=>c.id===state.activeChat))state.activeChat=state.chats[0].id;
+ state.messages=state.chats.find(c=>c.id===state.activeChat).messages;
+}
+ensureChats();
+function syncChat(){const c=state.chats.find(c=>c.id===state.activeChat);if(c)c.messages=state.messages}
+function switchChat(id){if(busy)return;syncChat();const c=state.chats.find(c=>c.id===id);if(!c)return;state.activeChat=id;state.messages=c.messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
+function addChat(){if(busy)return;syncChat();const id='chat-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);state.chats.unshift({id,title:'新しいチャット',messages:[]});switchChat(id);$('message').focus();}
+function removeChat(id){if(busy)return;if(!confirm('このチャットを削除しますか？'))return;syncChat();state.chats=state.chats.filter(c=>c.id!==id);if(!state.chats.length){state.chats=[{id:'chat-'+Date.now(),title:'新しいチャット',messages:[]}]};if(state.activeChat===id)state.activeChat=state.chats[0].id;state.messages=state.chats.find(c=>c.id===state.activeChat).messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
+function renderChats(){const target=$('chatList');target.innerHTML=state.chats.map(c=>'<div class="chatThread '+(c.id===state.activeChat?'active':'')+'"><button class="openThread" type="button" data-open-chat="'+esc(c.id)+'">'+esc(c.title)+'</button><button class="removeThread" type="button" data-delete-chat="'+esc(c.id)+'" aria-label="チャットを削除">×</button></div>').join('');}
 // 旧版で割り込んだ独り言は、そのまま残すが今後は追加しない。
 let apiEnabled=false, busy=false;
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}}
+function persist(){syncChat();try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}}
 function cat(id){return CATALOG.find(x=>x.id===id)||CATALOG[0]}
 function detectTopics(text){return CATALOG.map(x=>({id:x.id, count:x.words.reduce((n,w)=>n+(text.toLowerCase().includes(w.toLowerCase())?1:0),0)})).filter(x=>x.count).sort((a,b)=>b.count-a.count).map(x=>x.id)}
 function interestSort(){return Object.entries(state.interests).sort((a,b)=>b[1]-a[1])}
@@ -307,7 +323,7 @@ async function nomaEncyclopedia(t){
 
 async function chat(text){
   if(busy||!text.trim())return;
-  text=text.trim();const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
+  text=text.trim();const currentChatId=state.activeChat;const currentChat=state.chats.find(c=>c.id===currentChatId);if(currentChat&&currentChat.title==='新しいチャット')currentChat.title=text.slice(0,24);const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
   busy=true;
   post('user',text);const topic=learnFromText(text);persist();render();
   $('send').disabled=true;$('send').textContent='…';
@@ -322,6 +338,7 @@ async function chat(text){
   busy=false;$('send').disabled=false;$('send').textContent='送信 ➤';persist();render();$('message').focus();
 }
 function render(){
+  renderChats();
   $('nameLabel').textContent=state.name;$('chatTitle').textContent=state.name+'と話す';$('character').textContent=state.steps<3?'まだ自分の世界を探しているAI':`今は「${interestSort()[0][0]}」が気になっているAI`;
   $('dayChip').textContent=`思考 ${state.steps} 回`;$('kThink').textContent=state.steps;$('kGoals').textContent=state.goals.filter(g=>g.status==='completed').length;$('kMem').textContent=state.memories.length;
   $('interests').innerHTML=interestSort().slice(0,7).map(([n,v])=>`<div class="interestRow"><b>${esc(n)}</b><span class="small">${v}%</span></div><div class="track"><div class="fill" style="width:${v}%"></div></div>`).join('');
@@ -343,9 +360,12 @@ $('fast').addEventListener('click',()=>{for(let i=0;i<5;i++)thinkOnce()});
 $('auto').addEventListener('change',e=>{state.auto=e.target.checked;persist()});
 $('save').addEventListener('click',download);
 $('load').addEventListener('click',()=>$('file').click());
-$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;state=next;persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
+$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
+$('newChat').addEventListener('click',addChat);
+$('chatList').addEventListener('click',e=>{const del=e.target.closest('[data-delete-chat]');if(del){removeChat(del.dataset.deleteChat);return;}const open=e.target.closest('[data-open-chat]');if(open)switchChat(open.dataset.openChat)});
+$('resetInterests').addEventListener('click',()=>{if(!confirm('興味の数値をすべて0%にリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
 $('clearChat').addEventListener('click',()=>{if(!confirm('会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;state.messages=[];if($('message'))$('message').value='';persist();render();});
-$('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();persist();render()}});
+$('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();persist();render()}});
 $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
 async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),4500);let r=await fetch('/api/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。Cloudflare PagesのWorkers AIバインディング「AI」を設定すると会話AIが使えます。'}}catch(e){}}
 setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
