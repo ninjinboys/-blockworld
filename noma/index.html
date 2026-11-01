@@ -96,7 +96,7 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
     <div class="cardTitle">INNER JOURNAL / 最近の自主行動</div><div class="journal" id="journal"></div>
   </section>
   <section class="card pad">
-    <div class="cardTitle">MEMORIES / 覚えていること</div><div class="memoryList" id="memoryList"></div>
+    <div class="cardTitle" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>MEMORIES / 覚えていること</span><button class="editName" id="resetMemories" type="button">記憶をリセット</button></div><div class="memoryList" id="memoryList"></div>
     <hr class="rule"><div class="inline"><button class="tinyButton" id="save" type="button">記憶を書き出す</button><button class="tinyButton" id="load" type="button">読み込む</button><button class="tinyButton" id="reset" type="button">初期化</button></div><input id="file" type="file" accept=".json,application/json" hidden>
   </section>
   <section class="card pad"><div class="cardTitle">ABOUT / 今回の試作</div><div class="hintBox">興味の変化・記憶・目標生成・自主行動は実際に動作します。APIなしの会話は簡易ルール式です。主観的な意識や感情を実装したものではありません。</div></section>
@@ -364,6 +364,7 @@ $('load').addEventListener('click',()=>$('file').click());
 $('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
 $('newChat').addEventListener('click',addChat);
 $('chatList').addEventListener('click',e=>{const del=e.target.closest('[data-delete-chat]');if(del){removeChat(del.dataset.deleteChat);return;}const open=e.target.closest('[data-open-chat]');if(open)switchChat(open.dataset.openChat)});
+$('resetMemories').addEventListener('click',()=>{if(!confirm('NOMAが覚えた記憶をすべて消去しますか？ チャット履歴・興味・目標は残ります。'))return;state.memories=[];persist();render()});
 $('resetInterests').addEventListener('click',()=>{if(!confirm('NOMAの興味の傾向をリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
 $('clearChat').addEventListener('click',()=>{if(!confirm('会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;state.messages=[];if($('message'))$('message').value='';persist();render();});
 $('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();persist();render()}});
