@@ -188,7 +188,7 @@ function ensureChats(){
 ensureChats();
 function syncChat(){const c=state.chats.find(c=>c.id===state.activeChat);if(c)c.messages=state.messages}
 function switchChat(id){if(busy)return;syncChat();const c=state.chats.find(c=>c.id===id);if(!c)return;state.activeChat=id;state.messages=c.messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
-function addChat(){if(busy)return;syncChat();const id='chat-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);state.chats.unshift({id,title:'新しいチャット',messages:[]});switchChat(id);$('message').focus();}
+function addChat(){if(busy)return;$('chatSearch').value='';syncChat();const id='chat-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);state.chats.unshift({id,title:'新しいチャット',messages:[]});switchChat(id);$('message').focus();}
 function removeChat(id){if(busy)return;if(!confirm('このチャットを削除しますか？'))return;syncChat();state.chats=state.chats.filter(c=>c.id!==id);if(!state.chats.length){state.chats=[{id:'chat-'+Date.now(),title:'新しいチャット',messages:[]}]};if(state.activeChat===id)state.activeChat=state.chats[0].id;state.messages=state.chats.find(c=>c.id===state.activeChat).messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
 function renderChats(){
  const target=$('chatList'),q=($('chatSearch')?.value||'').trim().toLocaleLowerCase();
