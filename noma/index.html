@@ -69,9 +69,9 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
     <div class="kpi"><div><strong id="kThink">0</strong><span>思考回数</span></div><div><strong id="kGoals">0</strong><span>達成目標</span></div><div><strong id="kMem">0</strong><span>記憶</span></div></div>
   </section>
   <section class="card pad">
-    <div class="cardTitle" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>INTERESTS / 興味の変化</span><button class="editName" id="resetInterests" type="button">リセット</button></div>
+    <div class="cardTitle" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>PERSONALITY / 興味と反応</span><button class="editName" id="resetInterests" type="button">リセット</button></div>
     <div id="interests"></div>
-    <p class="small" style="margin-top:12px">会話や自主行動によって関心度が変わります。</p>
+    <p class="small" style="margin-top:12px">数値ではなく、話し方・質問・反応に興味が表れます。</p>
   </section>
 </aside>
 <main class="card chatCard">
@@ -146,6 +146,7 @@ function persist(){syncChat();try{localStorage.setItem(KEY,JSON.stringify(state)
 function cat(id){return CATALOG.find(x=>x.id===id)||CATALOG[0]}
 function detectTopics(text){return CATALOG.map(x=>({id:x.id, count:x.words.reduce((n,w)=>n+(text.toLowerCase().includes(w.toLowerCase())?1:0),0)})).filter(x=>x.count).sort((a,b)=>b.count-a.count).map(x=>x.id)}
 function interestSort(){return Object.entries(state.interests).sort((a,b)=>b[1]-a[1])}
+function interestMood(){const items=interestSort().filter(([,v])=>v>0);if(!items.length)return 'まだ特に夢中なものはない。いろんな話を聞いてみたい。';const top=items[0][0];return '最近は「'+top+'」の話になると、つい質問が増える。'+(items[1]&&items[1][1]>0?'「'+items[1][0]+'」にも少し惹かれている。':'');}
 function memorize(content,kind='会話',topic=''){let mem={text:content.slice(0,125),kind,topic,time:Date.now()};state.memories.unshift(mem);state.memories=state.memories.slice(0,35)}
 function log(text){state.journal.unshift({text,time:Date.now(),step:state.steps});state.journal=state.journal.slice(0,35)}
 function post(role,text){state.messages.push({role,text,time:Date.now()});state.messages=state.messages.slice(-100)}
@@ -341,7 +342,7 @@ function render(){
   renderChats();
   $('nameLabel').textContent=state.name;$('chatTitle').textContent=state.name+'と話す';$('character').textContent=state.steps<3?'まだ自分の世界を探しているAI':`今は「${interestSort()[0][0]}」が気になっているAI`;
   $('dayChip').textContent=`思考 ${state.steps} 回`;$('kThink').textContent=state.steps;$('kGoals').textContent=state.goals.filter(g=>g.status==='completed').length;$('kMem').textContent=state.memories.length;
-  $('interests').innerHTML=interestSort().slice(0,7).map(([n,v])=>`<div class="interestRow"><b>${esc(n)}</b><span class="small">${v}%</span></div><div class="track"><div class="fill" style="width:${v}%"></div></div>`).join('');
+  $('interests').innerHTML='<p style="font-size:13px;line-height:1.9;color:#44515a;margin:0">'+esc(interestMood())+'</p>';
   let g=activeGoal();$('goal').innerHTML=g?`<div class="goalType">${esc(g.type)} ・ 自分で設定</div><h3>${esc(g.title)}</h3><p>${esc(g.why)}</p><div class="track"><div class="fill" style="width:${g.progress}%"></div></div><div class="bottom"><span>興味：${esc(g.topic)}</span><span>${g.progress}%</span></div>`:`<div class="goalType">NEXT GOAL</div><h3>次に何を探究しよう？</h3><p>自分の興味から、新しい目標を選ぼうとしている。</p>`;
   $('journal').innerHTML=state.journal.length?state.journal.slice(0,10).map(x=>`<div class="entry"><div class="when">思考 ${x.step} ・ ${timefmt(x.time)}</div><div class="what">${esc(x.text)}</div></div>`).join(''):'<div class="empty">思考を進めると、ここに自分の行動が記録されます。</div>';
   $('memoryList').innerHTML=state.memories.length?state.memories.slice(0,8).map(m=>`<div class="memoryItem"><div class="mtype">${esc(m.kind)}${m.topic?' ・ '+esc(m.topic):''}</div>${esc(m.text)}</div>`).join(''):'<div class="empty">まだ記憶がありません。話しかけてみてください。</div>';
@@ -363,7 +364,7 @@ $('load').addEventListener('click',()=>$('file').click());
 $('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
 $('newChat').addEventListener('click',addChat);
 $('chatList').addEventListener('click',e=>{const del=e.target.closest('[data-delete-chat]');if(del){removeChat(del.dataset.deleteChat);return;}const open=e.target.closest('[data-open-chat]');if(open)switchChat(open.dataset.openChat)});
-$('resetInterests').addEventListener('click',()=>{if(!confirm('興味の数値をすべて0%にリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
+$('resetInterests').addEventListener('click',()=>{if(!confirm('NOMAの興味の傾向をリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
 $('clearChat').addEventListener('click',()=>{if(!confirm('会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;state.messages=[];if($('message'))$('message').value='';persist();render();});
 $('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();persist();render()}});
 $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
