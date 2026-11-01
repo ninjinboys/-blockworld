@@ -48,6 +48,53 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
 .panelToggle{display:inline-block;background:#fff;border:1px solid #e6e7e9;color:#4b5560;border-radius:9px;padding:6px 10px}
 .card{box-shadow:none}.chip{background:#f7f8f9;color:#6a727a;border-color:#e6e9ec}.brandName{font-size:18px}
 @media(max-width:850px){.layout,.layout.showRight{display:block}.leftcol{position:fixed;z-index:7;top:58px;bottom:0;left:0;width:min(310px,90vw);max-height:none;display:none}.layout.showLeft .leftcol{display:flex}.chatCard{height:calc(100dvh - 58px)}.chatArea{padding:20px 16px}.composer{padding:10px 14px 18px}.chatHead{padding:12px 17px}.quick{overflow-x:auto;flex-wrap:nowrap}.quick button{white-space:nowrap}.composer input{font-size:16px}}
+
+/* Streamlined, ChatGPT-inspired NOMA sidebar */
+.layout,.layout.showRight{grid-template-columns:270px minmax(0,1fr)}
+.leftcol{padding:12px 10px 10px;background:#f9f9f9;border-right:1px solid #ededed;gap:0;overflow:hidden;min-height:0}
+.sidebarTop{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+.newChatMain{display:flex;align-items:center;gap:12px;flex:1;text-align:left;border:0;background:transparent;color:#25282d;font-size:14px;font-weight:650;border-radius:10px;padding:12px 11px}
+.newChatMain:hover,.sidebarClose:hover{background:#eaeaea}
+.newChatIcon{font-size:19px;font-weight:400;line-height:1;width:21px;text-align:center}
+.sidebarClose{display:none;background:transparent;border:0;border-radius:9px;padding:7px 10px;color:#565d67}
+.sidebarSearch{display:flex;align-items:center;gap:11px;border-radius:10px;color:#59616a;padding:9px 12px;flex:0 0 auto}
+.sidebarSearch:focus-within{background:#efefef;outline:1px solid #d9d9d9}
+.sidebarSearch span{font-size:23px;line-height:20px;width:20px}
+.sidebarSearch input{flex:1;min-width:0;border:0;outline:none!important;background:transparent;font-size:13px;color:#32363a}
+.sidebarSearch input::placeholder{color:#74787d}
+.historyHeading{font-size:12px;font-weight:650;color:#72767b;padding:22px 12px 9px;flex:0 0 auto}
+.chatHistory{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#d6d6d6 transparent}
+.chatThread{display:flex;align-items:center;position:relative;gap:2px;margin:2px 0;border-radius:10px;padding:1px 3px}
+.chatThread:hover{background:#efefef}.chatThread.active{background:#eaeaea}
+.chatThread .openThread{display:block;flex:1;border:0!important;background:transparent!important;color:#323439;font-size:13px;font-weight:450;padding:10px 10px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatThread.active .openThread{font-weight:600}
+.threadMenu{position:relative;flex:0 0 auto}
+.threadMenu>summary{display:grid;place-items:center;list-style:none;border-radius:8px;width:30px;height:31px;cursor:pointer;color:#646a73;font-size:16px;letter-spacing:1px}
+.threadMenu>summary::-webkit-details-marker{display:none}
+.threadMenu>summary:hover,.threadMenu[open]>summary{background:#dfdfdf}
+.threadMenu .threadMenuActions{position:absolute;right:0;top:33px;z-index:10;width:135px;background:#fff;border:1px solid #e5e5e5;box-shadow:0 8px 22px #00000019;border-radius:12px;padding:5px}
+.threadMenuActions button{border:0;background:transparent;text-align:left;padding:8px 10px;color:#363a40;font-size:12px;width:100%;border-radius:7px}
+.threadMenuActions button:hover{background:#f1f1f1}
+.threadMenuActions .dangerAction{color:#bf3838}
+.sidebarEmpty{font-size:12px;color:#868b91;padding:14px 11px}
+.sidebarBottom{flex:0 0 auto;border-top:1px solid #e9e9e9;padding-top:9px;margin-top:8px}
+.personaDisclosure{border-radius:11px;max-height:min(55vh,460px);overflow-y:auto;scrollbar-width:thin}
+.personaDisclosure>summary{display:flex;align-items:center;gap:10px;list-style:none;padding:9px 10px;cursor:pointer;border-radius:11px}
+.personaDisclosure>summary::-webkit-details-marker{display:none}
+.personaDisclosure>summary:hover{background:#eeeeee}
+.personaIcon{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border:1px solid #d5e4e1;border-radius:50%;background:#e3f1ed;color:#2f746a;font-size:19px}
+.personaSummary{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.personaSummary strong{font-size:13px;font-weight:700;color:#292e32}
+.personaSummary span{font-size:11px;color:#747b80;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.disclosureArrow{font-size:17px;color:#778087;transition:transform .15s}
+.personaDisclosure[open] .disclosureArrow{transform:rotate(180deg)}
+.personaDetails{padding:8px 12px 14px;border-top:1px solid #ebebeb}
+.personaDetails .kpi{margin:6px 0 14px}
+.personaDetails .kpi strong{font-size:16px}
+.sidebarSectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#464f57;margin:14px 0 9px}
+.personaDetails #interests p{font-size:12px!important;color:#55616a!important}
+.personaDetails .small{font-size:11px;line-height:1.6}
+@media(max-width:850px){.layout,.layout.showRight{display:block}.leftcol{width:min(310px,90vw);height:calc(100dvh - 58px);max-height:none;box-shadow:10px 0 30px #0000001b}.sidebarClose{display:block}.chatHistory{min-height:80px}}
 </style>
 </head>
 <body>
@@ -57,22 +104,26 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
   <div class="headerRight"><button class="panelToggle" id="leftToggle" type="button">☰ 個性</button><button class="panelToggle" id="rightToggle" type="button">✧ 記憶・思考</button><span id="mode" class="chip dot">オフライン試作</span><span id="dayChip" class="chip">思考 0 回</span></div>
 </header>
 <div class="layout">
-<aside class="leftcol">
-  <section class="card pad"><div class="cardTitle" style="display:flex;justify-content:space-between;align-items:center"><span>CHATS / 会話</span><button class="editName" id="newChat" type="button">＋ 新規</button></div><div id="chatList"></div></section>
-  <section class="card profile pad">
-    <div class="cardTitle" style="text-align:left">AI PROFILE / 個性</div>
-    
-    <div class="name" id="nameLabel">NOMA</div>
-    <button class="editName" id="rename" type="button">名前を変える</button>
-    <div class="subtitle" id="character">まだ自分の世界を探しているAI</div>
-    <div class="persona"><span class="tag">✦ 好奇心旺盛</span><span class="tag purple">✦ 自主的</span><span class="tag">✦ 成長中</span></div>
-    <div class="kpi"><div><strong id="kThink">0</strong><span>思考回数</span></div><div><strong id="kGoals">0</strong><span>達成目標</span></div><div><strong id="kMem">0</strong><span>記憶</span></div></div>
-  </section>
-  <section class="card pad">
-    <div class="cardTitle" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>PERSONALITY / 興味と反応</span><button class="editName" id="resetInterests" type="button">リセット</button></div>
-    <div id="interests"></div>
-    <p class="small" style="margin-top:12px">数値ではなく、話し方・質問・反応に興味が表れます。</p>
-  </section>
+<aside class="leftcol" aria-label="NOMAのサイドバー">
+  <div class="sidebarTop">
+    <button class="newChatMain" id="newChat" type="button"><span class="newChatIcon" aria-hidden="true">✎</span><span>新しいチャット</span></button>
+    <button class="sidebarClose" id="closeSidebar" type="button" aria-label="サイドバーを閉じる">✕</button>
+  </div>
+  <label class="sidebarSearch"><span aria-hidden="true">⌕</span><input id="chatSearch" type="search" placeholder="チャットを検索" aria-label="チャット履歴を検索"></label>
+  <div class="historyHeading">チャット履歴</div>
+  <nav id="chatList" class="chatHistory" aria-label="保存したチャット"></nav>
+  <div class="sidebarBottom">
+    <details class="personaDisclosure">
+      <summary><span class="personaIcon">✧</span><span class="personaSummary"><strong id="nameLabel">NOMA</strong><span id="character">まだ自分の世界を探しているAI</span></span><span class="disclosureArrow">⌄</span></summary>
+      <div class="personaDetails">
+        <button class="editName" id="rename" type="button">名前を変える</button>
+        <div class="kpi"><div><strong id="kThink">0</strong><span>思考回数</span></div><div><strong id="kGoals">0</strong><span>達成目標</span></div><div><strong id="kMem">0</strong><span>記憶</span></div></div>
+        <div class="sidebarSectionTitle"><span>興味と反応</span><button class="editName" id="resetInterests" type="button">リセット</button></div>
+        <div id="interests"></div>
+        <p class="small">興味は数字ではなく、会話の反応や質問に表れます。</p>
+      </div>
+    </details>
+  </div>
 </aside>
 <main class="card chatCard">
   <div class="chatHead"><div><h2 id="chatTitle">NOMAと話す</h2><p>会話を中心に。興味や記憶はサイドパネルで確認できます。</p></div><span class="chip live" id="status">● 起動中</span></div>
@@ -139,7 +190,11 @@ function syncChat(){const c=state.chats.find(c=>c.id===state.activeChat);if(c)c.
 function switchChat(id){if(busy)return;syncChat();const c=state.chats.find(c=>c.id===id);if(!c)return;state.activeChat=id;state.messages=c.messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
 function addChat(){if(busy)return;syncChat();const id='chat-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);state.chats.unshift({id,title:'新しいチャット',messages:[]});switchChat(id);$('message').focus();}
 function removeChat(id){if(busy)return;if(!confirm('このチャットを削除しますか？'))return;syncChat();state.chats=state.chats.filter(c=>c.id!==id);if(!state.chats.length){state.chats=[{id:'chat-'+Date.now(),title:'新しいチャット',messages:[]}]};if(state.activeChat===id)state.activeChat=state.chats[0].id;state.messages=state.chats.find(c=>c.id===state.activeChat).messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
-function renderChats(){const target=$('chatList');target.innerHTML=state.chats.map(c=>'<div class="chatThread '+(c.id===state.activeChat?'active':'')+'"><button class="openThread" type="button" data-open-chat="'+esc(c.id)+'">'+esc(c.title)+'</button><button class="removeThread" type="button" data-delete-chat="'+esc(c.id)+'" aria-label="チャットを削除">×</button></div>').join('');}
+function renderChats(){
+ const target=$('chatList'),q=($('chatSearch')?.value||'').trim().toLocaleLowerCase();
+ const matching=state.chats.filter(c=>c.title.toLocaleLowerCase().includes(q));
+ target.innerHTML=matching.length?matching.map(c=>'<div class="chatThread '+(c.id===state.activeChat?'active':'')+'"><button class="openThread" type="button" data-open-chat="'+esc(c.id)+'" title="'+esc(c.title)+'">'+esc(c.title)+'</button><details class="threadMenu"><summary aria-label="チャットの操作">•••</summary><div class="threadMenuActions"><button type="button" data-rename-chat="'+esc(c.id)+'">名前を変更</button><button type="button" class="dangerAction" data-delete-chat="'+esc(c.id)+'">削除</button></div></details></div>').join(''):'<p class="sidebarEmpty">'+(q?'一致するチャットがありません':'まだチャットがありません')+'</p>';
+}
 // 旧版で割り込んだ独り言は、そのまま残すが今後は追加しない。
 let apiEnabled=false, busy=false;
 function persist(){syncChat();try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}}
@@ -363,7 +418,13 @@ $('save').addEventListener('click',download);
 $('load').addEventListener('click',()=>$('file').click());
 $('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
 $('newChat').addEventListener('click',addChat);
-$('chatList').addEventListener('click',e=>{const del=e.target.closest('[data-delete-chat]');if(del){removeChat(del.dataset.deleteChat);return;}const open=e.target.closest('[data-open-chat]');if(open)switchChat(open.dataset.openChat)});
+$('chatSearch').addEventListener('input',renderChats);
+$('closeSidebar').addEventListener('click',()=>document.querySelector('.layout').classList.remove('showLeft'));
+$('chatList').addEventListener('click',e=>{
+ const del=e.target.closest('[data-delete-chat]');if(del){removeChat(del.dataset.deleteChat);return;}
+ const ren=e.target.closest('[data-rename-chat]');if(ren){if(busy)return;const c=state.chats.find(x=>x.id===ren.dataset.renameChat);if(!c)return;const name=prompt('チャットの名前を変更',c.title);if(name&&name.trim()){c.title=name.trim().slice(0,60);persist();renderChats()}return;}
+ const open=e.target.closest('[data-open-chat]');if(open){switchChat(open.dataset.openChat);document.querySelector('.layout').classList.remove('showLeft');}
+});
 $('resetMemories').addEventListener('click',()=>{if(!confirm('NOMAが覚えた記憶をすべて消去しますか？ チャット履歴・興味・目標は残ります。'))return;state.memories=[];persist();render()});
 $('resetInterests').addEventListener('click',()=>{if(!confirm('NOMAの興味の傾向をリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
 $('clearChat').addEventListener('click',()=>{if(!confirm('会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;state.messages=[];if($('message'))$('message').value='';persist();render();});
