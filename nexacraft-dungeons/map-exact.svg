@@ -606,7 +606,14 @@
 <rect x="258" y="963" width="680" height="10" fill="#304043"/>
 <rect x="68" y="973" width="870" height="10" fill="#304043"/>
 <rect x="68" y="983" width="870" height="10" fill="#304043"/>
+<rect x="828" y="613" width="10" height="10" fill="#bdab8f"/>
+<!-- The stair shaft tile (76,49) is open in the actual game. -->
 <rect x="68" y="123" width="870" height="870" fill="url(#grid)" opacity=".72"/>
+<!-- The visible locked gateway extends across the five-cell passage. -->
+<rect x="808" y="585" width="22" height="6" rx="1" fill="#65523c" stroke="#dfba72" stroke-width="1.1"/>
+<rect x="836" y="585" width="22" height="6" rx="1" fill="#65523c" stroke="#dfba72" stroke-width="1.1"/>
+<rect x="830" y="585" width="6" height="6" rx="1" fill="#f28271"/>
+<path d="M833 603 L833 625" stroke="#53c6eb" stroke-width="2.3" stroke-dasharray="3 2"/>
 <circle cx="173" cy="188" r="3.4" fill="#b54a54" opacity=".75"/>
 <circle cx="293" cy="188" r="3.4" fill="#b54a54" opacity=".75"/>
 <circle cx="733" cy="188" r="3.4" fill="#b54a54" opacity=".75"/>
