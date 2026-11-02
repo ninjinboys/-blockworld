@@ -220,7 +220,7 @@ async function userChanged(next){
   const [prof,docs]=await Promise.all([storeSdk.getDoc(profileRef),storeSdk.getDocs(chatsRef)]);
   if(user.uid!==next.uid)return;
   const remote=prof.exists()||!docs.empty?fromRemote(prof.exists()?prof.data().data:null,docs.docs.map(d=>d.data()),local):null;
-  const combined=!remote?local:(!owner||owner===user.uid)&&isMeaningful(local)?mergeState(local,remote):remote;
+  const combined=!remote?local:(!owner&&isMeaningful(local))?mergeState(local,remote):remote;
   if(!bridge.apply(combined))throw Error("会話が終わってから同期してね");
   localStorage.setItem(OWNER_KEY,user.uid);
   remember(user.uid,combined);
@@ -332,7 +332,7 @@ async function flush(force=false){
  }catch(e){
   dirty=true;notice(errorText(e));
   if(navigator.onLine&&user?.uid===uid)writeTimer=setTimeout(()=>{writeTimer=null;void flush()},15000);
- }finally{writing=false;receive()}
+ }finally{writing=false}
 }
 window.addEventListener("online",()=>{if(connected&&dirty)schedule(1000,true)});
 window.addEventListener("beforeunload",()=>{if(user)remember(user.uid,bridge.read())});
