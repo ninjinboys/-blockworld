@@ -1,21 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Never allow anonymous access. Each owner sees only their own records.
     function owner(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
-    function companion(agent) {
-      return agent in ['lux', 'nox'];
+    function companion(name) {
+      return name in ['lux', 'nox'];
     }
-    match /users/{uid}/agents/{agent} {
-      allow read, write: if owner(uid) && companion(agent);
+    // Primary account sync format.
+    match /users/{uid}/companions/{name} {
+      allow read, write: if owner(uid) && companion(name);
       match /chats/{chatId} {
-        allow read, write: if owner(uid) && companion(agent);
+        allow read, write: if owner(uid) && companion(name);
+      }
+      match /photos/{photoId} {
+        allow read, write: if owner(uid) && companion(name);
+        match /parts/{partId} {
+          allow read, write: if owner(uid) && companion(name);
+        }
+      }
+    }
+    // Readable compatibility with earlier LUX/NOX account prototypes.
+    match /users/{uid}/agents/{name} {
+      allow read, write: if owner(uid) && companion(name);
+      match /chats/{chatId} {
+        allow read, write: if owner(uid) && companion(name);
       }
       match /media/{photoId} {
-        allow read, write: if owner(uid) && companion(agent);
+        allow read, write: if owner(uid) && companion(name);
         match /parts/{partId} {
-          allow read, write: if owner(uid) && companion(agent);
+          allow read, write: if owner(uid) && companion(name);
         }
       }
     }
