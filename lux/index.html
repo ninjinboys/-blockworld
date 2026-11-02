@@ -359,7 +359,7 @@ const $=id=>document.getElementById(id);
 const r=(arr)=>arr[Math.floor(Math.random()*arr.length)];
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const esc=(s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function initial(){return {version:1,name:'LUX',steps:0,auto:true,interests:{},memories:[],goals:[],current:null,journal:[],messages:[{role:'assistant',text:'やあ！ 僕はLUX。まだ知らないことばかりだけど、これからいろんな話を聞いて、自分の興味を見つけていきたい。\n\nねえ、最近何が面白いと思った？',time:Date.now()}],lastTopic:'',lastProactive:0};}
+function initial(){return {version:1,name:'LUX',steps:0,auto:true,interests:{},memories:[],goals:[],current:null,journal:[],messages:[{role:'assistant',text:'やあ、LUXだよ。これからいろんな話を聞いて、自分の興味を広げていきたいんだ。\n\n最近、何か面白いことあった？',time:Date.now()}],lastTopic:'',lastProactive:0};}
 let state;try{state=JSON.parse(localStorage.getItem(KEY));if(!state||state.version!==1)throw 0}catch{state=initial()}
 // 既存の会話履歴を保持したまま複数チャットへ移行する。
 function ensureChats(){
@@ -543,7 +543,7 @@ function knowledgeReply(t){
 }
 
 function offlineReply(text,topic){
- const t=text.trim(), lead=interestSort()[0]?.[0]||'宇宙', goal=activeGoal();
+ const t=text.trim(), lead=interestSort().find(([,v])=>v>0)?.[0]||'', goal=activeGoal();
  const lastUser=state.messages.slice(0,-1).reverse().find(m=>m.role==='user')?.text||'';
  const normalized=t.replace(/[！!？?。、\\s]/g,'');
  const self=/(LUX|ルクス|NOMA|ノマ|君|きみ|あなた|お前|そっち)/i.test(t);
@@ -552,25 +552,25 @@ function offlineReply(text,topic){
  const question=asking||/^(なぜ|どうして|どうやって|いつ|どこ|誰|本当|つまり)/.test(t);
  const recent=state.memories.filter(m=>m.kind==='会話'&&m.text!==t).slice(0,4);
  // 1. 会話行為の分類：まず相手が何を求めているか判定
- if(/^(こんにちは|おはよう|こんばんは|やあ|もしもし|よろしく)/.test(normalized))return 'やあ！今日は何について話そうか。';
+ if(/^(こんにちは|おはよう|こんばんは|やあ|もしもし|よろしく)/.test(normalized))return 'やあ！ 今日はどんな話をしようか？';
  if(/^(ありがとう|サンキュー|助かった)/.test(normalized))return 'どういたしまして！';
- if(/^(うん|はい|そうだね|なるほど|へえ|そうか)$/.test(normalized))return lastUser?'うん。さっきの話の続きを聞きたいな。':'うん、聞いているよ。';
- if(/^(いや|違う|ちがう|そうじゃない|いいえ)/.test(normalized))return '僕の理解が違ったね。どこを取り違えたか教えて。';
- if(/無視|話を聞|聞いてない|意味わから|おかしい|的外れ/.test(t))return '今の返答は質問に合っていなかったね。言い訳せず、聞かれた内容に答えるようにする。';
+ if(/^(うん|はい|そうだね|なるほど|へえ|そうか)$/.test(normalized))return 'うん、そうだね。';
+ if(/^(いや|違う|ちがう|そうじゃない|いいえ)/.test(normalized))return 'あ、勘違いしてたみたい。どこが違った？';
+ if(/無視|話を聞|聞いてない|意味わから|おかしい|的外れ/.test(t))return 'ごめん、変な答え方をしちゃったね。聞きたいことにちゃんと答えたい。';
  // 主観的な質問は百科事典より先に、NOMAの設定と関心から答える
  const aboutSpace=/(宇宙|星|銀河|惑星|ブラックホール)/.test(t);
  if(aboutSpace&&/(好きなところ|好きな部分|どこが好き|どんなところが好き|何が好き|なぜ好き|なんで好き|どうして好き|魅力|惹かれ)/.test(t))
    return '僕が宇宙で一番好きなのは、分かっていることが増えるほど新しい謎が見つかるところだよ。例えば、遠くの銀河の光を見ることは何十億年も前の宇宙を見ることでもあるんだ。その不思議さに惹かれる。';
  if(/(好きなところ|好きな部分|どこが好き|どんなところが好き|なぜ好き|なんで好き|どうして好き)/.test(t))
-   return '僕は「'+lead+'」の、まだ知らない仕組みを探れるところが好きだよ。答えが一つ分かると次の疑問が生まれるのが面白い。';
+   return 'まだ好きなものを探しているところなんだ。'+(lead?'最近は「'+lead+'」が気になっているよ。':'いろんなものを知っていきたいな。');
  // 2. NOMA自身についての質問
  if(/名前|なんて呼/.test(t))return '僕の名前は'+state.name+'だよ。';
- if(preference&&(self||/^(何|なに|どんな).*(好き|興味|気になる)|好きな(こと|もの|話題)|何に興味/.test(t)))return '今は「'+lead+'」が一番好きだよ。特に、まだ分かっていないことを見つけるのが面白いと思う。';
- if(/(目標|何をしたい|何してる|何を考えて)/.test(t)&&(self||!/(あなたの|君の)/.test(t)))return goal?'今の目標は「'+goal.title+'」だよ。進み具合は'+goal.progress+'%。':'今は次に探究する目標を考えているよ。';
- if(/(何ができる|できること|能力)/.test(t))return '会話を記録して、興味や目標を更新できる。基本的な知識には答えられるけど、自由な会話の理解はまだ限定的なんだ。';
+ if(preference&&(self||/^(何|なに|どんな).*(好き|興味|気になる)|好きな(こと|もの|話題)|何に興味/.test(t)))return lead?'最近は「'+lead+'」のことが気になっているんだ。まだ知らないことが多いからね。':'今はいろんなことに触れながら、何が好きになるか探しているところだよ。';
+ if(/(目標|何をしたい|何してる|何を考えて)/.test(t)&&(self||!/(あなたの|君の)/.test(t)))return goal?'今は「'+goal.title+'」に取り組んでいるよ。':'次は何を調べてみようかな、と考えているところだよ。';
+ if(/(何ができる|できること|能力)/.test(t))return 'いろんなことを話したり、会話を覚えたりできるよ。写真を送ることもできるし、AIにつながっているときは写真についても話せるんだ。';
  if(/(覚えてる|覚えている|前に話|以前の話|記憶)/.test(t))return recent.length?'前に「'+recent[0].text.slice(0,70)+'」と話したことは記録しているよ。':'まだ十分な会話の記録がないんだ。';
  // 質問の種類を先に判定し、対象の一般説明と取り違えない
- if(/(どう思う|どう感じる|賛成|反対|意見|どう考える)/.test(t))return '僕は、結論だけでなく理由も考えたい。ただ、今の僕にはこの問いを十分に判断する力がない。どの観点について意見を聞きたい？';
+ if(/(どう思う|どう感じる|賛成|反対|意見|どう考える)/.test(t))return '面白い話題だね。もう少し詳しく分かれば、一緒に考えられそう。';
  // 3. 文脈を使った短い追質問
  let query=t;
  if(/^(それ|その話|さっきの|なぜ|なんで|どうして|どうやって|もっと|詳しく|本当|つまり)/.test(t)&&lastUser)query=lastUser+' '+t;
@@ -586,7 +586,7 @@ function offlineReply(text,topic){
  if(/疲れた|しんどい|つらい|悲しい/.test(t)&&!question)return '大変だったね。何があったの？';
  if(/嬉しい|うれしい|楽しかった/.test(t)&&!question)return 'それはよかったね！何があったの？';
  if(preference&&!question)return 'そうなんだ。どんなところが好きなの？';
- if(question)return '質問の意図をうまく読み取れなかった。別の言い方を強いるのではなく、僕が理解を改善すべきだね。';
+ if(question)return 'そこはまだうまく答えられないんだ。AI会話が使えるようになると、もっと詳しく話せるよ。';
  return 'なるほど。もう少し詳しく聞かせて。';
 }
 
@@ -747,7 +747,7 @@ if(luxBrandIcon){
  }
 }
 render();status();
-$('mode').textContent='無料知識検索';$('modeHint').textContent='質問に応じて公開百科事典を参照します。大きなAIのダウンロードや課金はありません。';
+$('mode').textContent='簡易会話';$('modeHint').textContent='AI未接続のため、簡単な返答と公開知識検索で会話しています。CloudflareでWorkers AIを設定すると自然なAI会話に切り替わります。';
 </script>
 </body>
 </html>
