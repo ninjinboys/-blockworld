@@ -11,7 +11,7 @@ export async function onRequestPost({request,env}) {
     return new Response(JSON.stringify({error:"写真の形式またはサイズが正しくありません。JPEG画像を選び直してください。"}),{status:400,headers});
   }
   if (!message&&!image) return new Response(JSON.stringify({error:"メッセージまたは写真を送ってください"}),{status:400,headers});
-  const name=String(input.name||"NOMA").slice(0,32);
+  const name=String(input.name||"LUX").slice(0,32);
   const interests=Array.isArray(input.interests)?input.interests.slice(0,6).map(x=>String(x.name||"").slice(0,35)).filter(Boolean):[];
   const memories=Array.isArray(input.memories)?input.memories.slice(0,7).map(x=>String(x).slice(0,140)):[];
   const history=Array.isArray(input.history)?input.history.slice(-10).filter(x=>x.role==="user"||x.role==="assistant").map(x=>({role:x.role,content:String(x.text||"").slice(0,900)})):[];
@@ -29,7 +29,7 @@ export async function onRequestPost({request,env}) {
     if(!reply)throw Error("AIから返答がありません");
     return new Response(JSON.stringify({reply}),{headers});
   } catch(e) {
-    console.error("NOMA AI error",String(e));
+    console.error("LUX AI error",String(e));
     return new Response(JSON.stringify({error:image?"写真をAIで読み取れませんでした。時間をおいて試してください。":"AI応答に失敗しました。無料枠や設定をご確認ください。"}),{status:503,headers});
   }
 }
