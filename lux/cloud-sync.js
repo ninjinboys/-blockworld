@@ -37,7 +37,8 @@ css.textContent=[
 ".cloudDialog a{color:#1766ad}"
 ].join("\n");
 document.head.append(css);
-const box=document.createElement("section");
+const box=document.querySelector(".accountBox")||document.createElement("section");
+const wasExisting=box.isConnected;
 box.className="cloudAccount";
 box.innerHTML='<button type="button" id="cloudLogin" class="cloudLogin"><span class="cloudG">G</span>Googleでログイン</button>'+
  '<div id="cloudIdentity" class="cloudIdentity" hidden></div>'+
@@ -46,7 +47,7 @@ box.innerHTML='<button type="button" id="cloudLogin" class="cloudLogin"><span cl
  '<button type="button" id="cloudImport" hidden>端末データを統合</button>'+
  '<button type="button" id="cloudLogout" hidden>ログアウト</button>'+
  '<button type="button" id="cloudConfigure">連携設定</button></div>';
-document.querySelector(".sidebarBottom")?.prepend(box);
+if(!wasExisting)document.querySelector(".sidebarBottom")?.prepend(box);
 const dlg=document.createElement("dialog");dlg.className="cloudDialog";
 dlg.innerHTML='<h2>'+COMPANION+' のGoogle連携設定</h2>'+
  '<p>FirebaseのWebアプリ設定（firebaseConfig）を貼り付けてね。同じ設定をLUXとNOXで使えるよ。</p>'+
@@ -329,6 +330,10 @@ async function loadPhoto(id){
  return "data:image/jpeg;base64,"+parts.map(x=>x.data).join("");
 }
 window.companionCloud={get active(){return connected&&!!user},loadPhoto};
+if(window.AGENT_SYNC_BRIDGE){
+ window.AGENT_SYNC_BRIDGE.fetchPhoto=loadPhoto;
+ window.AGENT_SYNC_BRIDGE.savePhoto=(id)=>{if(connected&&user)void uploadPhoto(id).catch(e=>console.warn("Cloud photo sync",e))};
+}
 async function flush(force=false){
  if(!connected||!user||writing)return;
  if(writeTimer){clearTimeout(writeTimer);writeTimer=null}
@@ -380,6 +385,6 @@ async function flush(force=false){
 }
 window.addEventListener("online",()=>{if(connected&&dirty)schedule(1000,true)});
 window.addEventListener("beforeunload",()=>{if(user)remember(user.uid,bridge.read())});
-try{configured=JSON.parse(localStorage.getItem(CONFIG_KEY)||"null");if(configured)configured=parseConfig(JSON.stringify(configured))}catch{configured=null}
+try{configured=JSON.parse(localStorage.getItem(CONFIG_KEY)||"null")||window.AGENTS_FIREBASE_CONFIG||null;if(configured)configured=parseConfig(JSON.stringify(configured))}catch{configured=null}
 ui();
 start();
