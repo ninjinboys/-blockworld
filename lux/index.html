@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-agent="lux">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -278,6 +278,27 @@ button:focus-visible,input:focus-visible,.openThread:focus-visible{
  .composerBox{transition:none}
 }
 
+
+/* Google account and private cross-device sync */
+.accountBox{margin:0 0 9px;padding:11px 10px 12px;border-radius:12px;background:color-mix(in srgb,var(--a) 7%,var(--panel) 93%);border:1px solid var(--line)}
+.accountHead{display:flex;align-items:center;gap:9px}
+.accountG{width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:#fff;color:#4285f4;border:1px solid #dadce0;display:grid;place-items:center;font-weight:800;font-family:system-ui,sans-serif}
+.accountHead>div{display:flex;flex-direction:column;min-width:0;gap:3px}
+.accountHead strong{color:var(--ink);font-size:12px}
+.accountHead small{color:var(--muted);font-size:11px;line-height:1.45}
+.accountHead small[data-state="ok"]{color:var(--a);font-weight:700}
+.accountHead small[data-state="error"]{color:#e57e83}
+.accountHead small[data-state="warning"]{color:#d19c4b}
+.accountIdentity{font-size:11px;color:var(--muted);margin:8px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.accountIdentity[hidden],.googleLogin[hidden],.googleLogout[hidden]{display:none!important}
+.googleLogin,.googleLogout{width:100%;padding:9px 10px;margin-top:9px;border-radius:10px;font-size:12px;font-weight:650;cursor:pointer;transition:filter .15s}
+.googleLogin{background:#fff;border:1px solid #bfc4dc;color:#303744}
+.googleLogin:hover{background:#f3f5ff;border-color:var(--a)}
+.googleLogout{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.googleLogout:hover{background:color-mix(in srgb,var(--a) 12%,transparent)}
+.googleLogin:disabled,.googleLogout:disabled{opacity:.65;cursor:wait}
+.accountHelp{font-size:10px;color:var(--muted);line-height:1.6;margin:8px 2px 0}
+@media(max-width:850px){.accountBox{padding:12px}}
 </style>
 </head>
 <body>
@@ -296,6 +317,13 @@ button:focus-visible,input:focus-visible,.openThread:focus-visible{
   <div class="historyHeading">チャット履歴</div>
   <nav id="chatList" class="chatHistory" aria-label="保存したチャット"></nav>
   <div class="sidebarBottom">
+    <section class="accountBox" aria-label="Googleアカウントと同期">
+      <div class="accountHead"><span class="accountG" aria-hidden="true">G</span><div><strong>Googleアカウント</strong><small id="cloudStatus" data-state="info" role="status">接続を準備しています…</small></div></div>
+      <div id="cloudIdentity" class="accountIdentity" hidden></div>
+      <button id="googleLogin" class="googleLogin" type="button">Googleでログイン</button>
+      <button id="googleLogout" class="googleLogout" type="button" hidden>ログアウト</button>
+      <p class="accountHelp">会話・記憶・興味を端末間で同期。LUXとNOXのデータは別々。</p>
+    </section>
     <details class="personaDisclosure">
       <summary><span class="personaIcon">✧</span><span class="personaSummary"><strong id="nameLabel">LUX</strong><span id="character">まだ自分の世界を探しているAI</span></span><span class="disclosureArrow">⌄</span></summary>
       <div class="personaDetails">
@@ -340,6 +368,7 @@ button:focus-visible,input:focus-visible,.openThread:focus-visible{
 <footer class="footer">LUX α / Prototype 1.1 ・ ローカル保存 ・ 外部への自動投稿や操作なし</footer>
 </div>
 <dialog id="photoViewer" class="photoViewer" aria-label="写真を拡大"><button id="closePhotoViewer" class="closePhotoViewer" type="button" aria-label="閉じる">×</button><img id="photoViewerImage" alt="写真の拡大表示"></dialog>
+<script src="./firebase-config.js"></script>
 <script>
 'use strict';
 const KEY='noma-prototype-v1';
@@ -394,8 +423,8 @@ const cloudStateListeners=new Set();
 let cloudApplyingState=false;
 function persist(){
  syncChat();
- try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}
- if(!cloudApplyingState){for(const listener of cloudStateListeners){try{listener()}catch(err){console.warn('Cloud change listener',err)}}}
+ try{localStorage.setItem(window.AGENT_SYNC_BRIDGE?.storageKey?.()||KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}
+ if(!cloudApplyingState){for(const listener of cloudStateListeners){try{listener()}catch(err){console.warn('Cloud change listener',err)}}window.AGENT_SYNC_BRIDGE?.changed?.()}
 }
 function cat(id){return CATALOG.find(x=>x.id===id)||{id,questions:['「'+id+'」について、まだ知らないことは何だろう？','「'+id+'」にはどんな意外な発見があるんだろう？'],ideas:['「'+id+'」の面白さを探してみたい。','「'+id+'」について新しい疑問が浮かんだ。'],next:randomTopic()}}
 function detectTopics(text){return CATALOG.map(x=>({id:x.id, count:x.words.reduce((n,w)=>n+(text.toLowerCase().includes(w.toLowerCase())?1:0),0)})).filter(x=>x.count).sort((a,b)=>b.count-a.count).map(x=>x.id)}
@@ -423,16 +452,18 @@ function photoDb(){
 async function savePhotoData(data,existingId){
  const db=await photoDb();const id=existingId||('photo-'+Date.now()+'-'+Math.random().toString(36).slice(2));
  await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(data,id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
- photoCache.set(id,data);return id;
+ photoCache.set(id,data);window.AGENT_SYNC_BRIDGE?.savePhoto?.(id,data);return id;
 }
 async function getPhotoData(id){
  if(photoCache.has(id))return photoCache.get(id);
- const db=await photoDb();const data=await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(id);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});
- if(!data&&window.companionCloud?.loadPhoto){
-   try{data=await window.companionCloud.loadPhoto(id);if(data)await savePhotoData(data,id)}
-   catch(error){console.warn('Cloud photo unavailable',error)}
+ const db=await photoDb();
+ let data=await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(id);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});
+ if(!data&&window.AGENT_SYNC_BRIDGE?.fetchPhoto){
+  try{data=await window.AGENT_SYNC_BRIDGE.fetchPhoto(id);
+    if(data)await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(data,id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+  }catch(e){console.warn('Cloud photo unavailable',e)}
  }
- photoCache.set(id,data);return data;
+ photoCache.set(id,data||null);return data;
 }
 async function erasePhotoData(id){if(!id)return;photoCache.delete(id);try{const db=await photoDb();await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn(e)}}
 async function eraseChatPhotos(messages){for(const m of messages||[])if(m.photoId)await erasePhotoData(m.photoId)}
@@ -808,7 +839,24 @@ window.companionSyncBridge={
  putPhoto:savePhotoData,
  initial
 };
+
+// Google account bridge, independent from the optional local-only controls.
+window.AGENT_SYNC_BRIDGE={
+ baseKey:KEY,
+ read:()=>{syncChat();return JSON.parse(JSON.stringify(state))},
+ empty:()=>initial(),
+ apply:(snapshot)=>{
+  if(!snapshot||snapshot.version!==1||!Array.isArray(snapshot.chats))return;
+  cloudApplyingState=true;
+  try{
+   state=snapshot;ensureChats();
+   delete $('chatArea').dataset.html;$('chatArea').innerHTML='';
+   persist();render();
+  }finally{cloudApplyingState=false}
+ },
+ readLocalPhoto:id=>getPhotoData(id)
+};
 </script>
-<script type="module" src="./cloud-sync.js"></script>
+<script type="module" src="./account-sync.js"></script>
 </body>
 </html>
