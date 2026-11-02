@@ -145,6 +145,7 @@ function snapshotChat(chat){
  c.messages=(c.messages||[]).slice(-100).map(m=>{
   const v={role:m.role,text:String(m.text||"").slice(0,4000),time:Number(m.time)||Date.now()};
   if(m.photoId)v.photoId=m.photoId;
+  else if(m.photoData)v.photoId="photo-"+(m.time||0)+"-inline";
   return v;
  });
  return c;
@@ -230,6 +231,7 @@ async function userChanged(next){
   profileHash=remote?JSON.stringify(snapshotProfile(remote)):"";
   knownChats=new Map((remote?.chats||[]).map(c=>[c.id,JSON.stringify(snapshotChat(c))]));
   connected=true;initializing=false;
+  bridge.refreshCloudPhotos?.();
   dirty=!remote||profileHash!==JSON.stringify(snapshotProfile(combined))||
    combined.chats.some(c=>JSON.stringify(snapshotChat(c))!==knownChats.get(c.id));
   if(dirty){notice("初回の記憶を保存中…");await flush(true)}
@@ -254,7 +256,13 @@ function receive(){
  const oldP=JSON.stringify(snapshotProfile(old)),newP=JSON.stringify(snapshotProfile(newState));
  const oldC=JSON.stringify((old.chats||[]).map(snapshotChat));
  const newC=JSON.stringify((newState.chats||[]).map(snapshotChat));
- if(oldP!==newP||oldC!==newC)bridge.apply(newState);
+ if(oldP!==newP||oldC!==newC){
+  const nextPhotos=new Set(newState.chats.flatMap(c=>(c.messages||[]).map(m=>m.photoId).filter(Boolean)));
+  const removed=old.chats.flatMap(c=>(c.messages||[]).map(m=>m.photoId).filter(id=>id&&!nextPhotos.has(id)));
+  bridge.apply(newState);
+  for(const id of new Set(removed))bridge.removePhoto?.(id);
+  bridge.refreshCloudPhotos?.();
+ }
  profileHash=newP;knownChats=new Map(newState.chats.map(c=>[c.id,JSON.stringify(snapshotChat(c))]));
  remember(user.uid,bridge.read());
  notice("クラウドと同期済み ✓");
@@ -282,6 +290,10 @@ async function uploadPhoto(id){
  const reference=photoRef(id);
  if((await storeSdk.getDoc(reference)).exists()){knownPhotos.add(id);return}
  let data;try{data=await bridge.getPhoto(id)}catch{}
+ if(!data&&id.endsWith("-inline")){
+  const old=bridge.read().chats.flatMap(c=>c.messages||[]).find(m=>m.photoData&&"photo-"+(m.time||0)+"-inline"===id);
+  data=old?.photoData||null;
+ }
  if(!data||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(data))return;
  const payload=data.slice("data:image/jpeg;base64,".length),partSize=170000;
  const fragments=[];for(let i=0;i<payload.length;i+=partSize)fragments.push(payload.slice(i,i+partSize));
@@ -312,6 +324,11 @@ async function flush(force=false){
  const uid=user.uid;
  try{
   const state=bridge.read();
+  const oldPhotoIds=new Set();
+  for(const oldWire of knownChats.values())try{
+   const chat=JSON.parse(oldWire);
+   for(const m of chat.messages||[])if(m.photoId)oldPhotoIds.add(m.photoId);
+  }catch{}
   const profile=snapshotProfile(state),finger=JSON.stringify(profile);
   if(force||finger!==profileHash){
    await storeSdk.setDoc(profileRef,{data:profile,updatedAt:Date.now()});
@@ -328,6 +345,17 @@ async function flush(force=false){
   const ids=new Set((state.chats||[]).map(x=>x.id));
   for(const id of [...knownChats.keys()]){
    if(!ids.has(id)){await storeSdk.deleteDoc(storeSdk.doc(chatsRef,id));knownChats.delete(id)}
+  }
+  // Delete photos no longer used by any chat. Firestore does not cascade deletes.
+  const keepPhotos=new Set((state.chats||[]).flatMap(c=>(c.messages||[]).map(m=>m.photoId||m.photoData&&"photo-"+(m.time||0)+"-inline").filter(Boolean)));
+  for(const id of oldPhotoIds){
+   if(keepPhotos.has(id)||!/^photo-[A-Za-z0-9-]{1,120}$/.test(id))continue;
+   try{
+    const parts=await storeSdk.getDocs(storeSdk.collection(db,base()+"/photos/"+id+"/parts"));
+    for(const p of parts.docs)await storeSdk.deleteDoc(storeSdk.doc(db,base()+"/photos/"+id+"/parts/"+p.id));
+    await storeSdk.deleteDoc(photoRef(id));
+    knownPhotos.delete(id);
+   }catch(error){console.warn("Unable to delete unused cloud photo",error)}
   }
   if(user?.uid===uid){
    dirty=false;remember(uid,bridge.read());notice("クラウドと同期済み ✓");
