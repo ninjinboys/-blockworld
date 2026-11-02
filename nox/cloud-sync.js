@@ -1,4 +1,4 @@
-/* Google account and cloud memory sync for LUX/NOX. */
+/* Username/password account and cloud memory sync for LUX/NOX. */
 "use strict";
 const bridge=window.companionSyncBridge;
 if(!bridge)throw Error("Companion bridge unavailable");
@@ -26,6 +26,11 @@ css.textContent=[
 ".cloudActions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}",
 ".cloudActions button{padding:5px 7px;font-size:11px;border-radius:7px;border:1px solid currentColor;background:transparent;color:inherit;opacity:.85}",
 ".cloudAccount [hidden]{display:none!important}",
+".cloudAccount input{box-sizing:border-box;width:100%;padding:9px 10px;margin:4px 0 8px;border:1px solid #b7c4d3;border-radius:9px;font-size:14px;background:#fff;color:#24303b}",
+".cloudAccount label{display:block;font-size:12px;font-weight:700}",
+".cloudTabs{display:flex;gap:7px;margin-bottom:9px}",
+".cloudTabs button{flex:1;border-radius:8px;padding:8px 4px;border:1px solid #9da7bb;background:transparent;color:inherit}",
+".cloudTabs button.active{background:#31588a;color:white;border-color:#31588a}",
 ".cloudDialog{width:min(560px,92vw);max-width:92vw;border:1px solid #cad4dc;border-radius:16px;background:#fff;color:#243541;padding:22px;box-shadow:0 15px 50px #0005}",
 ".cloudDialog::backdrop{background:#080c1dcc}",
 ".cloudDialog h2{font-size:19px;margin:0 0 11px}",
@@ -40,7 +45,11 @@ document.head.append(css);
 const box=document.querySelector(".accountBox")||document.createElement("section");
 const wasExisting=box.isConnected;
 box.className="cloudAccount";
-box.innerHTML='<button type="button" id="cloudLogin" class="cloudLogin"><span class="cloudG">G</span>Googleでログイン</button>'+
+box.innerHTML='<form id="cloudAccountForm" autocomplete="on">'+
+ '<div class="cloudTabs"><button type="button" id="cloudTabLogin" class="active">ログイン</button><button type="button" id="cloudTabCreate">新規アカウント作成</button></div>'+
+ '<label>名前<input id="cloudUsername" name="username" autocomplete="username" maxlength="20" required></label>'+
+ '<label>パスワード<input id="cloudPassword" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></label>'+
+ '<button type="submit" id="cloudLogin" class="cloudLogin">ログイン</button></form>'+
  '<div id="cloudIdentity" class="cloudIdentity" hidden></div>'+
  '<div id="cloudStatus" class="cloudStatus" aria-live="polite">端末内に保存中</div>'+
  '<div class="cloudActions"><button type="button" id="cloudSyncNow" hidden>今すぐ同期</button>'+
@@ -49,18 +58,18 @@ box.innerHTML='<button type="button" id="cloudLogin" class="cloudLogin"><span cl
  '<button type="button" id="cloudConfigure">連携設定</button></div>';
 if(!wasExisting)document.querySelector(".sidebarBottom")?.prepend(box);
 const dlg=document.createElement("dialog");dlg.className="cloudDialog";
-dlg.innerHTML='<h2>'+COMPANION+' のGoogle連携設定</h2>'+
- '<p>FirebaseのWebアプリ設定（firebaseConfig）を貼り付けてね。同じ設定をLUXとNOXで使えるよ。</p>'+
+dlg.innerHTML='<h2>'+COMPANION+' のアカウント同期設定</h2>'+
+ '<p>端末間同期に必要なFirebaseのWebアプリ設定を貼り付けてね。LUXとNOXで同じ設定を使えるよ。</p>'+
  '<textarea id="cloudConfigText" spellcheck="false" aria-label="FirebaseのWeb設定" placeholder="Firebase Webアプリの設定を貼り付けてね"></textarea>'+
  '<div class="cloudDlgActions"><button id="cloudCancel" type="button">キャンセル</button><button id="cloudSave" type="button">保存して接続</button></div>'+
- '<small><a href="https://console.firebase.google.com/" rel="noopener" target="_blank">Firebase Console</a> でWebアプリを登録し、AuthenticationのGoogleログインとFirestoreを有効にしてね。利用サイトのドメインも承認が必要。サービスアカウント秘密鍵は貼り付けないでね。</small>';
+ '<small><a href="https://console.firebase.google.com/" rel="noopener" target="_blank">Firebase Console</a> でWebアプリを登録し、Authenticationのメール/パスワード認証とFirestoreを有効にしてね。利用サイトのドメインも承認が必要。サービスアカウント秘密鍵は貼り付けないでね。</small>';
 document.body.append(dlg);
 function notice(text){el("cloudStatus").textContent=text}
 function ui(){
  const signed=!!user;
- el("cloudLogin").hidden=signed;el("cloudIdentity").hidden=!signed;
+ el("cloudAccountForm").hidden=signed;el("cloudIdentity").hidden=!signed;
  for(const key of ["cloudSyncNow","cloudImport","cloudLogout"])el(key).hidden=!signed;
- if(signed)el("cloudIdentity").textContent="☁ "+(user.displayName||user.email||"Googleアカウント");
+ if(signed)el("cloudIdentity").textContent="☁ "+(user.displayName||user.email?.split("@")[0]||"アカウント");
 }
 function parseConfig(input){
  let t=input.trim();
@@ -94,6 +103,11 @@ el("cloudSave").onclick=()=>{
 };
 function errorText(e){
  const code=String(e?.code||"");
+ if(code.includes("email-already-in-use"))return "その名前はすでに使われているよ";
+ if(code.includes("invalid-credential")||code.includes("wrong-password")||code.includes("user-not-found"))return "名前かパスワードが違うよ";
+ if(code.includes("weak-password"))return "もっと長いパスワードにしてね";
+ if(code.includes("too-many-requests"))return "ログイン試行が多すぎるよ。しばらく待ってね";
+ if(code.includes("operation-not-allowed"))return "Firebaseでメール/パスワード認証を有効にしてね";
  if(code.includes("unauthorized-domain"))return "このURLをFirebaseの承認済みドメインに登録してね";
  if(code.includes("popup-blocked"))return "Googleログイン用のポップアップがブロックされたよ";
  if(code.includes("popup-closed"))return "ログインがキャンセルされたよ";
@@ -102,23 +116,55 @@ function errorText(e){
  return "接続エラー："+(code||String(e?.message||"不明").slice(0,110));
 }
 async function start(){
- if(!configured){notice("Google連携が未設定（端末内に保存中）");return}
+ if(!configured){notice("クラウド同期が未設定（端末内に保存中）");return}
  try{
   [appSdk,authSdk,storeSdk]=await Promise.all([
    import(SDK+"firebase-app.js"),import(SDK+"firebase-auth.js"),import(SDK+"firebase-firestore.js")
   ]);
   const a=appSdk.initializeApp(configured,companion+"-"+configured.projectId);
   auth=authSdk.getAuth(a);db=storeSdk.getFirestore(a);
-  notice("Googleアカウントを確認中…");
+  notice("アカウントを確認中…");
   authSdk.onAuthStateChanged(auth,userChanged,e=>notice(errorText(e)));
  }catch(e){notice(errorText(e))}
 }
-el("cloudLogin").onclick=()=>{
+let accountMode="login";
+function setAccountMode(mode){
+ accountMode=mode;
+ el("cloudTabLogin").classList?.toggle("active",mode==="login");
+ el("cloudTabCreate").classList?.toggle("active",mode==="create");
+ el("cloudLogin").textContent=mode==="create"?"アカウントを作成":"ログイン";
+ el("cloudPassword").autocomplete=mode==="create"?"new-password":"current-password";
+}
+el("cloudTabLogin").onclick=()=>setAccountMode("login");
+el("cloudTabCreate").onclick=()=>setAccountMode("create");
+function usernameEmail(name){
+ const n=name.trim().toLowerCase();
+ if(!/^[a-z0-9_]{3,20}$/.test(n))throw Error("名前は半角英数字と _ の3〜20文字で入力してね");
+ // Internal Firebase Auth identifier. No real email address is collected.
+ return n+"@accounts.luxnox.example.com";
+}
+el("cloudAccountForm").onsubmit=async event=>{
+ event.preventDefault();
  if(!configured){openDialog();return}
- if(!auth){notice("Google認証を読み込み中。もう一度押してね");return}
- const provider=new authSdk.GoogleAuthProvider();
- provider.setCustomParameters({prompt:"select_account"});
- authSdk.signInWithPopup(auth,provider).catch(e=>notice(errorText(e)));
+ if(!auth){notice("認証機能を準備中。少し待ってね");return}
+ let name,email;
+ try{
+  name=el("cloudUsername").value.trim();
+  email=usernameEmail(name);
+  const password=el("cloudPassword").value;
+  if(password.length<8)throw Error("パスワードは8文字以上にしてね");
+  el("cloudLogin").disabled=true;
+  notice(accountMode==="create"?"アカウントを作成中…":"ログイン中…");
+  if(accountMode==="create"){
+   const credential=await authSdk.createUserWithEmailAndPassword(auth,email,password);
+   await authSdk.updateProfile(credential.user,{displayName:name});
+   notice("アカウントを作成したよ。同期を準備中…");
+  }else{
+   await authSdk.signInWithEmailAndPassword(auth,email,password);
+  }
+  el("cloudPassword").value="";
+ }catch(e){notice(e.message?.startsWith("名前は")||e.message?.startsWith("パスワードは")?e.message:errorText(e))}
+ finally{el("cloudLogin").disabled=false}
 };
 el("cloudLogout").onclick=async()=>{
  if(!auth||!confirm("ログアウトする？ この端末の会話はアカウント別に保管して、画面から閉じるよ"))return;
