@@ -1,25 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Private LUX / NOX cloud data: each Google account sees only its own records.
-    function isOwner(uid) {
+    function owner(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
-    function isCompanion(name) {
-      return name in ['lux', 'nox'];
+    function companion(agent) {
+      return agent in ['lux', 'nox'];
     }
-    match /users/{uid}/companions/{companion} {
-      allow read, write: if isOwner(uid) && isCompanion(companion);
+    match /users/{uid}/agents/{agent} {
+      allow read, write: if owner(uid) && companion(agent);
       match /chats/{chatId} {
-        allow read, write: if isOwner(uid) && isCompanion(companion);
+        allow read, write: if owner(uid) && companion(agent);
       }
-      match /photos/{photoId} {
-        allow read, write: if isOwner(uid) && isCompanion(companion);
+      match /media/{photoId} {
+        allow read, write: if owner(uid) && companion(agent);
         match /parts/{partId} {
-          allow read, write: if isOwner(uid) && isCompanion(companion);
+          allow read, write: if owner(uid) && companion(agent);
         }
       }
     }
-    // All other paths remain inaccessible unless separately permitted.
   }
 }
