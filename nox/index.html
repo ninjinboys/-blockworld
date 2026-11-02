@@ -341,6 +341,67 @@ button:focus-visible,input:focus-visible,.openThread:focus-visible{outline-color
 ::selection{background:#7161a9;color:#fff}
 @media(max-width:850px){.leftcol{box-shadow:10px 0 30px #060a22a6}.top{background:linear-gradient(100deg,#141832,#262148)}.chatCard{background:#0e1129}}
 
+
+/* NOX status: high-contrast connection indicators, readable on iPad and phones */
+.top .headerRight #mode.chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  min-height:36px;
+  padding:7px 14px;
+  border-radius:999px;
+  border:1.5px solid #a8a3dd;
+  background:#302d57;
+  color:#f5f2ff;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.01em;
+  white-space:nowrap;
+  text-shadow:none;
+}
+.top .headerRight #mode.chip.live{
+  background:#ebe6ff;
+  color:#302256;
+  border-color:#c4b5ff;
+  box-shadow:0 0 0 1px #aa9df04d,0 2px 8px #080d2a30;
+}
+.top .headerRight #mode.chip.dot::before{
+  width:9px;
+  height:9px;
+  min-width:9px;
+  margin-right:8px;
+  background:#bcb6dc;
+  box-shadow:none;
+}
+.top .headerRight #mode.chip.dot.live::before{
+  background:#5b45c9;
+  box-shadow:0 0 0 2px #c8baff;
+}
+.top .headerRight #dayChip.chip{
+  color:#f0ecff;
+  background:#2c2a4d;
+  border-color:#595783;
+  font-size:12px;
+  font-weight:600;
+  min-height:34px;
+}
+.chatHead #status{
+  display:inline-flex;
+  align-items:center;
+  min-height:30px;
+  padding:6px 12px;
+  background:#e9e5ff;
+  color:#302256;
+  border:1px solid #bcaaff;
+  font-size:12px;
+  font-weight:700;
+}
+@media(max-width:510px){
+  .top .headerRight #mode.chip{font-size:12px;padding:6px 10px;min-height:32px}
+  .top .headerRight #dayChip.chip{font-size:11px;padding:5px 9px;min-height:32px}
+}
+
 </style>
 </head>
 <body>
