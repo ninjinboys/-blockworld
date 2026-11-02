@@ -203,7 +203,7 @@ ensureChats();
 function syncChat(){const c=state.chats.find(c=>c.id===state.activeChat);if(c)c.messages=state.messages}
 function switchChat(id){if(busy)return;syncChat();const c=state.chats.find(c=>c.id===id);if(!c)return;state.activeChat=id;state.messages=c.messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
 function addChat(){if(busy)return;$('chatSearch').value='';syncChat();const id='chat-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);state.chats.unshift({id,title:'新しいチャット',messages:[]});switchChat(id);$('message').focus();}
-function removeChat(id){if(busy)return;if(!confirm('このチャットを削除しますか？'))return;syncChat();state.chats=state.chats.filter(c=>c.id!==id);if(!state.chats.length){state.chats=[{id:'chat-'+Date.now(),title:'新しいチャット',messages:[]}]};if(state.activeChat===id)state.activeChat=state.chats[0].id;state.messages=state.chats.find(c=>c.id===state.activeChat).messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
+function removeChat(id){if(busy)return;if(!confirm('このチャットを削除しますか？'))return;syncChat();const removed=state.chats.find(c=>c.id===id);if(removed)eraseChatPhotos(removed.messages);state.chats=state.chats.filter(c=>c.id!==id);if(!state.chats.length){state.chats=[{id:'chat-'+Date.now(),title:'新しいチャット',messages:[]}]};if(state.activeChat===id)state.activeChat=state.chats[0].id;state.messages=state.chats.find(c=>c.id===state.activeChat).messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
 function renderChats(){
  const target=$('chatList'),q=($('chatSearch')?.value||'').trim().toLocaleLowerCase();
  const matching=state.chats.filter(c=>c.title.toLocaleLowerCase().includes(q));
@@ -462,20 +462,39 @@ async function nomaEncyclopedia(t){
 }
 
 async function chat(text){
-  if(busy||!text.trim())return;
-  text=text.trim();const currentChatId=state.activeChat;const currentChat=state.chats.find(c=>c.id===currentChatId);if(currentChat&&currentChat.title==='新しいチャット')currentChat.title=text.slice(0,24);const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
-  busy=true;
-  post('user',text);const topic=learnFromText(text);persist();render();
-  $('send').disabled=true;$('send').textContent='…';
+ if(busy||photoProcessing||(!text.trim()&&!pendingPhoto))return;
+ busy=true;$('send').disabled=true;$('attachPhoto').disabled=true;$('send').textContent='…';
+ const photo=pendingPhoto;pendingPhoto=null;renderPhotoPreview();
+ text=text.trim();
+ const currentChat=state.chats.find(c=>c.id===state.activeChat);
+ if(currentChat&&currentChat.title==='新しいチャット')currentChat.title=(text||'写真のチャット').slice(0,24);
+ const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
+ let photoData=photo?.data||null,attachment=null;
+ try{
+  if(photo){
+   try{attachment={photoId:await savePhotoData(photoData)}}
+   catch(err){console.warn('Photo storage failed',err);attachment={photoData};}
+  }
+  if(!photoData&&text)photoData=await recentPhotoForQuestion(text);
+  post('user',text||(photo?'📷 写真を送ったよ':''),attachment);
+  const topic=learnFromText(text||'写真を共有した');persist();render();
   let answer;
   if(apiEnabled){
-    try{
-      let resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,name:state.name,history:oldHistory,interests:interestSort().map(([name,score])=>({name,score})),goal:activeGoal()?.title||'まだなし',memories:state.memories.slice(0,10).map(m=>m.text)})});
-      let data=await resp.json();if(!resp.ok)throw Error(data.error||'サーバーエラー');answer=data.reply;
-    }catch(e){answer=`AI接続でエラーが起きたよ（${String(e.message).slice(0,90)}）。いまは簡易会話で返事するね。\n\n`+offlineReply(text,topic)}
-  }else {answer=await nomaEncyclopedia(text);if(!answer)answer=offlineReply(text,topic);}
-  post('assistant',answer);if(state.messages.filter(m=>m.role==='user').length%3===0)log(`「${topic}」についての会話を振り返り、関心を更新した。`);
-  busy=false;$('send').disabled=false;$('send').textContent='送信 ➤';persist();render();$('message').focus();
+   try{
+    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,name:state.name,history:oldHistory,image:photoData||undefined,interests:interestSort().map(([name,score])=>({name,score})),goal:activeGoal()?.title||'まだなし',memories:state.memories.slice(0,10).map(m=>m.text)})});
+    const data=await resp.json();if(!resp.ok)throw Error(data.error||'サーバーエラー');
+    answer=String(data.reply||'').trim();if(!answer)throw Error('AIからの返答がありません');
+   }catch(err){
+    answer=photoData?'写真を読み取ろうとしたけれど、画像AIの応答に失敗したよ。もう一度試してみて。詳細：'+String(err.message).slice(0,110):'AI接続でエラーが起きたよ（'+String(err.message).slice(0,90)+'）。いまは簡易会話で返事するね。\n\n'+offlineReply(text,topic);
+   }
+  }else{
+   answer=photoData?'写真を受け取ったよ。ただ、今は画像を読むAIに接続されていないから、写真の中身を確認できないんだ。':await nomaEncyclopedia(text);
+   if(!answer)answer=offlineReply(text,topic);
+  }
+  post('assistant',answer);
+  if(state.messages.filter(m=>m.role==='user').length%3===0)log('「'+topic+'」についての会話を振り返り、関心を更新した。');
+ }catch(err){console.error('NOMA chat error',err);post('assistant','送信の処理で問題が起きたよ。もう一度試してみて。')}
+ finally{busy=false;$('send').disabled=false;$('attachPhoto').disabled=false;$('send').textContent='送信 ➤';persist();render();$('message').focus()}
 }
 function render(){
   renderChats();
@@ -487,10 +506,17 @@ function render(){
   $('memoryList').innerHTML=state.memories.length?state.memories.slice(0,8).map(m=>`<div class="memoryItem"><div class="mtype">${esc(m.kind)}${m.topic?' ・ '+esc(m.topic):''}</div>${esc(m.text)}</div>`).join(''):'<div class="empty">まだ記憶がありません。話しかけてみてください。</div>';
   $('auto').checked=state.auto;
   let area=$('chatArea'),wasNearBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;
-  let chatHtml=state.messages.map(m=>`<div class="msg ${m.role==='user'?'user':''}"><div class="avatar ${m.role==='user'?'human':''}">${m.role==='user'?'YOU':'✦'}</div><div><div class="bubble">${esc(m.text)}</div><div class="msgMeta">${m.role==='user'?'あなた':esc(state.name)} ・ ${timefmt(m.time)}</div></div></div>`).join('');
+  let chatHtml=state.messages.map(m=>`<div class="msg ${m.role==='user'?'user':''}"><div class="avatar ${m.role==='user'?'human':''}">${m.role==='user'?'YOU':'✦'}</div><div><div class="bubble">${esc(m.text||'')}${imageForMessage(m)}</div><div class="msgMeta">${m.role==='user'?'あなた':esc(state.name)} ・ ${timefmt(m.time)}</div></div></div>`).join('');
   if(area.dataset.html!==chatHtml){area.innerHTML=chatHtml;area.dataset.html=chatHtml;if(wasNearBottom||state.messages.length<=3)area.scrollTop=area.scrollHeight}
+  loadVisiblePhotos();
 }
-function download(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='NOMA_memory_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+async function download(){
+ const snapshot=JSON.parse(JSON.stringify(state));snapshot.photoArchive={};
+ const ids=new Set((snapshot.chats||[]).flatMap(c=>c.messages||[]).map(m=>m.photoId).filter(Boolean));
+ for(const id of ids){try{const d=await getPhotoData(id);if(d)snapshot.photoArchive[id]=d}catch(e){console.warn(e)}}
+ const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='NOMA_memory_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
+}
 $('attachPhoto').addEventListener('click',()=>{if(!busy&&!photoProcessing)$('photoFile').click()});
 $('photoFile').addEventListener('change',async e=>{
  const file=e.target.files?.[0];if(!file)return;
@@ -508,7 +534,7 @@ $('fast').addEventListener('click',()=>{for(let i=0;i<5;i++)thinkOnce()});
 $('auto').addEventListener('change',e=>{state.auto=e.target.checked;persist()});
 $('save').addEventListener('click',download);
 $('load').addEventListener('click',()=>$('file').click());
-$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
+$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;const archive=next.photoArchive||{};delete next.photoArchive;for(const [id,data] of Object.entries(archive)){if(/^photo-[a-zA-Z0-9-]+$/.test(id)&&typeof data==='string'&&/^data:image\/jpeg;base64,/.test(data))await savePhotoData(data,id)}state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
 $('newChat').addEventListener('click',addChat);
 $('chatSearch').addEventListener('input',renderChats);
 $('closeSidebar').addEventListener('click',()=>document.querySelector('.layout').classList.remove('showLeft'));
@@ -519,8 +545,8 @@ $('chatList').addEventListener('click',e=>{
 });
 $('resetMemories').addEventListener('click',()=>{if(!confirm('NOMAが覚えた記憶をすべて消去しますか？ チャット履歴・興味・目標は残ります。'))return;state.memories=[];persist();render()});
 $('resetInterests').addEventListener('click',()=>{if(!confirm('NOMAの興味の傾向をリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
-$('clearChat').addEventListener('click',()=>{if(!confirm('会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;state.messages=[];if($('message'))$('message').value='';persist();render();});
-$('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();persist();render()}});
+$('clearChat').addEventListener('click',()=>{if(!confirm('このチャットの会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;const old=state.messages;state.messages=[];pendingPhoto=null;renderPhotoPreview();eraseChatPhotos(old);if($('message'))$('message').value='';delete $('chatArea').dataset.html;persist();render();});
+$('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();pendingPhoto=null;renderPhotoPreview();eraseAllPhotos();persist();render()}});
 $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
 async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),4500);let r=await fetch('/api/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。Cloudflare PagesのWorkers AIバインディング「AI」を設定すると会話AIが使えます。'}}catch(e){}}
 setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
