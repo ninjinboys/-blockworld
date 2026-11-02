@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each user can access only their own LUX and NOX data.
+    // The agents remain isolated under distinct /agents/lux and /agents/nox paths.
+    match /users/{userId}/agents/{agentId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId
+                         && (agentId == 'lux' || agentId == 'nox');
+
+      // Chats, image descriptions and encoded image chunks.
+      match /{document=**} {
+        allow read, write: if request.auth != null
+                           && request.auth.uid == userId
+                           && (agentId == 'lux' || agentId == 'nox');
+      }
+    }
+    // All other database paths are denied by default.
+  }
+}
