@@ -238,10 +238,10 @@ async function establish(nextUser){
   if(!Array.isArray(result.chats)||!result.chats.length){
    result.chats=[{id:"chat-"+Date.now(),title:"新しいチャット",messages:[]}];
   }
-  bridge.apply(result);
   if(exists)baselineOf(cloudState);
   else{knownProfile='';knownChats=new Map();}
   ready=true;
+  bridge.apply(result);
   if(needsSave){
    dirty=true;changedAt++;localStorage.setItem(dirtyKey(me),"1");
    await flush();
@@ -258,7 +258,7 @@ async function establish(nextUser){
  }
 }
 // The legacy app calls this bridge on every local state change.
-window.AGENT_SYNC_BRIDGE.storageKey=()=>uid?accountKey(uid):bridge.baseKey;
+window.AGENT_SYNC_BRIDGE.storageKey=()=>uid&&ready?accountKey(uid):bridge.baseKey;
 window.AGENT_SYNC_BRIDGE.changed=()=>{
  if(!ready||!uid)return;
  dirty=true;changedAt++;localStorage.setItem(dirtyKey(uid),"1");
