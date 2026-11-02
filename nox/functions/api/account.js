@@ -21,7 +21,7 @@ async function tables(db){
  ]);
 }
 async function actor(db,request){
- const token=(request.headers.get("cookie")||"").match(/(?:^|;\s*)luxnox_session=([a-f0-9]{128})(?:;|$)/)?.[1];
+ const token=(request.headers.get("cookie")||"").match(/(?:^|;\s*)luxnox_session=([a-f0-9]{64})(?:;|$)/)?.[1];
  if(!token)return null;
  const hash=await digest(token);
  return db.prepare("SELECT u.id,u.username FROM companion_sessions s JOIN companion_users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?").bind(hash,Date.now()).first();
@@ -72,7 +72,7 @@ export async function onRequest({request,env}){
   const me=await actor(env.DB,request);
   if(!me)return response({error:"ログインが必要です"},401);
   if(action==="logout"){
-   const token=(request.headers.get("cookie")||"").match(/luxnox_session=([a-f0-9]{128})/)?.[1];
+   const token=(request.headers.get("cookie")||"").match(/luxnox_session=([a-f0-9]{64})/)?.[1];
    if(token)await env.DB.prepare("DELETE FROM companion_sessions WHERE token_hash=?").bind(await digest(token)).run();
    return response({ok:true},200,{"set-cookie":cookie("",0)});
   }
