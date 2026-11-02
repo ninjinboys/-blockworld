@@ -102,7 +102,7 @@ function stopListening(){
  remoteProfile=null;remoteChats=new Map();
 }
 function applyCloud(){
- if(!ready||dirty||working||!seenProfile||!seenChats||!remoteProfile)return;
+ if(!ready||dirty||working||bridge.isBusy?.()||!seenProfile||!seenChats||!remoteProfile)return;
  const previous=bridge.read();
  const result=buildState(remoteProfile,remoteChats,previous.activeChat);
  const serialized=JSON.stringify(result.chats)+"|"+JSON.stringify(profileOf(result));
@@ -239,7 +239,8 @@ async function establish(nextUser){
    result.chats=[{id:"chat-"+Date.now(),title:"新しいチャット",messages:[]}];
   }
   bridge.apply(result);
-  baselineOf(cloudState||bridge.empty());
+  if(exists)baselineOf(cloudState);
+  else{knownProfile='';knownChats=new Map();}
   ready=true;
   if(needsSave){
    dirty=true;changedAt++;localStorage.setItem(dirtyKey(me),"1");
