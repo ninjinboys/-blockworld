@@ -408,7 +408,7 @@ button:focus-visible,input:focus-visible,.openThread:focus-visible{outline-color
 }
 
 
-/* Google account and private cross-device sync */
+/* Cloudflare D1 account and private cross-device sync */
 .accountBox{margin:0 0 9px;padding:11px 10px 12px;border-radius:12px;background:color-mix(in srgb,var(--a) 7%,var(--panel) 93%);border:1px solid var(--line)}
 .accountHead{display:flex;align-items:center;gap:9px}
 .accountG{width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:#fff;color:#4285f4;border:1px solid #dadce0;display:grid;place-items:center;font-weight:800;font-family:system-ui,sans-serif}
@@ -446,13 +446,7 @@ button:focus-visible,input:focus-visible,.openThread:focus-visible{outline-color
   <div class="historyHeading">チャット履歴</div>
   <nav id="chatList" class="chatHistory" aria-label="保存したチャット"></nav>
   <div class="sidebarBottom">
-    <section class="accountBox" aria-label="Googleアカウントと同期">
-      <div class="accountHead"><span class="accountG" aria-hidden="true">G</span><div><strong>Googleアカウント</strong><small id="cloudStatus" data-state="info" role="status">接続を準備しています…</small></div></div>
-      <div id="cloudIdentity" class="accountIdentity" hidden></div>
-      <button id="googleLogin" class="googleLogin" type="button">Googleでログイン</button>
-      <button id="googleLogout" class="googleLogout" type="button" hidden>ログアウト</button>
-      <p class="accountHelp">会話・記憶・興味を端末間で同期。LUXとNOXのデータは別々。</p>
-    </section>
+    
     <details class="personaDisclosure">
       <summary><span class="personaIcon">✧</span><span class="personaSummary"><strong id="nameLabel">NOX</strong><span id="character">まだ自分の世界を探しているAI</span></span><span class="disclosureArrow">⌄</span></summary>
       <div class="personaDetails">
@@ -916,7 +910,7 @@ $('resetInterests').addEventListener('click',()=>{if(!confirm('NOXの興味の�
 $('clearChat').addEventListener('click',()=>{if(!confirm('このチャットの会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;const old=state.messages;state.messages=[];pendingPhoto=null;renderPhotoPreview();eraseChatPhotos(old);if($('message'))$('message').value='';delete $('chatArea').dataset.html;persist();render();});
 $('reset').addEventListener('click',()=>{if(confirm('NOXのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();pendingPhoto=null;renderPhotoPreview();eraseAllPhotos();persist();render()}});
 $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
-async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),4500);let r=await fetch(API_BASE+'/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。Googleログインすると会話・記憶・興味が端末間で同期されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。Cloudflare PagesのWorkers AIバインディング「AI」を設定すると会話AIが使えます。'}}catch(e){}}
+async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),4500);let r=await fetch(API_BASE+'/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。アカウントにログインすると会話・記憶・興味が端末間で同期されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。Cloudflare PagesのWorkers AIバインディング「AI」を設定すると会話AIが使えます。'}}catch(e){}}
 setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
 persist();
 const noxBrandIcon=document.getElementById('noxBrandIcon');
@@ -974,7 +968,7 @@ window.companionSyncBridge={
  initial
 };
 
-// Google account bridge, independent from the optional local-only controls.
+// Cloudflare account bridge, independent from optional local-only controls.
 window.AGENT_SYNC_BRIDGE={
  baseKey:KEY,
  read:()=>{syncChat();return JSON.parse(JSON.stringify(state))},
