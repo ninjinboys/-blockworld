@@ -7,7 +7,7 @@ const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(
 const digest=async x=>hex(await crypto.subtle.digest("SHA-256",bytes.encode(x)));
 const derive=async(pass,salt)=>{
  const key=await crypto.subtle.importKey("raw",bytes.encode(pass),"PBKDF2",false,["deriveBits"]);
- return hex(await crypto.subtle.deriveBits({name:"PBKDF2",salt:bytes.encode(salt),iterations:210000,hash:"SHA-256"},key,256));
+ return hex(await crypto.subtle.deriveBits({name:"PBKDF2",salt:bytes.encode(salt),iterations:100000,hash:"SHA-256"},key,256));
 };
 const random=()=>crypto.randomUUID().replace(/-/g,"")+crypto.randomUUID().replace(/-/g,"");
 const compare=(a,b)=>{if(typeof a!=="string"||typeof b!=="string")return false;let diff=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)diff|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return diff===0};
