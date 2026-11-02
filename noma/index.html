@@ -108,6 +108,11 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
 .photoLoading{font-size:12px;color:#87919b;padding:9px 0}
 .msgPhoto:focus-visible{outline:2px solid #378e84}
 @media(max-width:780px){.photoPreview{max-width:100%}.msgPhoto{max-width:min(285px,100%);max-height:350px}}
+
+.photoViewer{position:fixed;inset:0;margin:auto;padding:22px;border:0;border-radius:16px;background:#1d2024;color:#fff;max-width:96vw;max-height:96vh;box-shadow:0 12px 55px #0008}
+.photoViewer::backdrop{background:#000c}
+.photoViewer img{display:block;max-width:90vw;max-height:84vh;object-fit:contain;border-radius:5px}
+.closePhotoViewer{position:absolute;right:7px;top:4px;width:38px;height:38px;border:0;border-radius:50%;color:#fff;background:#25282da8;font-size:25px;z-index:1}
 </style>
 </head>
 <body>
@@ -169,6 +174,7 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
 </div>
 <footer class="footer">NOMA α / Prototype 1.1 ・ ローカル保存 ・ 外部への自動投稿や操作なし</footer>
 </div>
+<dialog id="photoViewer" class="photoViewer" aria-label="写真を拡大"><button id="closePhotoViewer" class="closePhotoViewer" type="button" aria-label="閉じる">×</button><img id="photoViewerImage" alt="写真の拡大表示"></dialog>
 <script>
 'use strict';
 const KEY='noma-prototype-v1';
@@ -287,7 +293,7 @@ function imageForMessage(m){
 }
 async function recentPhotoForQuestion(text){
  if(!/(写真|画像|この|これ|それ|さっき|先ほど|写|見え|色|場所|形|どこ|その|ここ|あれ)/.test(text))return null;
- const latest=state.messages.slice(-10).reverse().find(m=>m.role==='user'&&(m.photoId||m.photoData));
+ const latest=state.messages.slice().reverse().find(m=>m.role==='user'&&(m.photoId||m.photoData));
  if(!latest)return null;
  try{return latest.photoId?await getPhotoData(latest.photoId):(latest.photoData||null)}catch{return null}
 }
@@ -517,6 +523,12 @@ async function download(){
  const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download='NOMA_memory_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
 }
+$('chatArea').addEventListener('click',e=>{
+ const img=e.target.closest('img.msgPhoto');if(!img)return;
+ const dlg=$('photoViewer');$('photoViewerImage').src=img.src;if(typeof dlg.showModal==='function')dlg.showModal();
+});
+$('closePhotoViewer').addEventListener('click',()=>$('photoViewer').close());
+$('photoViewer').addEventListener('click',e=>{if(e.target===$('photoViewer'))e.currentTarget.close()});
 $('attachPhoto').addEventListener('click',()=>{if(!busy&&!photoProcessing)$('photoFile').click()});
 $('photoFile').addEventListener('change',async e=>{
  const file=e.target.files?.[0];if(!file)return;
