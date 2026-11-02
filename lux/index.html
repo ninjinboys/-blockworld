@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#101523">
+<meta name="theme-color" content="#e6faf6">
 <title>LUX（ルクス） | 成長するAI</title>
 <link rel="icon" id="luxFavicon" type="image/webp">
 <style>
@@ -119,6 +119,165 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
 .top .brandMark{width:44px;height:44px;min-width:44px;object-fit:cover;border:0;border-radius:12px;display:block;background:none;box-shadow:none}
 .personaIcon{padding:0;overflow:hidden;border:0;background:transparent}
 .personaIcon img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+
+/* LUX visual identity — matched to the chosen turquoise / mint / ocean-blue logo.
+   Presentational only; chat, memories and functionality remain unchanged. */
+:root{
+ --lux-deep:#075d76;
+ --lux-blue:#087eac;
+ --lux-cyan:#06b7c5;
+ --lux-teal:#09a99d;
+ --lux-mint:#63dfbc;
+ --lux-ice:#e6faf6;
+ --lux-pale:#f1fcfa;
+ --lux-border:#cdeae6;
+ --lux-ink:#153b48;
+ --lux-muted:#597e87;
+ --a:var(--lux-teal);
+ --b:var(--lux-blue);
+ --yellow:#e9cb76;
+ --line:var(--lux-border);
+ --ink:var(--lux-ink);
+ --muted:var(--lux-muted);
+}
+body{background:#fbfffe;color:var(--lux-ink)}
+.top{
+ background:linear-gradient(105deg,#fff 6%,#f4fffc 49%,#e9f8ff 100%);
+ border-bottom:1px solid #cce7e4;
+ box-shadow:0 1px 10px #078b9120;
+}
+.top::after{
+ content:"";position:absolute;bottom:-1px;left:0;right:0;height:2px;
+ background:linear-gradient(90deg,var(--lux-blue),var(--lux-cyan) 43%,var(--lux-mint) 78%,transparent);
+ opacity:.76;pointer-events:none;
+}
+.brandName{color:#124c62}
+.brandName span{color:var(--lux-teal)!important}
+.eyebrow{color:#548994}
+.top .brandMark{box-shadow:0 1px 7px #04adba29}
+.layout,.layout.showRight{background:#fff}
+.leftcol{
+ background:linear-gradient(168deg,#f0fcf9 0%,#f6fffc 39%,#f0f8fd 100%);
+ border-right:1px solid #d2eeec;
+}
+.newChatMain{color:#134f61}
+.newChatMain:hover,.sidebarClose:hover{background:#dcf6ed}
+.newChatIcon{color:var(--lux-teal)}
+.sidebarClose{color:#467b83}
+.sidebarSearch{color:#3c8790}
+.sidebarSearch:focus-within{background:#e7f8f3;outline:1px solid #9cdacc}
+.sidebarSearch input{color:#164e5b}
+.sidebarSearch input::placeholder{color:#74959c}
+.historyHeading{color:#4d858c}
+.chatHistory{scrollbar-color:#aadbd8 transparent}
+.chatThread:hover{background:#e6f6f3}
+.chatThread.active{
+ background:linear-gradient(95deg,#cff4ec,#dbf6f7);
+ box-shadow:inset 3px 0 0 var(--lux-teal);
+}
+.chatThread .openThread{color:#22515a}
+.chatThread.active .openThread{color:#075c68}
+.threadMenu>summary{color:#477e87}
+.threadMenu>summary:hover,.threadMenu[open]>summary{background:#cdece9}
+.threadMenu .threadMenuActions{border-color:#cce5e4;box-shadow:0 8px 25px #136e791e}
+.threadMenuActions button{color:#285c66}
+.threadMenuActions button:hover{background:#eaf9f7}
+.sidebarEmpty{color:#729298}
+.sidebarBottom{border-top:1px solid #cde9e5}
+.personaDisclosure>summary:hover{background:#ddf6ef}
+.personaSummary strong{color:#164955}
+.personaSummary span{color:#577f86}
+.personaDetails{border-top:1px solid #cde7e4}
+.personaDetails .kpi strong{color:var(--lux-deep)}
+.personaDetails .kpi span{color:#57838c}
+.personaDetails .sidebarSectionTitle{color:#226674}
+.personaDetails #interests p{color:#456f77!important}
+.personaDetails .small{color:#6b8c93}
+.disclosureArrow{color:#4b8790}
+.editName{color:#087d87}
+.editName:hover{color:#075765}
+.chatCard{background:radial-gradient(ellipse at 96% 2%,#effffc 0%,transparent 34%),#fff}
+.chatHead{background:transparent}
+.chatHead h2{color:#154a5b}
+.chatHead p{color:#6c969d}
+.avatar{background:linear-gradient(135deg,#029bc0 4%,#08b7a8 52%,#76e7ba);color:#fff;box-shadow:0 1px 7px #08bca129}
+.bubble{color:#243c45}
+.msg.user .bubble{background:linear-gradient(135deg,#dcf8f2,#e9f7fd);color:#1a4d59;border:1px solid #c4ebe6}
+.msgMeta{color:#79a0a5}
+.quick button{
+ background:#f6fffd;color:#327984;border-color:#cfebe6;
+}
+.quick button:hover{background:#dcf9f1;color:#075e6c;border-color:#87d6c8}
+.tinyButton,.secondary{
+ background:#f4fffc;color:#347683;border-color:#cdebe5;
+}
+.tinyButton:hover,.secondary:hover{background:#e0f8f1;border-color:#9cd8d0}
+.primary{
+ background:linear-gradient(120deg,#049baa,#15c6ae);
+ color:#fff;border:0;
+}
+.primary:hover,.send:hover{filter:brightness(1.06)}
+.composer{background:linear-gradient(0deg,#f7fffd,#ffffff00 90%)}
+.composerBox{
+ background:#fff;border:1px solid #b7e3dd;
+ box-shadow:0 4px 22px #048e9a13;
+ transition:border-color .15s,box-shadow .15s;
+}
+.composerBox:focus-within{border-color:#18b5aa;box-shadow:0 0 0 3px #15beaf18,0 5px 18px #0799ac14}
+.composer input{color:#194b57}
+.composer input::placeholder{color:#799ba2}
+.send{
+ background:linear-gradient(145deg,#0385b5,#08bdae 73%,#42cbaa);
+ color:#fff;box-shadow:0 2px 7px #069d9e35;
+}
+.composerBox .attachPhoto{color:#148794}
+.composerBox .attachPhoto:hover{background:#e1f9f2;color:#066475}
+.composerHint{color:#6a959d}
+.chip{background:#f3fffb;color:#4c7e86;border-color:#cde9e4}
+.chip.live,.chip.dot.live{
+ background:#e0fbef;color:#087562;border-color:#8adbc2;
+}
+.chip.dot:before{background:#1bc59e}
+#status{
+ background:#e4fbf4;color:#087562;
+ border:1px solid #91ddc7;
+}
+.panelToggle{background:#f7fffc;border-color:#bde5dd;color:#317583}
+.panelToggle:hover{background:#dff7f0}
+.rightcol,.layout.showRight .rightcol{
+ background:linear-gradient(165deg,#f4fffc,#eaf7fa);
+}
+.card{border-color:#d6ebe7}
+.cardTitle,.small,.subtitle,.note,.labelInline{color:#54828c}
+.goal{background:linear-gradient(135deg,#e5f8f2,#e5f3fc);border-color:#c7e6e4}
+.goalType{color:#0d8292}
+.goal h3,.goal p,.goal .bottom{color:#2f6570}
+.track{background:#cfede7}
+.fill{background:linear-gradient(90deg,#13a2af,#5cdab9,#0792c0)}
+.memoryItem,.hintBox{background:#f2fffb;color:#3f6f76;border-color:#d0ece6}
+.memoryItem .mtype{color:#0b9d91}
+.entry{border-left-color:#9bdad0}
+.entry:before{background:#22bfa8}
+.entry .what{color:#366f79}
+.switch input:checked+.swBg{background:#16b8aa}
+.photoPreview{background:#f1fffc;border-color:#c0e9e1}
+.photoPreview .removePhoto{background:#d8f5ed;color:#327b81}
+.msgPhoto:focus-visible{outline-color:#0eaaa7}
+.photoViewer{background:#092b3a}
+.photoViewer::backdrop{background:#062a37c7}
+button:focus-visible,input:focus-visible,.openThread:focus-visible{
+ outline-color:#11b6aa;
+}
+::selection{background:#a8efdd;color:#164957}
+@media(max-width:850px){
+ .leftcol{box-shadow:10px 0 30px #086b761e}
+ .top{background:linear-gradient(100deg,#fff,#e9fcf7)}
+ .chatCard{background:#fff}
+}
+@media(prefers-reduced-motion:reduce){
+ .composerBox{transition:none}
+}
+
 </style>
 </head>
 <body>
