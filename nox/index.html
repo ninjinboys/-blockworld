@@ -342,64 +342,69 @@ button:focus-visible,input:focus-visible,.openThread:focus-visible{outline-color
 @media(max-width:850px){.leftcol{box-shadow:10px 0 30px #060a22a6}.top{background:linear-gradient(100deg,#141832,#262148)}.chatCard{background:#0e1129}}
 
 
-/* NOX status: high-contrast connection indicators, readable on iPad and phones */
+/* NOX/LUX size parity. Preserve NOX high-contrast palette, share LUX geometry. */
+.top{height:58px;padding:0 18px}
+.top .brandMark{width:44px;height:44px;min-width:44px;border-radius:12px}
+.top .brandName{font-size:18px;line-height:1.1}
+.top .eyebrow{font-size:10px;letter-spacing:.22em}
+.top .headerRight{gap:10px;align-items:center;flex-wrap:wrap}
+.layout,.layout.showRight{grid-template-columns:270px minmax(0,1fr)}
+.leftcol{padding:12px 10px 10px}
+.newChatMain{font-size:14px;padding:12px 11px}
+.sidebarSearch input,.chatThread .openThread{font-size:13px}
+.historyHeading{font-size:12px;padding:22px 12px 9px}
+.personaIcon{width:34px;height:34px;flex:0 0 34px}
+.personaSummary strong{font-size:13px}
+.chatCard{height:calc(100dvh - 58px)}
+.chatHead{padding:15px 24px}.chatHead h2{font-size:17px}
+.chatArea{padding:26px max(22px,calc((100% - 790px)/2)) 24px;gap:27px}
+.bubble{font-size:15px;line-height:1.85}
+.msg.user .bubble{padding:12px 17px;border-radius:22px}
+.quick button{font-size:inherit;padding:6px 10px}
+.composer{padding:12px max(18px,calc((100% - 820px)/2)) 22px}
+.composerBox{border-radius:26px;padding:7px 8px 7px 14px}
+.composer input{font-size:15px}
+.send{width:42px;height:42px;border-radius:50%}
+.top .headerRight #mode.chip,
+.top .headerRight #dayChip.chip{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;line-height:1.35;
+  padding:5px 11px;min-height:0;border-radius:999px;white-space:nowrap;
+}
 .top .headerRight #mode.chip{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:0;
-  min-height:36px;
-  padding:7px 14px;
-  border-radius:999px;
-  border:1.5px solid #a8a3dd;
-  background:#302d57;
-  color:#f5f2ff;
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:.01em;
-  white-space:nowrap;
+  background:#302d57;color:#f5f2ff;border:1px solid #a8a3dd;
   text-shadow:none;
 }
 .top .headerRight #mode.chip.live{
-  background:#ebe6ff;
-  color:#302256;
-  border-color:#c4b5ff;
+  background:#ebe6ff;color:#302256;border-color:#c4b5ff;
   box-shadow:0 0 0 1px #aa9df04d,0 2px 8px #080d2a30;
 }
 .top .headerRight #mode.chip.dot::before{
-  width:9px;
-  height:9px;
-  min-width:9px;
-  margin-right:8px;
-  background:#bcb6dc;
-  box-shadow:none;
+  width:7px;height:7px;min-width:7px;margin-right:7px;
+  background:#bcb6dc;box-shadow:none;
 }
 .top .headerRight #mode.chip.dot.live::before{
-  background:#5b45c9;
-  box-shadow:0 0 0 2px #c8baff;
+  background:#5b45c9;box-shadow:0 0 0 1.5px #c8baff;
 }
 .top .headerRight #dayChip.chip{
-  color:#f0ecff;
-  background:#2c2a4d;
-  border-color:#595783;
-  font-size:12px;
-  font-weight:600;
-  min-height:34px;
+  color:#f0ecff;background:#2c2a4d;border:1px solid #595783;
 }
 .chatHead #status{
-  display:inline-flex;
-  align-items:center;
-  min-height:30px;
-  padding:6px 12px;
-  background:#e9e5ff;
-  color:#302256;
-  border:1px solid #bcaaff;
-  font-size:12px;
-  font-weight:700;
+  display:inline-flex;align-items:center;min-height:0;
+  padding:5px 11px;font-size:11px;font-weight:600;line-height:1.35;
+  background:#e9e5ff;color:#302256;border:1px solid #bcaaff;
+}
+@media(max-width:850px){
+  .layout,.layout.showRight{display:block}
+  .leftcol{width:min(310px,90vw);height:calc(100dvh - 58px)}
+  .chatCard{height:calc(100dvh - 58px)}
+  .chatArea{padding:20px 16px}
+  .composer{padding:10px 14px 18px}
+  .chatHead{padding:12px 17px}
+  .composer input{font-size:16px}
 }
 @media(max-width:510px){
-  .top .headerRight #mode.chip{font-size:12px;padding:6px 10px;min-height:32px}
-  .top .headerRight #dayChip.chip{font-size:11px;padding:5px 9px;min-height:32px}
+  .top .headerRight #mode.chip,.top .headerRight #dayChip.chip{font-size:10px;padding:4px 7px}
 }
 
 </style>
