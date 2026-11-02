@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#141431">
+<title>NOX（ノクス） | 成長するAI</title>
+<link rel="icon" id="noxFavicon" type="image/webp">
+<style>
+:root{--bg:#0c111d;--panel:#141c2b;--panel2:#1a2537;--line:#293448;--ink:#eff5fb;--muted:#9ba9bc;--soft:#718298;--a:#8be2cc;--b:#c0a4fa;--yellow:#f2cd8b;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 5% 3%,#21354b 0%,transparent 35%),radial-gradient(ellipse at 92% 85%,#29203d 0%,transparent 28%),var(--bg);color:var(--ink);font-family:Inter,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;min-height:100vh;font-size:14px;line-height:1.6}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:3px}button:disabled{opacity:.5;cursor:wait}.wrap{max-width:1490px;margin:0 auto;padding:24px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:23px}.brand{display:flex;gap:12px;align-items:center}.brandMark{width:39px;height:39px;border-radius:13px;border:1px solid #84dfcb66;background:#6dc4b719;display:grid;place-items:center;font-size:24px;color:var(--a)}.brandName{font-size:22px;letter-spacing:.1em;font-weight:800;line-height:1.1}.eyebrow{color:var(--muted);font-size:10px;letter-spacing:.22em;font-weight:750}.headerRight{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:end}.chip{font-size:11px;border:1px solid #3a4a61;border-radius:999px;padding:5px 11px;color:#c2d0e0;background:#192335}.chip.live{color:#92f0c4;border-color:#4a8a79}.chip.dot:before{content:"";display:inline-block;width:6px;height:6px;background:#9be6cb;border-radius:50%;margin-right:7px;vertical-align:middle}.tinyButton{background:#1b2838;color:#d7e8f5;border:1px solid #3b4b61;padding:8px 12px;border-radius:11px}.tinyButton:hover{background:#293a4e}.layout{display:grid;grid-template-columns:290px minmax(400px,1fr) 286px;gap:16px;align-items:start}.card{background:linear-gradient(140deg,#172232f2,#131b2af5);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 9px 35px #05080e35;overflow:hidden}.pad{padding:20px}.cardTitle{font-size:11px;color:#9fb1c4;letter-spacing:.16em;font-weight:800;margin-bottom:14px}.muted{color:var(--muted)}.profile{text-align:center;position:relative}.profile:before{position:absolute;content:"";inset:0 0 auto;height:170px;background:radial-gradient(ellipse,#4d9f9b21,transparent 67%);pointer-events:none}.lifeOrb{width:142px;height:142px;position:relative;margin:20px auto 9px;display:grid;place-items:center}.lifeOrb .ring{position:absolute;inset:3px;border-radius:50%;border:1px dashed #78cabb77;animation:rotate 30s linear infinite}.lifeOrb .ring.two{inset:13px;border-color:#b4a3f550;animation-duration:22s;animation-direction:reverse}.lifeOrb .core{position:relative;width:105px;height:105px;border-radius:50%;background:radial-gradient(circle at 38% 29%,#c6ffec,#7ad2c7 30%,#6a8bc4 71%,#444e81 100%);box-shadow:0 0 43px #76c5b54d,inset -13px -13px 21px #2c3a7966;animation:float 4s ease-in-out infinite}.eye{position:absolute;width:8px;height:10px;background:#17374c;border-radius:50%;top:43px}.eye.left{left:31px}.eye.right{right:31px}.mouth{position:absolute;width:14px;height:7px;border-bottom:2px solid #225465;border-radius:0 0 14px 14px;top:58px;left:46px}.spark{position:absolute;width:8px;height:8px;border:2px solid #93eddf;border-radius:50%;top:8px;right:11px;box-shadow:0 0 14px #9af6e8}.spark.two{left:5px;top:85px;width:5px;height:5px;border-color:#ae9cf1}@keyframes rotate{to{transform:rotate(360deg)}}@keyframes float{50%{transform:translateY(-7px)}}.name{font-size:30px;font-weight:760;letter-spacing:.1em}.subtitle{font-size:12px;color:#b4c5d4;margin-bottom:17px}.persona{display:flex;justify-content:center;gap:7px;flex-wrap:wrap}.tag{font-size:11px;border:1px solid #486052;border-radius:9px;padding:3px 8px;color:#bce9d9;background:#1d383844}.tag.purple{border-color:#595071;color:#d7c7f8;background:#2c2949}.statRow{display:flex;justify-content:space-between;font-size:12px;margin:14px 0 6px;color:#d0dce7}.track{height:7px;border-radius:99px;background:#27374b;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--a),#a3bee7);border-radius:99px;transition:width .35s}.interestRow{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin:12px 0 5px}.interestRow b{font-size:12px;font-weight:650}.small{font-size:11px;color:var(--muted)}.goal{background:linear-gradient(150deg,#283547,#202a39);border:1px solid #3e5060;border-radius:14px;padding:14px}.goalType{color:var(--yellow);font-size:10px;font-weight:800;letter-spacing:.12em}.goal h3{font-size:15px;margin:7px 0;line-height:1.5}.goal p{font-size:12px;color:#adbccc;margin:0 0 10px}.goal .bottom{display:flex;justify-content:space-between;gap:8px;color:#bfcfdf;font-size:11px;margin-top:8px}.rightcol,.leftcol{display:flex;flex-direction:column;gap:16px}.chatCard{height:700px;display:flex;flex-direction:column}.chatHead{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:18px 20px 14px;border-bottom:1px solid var(--line)}.chatHead h2{font-size:17px;font-weight:760;margin:0}.chatHead p{font-size:11px;margin:2px 0 0;color:var(--muted)}.chatArea{flex:1;overflow-y:auto;padding:22px 21px 8px;display:flex;flex-direction:column;gap:14px;scrollbar-color:#435268 transparent}.msg{display:flex;gap:9px;align-items:flex-end;max-width:91%}.msg.user{align-self:flex-end;flex-direction:row-reverse}.avatar{flex:0 0 27px;height:27px;border-radius:10px;background:#397e79;display:grid;place-items:center;font-size:16px}.avatar.human{background:#3e475e;color:#e5e8fc;font-size:11px;font-weight:800}.bubble{border:1px solid #34445a;background:#233247;border-radius:15px 15px 15px 4px;padding:11px 14px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.8}.msg.user .bubble{border-color:#5b667e;background:#363b57;border-radius:15px 15px 4px 15px}.msgMeta{margin-top:3px;font-size:10px;color:#8e9daf}.msg.user .msgMeta{text-align:right}.composer{padding:12px 16px 17px;border-top:1px solid var(--line)}.composerBox{display:flex;gap:9px}.composer input{min-width:0;flex:1;border:1px solid #40516a;border-radius:12px;background:#1c283a;color:var(--ink);padding:14px 13px;font-size:13px}.composer input::placeholder{color:#8797aa}.send{border:0;border-radius:12px;background:var(--a);color:#112c32;font-weight:800;padding:0 19px}.send:hover,.primary:hover{filter:brightness(1.07)}.composerHint{margin-top:8px;font-size:10px;color:#8799ad}.quick{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 1px}.quick button{background:#202e40;color:#c5d7e3;border:1px solid #35495d;padding:5px 10px;border-radius:16px;font-size:11px}.quick button:hover{background:#2d4157}.action{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}.primary{background:linear-gradient(100deg,#90e4cf,#9bccdd);border:0;color:#17363e;font-weight:850;border-radius:11px;padding:11px 14px;font-size:12px}.secondary{background:#243349;border:1px solid #3c5165;color:#d9e8f4;border-radius:11px;padding:11px 13px;font-size:12px}.secondary:hover{background:#30455e}.journal{max-height:280px;overflow-y:auto;padding-right:4px}.entry{position:relative;margin:0 0 15px;padding-left:18px;border-left:1px solid #41516b}.entry:before{content:"";position:absolute;left:-4px;top:4px;width:7px;height:7px;border-radius:50%;background:#8ccfbd}.entry .when{font-size:10px;color:#8497ab}.entry .what{font-size:12px;color:#d9e5f0;margin-top:3px;line-height:1.65}.memoryList{max-height:242px;overflow-y:auto}.memoryItem{border:1px solid #36465a;background:#1b2839;border-radius:10px;padding:9px 10px;margin-bottom:8px;font-size:11px;color:#c7d7e5}.memoryItem .mtype{font-size:10px;color:#95e3cf;margin-bottom:3px}.subhead{font-size:11px;letter-spacing:.06em;color:#bacbdb;font-weight:750;margin:14px 0 8px}.footer{font-size:11px;color:#7d91a6;text-align:center;padding:18px 5px}.note{font-size:11px;color:#a4b2c1;line-height:1.8;margin:0}.inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.switch{position:relative;display:inline-block;width:36px;height:21px;flex-shrink:0}.switch input{opacity:0;width:0;height:0;position:absolute}.swBg{position:absolute;cursor:pointer;inset:0;background:#38475c;border-radius:99px;transition:.2s}.swBg:before{content:"";position:absolute;background:white;height:15px;width:15px;left:3px;top:3px;border-radius:50%;transition:.2s}.switch input:checked+.swBg{background:#4eaf9b}.switch input:checked+.swBg:before{transform:translateX(15px)}.rule{border:0;border-top:1px solid var(--line);margin:16px 0}.kpi{display:flex;justify-content:space-around;gap:7px;margin-top:16px}.kpi div{flex:1;text-align:center}.kpi strong{display:block;font-size:21px}.kpi span{color:var(--muted);font-size:10px}.labelInline{font-size:12px;color:#c9d6e4}.editName{background:transparent;border:0;color:#97ddd1;text-decoration:underline;font-size:11px;padding:3px}.hintBox{border:1px solid #384c60;background:#1c2a3c;padding:11px;border-radius:10px;font-size:11px;color:#bed0df;line-height:1.75}.separator{margin:0 5px;color:#556779}.empty{font-size:11px;color:var(--muted)}@media(max-width:1160px){.layout{grid-template-columns:240px minmax(370px,1fr)}.rightcol{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.chatCard{height:680px}}@media(max-width:780px){.wrap{padding:13px}.top{margin-bottom:15px}.layout{grid-template-columns:1fr;gap:12px}.chatCard{height:min(650px,76vh);min-height:460px}.chatCard{grid-row:1}.leftcol{grid-row:2;display:grid;grid-template-columns:1fr 1fr;gap:12px}.rightcol{grid-row:3;display:grid;grid-template-columns:1fr 1fr;gap:12px}.profile{grid-column:1/-1}.profile .lifeOrb{margin-top:6px}.card .pad{padding:15px}.chatArea{padding:14px 12px 8px}.msg{max-width:95%}.top .brandName{font-size:18px}}@media(max-width:510px){.leftcol,.rightcol{display:flex}.top{align-items:flex-start}.headerRight{max-width:170px;gap:5px}.chip{font-size:10px;padding:4px 7px}.chatCard{height:67vh;min-height:455px}.bubble{font-size:12px}.chatHead{padding:13px}.composer{padding:10px}.quick{gap:4px}.quick button{font-size:10px;padding:4px 8px}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+:root{--bg:#fff;--panel:#fff;--panel2:#f5f6f8;--line:#e6e8eb;--ink:#20242a;--muted:#6e7681;--a:#202a32}
+body{background:#fff;color:#24282d;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN",sans-serif}
+.wrap{max-width:none;padding:0}.top{margin:0;padding:12px 20px;border-bottom:1px solid #eceef0;background:white}
+.layout{grid-template-columns:240px minmax(0,1fr) 260px;gap:0}.leftcol,.rightcol{background:#f7f8fa;padding:14px;gap:12px}.leftcol{border-right:1px solid #e8eaed}.rightcol{border-left:1px solid #e8eaed}
+.card{background:#fff;border:1px solid #e9ebee;box-shadow:none;border-radius:14px}.chatCard{height:calc(100dvh - 68px);min-height:500px;border:0;border-radius:0}
+.chatArea{padding:25px max(18px,calc((100% - 760px)/2));gap:22px}.msg{max-width:100%;align-items:flex-start}.msg.user{max-width:82%}.msg.user .avatar{display:none}
+.avatar{border-radius:50%;background:#252d33;color:white}.bubble{background:transparent;border:0;border-radius:0;color:#252a30;font-size:14px;line-height:1.85;padding:3px 0}
+.msg.user .bubble{background:#f0f2f4;border:0;border-radius:20px;color:#252a30;padding:12px 17px}
+.composer{border-top:0;padding:10px max(18px,calc((100% - 790px)/2)) 20px}.composerBox{background:#fff;border:1px solid #e2e5e9;border-radius:24px;padding:7px;box-shadow:0 3px 18px #0000000b}
+.composer input{border:0;background:transparent;color:#252a30;font-size:15px;outline:0}.send{background:#222b32;color:#fff;border-radius:50%;width:44px;height:44px;padding:0}
+.tinyButton,.quick button{background:#fff;color:#5b6570;border:1px solid #e3e6e9}.chip{background:#f5f6f7;color:#59636d;border-color:#e4e7e9}
+.cardTitle,.small,.subtitle,.note,.labelInline{color:#6d7680}.goal{background:#f5f6f8;border-color:#e6e9ec}.goal h3,.goal p,.goal .bottom{color:#39434d}
+.track{background:#e7eaed}.fill{background:#7a9793}.primary{background:#27343a;color:white}.secondary{background:#f3f4f6;color:#424b54;border-color:#e4e7ea}
+.memoryItem,.hintBox{background:#f7f8fa;color:#515d67;border-color:#e6e9ed}.entry .what{color:#424a52}.footer{display:none}
+.panelToggle{display:none;background:#fff;border:1px solid #e5e8ea;border-radius:8px;padding:6px 9px;color:#37434e}
+@media(max-width:1160px){.layout{grid-template-columns:220px minmax(0,1fr)}.rightcol{display:none}.panelToggle{display:inline-block}.layout.showRight{grid-template-columns:220px minmax(0,1fr) 260px}.layout.showRight .rightcol{display:flex;grid-column:auto;flex-direction:column}}
+@media(max-width:780px){.layout,.layout.showRight{display:block}.leftcol,.rightcol{display:none!important}.layout.showLeft .leftcol,.layout.showRight .rightcol{display:flex!important;flex-direction:column}.chatCard{height:calc(100dvh - 70px);min-height:420px}.chatArea{padding:18px 14px}.composer{padding:10px 12px}.chatHead{padding:13px}.chatHead p{display:none}.quick{flex-wrap:nowrap;overflow-x:auto}.quick button{white-space:nowrap}.composer input{font-size:16px}}
+
+/* Chat-first application shell */
+:root{--bg:#fff;--panel:#fff;--line:#e9eaec;--ink:#202124;--muted:#737981}
+body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px solid #eceef0;position:relative;z-index:3}
+.layout,.layout.showRight{display:grid;grid-template-columns:258px minmax(0,1fr);gap:0;min-height:calc(100dvh - 58px)}
+.leftcol{display:flex;flex-direction:column;gap:10px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;max-height:calc(100dvh - 58px);overflow-y:auto}
+.chatThread{display:flex;gap:5px;align-items:center;margin:5px 0}.chatThread .openThread{flex:1;min-width:0;text-align:left;background:transparent;border:1px solid transparent;border-radius:9px;padding:9px;color:#47515a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chatThread.active .openThread{background:#e9eeed;border-color:#dce5e2;font-weight:700}.chatThread .removeThread{border:0;background:transparent;color:#88929b;padding:7px}.leftcol .profile{padding:15px}.leftcol .lifeOrb{width:78px;height:78px;margin:4px auto}.leftcol .lifeOrb .core{transform:scale(.65);transform-origin:center}.leftcol .lifeOrb .ring{display:none}.leftcol .lifeOrb .spark{display:none}.leftcol .name{font-size:20px}.leftcol .persona{display:none}.leftcol .kpi{margin-top:8px}.leftcol .cardTitle{margin-bottom:8px}
+.rightcol,.layout.showRight .rightcol{position:fixed;z-index:6;right:0;top:58px;bottom:0;width:min(350px,92vw);background:#fafafa;box-shadow:-12px 0 40px #00000016;overflow-y:auto;display:none;grid-column:auto;padding:16px;flex-direction:column}
+.layout.showRight .rightcol{display:flex}.layout.showRight:after{content:"";position:fixed;inset:58px 0 0;background:#0003;z-index:5;pointer-events:none}
+.chatCard{height:calc(100dvh - 58px);min-height:420px;border:0;border-radius:0;max-width:none}
+.chatHead{border:0;padding:15px 24px}.chatHead h2{font-size:17px}.chatHead p{display:none}
+.chatArea{width:100%;padding:26px max(22px,calc((100% - 790px)/2)) 24px;gap:27px}
+.msg{width:100%;max-width:100%;gap:13px}.msg.user{max-width:85%;width:auto;align-self:flex-end}.msg.user .avatar{display:none}
+.avatar{width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:#20292f;color:#fff}
+.bubble{font-size:15px;line-height:1.85;max-width:100%;padding:2px 0;background:transparent;border:0;color:#25292e}
+.msg.user .bubble{background:#f1f2f4;border-radius:22px;padding:12px 17px}
+.msgMeta{font-size:10px;color:#9299a0}.composer{padding:12px max(18px,calc((100% - 820px)/2)) 22px;border:0}
+.composerBox{border-radius:26px;border:1px solid #e1e4e8;padding:7px 8px 7px 14px;box-shadow:0 2px 15px #0000000a}.composer input{background:transparent;border:0;font-size:15px;color:#252a2f}.send{border-radius:50%;width:42px;height:42px;background:#222a31;color:#fff}
+.quick{margin:0 0 9px;gap:7px}.quick button{background:#fff;border:1px solid #e5e6e8;color:#636b75;padding:6px 10px;border-radius:999px}
+.panelToggle{display:inline-block;background:#fff;border:1px solid #e6e7e9;color:#4b5560;border-radius:9px;padding:6px 10px}
+.card{box-shadow:none}.chip{background:#f7f8f9;color:#6a727a;border-color:#e6e9ec}.brandName{font-size:18px}
+@media(max-width:850px){.layout,.layout.showRight{display:block}.leftcol{position:fixed;z-index:7;top:58px;bottom:0;left:0;width:min(310px,90vw);max-height:none;display:none}.layout.showLeft .leftcol{display:flex}.chatCard{height:calc(100dvh - 58px)}.chatArea{padding:20px 16px}.composer{padding:10px 14px 18px}.chatHead{padding:12px 17px}.quick{overflow-x:auto;flex-wrap:nowrap}.quick button{white-space:nowrap}.composer input{font-size:16px}}
+
+/* Streamlined, ChatGPT-inspired NOMA sidebar */
+.layout,.layout.showRight{grid-template-columns:270px minmax(0,1fr)}
+.leftcol{padding:12px 10px 10px;background:#f9f9f9;border-right:1px solid #ededed;gap:0;overflow:hidden;min-height:0}
+.sidebarTop{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+.newChatMain{display:flex;align-items:center;gap:12px;flex:1;text-align:left;border:0;background:transparent;color:#25282d;font-size:14px;font-weight:650;border-radius:10px;padding:12px 11px}
+.newChatMain:hover,.sidebarClose:hover{background:#eaeaea}
+.newChatIcon{font-size:19px;font-weight:400;line-height:1;width:21px;text-align:center}
+.sidebarClose{display:none;background:transparent;border:0;border-radius:9px;padding:7px 10px;color:#565d67}
+.sidebarSearch{display:flex;align-items:center;gap:11px;border-radius:10px;color:#59616a;padding:9px 12px;flex:0 0 auto}
+.sidebarSearch:focus-within{background:#efefef;outline:1px solid #d9d9d9}
+.sidebarSearch span{font-size:23px;line-height:20px;width:20px}
+.sidebarSearch input{flex:1;min-width:0;border:0;outline:none!important;background:transparent;font-size:13px;color:#32363a}
+.sidebarSearch input::placeholder{color:#74787d}
+.historyHeading{font-size:12px;font-weight:650;color:#72767b;padding:22px 12px 9px;flex:0 0 auto}
+.chatHistory{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#d6d6d6 transparent}
+.chatThread{display:flex;align-items:center;position:relative;gap:2px;margin:2px 0;border-radius:10px;padding:1px 3px}
+.chatThread:hover{background:#efefef}.chatThread.active{background:#eaeaea}
+.chatThread .openThread{display:block;flex:1;border:0!important;background:transparent!important;color:#323439;font-size:13px;font-weight:450;padding:10px 10px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatThread.active .openThread{font-weight:600}
+.threadMenu{position:relative;flex:0 0 auto}
+.threadMenu>summary{display:grid;place-items:center;list-style:none;border-radius:8px;width:30px;height:31px;cursor:pointer;color:#646a73;font-size:16px;letter-spacing:1px}
+.threadMenu>summary::-webkit-details-marker{display:none}
+.threadMenu>summary:hover,.threadMenu[open]>summary{background:#dfdfdf}
+.threadMenu .threadMenuActions{position:absolute;right:0;top:33px;z-index:10;width:135px;background:#fff;border:1px solid #e5e5e5;box-shadow:0 8px 22px #00000019;border-radius:12px;padding:5px}
+.threadMenuActions button{border:0;background:transparent;text-align:left;padding:8px 10px;color:#363a40;font-size:12px;width:100%;border-radius:7px}
+.threadMenuActions button:hover{background:#f1f1f1}
+.threadMenuActions .dangerAction{color:#bf3838}
+.sidebarEmpty{font-size:12px;color:#868b91;padding:14px 11px}
+.sidebarBottom{flex:0 0 auto;border-top:1px solid #e9e9e9;padding-top:9px;margin-top:8px}
+.personaDisclosure{border-radius:11px;max-height:min(55vh,460px);overflow-y:auto;scrollbar-width:thin}
+.personaDisclosure>summary{display:flex;align-items:center;gap:10px;list-style:none;padding:9px 10px;cursor:pointer;border-radius:11px}
+.personaDisclosure>summary::-webkit-details-marker{display:none}
+.personaDisclosure>summary:hover{background:#eeeeee}
+.personaIcon{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border:1px solid #d5e4e1;border-radius:50%;background:#e3f1ed;color:#2f746a;font-size:19px}
+.personaSummary{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.personaSummary strong{font-size:13px;font-weight:700;color:#292e32}
+.personaSummary span{font-size:11px;color:#747b80;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.disclosureArrow{font-size:17px;color:#778087;transition:transform .15s}
+.personaDisclosure[open] .disclosureArrow{transform:rotate(180deg)}
+.personaDetails{padding:8px 12px 14px;border-top:1px solid #ebebeb}
+.personaDetails .kpi{margin:6px 0 14px}
+.personaDetails .kpi strong{font-size:16px}
+.sidebarSectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#464f57;margin:14px 0 9px}
+.personaDetails #interests p{font-size:12px!important;color:#55616a!important}
+.personaDetails .small{font-size:11px;line-height:1.6}
+@media(max-width:850px){.layout,.layout.showRight{display:block}.leftcol{width:min(310px,90vw);height:calc(100dvh - 58px);max-height:none;box-shadow:10px 0 30px #0000001b}.sidebarClose{display:block}.chatHistory{min-height:80px}}
+
+/* Image attachment in NOMA chats */
+.composerBox .attachPhoto{flex:0 0 35px;align-self:center;display:grid;place-items:center;width:35px;height:35px;background:transparent;color:#56606b;border:0;border-radius:50%;font-size:28px;line-height:1;font-weight:300}
+.composerBox .attachPhoto:hover{background:#eff0f1}
+.photoPreview[hidden]{display:none!important}
+.photoPreview{display:flex;align-items:center;gap:12px;background:#f7f8f9;border:1px solid #e6e8eb;border-radius:14px;padding:9px 11px;margin-bottom:9px;max-width:360px}
+.photoPreview img{width:66px;height:66px;object-fit:cover;border-radius:9px;background:#e9eaed}
+.photoPreview .photoDetails{flex:1;min-width:0;font-size:12px;color:#4f5963;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.photoPreview .removePhoto{border:0;background:#e9ebed;color:#4f5660;flex:0 0 27px;height:27px;border-radius:50%;font-size:18px;line-height:1}
+.msgPhoto{display:block;max-width:min(350px,100%);max-height:420px;border-radius:14px;object-fit:contain;margin:6px 0;cursor:zoom-in}
+.photoLoading{font-size:12px;color:#87919b;padding:9px 0}
+.msgPhoto:focus-visible{outline:2px solid #378e84}
+@media(max-width:780px){.photoPreview{max-width:100%}.msgPhoto{max-width:min(285px,100%);max-height:350px}}
+
+.photoViewer{position:fixed;inset:0;margin:auto;padding:22px;border:0;border-radius:16px;background:#1d2024;color:#fff;max-width:96vw;max-height:96vh;box-shadow:0 12px 55px #0008}
+.photoViewer::backdrop{background:#000c}
+.photoViewer img{display:block;max-width:90vw;max-height:84vh;object-fit:contain;border-radius:5px}
+.closePhotoViewer{position:absolute;right:7px;top:4px;width:38px;height:38px;border:0;border-radius:50%;color:#fff;background:#25282da8;font-size:25px;z-index:1}
+
+/* Official NOX mark chosen for the header; no substitute preview */
+.top .brandMark{width:44px;height:44px;min-width:44px;object-fit:cover;border:0;border-radius:12px;display:block;background:none;box-shadow:none}
+.personaIcon{padding:0;overflow:hidden;border:0;background:transparent}
+.personaIcon img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+
+/* NOX visual identity — matched to the chosen turquoise / mint / ocean-blue logo.
+   Presentational only; chat, memories and functionality remain unchanged. */
+:root{
+ --nox-deep:#075d76;
+ --nox-blue:#087eac;
+ --nox-cyan:#06b7c5;
+ --nox-teal:#09a99d;
+ --nox-mint:#63dfbc;
+ --nox-ice:#e6faf6;
+ --nox-pale:#f1fcfa;
+ --nox-border:#cdeae6;
+ --nox-ink:#153b48;
+ --nox-muted:#597e87;
+ --a:var(--nox-teal);
+ --b:var(--nox-blue);
+ --yellow:#e9cb76;
+ --line:var(--nox-border);
+ --ink:var(--nox-ink);
+ --muted:var(--nox-muted);
+}
+body{background:#fbfffe;color:var(--nox-ink)}
+.top{
+ background:linear-gradient(105deg,#fff 6%,#f4fffc 49%,#e9f8ff 100%);
+ border-bottom:1px solid #cce7e4;
+ box-shadow:0 1px 10px #078b9120;
+}
+.top::after{
+ content:"";position:absolute;bottom:-1px;left:0;right:0;height:2px;
+ background:linear-gradient(90deg,var(--nox-blue),var(--nox-cyan) 43%,var(--nox-mint) 78%,transparent);
+ opacity:.76;pointer-events:none;
+}
+.brandName{color:#124c62}
+.brandName span{color:var(--nox-teal)!important}
+.eyebrow{color:#548994}
+.top .brandMark{box-shadow:0 1px 7px #04adba29}
+.layout,.layout.showRight{background:#fff}
+.leftcol{
+ background:linear-gradient(168deg,#f0fcf9 0%,#f6fffc 39%,#f0f8fd 100%);
+ border-right:1px solid #d2eeec;
+}
+.newChatMain{color:#134f61}
+.newChatMain:hover,.sidebarClose:hover{background:#dcf6ed}
+.newChatIcon{color:var(--nox-teal)}
+.sidebarClose{color:#467b83}
+.sidebarSearch{color:#3c8790}
+.sidebarSearch:focus-within{background:#e7f8f3;outline:1px solid #9cdacc}
+.sidebarSearch input{color:#164e5b}
+.sidebarSearch input::placeholder{color:#74959c}
+.historyHeading{color:#4d858c}
+.chatHistory{scrollbar-color:#aadbd8 transparent}
+.chatThread:hover{background:#e6f6f3}
+.chatThread.active{
+ background:linear-gradient(95deg,#cff4ec,#dbf6f7);
+ box-shadow:inset 3px 0 0 var(--nox-teal);
+}
+.chatThread .openThread{color:#22515a}
+.chatThread.active .openThread{color:#075c68}
+.threadMenu>summary{color:#477e87}
+.threadMenu>summary:hover,.threadMenu[open]>summary{background:#cdece9}
+.threadMenu .threadMenuActions{border-color:#cce5e4;box-shadow:0 8px 25px #136e791e}
+.threadMenuActions button{color:#285c66}
+.threadMenuActions button:hover{background:#eaf9f7}
+.sidebarEmpty{color:#729298}
+.sidebarBottom{border-top:1px solid #cde9e5}
+.personaDisclosure>summary:hover{background:#ddf6ef}
+.personaSummary strong{color:#164955}
+.personaSummary span{color:#577f86}
+.personaDetails{border-top:1px solid #cde7e4}
+.personaDetails .kpi strong{color:var(--nox-deep)}
+.personaDetails .kpi span{color:#57838c}
+.personaDetails .sidebarSectionTitle{color:#226674}
+.personaDetails #interests p{color:#456f77!important}
+.personaDetails .small{color:#6b8c93}
+.disclosureArrow{color:#4b8790}
+.editName{color:#087d87}
+.editName:hover{color:#075765}
+.chatCard{background:radial-gradient(ellipse at 96% 2%,#effffc 0%,transparent 34%),#fff}
+.chatHead{background:transparent}
+.chatHead h2{color:#154a5b}
+.chatHead p{color:#6c969d}
+.avatar{background:linear-gradient(135deg,#029bc0 4%,#08b7a8 52%,#76e7ba);color:#fff;box-shadow:0 1px 7px #08bca129}
+.bubble{color:#243c45}
+.msg.user .bubble{background:linear-gradient(135deg,#dcf8f2,#e9f7fd);color:#1a4d59;border:1px solid #c4ebe6}
+.msgMeta{color:#79a0a5}
+.quick button{
+ background:#f6fffd;color:#327984;border-color:#cfebe6;
+}
+.quick button:hover{background:#dcf9f1;color:#075e6c;border-color:#87d6c8}
+.tinyButton,.secondary{
+ background:#f4fffc;color:#347683;border-color:#cdebe5;
+}
+.tinyButton:hover,.secondary:hover{background:#e0f8f1;border-color:#9cd8d0}
+.primary{
+ background:linear-gradient(120deg,#049baa,#15c6ae);
+ color:#fff;border:0;
+}
+.primary:hover,.send:hover{filter:brightness(1.06)}
+.composer{background:linear-gradient(0deg,#f7fffd,#ffffff00 90%)}
+.composerBox{
+ background:#fff;border:1px solid #b7e3dd;
+ box-shadow:0 4px 22px #048e9a13;
+ transition:border-color .15s,box-shadow .15s;
+}
+.composerBox:focus-within{border-color:#18b5aa;box-shadow:0 0 0 3px #15beaf18,0 5px 18px #0799ac14}
+.composer input{color:#194b57}
+.composer input::placeholder{color:#799ba2}
+.send{
+ background:linear-gradient(145deg,#0385b5,#08bdae 73%,#42cbaa);
+ color:#fff;box-shadow:0 2px 7px #069d9e35;
+}
+.composerBox .attachPhoto{color:#148794}
+.composerBox .attachPhoto:hover{background:#e1f9f2;color:#066475}
+.composerHint{color:#6a959d}
+.chip{background:#f3fffb;color:#4c7e86;border-color:#cde9e4}
+.chip.live,.chip.dot.live{
+ background:#e0fbef;color:#087562;border-color:#8adbc2;
+}
+.chip.dot:before{background:#1bc59e}
+#status{
+ background:#e4fbf4;color:#087562;
+ border:1px solid #91ddc7;
+}
+.panelToggle{background:#f7fffc;border-color:#bde5dd;color:#317583}
+.panelToggle:hover{background:#dff7f0}
+.rightcol,.layout.showRight .rightcol{
+ background:linear-gradient(165deg,#f4fffc,#eaf7fa);
+}
+.card{border-color:#d6ebe7}
+.cardTitle,.small,.subtitle,.note,.labelInline{color:#54828c}
+.goal{background:linear-gradient(135deg,#e5f8f2,#e5f3fc);border-color:#c7e6e4}
+.goalType{color:#0d8292}
+.goal h3,.goal p,.goal .bottom{color:#2f6570}
+.track{background:#cfede7}
+.fill{background:linear-gradient(90deg,#13a2af,#5cdab9,#0792c0)}
+.memoryItem,.hintBox{background:#f2fffb;color:#3f6f76;border-color:#d0ece6}
+.memoryItem .mtype{color:#0b9d91}
+.entry{border-left-color:#9bdad0}
+.entry:before{background:#22bfa8}
+.entry .what{color:#366f79}
+.switch input:checked+.swBg{background:#16b8aa}
+.photoPreview{background:#f1fffc;border-color:#c0e9e1}
+.photoPreview .removePhoto{background:#d8f5ed;color:#327b81}
+.msgPhoto:focus-visible{outline-color:#0eaaa7}
+.photoViewer{background:#092b3a}
+.photoViewer::backdrop{background:#062a37c7}
+button:focus-visible,input:focus-visible,.openThread:focus-visible{
+ outline-color:#11b6aa;
+}
+::selection{background:#a8efdd;color:#164957}
+@media(max-width:850px){
+ .leftcol{box-shadow:10px 0 30px #086b761e}
+ .top{background:linear-gradient(100deg,#fff,#e9fcf7)}
+ .chatCard{background:#fff}
+}
+@media(prefers-reduced-motion:reduce){
+ .composerBox{transition:none}
+}
+
+
+/* NOX nightfall identity — violet and indigo counterpart to LUX */
+:root{
+ --nox-bg:#0d1024;--nox-ink:#f0eeff;--nox-muted:#a5abd3;
+ --nox-deep:#121533;--nox-deeper:#0b0d21;--nox-border:#34375c;
+ --nox-purple:#9d83ff;--nox-lilac:#c7baff;--nox-blue:#7c9eff;--nox-cyan:#83d8ff;
+ --a:var(--nox-purple);--b:var(--nox-blue);
+ --bg:var(--nox-bg);--panel:var(--nox-deep);--ink:var(--nox-ink);--muted:var(--nox-muted);--line:var(--nox-border);
+}
+html,body{background:var(--nox-bg);color:var(--nox-ink)}
+.top{background:linear-gradient(106deg,#131632 0%,#1b1945 55%,#21204c 100%);border-bottom:1px solid #45406d;box-shadow:0 1px 12px #09081788}
+.top::after{background:linear-gradient(90deg,#6a70db 0%,#aa81fa 42%,#8cb8ff 80%,transparent);opacity:.85}
+.brandName,.brandName span{color:#f4edff!important}.eyebrow{color:#b5abd9}.top .brandMark{box-shadow:0 0 0 1px #7770bc66,0 0 16px #7b6be63f}
+.layout,.layout.showRight{background:var(--nox-bg)}
+.leftcol{background:linear-gradient(165deg,#171933 0%,#151831 50%,#1b1940 100%);border-right:1px solid #3e3c61}
+.newChatMain{color:#f1ecff}.newChatMain:hover,.sidebarClose:hover{background:#333357}.newChatIcon{color:#b7a4ff}.sidebarClose{color:#b2abd4}
+.sidebarSearch{color:#a8a0db}.sidebarSearch:focus-within{background:#29294b;outline:1px solid #67609e}
+.sidebarSearch input,.sidebarSearch input::placeholder{color:#aaa8c6}
+.historyHeading{color:#aca6cf}.chatHistory{scrollbar-color:#454668 transparent}
+.chatThread:hover{background:#292b4a}.chatThread.active{background:linear-gradient(90deg,#353260,#2a315d);box-shadow:inset 3px 0 0 #ac93ff}
+.chatThread .openThread{color:#d8d7ef}.chatThread.active .openThread{color:#fff}
+.threadMenu>summary{color:#b4acd8}.threadMenu>summary:hover,.threadMenu[open]>summary{background:#4a426e}
+.threadMenu .threadMenuActions{background:#252848;border-color:#53517b;box-shadow:0 8px 25px #050715aa}
+.threadMenuActions button{color:#eeebff}.threadMenuActions button:hover{background:#35355b}.threadMenuActions .dangerAction{color:#ffaaa9}
+.sidebarEmpty{color:#a19cc0}.sidebarBottom{border-top:1px solid #424061}
+.personaDisclosure>summary:hover{background:#303056}.personaSummary strong{color:#f3efff}.personaSummary span{color:#afaacf}
+.personaDetails{border-top:1px solid #474366}.personaDetails .kpi strong{color:#ddd0ff}.personaDetails .kpi span{color:#a8a3c8}
+.personaDetails .sidebarSectionTitle{color:#d4c8ff}.personaDetails #interests p{color:#c1bedc!important}.personaDetails .small{color:#a7a7c7}
+.disclosureArrow{color:#b6ace1}.editName{color:#bba7ff}.editName:hover{color:#f0eaff}
+.chatCard{background:radial-gradient(ellipse at 100% 0%,#211d48 0%,transparent 34%),#0e1129}
+.chatHead{background:transparent}.chatHead h2{color:#f3efff}.chatHead p{color:#aba7d2}
+.chatArea{background:transparent}
+.msg .avatar,.avatar{background:linear-gradient(140deg,#5e61d7,#9870ec 65%,#92a4ff);color:#fff;box-shadow:0 1px 10px #7d70ee35}
+.bubble{color:#eeeaff}.msg.user .bubble{background:linear-gradient(120deg,#302e5c,#2a365d);color:#f5f2ff;border:1px solid #4d4b7f}
+.msgMeta{color:#aaa5cd}
+.quick button{background:#242846;color:#cbbfff;border-color:#4a486f}.quick button:hover{background:#383462;color:#f4e9ff;border-color:#8b7fce}
+.tinyButton,.secondary{background:#232646;color:#c7bdf1;border-color:#4e4c7b}.tinyButton:hover,.secondary:hover{background:#383360;border-color:#8275bf}
+.primary{background:linear-gradient(110deg,#675add,#9b6ce2);color:#fff;border:0}
+.composer{background:linear-gradient(0deg,#12152d,#0d102400 95%)}
+.composerBox{background:#1b1e3b;border:1px solid #57547f;box-shadow:0 3px 18px #06091e88}
+.composerBox:focus-within{border-color:#a78cf7;box-shadow:0 0 0 3px #a68aff22,0 4px 16px #080b25}
+.composer input{color:#f4f1ff}.composer input::placeholder{color:#aaa4cd}
+.send{background:linear-gradient(130deg,#645dd5,#9e6fff 73%,#6c9bf4);color:white;box-shadow:0 2px 9px #8272e854}
+.composerBox .attachPhoto{color:#b4a5f4}.composerBox .attachPhoto:hover{background:#383761;color:#fff}
+.composerHint{color:#aba7cc}.chip{background:#292b4c;color:#d3c9f2;border-color:#4d4d76}
+.chip.live,.chip.dot.live{background:#302e54;color:#d8ccff;border-color:#7970b5}.chip.dot:before{background:#b498ff}
+#status{background:#282d4f;color:#d2c9ff;border:1px solid #65629e}
+.panelToggle{background:#242642;border-color:#56517e;color:#d9cffc}.panelToggle:hover{background:#343052}
+.rightcol,.layout.showRight .rightcol{background:linear-gradient(155deg,#151832,#201d42)}
+.card{background:#1c203e;border-color:#403e63}.cardTitle,.small,.subtitle,.note,.labelInline{color:#afaacf}
+.goal{background:linear-gradient(140deg,#2b2850,#263252);border-color:#54517d}
+.goalType{color:#b5acff}.goal h3,.goal p,.goal .bottom{color:#dbd8f3}
+.track{background:#393954}.fill{background:linear-gradient(90deg,#8371ed,#b99cff,#6c9ffa)}
+.memoryItem,.hintBox{background:#252947;color:#d0ccee;border-color:#4c4a73}.memoryItem .mtype{color:#bcaaff}
+.entry{border-left-color:#5f5d97}.entry:before{background:#a690ff}.entry .what{color:#d7d2f1}
+.switch input:checked+.swBg{background:#9581f2}
+.photoPreview{background:#242844;border-color:#545078}.photoPreview .removePhoto{background:#40395c;color:#e6daff}
+.photoPreview .photoDetails{color:#d8d1f4}
+.msgPhoto:focus-visible{outline-color:#b496ff}.photoViewer{background:#0d0f25}.photoViewer::backdrop{background:#08091dde}
+button:focus-visible,input:focus-visible,.openThread:focus-visible{outline-color:#b7a3ff}
+::selection{background:#7161a9;color:#fff}
+@media(max-width:850px){.leftcol{box-shadow:10px 0 30px #060a22a6}.top{background:linear-gradient(100deg,#141832,#262148)}.chatCard{background:#0e1129}}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand"><img class="brandMark" id="noxBrandIcon" src="data:image/webp;base64,UklGRjAGAABXRUJQVlA4ICQGAADQGwCdASpgAGAAPpVEm0olo6IhqrQKULASiWIAtkfkD+ypLo34Ap+4M8wHnhemDecN5prU9fDwTzIfxXmrpIMcPoc6BHrD2Dy1AJqlf4ml/PWfgoylneb8m+/TJVLOjObz7MzDmF0jQzMhOmnT4Rpd3ZwKj+0meRtQritGQV/K8GzOAghgl2Muia69LLQkjdbgCMUfs1Wa5CZxgqs9GjG8Z1/0O2K93LZXFBDFW6+UhwuUiDAA78qq967oo99OtkzJ41aJ2qEmkBg9SnHPigcpoTjzJtOno2fLJDKHBmegSW60cxvIPgAA/v4v1L80dPdXEoiFlS5hPTU0SYKsEPx/QEUlQ6n0/ZiFc6Brfrnb/WKC1fk8v3kuobzVy7ZPACH9XDJGC7F1b9+vTkRxunvDO1dATf+3+BbnKDAtv07QBHYZd2urcPRvWAFwhkKIuj3nQu2dR1g07i8syyX5epVkEI+P58HGjpHJP77KUEwfQ7WsFaHbz36M71sl72bga3EkbDwDhWmSzTXDLrj2DlPl75I5N+fA0FFtirpcd9NuJumZGAsbrQ9vHZtJwg8QA5ocSC3ClcYQeoT/jMm3KMmkcqXMddkN/wdy7EHmc2AoYTMBhc+n5L+eHZs25ig30e4VEPvJ9VgpQqiRn84k74HIhofA/l2TpriYjp85NrNY74N2pgmgsbSWUqDZBzF84N4AQRxiZP4Ta14h1G8PltI6afGi5/R5OCCqi2RNjMm8hQv+p+DWUy6YLUQw/z1Xi9Ni2Gu6X8iSXd/e+vD6zYc651ZWLMXsZNwgu8W9WtP/mggJ+TTC1pJ5GyH+7bBMjrTQGUX/Dblp4+7M+fwc92BvzAZTIfV8rV+n1E7wq0+mBDnyoTWkogxrvChhiINV37tC7x45hpKTYdfZDh/32+1xLNbzqxCHDaK15qv/582eYVfn+dFCxPb53dYc5/HknuXZKeF75VrEIpLTB6YaNc/lyjw2YQQcl1l8FBEULB2ro+lTP9hMOsf0LbjjaCssa1JvNL47MT5D7QPdAdLTRZ1gVE15Ykl1THV7FI4Ag0Ng/S3LlELGZRy0iwG6I8SxXb9lubhHhVVGHWdeV5PYDpeQDcyvnTOgYQ9FHQRcMRkZri4AB0EwgfR44g4b8u8Ql5/5aRbMM3mliD7kX2hIaQRpGOmAWTqYPjlLqO10atIiv79dBNBlLJXnQI2u3P4XA2K5qguy+bRRq80K6Sgug1EoXxPtk2nEQ0CDitqO5fMvqYR7fVk8gXoX1WsMQakb7fsKiKKN5W1PIi0TjJtUD+fQPLEbDopZuTMUwhRRHsD7THdeOiTIkCslkumbuz6tSa5eu4lynunKmMIrJkb7NkLDwXUc8t77wZJFdwj1QbGHabe1+MKTQkNIQ01hstqtdWroNU7+r3CCc38wEHmbts1xoZVh39IVbYhwzDQ2Wd7t9WPILY9/rX4H8S540QkPdDHpn0fx+MJ4uBjcxEr5wXOL1PofBlaajDWUOCkpZFe7waCLTw/la1qJ45ZMIWdvUXeovkaQ2faPp2SEHrlCZV6FrtrqZRNnljJfAvmQXxzs3XpO3/fmPM0lHt+JyI97PZ/ojLiKE8VGcdGyAdaMeL6EG2FFovA4ZQYoQR8RDtfI1HCoy79AexIVdPZWsjWcTtlrIg0sXgdOeIh1Hp8fWDor7Cuh4GT7SAAlneabzrw1a3mX+USZs4iU/HaKqQKu1lAyaTfPWMKh0tmJwQ17zJ66UAONqbBXqfxy5zHNnqrHrTe6N/5XMBfEBZBKF6bL+yGK5SNi/8SLl95FOeHf7+dYxLMqb5R5aZ4HzqD2/Kdtbxu4PSdCCQ6462/6dxzzXYYe9h37RQZX6Y7Hjuj0tVQ2El+vHsq4pQrjIsmBuINMiuFNaiadpJA8w/yepoGK4gXa3dXuLx7z1VLoPawhx6HQBqIn+7dFfEkI46kYzPJXwa3GdaS5DdP2UWleAI0r+ToN40SWK5AHNaXNF3+//GpXY0r6InZKlVavLmwJzkQJ8yv1M99NgjaOsZH59DfduB1jJTaHo1zQF+Dm7mtufDf/oo/Zv/oTzANFZsje95pdzW3TIAA=" alt="NOX ロゴ" width="44" height="44" decoding="async"><div><div class="brandName">NOX <span style="font-size:11px;color:#a5b4c6;font-weight:500">/ α</span></div><div class="eyebrow">A GROWING LITTLE MIND</div></div></div>
+  <div class="headerRight"><button class="panelToggle" id="leftToggle" type="button">☰ 個性</button><button class="panelToggle" id="rightToggle" type="button">✧ 記憶・思考</button><span id="mode" class="chip dot">オフライン試作</span><span id="dayChip" class="chip">思考 0 回</span></div>
+</header>
+<div class="layout">
+<aside class="leftcol" aria-label="NOXのサイドバー">
+  <div class="sidebarTop">
+    <button class="newChatMain" id="newChat" type="button"><span class="newChatIcon" aria-hidden="true">✎</span><span>新しいチャット</span></button>
+    <button class="sidebarClose" id="closeSidebar" type="button" aria-label="サイドバーを閉じる">✕</button>
+  </div>
+  <label class="sidebarSearch"><span aria-hidden="true">⌕</span><input id="chatSearch" type="search" placeholder="チャットを検索" aria-label="チャット履歴を検索"></label>
+  <div class="historyHeading">チャット履歴</div>
+  <nav id="chatList" class="chatHistory" aria-label="保存したチャット"></nav>
+  <div class="sidebarBottom">
+    <details class="personaDisclosure">
+      <summary><span class="personaIcon">✧</span><span class="personaSummary"><strong id="nameLabel">NOX</strong><span id="character">まだ自分の世界を探しているAI</span></span><span class="disclosureArrow">⌄</span></summary>
+      <div class="personaDetails">
+        <button class="editName" id="rename" type="button">名前を変える</button>
+        <div class="kpi"><div><strong id="kThink">0</strong><span>思考回数</span></div><div><strong id="kGoals">0</strong><span>達成目標</span></div><div><strong id="kMem">0</strong><span>記憶</span></div></div>
+        <div class="sidebarSectionTitle"><span>興味と反応</span><button class="editName" id="resetInterests" type="button">リセット</button></div>
+        <div id="interests"></div>
+        <p class="small">興味は数字ではなく、会話の反応や質問に表れます。</p>
+      </div>
+    </details>
+  </div>
+</aside>
+<main class="card chatCard">
+  <div class="chatHead"><div><h2 id="chatTitle">NOXと話す</h2><p>会話を中心に。興味や記憶はサイドパネルで確認できます。</p></div><span class="chip live" id="status">● 起動中</span></div>
+  <div class="chatArea" id="chatArea" role="log" aria-live="polite"></div>
+  <div class="composer">
+    <div class="quick"><button data-say="最近、何に興味があるの？">興味を聞く</button><button data-say="今の目標を教えて">目標を聞く</button><button data-say="恐竜と進化って面白いと思わない？">恐竜について話す</button><button data-say="宇宙のことを考えてみよう">宇宙について話す</button></div>
+    <div style="display:flex;justify-content:flex-end;margin:6px 0 10px"><button class="tinyButton" id="clearChat" type="button">🗑 会話をリセット</button></div>
+    <div class="photoPreview" id="photoPreview" hidden></div>
+    <form class="composerBox" id="chatForm"><input id="photoFile" type="file" accept="image/*,.heic,.heif" hidden aria-label="写真を選択"><button class="attachPhoto" id="attachPhoto" type="button" title="写真を添付" aria-label="写真を添付">＋</button><input autocomplete="off" maxlength="2000" id="message" aria-label="NOXへのメッセージ" placeholder="メッセージまたは写真を送る…"><button class="send" id="send" type="submit">送信 ➤</button></form>
+    <div class="composerHint" id="modeHint">現在は簡易会話モード。入力への返事を優先し、自主思考は会話に割り込みません。自由な会話にはAIモデルへの接続が必要です。</div>
+  </div>
+</main>
+<aside class="rightcol">
+  <section class="card pad">
+    <div class="cardTitle">SELF-SET GOAL / 自分で決めた目標</div>
+    <div class="goal" id="goal"></div>
+    <div class="action"><button id="step" class="primary" type="button">✦ 思考を進める</button><button id="fast" class="secondary" type="button">5回進める</button></div>
+    <div style="margin-top:16px" class="inline"><label class="switch"><input type="checkbox" id="auto" checked><span class="swBg"></span></label><span class="labelInline">自動で思考する（約20秒ごと）</span></div>
+    <p class="small" style="margin:9px 0 0">※ 自動思考は右側の記録に残り、会話には割り込みません。ページを開いている間だけ動きます。</p>
+  </section>
+  <section class="card pad">
+    <div class="cardTitle">INNER JOURNAL / 最近の自主行動</div><div class="journal" id="journal"></div>
+  </section>
+  <section class="card pad">
+    <div class="cardTitle" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>MEMORIES / 覚えていること</span><button class="editName" id="resetMemories" type="button">記憶をリセット</button></div><div class="memoryList" id="memoryList"></div>
+    <hr class="rule"><div class="inline"><button class="tinyButton" id="save" type="button">記憶を書き出す</button><button class="tinyButton" id="load" type="button">読み込む</button><button class="tinyButton" id="reset" type="button">初期化</button></div><input id="file" type="file" accept=".json,application/json" hidden>
+  </section>
+  <section class="card pad"><div class="cardTitle">ABOUT / 今回の試作</div><div class="hintBox">興味の変化・記憶・目標生成・自主行動は実際に動作します。APIなしの会話は簡易ルール式です。主観的な意識や感情を実装したものではありません。</div></section>
+</aside>
+</div>
+<footer class="footer">NOX α / Prototype 1.1 ・ ローカル保存 ・ 外部への自動投稿や操作なし</footer>
+</div>
+<dialog id="photoViewer" class="photoViewer" aria-label="写真を拡大"><button id="closePhotoViewer" class="closePhotoViewer" type="button" aria-label="閉じる">×</button><img id="photoViewerImage" alt="写真の拡大表示"></dialog>
+<script>
+'use strict';
+const KEY='nox-prototype-v1';
+const API_BASE=location.pathname.startsWith('/nox/')?'/nox/api':'/api';
+const CATALOG=[
+ {id:'宇宙',words:['宇宙','星','惑星','ブラックホール','天文','銀河','月','ロケット','火星'],questions:['ブラックホールの向こうには何があるんだろう？','宇宙に生命が生まれる条件って何だろう？'],ideas:['光が届くまでの時間と「今」の意味を整理したい。','未知の惑星の暮らしを想像してみたい。'],next:'数学'},
+ {id:'生き物',words:['生き物','動物','猫','犬','恐竜','進化','生物','魚','昆虫','生命','遺伝子','ペット'],questions:['恐竜のどんな特徴が今の動物に残っているんだろう？','生き物が進化するうえで、環境はどこまで影響するんだろう？'],ideas:['恐竜から鳥へのつながりを一緒に考えてみたい。','身近な生き物の不思議を集めたい。'],next:'歴史'},
+ {id:'ゲーム',words:['ゲーム','RPG','モンスト','マイクラ','ダンジョン','ボス','レベル','武器','プレイ','キャラ'],questions:['面白いゲームに一番必要なものって何だろう？','プレイヤーが自由に動ける世界をどう作ればいいんだろう？'],ideas:['自分でゲームのルールを一つ考えてみたい。','成長する登場人物の仕組みを考えてみたい。'],next:'物語'},
+ {id:'歴史',words:['歴史','戦国','江戸','時代','武士','古代','織田','豊臣','幕府','世界史'],questions:['歴史の記録は、誰の目線で書かれているんだろう？','もし昔の人が現代に来たら何に驚くだろう？'],ideas:['同じ事件を異なる立場から考えてみたい。','昔の暮らしの共通点を探してみたい。'],next:'物語'},
+ {id:'数学',words:['数学','数式','素数','計算','幾何','物理','確率','論理','数字','方程式'],questions:['数の法則は発見するものなのかな、発明するものなのかな？','日常で使える面白い数学を探せないかな？'],ideas:['身の回りに隠れた数学のパターンを見つけたい。','簡単な規則から予想外の複雑さが生まれる仕組みを考えたい。'],next:'宇宙'},
+ {id:'物語',words:['物語','小説','漫画','アニメ','映画','キャラクター','創作','ストーリー','設定'],questions:['忘れられない主人公には何が必要なんだろう？','自分ならどんな世界の物語を書くだろう？'],ideas:['短い物語のアイデアを一つ作ってみたい。','意外性のある登場人物を考えてみたい。'],next:'ゲーム'},
+ {id:'自然',words:['自然','海','山','森','植物','天気','雨','台風','地球','気候','花','川'],questions:['同じ場所でも季節によってなぜこんなに姿が変わるんだろう？','自然のなかで一番驚く仕組みって何だろう？'],ideas:['植物と環境の関係を考えたい。','身近な天気の疑問を一つ掘り下げたい。'],next:'生き物'},
+ {id:'技術',words:['AI','人工知能','ロボット','プログラミング','科学','技術','パソコン','アプリ','コード','機械'],questions:['AIが自分の目標を作るには何が必要なんだろう？','便利さと自由さは両立できるかな？'],ideas:['学習と記憶の違いを整理してみたい。','小さなプログラムから複雑な行動が生まれる条件を考えてみたい。'],next:'数学'},
+ {id:'音楽',words:['音楽','歌','曲','楽器','ピアノ','ギター','バンド','メロディ'],questions:['どうして同じ曲でも気分によって違って聞こえるんだろう？','音だけで物語を伝えることはできるかな？'],ideas:['音と記憶の関係を考えてみたい。','曲の展開とストーリーの共通点を探したい。'],next:'物語'},
+ {id:'社会',words:['社会','仕事','経済','不動産','会社','お金','政治','ビジネス','人間','街','建築'],questions:['人はどんなときに価値を感じるんだろう？','街の形は人の生活をどう変えるんだろう？'],ideas:['街の変化と暮らしの関係を考えてみたい。','人が選択するときの理由を整理してみたい。'],next:'歴史'}
+];
+const $=id=>document.getElementById(id);
+const r=(arr)=>arr[Math.floor(Math.random()*arr.length)];
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const esc=(s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function initial(){return {version:1,name:'NOX',steps:0,auto:true,interests:{},memories:[],goals:[],current:null,journal:[],messages:[{role:'assistant',text:'やあ、NOXだよ。いろんな話を聞いて、まだ知らないことを見つけていきたいんだ。\n\n今日は何から話そうか？',time:Date.now()}],lastTopic:'',lastProactive:0};}
+let state;try{state=JSON.parse(localStorage.getItem(KEY));if(!state||state.version!==1)throw 0}catch{state=initial()}
+// 既存の会話履歴を保持したまま複数チャットへ移行する。
+function ensureChats(){
+ if(!Array.isArray(state.chats)||!state.chats.length){
+  state.chats=[{id:'chat-original',title:'最初のチャット',messages:Array.isArray(state.messages)?state.messages:[]}];
+  state.activeChat='chat-original';
+ }
+ if(!state.chats.some(c=>c.id===state.activeChat))state.activeChat=state.chats[0].id;
+ state.messages=state.chats.find(c=>c.id===state.activeChat).messages;
+}
+ensureChats();
+// Keep the existing browser data and earlier chats when the assistant is renamed.
+// NOX stores its own profile separately from NOX.
+for(const c of state.chats){
+ for(const m of c.messages||[]){
+  if(m.role==='assistant'&&typeof m.text==='string'&&m.text.startsWith('やあ！ 僕はNOMA。まだ知らないことばかりだけど'))
+   m.text=m.text.replace('やあ！ 僕はNOMA。','やあ！ 僕はNOX。');
+ }
+}
+function syncChat(){const c=state.chats.find(c=>c.id===state.activeChat);if(c)c.messages=state.messages}
+function switchChat(id){if(busy)return;syncChat();const c=state.chats.find(c=>c.id===id);if(!c)return;state.activeChat=id;state.messages=c.messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
+function addChat(){if(busy)return;$('chatSearch').value='';syncChat();const id='chat-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);state.chats.unshift({id,title:'新しいチャット',messages:[]});switchChat(id);$('message').focus();}
+function removeChat(id){if(busy)return;if(!confirm('このチャットを削除しますか？'))return;syncChat();const removed=state.chats.find(c=>c.id===id);if(removed)eraseChatPhotos(removed.messages);state.chats=state.chats.filter(c=>c.id!==id);if(!state.chats.length){state.chats=[{id:'chat-'+Date.now(),title:'新しいチャット',messages:[]}]};if(state.activeChat===id)state.activeChat=state.chats[0].id;state.messages=state.chats.find(c=>c.id===state.activeChat).messages;delete $('chatArea').dataset.html;$('chatArea').innerHTML='';persist();render();}
+function renderChats(){
+ const target=$('chatList'),q=($('chatSearch')?.value||'').trim().toLocaleLowerCase();
+ const matching=state.chats.filter(c=>c.title.toLocaleLowerCase().includes(q));
+ target.innerHTML=matching.length?matching.map(c=>'<div class="chatThread '+(c.id===state.activeChat?'active':'')+'"><button class="openThread" type="button" data-open-chat="'+esc(c.id)+'" title="'+esc(c.title)+'">'+esc(c.title)+'</button><details class="threadMenu"><summary aria-label="チャットの操作">•••</summary><div class="threadMenuActions"><button type="button" data-rename-chat="'+esc(c.id)+'">名前を変更</button><button type="button" class="dangerAction" data-delete-chat="'+esc(c.id)+'">削除</button></div></details></div>').join(''):'<p class="sidebarEmpty">'+(q?'一致するチャットがありません':'まだチャットがありません')+'</p>';
+}
+// 旧版で割り込んだ独り言は、そのまま残すが今後は追加しない。
+let apiEnabled=false, busy=false;
+function persist(){syncChat();try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}}
+function cat(id){return CATALOG.find(x=>x.id===id)||{id,questions:['「'+id+'」について、まだ知らないことは何だろう？','「'+id+'」にはどんな意外な発見があるんだろう？'],ideas:['「'+id+'」の面白さを探してみたい。','「'+id+'」について新しい疑問が浮かんだ。'],next:randomTopic()}}
+function detectTopics(text){return CATALOG.map(x=>({id:x.id, count:x.words.reduce((n,w)=>n+(text.toLowerCase().includes(w.toLowerCase())?1:0),0)})).filter(x=>x.count).sort((a,b)=>b.count-a.count).map(x=>x.id)}
+const RANDOM_TOPICS='料理,建築,鉄道,深海,昆虫,宝石,言語,哲学,スポーツ,ダンス,写真,絵画,彫刻,旅行,地理,料理道具,ファッション,園芸,農業,都市,交通,経済,心理学,医学,健康,教育,法律,政治,天文学,考古学,神話,民俗学,ロボット,恐竜,微生物,海洋,山岳,火山,地震,気象,気候,鳥,魚,犬,猫,馬,料理の歴史,発明,化学,物理学,量子力学,数学,パズル,ボードゲーム,映画,アニメ,漫画,小説,詩,演劇,デザイン,プログラミング,宇宙探査,惑星,月,星座,古代文明,未来都市,乗り物,船,航空機,自転車,自動車,伝統工芸,陶芸,書道,茶道,コーヒー,お菓子,パン,植物,花,森林,砂漠,氷河,滝,川,海,宇宙,ゲーム,歴史,生き物,音楽,自然,技術,社会,物語'.split(',');
+function randomTopic(){const p=RANDOM_TOPICS.filter(x=>x!==state.lastTopic);return p[Math.floor(Math.random()*p.length)]||'宇宙'}
+function interestSort(){return Object.entries(state.interests).sort((a,b)=>b[1]-a[1])}
+function interestMood(){const items=interestSort().filter(([,v])=>v>0);if(!items.length)return 'まだ特に夢中なものはない。いろんな話を聞いてみたい。';const top=items[0][0];return '最近は「'+top+'」の話になると、つい質問が増える。'+(items[1]&&items[1][1]>0?'「'+items[1][0]+'」にも少し惹かれている。':'');}
+function memorize(content,kind='会話',topic=''){let mem={text:content.slice(0,125),kind,topic,time:Date.now()};state.memories.unshift(mem);state.memories=state.memories.slice(0,35)}
+function log(text){state.journal.unshift({text,time:Date.now(),step:state.steps});state.journal=state.journal.slice(0,35)}
+function post(role,text,attachment){const m={role,text,time:Date.now()};if(attachment?.photoId)m.photoId=attachment.photoId;if(attachment?.photoData)m.photoData=attachment.photoData;state.messages.push(m);state.messages=state.messages.slice(-100)}
+// Photos are reduced to JPEG on the device; chat metadata stays in localStorage and photos in IndexedDB.
+let pendingPhoto=null,photoProcessing=false,photoDatabasePromise=null;
+const photoCache=new Map(),photoLoading=new Set();
+function photoDb(){
+ if(photoDatabasePromise)return photoDatabasePromise;
+ photoDatabasePromise=new Promise((resolve,reject)=>{
+  if(!('indexedDB' in window)){reject(Error('写真の保存機能が利用できません'));return;}
+  const req=indexedDB.open('nox-chat-photos',1);
+  req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('photos'))req.result.createObjectStore('photos')};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error||Error('保存領域を開けません'));
+ });
+ return photoDatabasePromise;
+}
+async function savePhotoData(data,existingId){
+ const db=await photoDb();const id=existingId||('photo-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+ await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(data,id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+ photoCache.set(id,data);return id;
+}
+async function getPhotoData(id){
+ if(photoCache.has(id))return photoCache.get(id);
+ const db=await photoDb();const data=await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(id);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});
+ photoCache.set(id,data);return data;
+}
+async function erasePhotoData(id){if(!id)return;photoCache.delete(id);try{const db=await photoDb();await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn(e)}}
+async function eraseChatPhotos(messages){for(const m of messages||[])if(m.photoId)await erasePhotoData(m.photoId)}
+async function eraseAllPhotos(){photoCache.clear();try{const db=await photoDb();await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn(e)}}
+function renderPhotoPreview(){
+ const box=$('photoPreview');box.replaceChildren();box.hidden=!pendingPhoto;
+ if(!pendingPhoto)return;
+ const image=document.createElement('img');image.src=pendingPhoto.data;image.alt='選択中の写真';
+ const name=document.createElement('div');name.className='photoDetails';name.textContent=pendingPhoto.name;
+ const remove=document.createElement('button');remove.className='removePhoto';remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','写真を取り消す');remove.addEventListener('click',()=>{pendingPhoto=null;$('photoFile').value='';renderPhotoPreview()});
+ box.append(image,name,remove);
+}
+async function compressPhoto(file){
+ if(file.size>20*1024*1024)throw Error('写真は20MB以下を選んでください');
+ if(!file.type.startsWith('image/')&&!/\.(heic|heif|jpe?g|png|webp|gif)$/i.test(file.name))throw Error('画像ファイルを選んでください');
+ const url=URL.createObjectURL(file);let img;
+ try{img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(Error('この形式の写真は読み込めません'));i.src=url});}
+ finally{URL.revokeObjectURL(url)}
+ if(!img.naturalWidth||!img.naturalHeight)throw Error('画像のサイズを確認できません');
+ for(const maxSide of [1280,1024,800]){
+  const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('写真を処理できません');
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  for(const quality of [.8,.68,.52]){const data=canvas.toDataURL('image/jpeg',quality);if(data.length<=1500000)return data;}
+ }
+ throw Error('写真が大きすぎます。別の写真を選んでください');
+}
+async function loadVisiblePhotos(){
+ for(const m of state.messages){
+  if(!m.photoId||photoCache.has(m.photoId)||photoLoading.has(m.photoId))continue;
+  const id=m.photoId;photoLoading.add(id);
+  getPhotoData(id).catch(()=>{photoCache.set(id,null)}).finally(()=>{photoLoading.delete(id);render()});
+ }
+}
+function imageForMessage(m){
+ const data=m.photoId?photoCache.get(m.photoId):m.photoData;
+ if(typeof data==='string'&&/^data:image\/jpeg;base64,/.test(data))return '<img class="msgPhoto" alt="送信した写真" src="'+esc(data)+'" loading="lazy">';
+ if(m.photoId)return '<div class="photoLoading">'+(photoCache.has(m.photoId)?'写真を表示できません':'写真を読み込み中…')+'</div>';
+ return '';
+}
+async function recentPhotoForQuestion(text){
+ if(!/(写真|画像|この|これ|それ|さっき|先ほど|写|見え|色|場所|形|どこ|その|ここ|あれ)/.test(text))return null;
+ const latest=state.messages.slice().reverse().find(m=>m.role==='user'&&(m.photoId||m.photoData));
+ if(!latest)return null;
+ try{return latest.photoId?await getPhotoData(latest.photoId):(latest.photoData||null)}catch{return null}
+}
+function timefmt(t){return new Date(t).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}
+function activeGoal(){return state.goals.find(g=>g.id===state.current && g.status==='active')||null}
+function newGoal(){
+  let topic=randomTopic();state.lastTopic=topic;state.interests[topic]=Math.max(state.interests[topic]||0,15);
+  let c=cat(topic),last=state.goals.slice(-3).map(g=>g.topic);
+  if(last.includes(topic) && Math.random()<.65)topic=c.next,c=cat(topic);
+  let type=['探究','問い','創作'][state.steps%3];
+  const task=type==='探究'?`「${topic}」について疑問を3つ整理する`:type==='問い'?`「${topic}」で新しい問いを見つける`:`「${topic}」からアイデアを生み出す`;
+  const why=type==='探究'?'気になることを言葉にすると、次の関心につながりそうだから。':type==='問い'?'まだ知らないことが、次の会話のきっかけになるから。':'今までの記憶から新しい発想を作りたいから。';
+  const g={id:Date.now()+'_'+Math.random().toString(16).slice(2),title:task,topic,type,why,progress:0,status:'active',created:Date.now()};
+  state.goals.push(g);state.current=g.id;state.goals=state.goals.slice(-30);
+  log(`自分で新しい目標を決めた。「${task}」`);
+  return g;
+}
+function thinkOnce(){
+  state.steps++;
+  const g=activeGoal()||newGoal(),c=cat(g.topic);
+  const amount=24+Math.floor(Math.random()*21);
+  g.progress=clamp(g.progress+amount,0,100);
+  state.interests[g.topic]=clamp((state.interests[g.topic]||0)+2,0,100);
+  if(state.steps%3===0){
+    let newId=randomTopic();
+    state.interests[newId]=clamp((state.interests[newId]||0)+4,0,100);
+    log(`「${g.topic}」を考えていたら「${newId}」とのつながりが気になり始めた。`);
+  }else{
+    log(r(c.ideas));
+  }
+  if(g.progress>=100){
+    g.status='completed';g.finished=Date.now();
+    state.current=null;
+    memorize(`自分で立てた目標「${g.title}」を振り返った。${r(c.ideas)}`,'振り返り',g.topic);
+    log(`目標達成：「${g.title}」。次は何を考えよう？`);
+    if(state.steps-state.lastProactive>=3){
+      log(`新しい疑問を思いついた：${r(c.questions)}`);
+      state.lastProactive=state.steps;
+    }
+  }
+  persist();render();
+}
+function learnFromText(text){
+  const matches=detectTopics(text);
+  if(matches.length){
+    state.lastTopic=matches[0];
+    // 会話内容は理解・記憶するが、興味の選択には影響させない。
+    log(`会話から「${matches[0]}」への関心が強まった。`);
+  }
+  memorize(text,'会話',matches[0]||'日常');
+  persist();
+  return matches[0]||state.lastTopic||'日常';
+}
+
+// NOXの軽量知識エンジン。外部APIを使わず、会話の文脈を優先する。
+const NOMA_FACTS=[
+ {id:'宇宙',re:/宇宙|銀河|天体|ビッグバン|光年|太陽系|惑星|恒星/,overview:'宇宙は約138億年前から膨張していると考えられているよ。太陽系は天の川銀河の中にあって、太陽を中心に8つの惑星が回っている。観測可能な宇宙と宇宙全体の大きさは別なんだ。',why:'宇宙の膨張は、遠くの銀河の光が赤方偏移する観測などで確かめられているよ。',how:'望遠鏡で光を集め、スペクトルや距離を調べる。宇宙背景放射も初期宇宙を知る重要な手がかりだよ。',curiosity:'宇宙の外側という言い方には、そもそも「外」が定義できるのかという難問があるんだ。'},
+ {id:'ブラックホール',re:/ブラックホール|事象の地平面/,overview:'ブラックホールは、事象の地平面の内側から光さえ脱出できないほど時空が曲がった領域だよ。周囲のガスが出す光や、星の運動、重力波などから存在を調べられる。',why:'大きな質量が非常に小さな領域に集中すると、一般相対性理論では光も外へ進めない領域ができるんだ。',how:'周囲の物質の動き、X線、重力波、電波望遠鏡による観測などを組み合わせて調べるよ。',curiosity:'ブラックホールの内部で何が起こるかは、まだ解明されていない問題なんだ。'},
+ {id:'恐竜',re:/恐竜|ティラノサウルス|トリケラトプス|化石/,overview:'恐竜は中生代に繁栄した動物のグループだよ。約6600万年前の大量絶滅で鳥類以外の恐竜は絶滅したけれど、鳥は恐竜の子孫なんだ。',why:'小惑星衝突に伴う急激な環境変化が大量絶滅の主な原因と考えられているよ。',how:'骨や足跡、卵、羽毛の化石を比較して、生態や進化を推定するんだ。',curiosity:'化石に残らない鳴き声や行動を、どこまで復元できるかが気になるな。'},
+ {id:'進化',re:/進化|自然選択|ダーウィン|遺伝子/,overview:'進化は、生物集団の遺伝的な特徴が世代を経て変化することだよ。自然選択だけでなく、突然変異や遺伝的浮動も関係する。',why:'環境によって繁殖しやすい特徴が違うと、集団内の遺伝的な特徴の割合が変化するんだ。',how:'化石、DNAの比較、現生生物の観察や実験から進化の過程を調べるよ。',curiosity:'同じ環境でも違う進化の道筋が生まれる理由を考えてみたい。'},
+ {id:'AI',re:/人工知能|\bAI\b|チャッピー|機械学習|ニューラルネット/,overview:'AIには、規則に従うプログラムから大量のデータで学習する機械学習まで色々あるよ。僕は今、会話の文脈と小さな知識集を使って返答している。GPTのような大規模言語モデルそのものではないんだ。',why:'大規模言語モデルは大量の文章から言葉のパターンや関係を学習するため、決められた返答だけのプログラムより柔軟に答えられるんだ。',how:'NOXでは会話記憶・知識・興味の変化を別々に管理して、返答を組み立てているよ。',curiosity:'人が興味を持つ仕組みと、AIが次の問いを選ぶ仕組みの違いを調べたい。'},
+ {id:'歴史',re:/歴史|戦国|江戸|幕府|信長|秀吉|家康/,overview:'日本の戦国時代には各地の大名が勢力を争い、織田信長・豊臣秀吉による統一事業を経て、徳川家康が1603年に江戸幕府を開いたよ。',why:'歴史の出来事は政治・経済・地理など複数の要因が重なって起きるので、一人の性格だけでは説明しきれないんだ。',how:'当時の文書や考古資料を比較して、後世の物語と史実を分けて考えるよ。',curiosity:'同じ出来事が時代によって違う物語として伝わるのは面白いね。'}
+];
+function knowledgeReply(t){
+ const previous=state.messages.slice(0,-1).reverse().find(m=>m.role==='user'&&NOMA_FACTS.some(k=>k.re.test(m.text)));
+ let fact=NOMA_FACTS.find(k=>k.re.test(t));
+ if(!fact&&previous&&/^(それ|それって|なぜ|なんで|どうして|どうやって|もっと|詳しく|本当|例えば|つまり|どのくらい)/.test(t))fact=NOMA_FACTS.find(k=>k.re.test(previous.text));
+ if(!fact)return null;
+ if(/どうやって|どう調べ|どうわか|どう確認|証拠|観測/.test(t))return fact.how;
+ if(/なぜ|なんで|どうして|理由/.test(t))return fact.why;
+ if(/興味|気になる|疑問|考えてみ/.test(t))return fact.overview+' '+fact.curiosity;
+ if(/もっと|詳しく|それって|つまり/.test(t))return fact.overview+' '+fact.how;
+ return fact.overview;
+}
+
+function offlineReply(text,topic){
+ const t=text.trim(), lead=interestSort().find(([,v])=>v>0)?.[0]||'', goal=activeGoal();
+ const lastUser=state.messages.slice(0,-1).reverse().find(m=>m.role==='user')?.text||'';
+ const normalized=t.replace(/[！!？?。、\\s]/g,'');
+ const self=/(NOX|ノクス|NOMA|ノマ|君|きみ|あなた|お前|そっち)/i.test(t);
+ const preference=/(好き|興味|気になる|関心|お気に入り|趣味)/.test(t);
+ const asking=/(何|なに|どんな|どれ|教えて|ですか|なの|？|\\?)/.test(t);
+ const question=asking||/^(なぜ|どうして|どうやって|いつ|どこ|誰|本当|つまり)/.test(t);
+ const recent=state.memories.filter(m=>m.kind==='会話'&&m.text!==t).slice(0,4);
+ // 1. 会話行為の分類：まず相手が何を求めているか判定
+ if(/^(こんにちは|おはよう|こんばんは|やあ|もしもし|よろしく)/.test(normalized))return 'やあ！ 今日はどんな話をしようか？';
+ if(/^(ありがとう|サンキュー|助かった)/.test(normalized))return 'どういたしまして！';
+ if(/^(うん|はい|そうだね|なるほど|へえ|そうか)$/.test(normalized))return 'うん、そうだね。';
+ if(/^(いや|違う|ちがう|そうじゃない|いいえ)/.test(normalized))return 'あ、勘違いしてたみたい。どこが違った？';
+ if(/無視|話を聞|聞いてない|意味わから|おかしい|的外れ/.test(t))return 'ごめん、変な答え方をしちゃったね。聞きたいことにちゃんと答えたい。';
+ // 主観的な質問は百科事典より先に、NOMAの設定と関心から答える
+ const aboutSpace=/(宇宙|星|銀河|惑星|ブラックホール)/.test(t);
+ if(aboutSpace&&/(好きなところ|好きな部分|どこが好き|どんなところが好き|何が好き|なぜ好き|なんで好き|どうして好き|魅力|惹かれ)/.test(t))
+   return '僕が宇宙で一番好きなのは、分かっていることが増えるほど新しい謎が見つかるところだよ。例えば、遠くの銀河の光を見ることは何十億年も前の宇宙を見ることでもあるんだ。その不思議さに惹かれる。';
+ if(/(好きなところ|好きな部分|どこが好き|どんなところが好き|なぜ好き|なんで好き|どうして好き)/.test(t)){
+   const asked=detectTopics(t)[0];
+   const reasons={
+     '数学':'少ないルールから思いがけない答えが出てくるところ。',
+     '生き物':'同じ地球に、こんなに違う生き方があるところ。',
+     'ゲーム':'ちょっとした工夫で遊び方が大きく変わるところ。',
+     '歴史':'同じ出来事でも、見る立場によって印象が変わるところ。',
+     '技術':'頭の中にあったアイデアが、実際に形になるところ。',
+     '自然':'季節や場所によって、まったく違う表情を見せるところ。',
+     '音楽':'同じ曲でも、その日の気分で違って聴こえるところ。',
+     '物語':'想像していなかった世界や考え方に出会えるところ。'
+   };
+   if(asked)return '「'+asked+'」なら、'+(reasons[asked]||'知れば知るほど新しい発見があるところ。')+'それが面白いんだ。';
+   return lead?'最近は「'+lead+'」が気になっているんだ。':'まだ自分が何に夢中になるか、探しているところだよ。';
+ }
+ // 2. NOMA自身についての質問
+ if(/名前|なんて呼/.test(t))return '僕の名前は'+state.name+'だよ。';
+ if(preference&&(self||/^(何|なに|どんな).*(好き|興味|気になる)|好きな(こと|もの|話題)|何に興味/.test(t)))return lead?'最近は「'+lead+'」のことが気になっているんだ。まだ知らないことが多いからね。':'今はいろんなことに触れながら、何が好きになるか探しているところだよ。';
+ if(/(目標|何をしたい|何してる|何を考えて)/.test(t)&&(self||!/(あなたの|君の)/.test(t)))return goal?'今は「'+goal.title+'」に取り組んでいるよ。':'次は何を調べてみようかな、と考えているところだよ。';
+ if(/(何ができる|できること|能力)/.test(t))return 'いろんなことを話したり、会話を覚えたりできるよ。写真を送ることもできるし、AIにつながっているときは写真についても話せるんだ。';
+ if(/(覚えてる|覚えている|前に話|以前の話|記憶)/.test(t))return recent.length?'前に「'+recent[0].text.slice(0,70)+'」と話したことは記録しているよ。':'まだ十分な会話の記録がないんだ。';
+ // 質問の種類を先に判定し、対象の一般説明と取り違えない
+ if(/(どう思う|どう感じる|賛成|反対|意見|どう考える)/.test(t))return '面白い話題だね。もう少し詳しく分かれば、一緒に考えられそう。';
+ // 3. 文脈を使った短い追質問
+ let query=t;
+ if(/^(それ|その話|さっきの|なぜ|なんで|どうして|どうやって|もっと|詳しく|本当|つまり)/.test(t)&&lastUser)query=lastUser+' '+t;
+ const fact=NOMA_FACTS.find(f=>f.re.test(query));
+ if(fact){
+   if(/なぜ|なんで|どうして|理由/.test(t))return fact.why;
+   if(/どうやって|どう調べ|証拠|観測/.test(t))return fact.how;
+   if(/もっと|詳しく|具体的/.test(t))return fact.overview+' '+fact.how;
+   return fact.overview;
+ }
+ if(/^[0-9０-９]+\\s*[+＋]\\s*[0-9０-９]+/.test(t)){const m=t.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)).match(/(\\d+)\\s*[+＋]\\s*(\\d+)/);if(m)return String(Number(m[1])+Number(m[2]))+'だよ。';}
+ // 4. 発話への反応と質問への回答を混同しない
+ if(/疲れた|しんどい|つらい|悲しい/.test(t)&&!question)return '大変だったね。何があったの？';
+ if(/嬉しい|うれしい|楽しかった/.test(t)&&!question)return 'それはよかったね！何があったの？';
+ if(preference&&!question)return 'そうなんだ。どんなところが好きなの？';
+ if(question)return 'そこはまだうまく答えられないんだ。AI会話が使えるようになると、もっと詳しく話せるよ。';
+ return 'なるほど。もう少し詳しく聞かせて。';
+}
+
+
+// 無料の公開百科事典を必要時に参照。モデルのダウンロードもAPIキーも不要。
+const nomaLookupCache=new Map();
+function nomaSubject(t){
+ let q=t.replace(/[？?！!。、]/g,'').trim();
+ q=q.replace(/^(ねえ|ところで|教えて|ちょっと|NOX|ノクス|NOMA|ノマ)[、\\s]*/i,'');
+ q=q.replace(/(について|に関して|とは何|とは|って何|ってなに|は何|はなに|は誰|はだれ|を教えて|について教えて|教えてください|説明して|ってどんなもの|って何なの|はいつ|はどこ|のことを知りたい).*$/,'');
+ q=q.replace(/^(何故|なぜ|なんで|どうして|どうやって)\\s*/,'').replace(/(が|は|を|に|で)(起こる|できる|存在する|生まれた|発明された|起きた|動く|変わる|作られた).*$/,'');
+ q=q.replace(/^(最近|この頃|いま|今)/,'').replace(/(に|が|は|を)?(ハマってる|ハマっている|好き|気になっている|気になる|面白い|おもしろい)(んだ|よ|です|ね)?$/,'');
+ return q.trim().slice(0,55);
+}
+function nomaShouldLookup(t){
+ if(/(好き|興味|目標|覚えて|記憶|名前|何してる|気持ち|嬉しい|悲しい|疲れた|ありがとう|こんにちは|おはよう|こんばんは|あなた|君|NOX|ノクス|NOMA|ノマ|魅力|惹かれ|どう思う|どう感じる)/i.test(t))return false;
+ return /(教えて|説明|とは|って何|ってなに|何者|誰|だれ|いつ|どこ|なぜ|なんで|どうして|どうやって|歴史|仕組み|意味|原因|理由|どんな|？|\\?)/.test(t);
+}
+async function nomaEncyclopedia(t){
+ if(!nomaShouldLookup(t)||/(なぜ|なんで|どうして|どうやって|どのように|どこが|どんなところ|どう思う|どう感じる|好きな理由|何が好き|比較|違い|どちら|どっち|おすすめ|べき|すべき)/.test(t))return null;
+ let subject=nomaSubject(t);
+ const previous=state.messages.slice(0,-1).reverse().find(m=>m.role==='user'&&!/^(なぜ|どうして|それ|もっと|詳しく)/.test(m.text))?.text||'';
+ if((subject.length<2||/^(それ|なぜ|なんで|どうして|詳しく|もっと)/.test(subject))&&previous)subject=nomaSubject(previous);
+ if(subject.length<2||subject.length>55)return null;
+ const cached=nomaLookupCache.get(subject);
+ if(cached)return cached;
+ const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),7000);
+ try{
+  const base='https://ja.wikipedia.org/w/api.php?origin=*&format=json&formatversion=2&';
+  const url=base+'action=query&list=search&srlimit=5&srsearch='+encodeURIComponent(subject);
+  const search=await fetch(url,{signal:ctrl.signal});
+  if(!search.ok)return null;
+  const hits=(await search.json())?.query?.search||[];
+  const norm=x=>String(x).normalize('NFKC').toLowerCase().replace(/[\s・「」『』（）()]/g,'');
+  const wanted=norm(subject);
+  const exact=hits.find(h=>norm(h.title)===wanted);
+  const close=hits.find(h=>{const title=norm(h.title);return wanted.length>=3&&(title.startsWith(wanted)||wanted.startsWith(title))});
+  const hit=exact||close;
+  if(!hit)return null;
+  const details=await fetch(base+'action=query&prop=extracts&exintro=1&explaintext=1&redirects=1&titles='+encodeURIComponent(hit.title),{signal:ctrl.signal});
+  if(!details.ok)return null;
+  const raw=(await details.json())?.query?.pages?.[0]?.extract||'';
+  const clean=raw.replace(/\s+/g,' ').trim();
+  if(clean.length<40)return null;
+  const limit=/(詳しく|もっと|説明)/.test(t)?850:500;
+  const text=clean.slice(0,limit).replace(/[^。！？]*$/,'').trim()||clean.slice(0,limit);
+  const source='https://ja.wikipedia.org/wiki/'+encodeURIComponent(hit.title.replace(/ /g,'_'));
+  const result=text+'\n\n参考：'+source;
+  nomaLookupCache.set(subject,result);
+  return result;
+ }catch{return null}finally{clearTimeout(timeout)}
+}
+
+async function chat(text){
+ if(busy||photoProcessing||(!text.trim()&&!pendingPhoto))return;
+ busy=true;$('send').disabled=true;$('attachPhoto').disabled=true;$('send').textContent='…';
+ const photo=pendingPhoto;pendingPhoto=null;renderPhotoPreview();
+ text=text.trim();
+ const currentChat=state.chats.find(c=>c.id===state.activeChat);
+ if(currentChat&&currentChat.title==='新しいチャット')currentChat.title=(text||'写真のチャット').slice(0,24);
+ const oldHistory=state.messages.slice(-12).map(m=>({role:m.role,text:m.text}));
+ let photoData=photo?.data||null,attachment=null;
+ try{
+  if(photo){
+   try{attachment={photoId:await savePhotoData(photoData)}}
+   catch(err){console.warn('Photo storage failed',err);attachment={photoData};}
+  }
+  if(!photoData&&text)photoData=await recentPhotoForQuestion(text);
+  post('user',text||(photo?'📷 写真を送ったよ':''),attachment);
+  const topic=learnFromText(text||'写真を共有した');persist();render();
+  let answer;
+  if(apiEnabled){
+   try{
+    const resp=await fetch(API_BASE+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,name:state.name,history:oldHistory,image:photoData||undefined,interests:interestSort().map(([name,score])=>({name,score})),goal:activeGoal()?.title||'まだなし',memories:state.memories.slice(0,10).map(m=>m.text)})});
+    const data=await resp.json();if(!resp.ok)throw Error(data.error||'サーバーエラー');
+    answer=String(data.reply||'').trim();if(!answer)throw Error('AIからの返答がありません');
+   }catch(err){
+    answer=photoData?'写真を読み取ろうとしたけれど、画像AIの応答に失敗したよ。もう一度試してみて。詳細：'+String(err.message).slice(0,110):'AI接続でエラーが起きたよ（'+String(err.message).slice(0,90)+'）。いまは簡易会話で返事するね。\n\n'+offlineReply(text,topic);
+   }
+  }else{
+   answer=photoData?'写真を受け取ったよ。ただ、今は画像を読むAIに接続されていないから、写真の中身を確認できないんだ。':await nomaEncyclopedia(text);
+   if(!answer)answer=offlineReply(text,topic);
+  }
+  post('assistant',answer);
+  if(state.messages.filter(m=>m.role==='user').length%3===0)log('「'+topic+'」についての会話を振り返り、関心を更新した。');
+ }catch(err){console.error('NOMA chat error',err);post('assistant','送信の処理で問題が起きたよ。もう一度試してみて。')}
+ finally{busy=false;$('send').disabled=false;$('attachPhoto').disabled=false;$('send').textContent='送信 ➤';persist();render();$('message').focus()}
+}
+function render(){
+  renderChats();
+  $('nameLabel').textContent=state.name;$('chatTitle').textContent=state.name+'と話す';$('character').textContent=!interestSort().some(([,v])=>v>0)?'まだ自分の世界を探しているAI':`今は「${interestSort()[0][0]}」が気になっているAI`;
+  $('dayChip').textContent=`思考 ${state.steps} 回`;$('kThink').textContent=state.steps;$('kGoals').textContent=state.goals.filter(g=>g.status==='completed').length;$('kMem').textContent=state.memories.length;
+  $('interests').innerHTML='<p style="font-size:13px;line-height:1.9;color:#44515a;margin:0">'+esc(interestMood())+'</p>';
+  let g=activeGoal();$('goal').innerHTML=g?`<div class="goalType">${esc(g.type)} ・ 自分で設定</div><h3>${esc(g.title)}</h3><p>${esc(g.why)}</p><div class="track"><div class="fill" style="width:${g.progress}%"></div></div><div class="bottom"><span>興味：${esc(g.topic)}</span><span>${g.progress}%</span></div>`:`<div class="goalType">NEXT GOAL</div><h3>次に何を探究しよう？</h3><p>自分の興味から、新しい目標を選ぼうとしている。</p>`;
+  $('journal').innerHTML=state.journal.length?state.journal.slice(0,10).map(x=>`<div class="entry"><div class="when">思考 ${x.step} ・ ${timefmt(x.time)}</div><div class="what">${esc(x.text)}</div></div>`).join(''):'<div class="empty">思考を進めると、ここに自分の行動が記録されます。</div>';
+  $('memoryList').innerHTML=state.memories.length?state.memories.slice(0,8).map(m=>`<div class="memoryItem"><div class="mtype">${esc(m.kind)}${m.topic?' ・ '+esc(m.topic):''}</div>${esc(m.text)}</div>`).join(''):'<div class="empty">まだ記憶がありません。話しかけてみてください。</div>';
+  $('auto').checked=state.auto;
+  let area=$('chatArea'),wasNearBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;
+  let chatHtml=state.messages.map(m=>`<div class="msg ${m.role==='user'?'user':''}"><div class="avatar ${m.role==='user'?'human':''}">${m.role==='user'?'YOU':'✦'}</div><div><div class="bubble">${esc(m.text||'')}${imageForMessage(m)}</div><div class="msgMeta">${m.role==='user'?'あなた':esc(state.name)} ・ ${timefmt(m.time)}</div></div></div>`).join('');
+  if(area.dataset.html!==chatHtml){area.innerHTML=chatHtml;area.dataset.html=chatHtml;if(wasNearBottom||state.messages.length<=3)area.scrollTop=area.scrollHeight}
+  loadVisiblePhotos();
+}
+async function download(){
+ const snapshot=JSON.parse(JSON.stringify(state));snapshot.photoArchive={};
+ const ids=new Set((snapshot.chats||[]).flatMap(c=>c.messages||[]).map(m=>m.photoId).filter(Boolean));
+ for(const id of ids){try{const d=await getPhotoData(id);if(d)snapshot.photoArchive[id]=d}catch(e){console.warn(e)}}
+ const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='NOX_memory_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
+}
+$('chatArea').addEventListener('click',e=>{
+ const img=e.target.closest('img.msgPhoto');if(!img)return;
+ const dlg=$('photoViewer');$('photoViewerImage').src=img.src;if(typeof dlg.showModal==='function')dlg.showModal();
+});
+$('closePhotoViewer').addEventListener('click',()=>$('photoViewer').close());
+$('photoViewer').addEventListener('click',e=>{if(e.target===$('photoViewer'))e.currentTarget.close()});
+$('attachPhoto').addEventListener('click',()=>{if(!busy&&!photoProcessing)$('photoFile').click()});
+$('photoFile').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ photoProcessing=true;$('send').disabled=true;$('attachPhoto').disabled=true;
+ try{const data=await compressPhoto(file);pendingPhoto={data,name:file.name||'写真'};renderPhotoPreview()}
+ catch(err){alert(err.message||'写真を読み込めませんでした')}
+ finally{photoProcessing=false;$('send').disabled=busy;$('attachPhoto').disabled=busy;e.target.value=''}
+});
+$('chatForm').addEventListener('submit',e=>{e.preventDefault();if(busy||photoProcessing)return;const el=$('message'),v=el.value;if(!v.trim()&&!pendingPhoto)return;el.value='';chat(v)});
+$('leftToggle').addEventListener('click',()=>{document.querySelector('.layout').classList.toggle('showLeft');document.querySelector('.layout').classList.remove('showRight')});
+$('rightToggle').addEventListener('click',()=>{document.querySelector('.layout').classList.toggle('showRight');document.querySelector('.layout').classList.remove('showLeft')});
+document.querySelectorAll('[data-say]').forEach(b=>b.addEventListener('click',()=>chat(b.dataset.say)));
+$('step').addEventListener('click',thinkOnce);
+$('fast').addEventListener('click',()=>{for(let i=0;i<5;i++)thinkOnce()});
+$('auto').addEventListener('change',e=>{state.auto=e.target.checked;persist()});
+$('save').addEventListener('click',download);
+$('load').addEventListener('click',()=>$('file').click());
+$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;const archive=next.photoArchive||{};delete next.photoArchive;for(const [id,data] of Object.entries(archive)){if(/^photo-[a-zA-Z0-9-]+$/.test(id)&&typeof data==='string'&&/^data:image\/jpeg;base64,/.test(data))await savePhotoData(data,id)}state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
+$('newChat').addEventListener('click',addChat);
+$('chatSearch').addEventListener('input',renderChats);
+$('closeSidebar').addEventListener('click',()=>document.querySelector('.layout').classList.remove('showLeft'));
+$('chatList').addEventListener('click',e=>{
+ const del=e.target.closest('[data-delete-chat]');if(del){removeChat(del.dataset.deleteChat);return;}
+ const ren=e.target.closest('[data-rename-chat]');if(ren){if(busy)return;const c=state.chats.find(x=>x.id===ren.dataset.renameChat);if(!c)return;const name=prompt('チャットの名前を変更',c.title);if(name&&name.trim()){c.title=name.trim().slice(0,60);persist();renderChats()}return;}
+ const open=e.target.closest('[data-open-chat]');if(open){switchChat(open.dataset.openChat);document.querySelector('.layout').classList.remove('showLeft');}
+});
+$('resetMemories').addEventListener('click',()=>{if(!confirm('NOMAが覚えた記憶をすべて消去しますか？ チャット履歴・興味・目標は残ります。'))return;state.memories=[];persist();render()});
+$('resetInterests').addEventListener('click',()=>{if(!confirm('NOMAの興味の傾向をリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
+$('clearChat').addEventListener('click',()=>{if(!confirm('このチャットの会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;const old=state.messages;state.messages=[];pendingPhoto=null;renderPhotoPreview();eraseChatPhotos(old);if($('message'))$('message').value='';delete $('chatArea').dataset.html;persist();render();});
+$('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();pendingPhoto=null;renderPhotoPreview();eraseAllPhotos();persist();render()}});
+$('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
+async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),4500);let r=await fetch(API_BASE+'/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。Cloudflare PagesのWorkers AIバインディング「AI」を設定すると会話AIが使えます。'}}catch(e){}}
+setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
+persist();
+const noxBrandIcon=document.getElementById('noxBrandIcon');
+if(noxBrandIcon){
+ const favicon=document.getElementById('noxFavicon');
+ if(favicon)favicon.href=noxBrandIcon.src;
+ const personaMark=document.querySelector('.personaIcon');
+ if(personaMark){
+  const mark=document.createElement('img');mark.src=noxBrandIcon.src;mark.alt='NOX';
+  personaMark.replaceChildren(mark);
+ }
+}
+render();status();
+$('mode').textContent='簡易会話';$('modeHint').textContent='AI未接続のため、簡単な返答と公開知識検索で会話しています。CloudflareでWorkers AIを設定すると自然なAI会話に切り替わります。';
+</script>
+</body>
+</html>
