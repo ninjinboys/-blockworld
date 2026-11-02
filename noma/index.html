@@ -95,6 +95,19 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
 .personaDetails #interests p{font-size:12px!important;color:#55616a!important}
 .personaDetails .small{font-size:11px;line-height:1.6}
 @media(max-width:850px){.layout,.layout.showRight{display:block}.leftcol{width:min(310px,90vw);height:calc(100dvh - 58px);max-height:none;box-shadow:10px 0 30px #0000001b}.sidebarClose{display:block}.chatHistory{min-height:80px}}
+
+/* Image attachment in NOMA chats */
+.composerBox .attachPhoto{flex:0 0 35px;align-self:center;display:grid;place-items:center;width:35px;height:35px;background:transparent;color:#56606b;border:0;border-radius:50%;font-size:28px;line-height:1;font-weight:300}
+.composerBox .attachPhoto:hover{background:#eff0f1}
+.photoPreview[hidden]{display:none!important}
+.photoPreview{display:flex;align-items:center;gap:12px;background:#f7f8f9;border:1px solid #e6e8eb;border-radius:14px;padding:9px 11px;margin-bottom:9px;max-width:360px}
+.photoPreview img{width:66px;height:66px;object-fit:cover;border-radius:9px;background:#e9eaed}
+.photoPreview .photoDetails{flex:1;min-width:0;font-size:12px;color:#4f5963;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.photoPreview .removePhoto{border:0;background:#e9ebed;color:#4f5660;flex:0 0 27px;height:27px;border-radius:50%;font-size:18px;line-height:1}
+.msgPhoto{display:block;max-width:min(350px,100%);max-height:420px;border-radius:14px;object-fit:contain;margin:6px 0;cursor:zoom-in}
+.photoLoading{font-size:12px;color:#87919b;padding:9px 0}
+.msgPhoto:focus-visible{outline:2px solid #378e84}
+@media(max-width:780px){.photoPreview{max-width:100%}.msgPhoto{max-width:min(285px,100%);max-height:350px}}
 </style>
 </head>
 <body>
@@ -131,7 +144,8 @@ body{background:#fff}.top{height:58px;padding:0 18px;margin:0;border-bottom:1px 
   <div class="composer">
     <div class="quick"><button data-say="最近、何に興味があるの？">興味を聞く</button><button data-say="今の目標を教えて">目標を聞く</button><button data-say="恐竜と進化って面白いと思わない？">恐竜について話す</button><button data-say="宇宙のことを考えてみよう">宇宙について話す</button></div>
     <div style="display:flex;justify-content:flex-end;margin:6px 0 10px"><button class="tinyButton" id="clearChat" type="button">🗑 会話をリセット</button></div>
-    <form class="composerBox" id="chatForm"><input autocomplete="off" maxlength="2000" id="message" aria-label="NOMAへのメッセージ" placeholder="なんでも話しかけてみて…"><button class="send" id="send" type="submit">送信 ➤</button></form>
+    <div class="photoPreview" id="photoPreview" hidden></div>
+    <form class="composerBox" id="chatForm"><input id="photoFile" type="file" accept="image/*,.heic,.heif" hidden aria-label="写真を選択"><button class="attachPhoto" id="attachPhoto" type="button" title="写真を添付" aria-label="写真を添付">＋</button><input autocomplete="off" maxlength="2000" id="message" aria-label="NOMAへのメッセージ" placeholder="メッセージまたは写真を送る…"><button class="send" id="send" type="submit">送信 ➤</button></form>
     <div class="composerHint" id="modeHint">現在は簡易会話モード。入力への返事を優先し、自主思考は会話に割り込みません。自由な会話にはAIモデルへの接続が必要です。</div>
   </div>
 </main>
@@ -206,7 +220,77 @@ function interestSort(){return Object.entries(state.interests).sort((a,b)=>b[1]-
 function interestMood(){const items=interestSort().filter(([,v])=>v>0);if(!items.length)return 'まだ特に夢中なものはない。いろんな話を聞いてみたい。';const top=items[0][0];return '最近は「'+top+'」の話になると、つい質問が増える。'+(items[1]&&items[1][1]>0?'「'+items[1][0]+'」にも少し惹かれている。':'');}
 function memorize(content,kind='会話',topic=''){let mem={text:content.slice(0,125),kind,topic,time:Date.now()};state.memories.unshift(mem);state.memories=state.memories.slice(0,35)}
 function log(text){state.journal.unshift({text,time:Date.now(),step:state.steps});state.journal=state.journal.slice(0,35)}
-function post(role,text){state.messages.push({role,text,time:Date.now()});state.messages=state.messages.slice(-100)}
+function post(role,text,attachment){const m={role,text,time:Date.now()};if(attachment?.photoId)m.photoId=attachment.photoId;if(attachment?.photoData)m.photoData=attachment.photoData;state.messages.push(m);state.messages=state.messages.slice(-100)}
+// Photos are reduced to JPEG on the device; chat metadata stays in localStorage and photos in IndexedDB.
+let pendingPhoto=null,photoProcessing=false,photoDatabasePromise=null;
+const photoCache=new Map(),photoLoading=new Set();
+function photoDb(){
+ if(photoDatabasePromise)return photoDatabasePromise;
+ photoDatabasePromise=new Promise((resolve,reject)=>{
+  if(!('indexedDB' in window)){reject(Error('写真の保存機能が利用できません'));return;}
+  const req=indexedDB.open('noma-chat-photos',1);
+  req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('photos'))req.result.createObjectStore('photos')};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error||Error('保存領域を開けません'));
+ });
+ return photoDatabasePromise;
+}
+async function savePhotoData(data,existingId){
+ const db=await photoDb();const id=existingId||('photo-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+ await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(data,id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+ photoCache.set(id,data);return id;
+}
+async function getPhotoData(id){
+ if(photoCache.has(id))return photoCache.get(id);
+ const db=await photoDb();const data=await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(id);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});
+ photoCache.set(id,data);return data;
+}
+async function erasePhotoData(id){if(!id)return;photoCache.delete(id);try{const db=await photoDb();await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn(e)}}
+async function eraseChatPhotos(messages){for(const m of messages||[])if(m.photoId)await erasePhotoData(m.photoId)}
+async function eraseAllPhotos(){photoCache.clear();try{const db=await photoDb();await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn(e)}}
+function renderPhotoPreview(){
+ const box=$('photoPreview');box.replaceChildren();box.hidden=!pendingPhoto;
+ if(!pendingPhoto)return;
+ const image=document.createElement('img');image.src=pendingPhoto.data;image.alt='選択中の写真';
+ const name=document.createElement('div');name.className='photoDetails';name.textContent=pendingPhoto.name;
+ const remove=document.createElement('button');remove.className='removePhoto';remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','写真を取り消す');remove.addEventListener('click',()=>{pendingPhoto=null;$('photoFile').value='';renderPhotoPreview()});
+ box.append(image,name,remove);
+}
+async function compressPhoto(file){
+ if(file.size>20*1024*1024)throw Error('写真は20MB以下を選んでください');
+ if(!file.type.startsWith('image/')&&!/\.(heic|heif|jpe?g|png|webp|gif)$/i.test(file.name))throw Error('画像ファイルを選んでください');
+ const url=URL.createObjectURL(file);let img;
+ try{img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(Error('この形式の写真は読み込めません'));i.src=url});}
+ finally{URL.revokeObjectURL(url)}
+ if(!img.naturalWidth||!img.naturalHeight)throw Error('画像のサイズを確認できません');
+ for(const maxSide of [1280,1024,800]){
+  const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('写真を処理できません');
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  for(const quality of [.8,.68,.52]){const data=canvas.toDataURL('image/jpeg',quality);if(data.length<=1500000)return data;}
+ }
+ throw Error('写真が大きすぎます。別の写真を選んでください');
+}
+async function loadVisiblePhotos(){
+ for(const m of state.messages){
+  if(!m.photoId||photoCache.has(m.photoId)||photoLoading.has(m.photoId))continue;
+  const id=m.photoId;photoLoading.add(id);
+  getPhotoData(id).catch(()=>{photoCache.set(id,null)}).finally(()=>{photoLoading.delete(id);render()});
+ }
+}
+function imageForMessage(m){
+ const data=m.photoId?photoCache.get(m.photoId):m.photoData;
+ if(typeof data==='string'&&/^data:image\/jpeg;base64,/.test(data))return '<img class="msgPhoto" alt="送信した写真" src="'+esc(data)+'" loading="lazy">';
+ if(m.photoId)return '<div class="photoLoading">'+(photoCache.has(m.photoId)?'写真を表示できません':'写真を読み込み中…')+'</div>';
+ return '';
+}
+async function recentPhotoForQuestion(text){
+ if(!/(写真|画像|この|これ|それ|さっき|先ほど|写|見え|色|場所|形|どこ|その|ここ|あれ)/.test(text))return null;
+ const latest=state.messages.slice(-10).reverse().find(m=>m.role==='user'&&(m.photoId||m.photoData));
+ if(!latest)return null;
+ try{return latest.photoId?await getPhotoData(latest.photoId):(latest.photoData||null)}catch{return null}
+}
 function timefmt(t){return new Date(t).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}
 function activeGoal(){return state.goals.find(g=>g.id===state.current && g.status==='active')||null}
 function newGoal(){
@@ -407,7 +491,15 @@ function render(){
   if(area.dataset.html!==chatHtml){area.innerHTML=chatHtml;area.dataset.html=chatHtml;if(wasNearBottom||state.messages.length<=3)area.scrollTop=area.scrollHeight}
 }
 function download(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='NOMA_memory_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-$('chatForm').addEventListener('submit',e=>{e.preventDefault();if(busy)return;let el=$('message'),v=el.value;if(!v.trim())return;el.value='';chat(v)});
+$('attachPhoto').addEventListener('click',()=>{if(!busy&&!photoProcessing)$('photoFile').click()});
+$('photoFile').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ photoProcessing=true;$('send').disabled=true;$('attachPhoto').disabled=true;
+ try{const data=await compressPhoto(file);pendingPhoto={data,name:file.name||'写真'};renderPhotoPreview()}
+ catch(err){alert(err.message||'写真を読み込めませんでした')}
+ finally{photoProcessing=false;$('send').disabled=busy;$('attachPhoto').disabled=busy;e.target.value=''}
+});
+$('chatForm').addEventListener('submit',e=>{e.preventDefault();if(busy||photoProcessing)return;const el=$('message'),v=el.value;if(!v.trim()&&!pendingPhoto)return;el.value='';chat(v)});
 $('leftToggle').addEventListener('click',()=>{document.querySelector('.layout').classList.toggle('showLeft');document.querySelector('.layout').classList.remove('showRight')});
 $('rightToggle').addEventListener('click',()=>{document.querySelector('.layout').classList.toggle('showRight');document.querySelector('.layout').classList.remove('showLeft')});
 document.querySelectorAll('[data-say]').forEach(b=>b.addEventListener('click',()=>chat(b.dataset.say)));
