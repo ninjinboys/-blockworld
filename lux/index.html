@@ -782,12 +782,12 @@ $('chatList').addEventListener('click',e=>{
  const ren=e.target.closest('[data-rename-chat]');if(ren){if(busy)return;const c=state.chats.find(x=>x.id===ren.dataset.renameChat);if(!c)return;const name=prompt('チャットの名前を変更',c.title);if(name&&name.trim()){c.title=name.trim().slice(0,60);persist();renderChats()}return;}
  const open=e.target.closest('[data-open-chat]');if(open){switchChat(open.dataset.openChat);document.querySelector('.layout').classList.remove('showLeft');}
 });
-$('resetMemories').addEventListener('click',()=>{if(!confirm('NOMAが覚えた記憶をすべて消去しますか？ チャット履歴・興味・目標は残ります。'))return;state.memories=[];persist();render()});
-$('resetInterests').addEventListener('click',()=>{if(!confirm('NOMAの興味の傾向をリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
+$('resetMemories').addEventListener('click',()=>{if(!confirm('LUXが覚えた記憶をすべて消去しますか？ チャット履歴・興味・目標は残ります。'))return;state.memories=[];persist();render()});
+$('resetInterests').addEventListener('click',()=>{if(!confirm('LUXの興味の傾向をリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
 $('clearChat').addEventListener('click',()=>{if(!confirm('このチャットの会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;const old=state.messages;state.messages=[];pendingPhoto=null;renderPhotoPreview();eraseChatPhotos(old);if($('message'))$('message').value='';delete $('chatArea').dataset.html;persist();render();});
-$('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();pendingPhoto=null;renderPhotoPreview();eraseAllPhotos();persist();render()}});
+$('reset').addEventListener('click',()=>{if(confirm('LUXのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();pendingPhoto=null;renderPhotoPreview();eraseAllPhotos();persist();render()}});
 $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
-async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),4500);let r=await fetch('/api/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。Cloudflare PagesのWorkers AIバインディング「AI」を設定すると会話AIが使えます。'}}catch(e){}}
+async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),4500);let r=await fetch('/api/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。Googleログインすると会話・記憶・興味が端末間で同期されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。Cloudflare PagesのWorkers AIバインディング「AI」を設定すると会話AIが使えます。'}}catch(e){}}
 setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
 persist();
 const luxBrandIcon=document.getElementById('luxBrandIcon');
@@ -854,7 +854,8 @@ window.AGENT_SYNC_BRIDGE={
    persist();render();
   }finally{cloudApplyingState=false}
  },
- readLocalPhoto:id=>getPhotoData(id)
+ readLocalPhoto:id=>getPhotoData(id),
+ isBusy:()=>busy||photoProcessing
 };
 </script>
 <script type="module" src="./account-sync.js"></script>
