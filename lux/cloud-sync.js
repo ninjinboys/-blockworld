@@ -158,8 +158,11 @@ function fromRemote(profile,chats,local){
 }
 function isMeaningful(st){
  if(!st)return false;
- if((st.chats||[]).length>1||st.steps>0||(st.memories||[]).length||(st.goals||[]).length)return true;
- return (st.chats?.[0]?.messages||[]).some(m=>m.role==="user");
+ // Automatic background thinking on a new device is not user data to import.
+ if((st.chats||[]).length>1)return true;
+ if(st.name&&st.name.toUpperCase()!==COMPANION)return true;
+ if((st.memories||[]).some(m=>m.kind==="会話"))return true;
+ return (st.chats?.[0]?.messages||st.messages||[]).some(m=>m.role==="user");
 }
 function mergeState(local,remote){
  const result={...remote},map=new Map((remote.chats||[]).map(c=>[c.id,c]));
