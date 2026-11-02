@@ -6,6 +6,7 @@ const companion=bridge.appId, COMPANION=companion.toUpperCase();
 const CONFIG_KEY="companion-firebase-config-v1";
 const OWNER_KEY="companion-firebase-owner-v1-"+companion;
 const backupKey=uid=>"companion-firebase-backup-v1-"+companion+"-"+uid;
+const pendingImportKey=uid=>backupKey(uid)+":pending-import";
 const SDK="https://www.gstatic.com/firebasejs/12.19.0/";
 let appSdk,authSdk,storeSdk,auth,db,user=null,configured=null;
 let profileRef=null,chatsRef=null,unsubs=[],connected=false,initializing=false;
@@ -125,14 +126,14 @@ el("cloudLogout").onclick=async()=>{
 el("cloudSyncNow").onclick=()=>schedule(0,true);
 el("cloudImport").onclick=async()=>{
  if(!user||!connected)return;
- const raw=localStorage.getItem(backupKey(user.uid));
+ const raw=localStorage.getItem(pendingImportKey(user.uid))||localStorage.getItem(backupKey(user.uid));
  if(!raw){alert("この端末に統合できる履歴はないよ");return}
  if(!confirm("保存しておいたこの端末の履歴を、クラウドに統合する？"))return;
  try{
   const local=JSON.parse(raw),remote=bridge.read();
   if(local.version!==1)throw Error("古い履歴の形式が違うよ");
   if(!bridge.apply(mergeState(local,remote)))throw Error("会話中は統合できないよ");
-  dirty=true;await flush(true);notice("履歴の統合が完了したよ");
+  dirty=true;await flush(true);localStorage.removeItem(pendingImportKey(user.uid));notice("履歴の統合が完了したよ");
  }catch(e){notice(errorText(e))}
 };
 function snapshotProfile(st){
@@ -215,7 +216,9 @@ async function userChanged(next){
    if(!bridge.fresh())throw Error("会話が終わってから切り替えてね");
   }
   let local=bridge.read();
-  if(owner===user.uid&&!isMeaningful(local)){
+  // New conversations created after logout are intentional offline edits.
+  const offlineEdits=isMeaningful(local);
+  if(owner===user.uid&&!offlineEdits){
    const saved=localStorage.getItem(backupKey(user.uid));
    if(saved)try{const backup=JSON.parse(saved);if(isMeaningful(backup))local=backup}catch{}
   }
@@ -224,7 +227,12 @@ async function userChanged(next){
   const [prof,docs]=await Promise.all([storeSdk.getDoc(profileRef),storeSdk.getDocs(chatsRef)]);
   if(user.uid!==next.uid)return;
   const remote=prof.exists()||!docs.empty?fromRemote(prof.exists()?prof.data().data:null,docs.docs.map(d=>d.data()),local):null;
-  const combined=!remote?local:(!owner&&isMeaningful(local))?mergeState(local,remote):remote;
+  const shouldMerge=!owner&&isMeaningful(local)||owner===user.uid&&offlineEdits;
+  if(remote&&!shouldMerge&&isMeaningful(local)){
+   // Keep a recovery copy rather than resurrecting deleted cloud history.
+   try{localStorage.setItem(pendingImportKey(user.uid),JSON.stringify(local))}catch{}
+  }
+  const combined=!remote?local:shouldMerge?mergeState(local,remote):remote;
   if(!bridge.apply(combined))throw Error("会話が終わってから同期してね");
   localStorage.setItem(OWNER_KEY,user.uid);
   remember(user.uid,combined);
