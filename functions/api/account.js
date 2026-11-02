@@ -13,12 +13,13 @@ const random=()=>crypto.randomUUID().replace(/-/g,"")+crypto.randomUUID().replac
 const compare=(a,b)=>{if(typeof a!=="string"||typeof b!=="string")return false;let diff=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)diff|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return diff===0};
 const cookie=(token,maxAge)=>"luxnox_session="+token+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age="+maxAge;
 async function tables(db){
- await db.batch([
-  db.prepare("CREATE TABLE IF NOT EXISTS companion_users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at INTEGER NOT NULL)"),
-  db.prepare("CREATE TABLE IF NOT EXISTS companion_sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at INTEGER NOT NULL)"),
-  db.prepare("CREATE TABLE IF NOT EXISTS companion_state (user_id TEXT NOT NULL, companion TEXT NOT NULL, payload TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1, updated_at INTEGER NOT NULL, PRIMARY KEY(user_id, companion))"),
-  db.prepare("CREATE TABLE IF NOT EXISTS companion_photos (user_id TEXT NOT NULL, companion TEXT NOT NULL, photo_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(user_id,companion,photo_id))")
- ]);
+ const statements=[
+  "CREATE TABLE IF NOT EXISTS companion_users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at INTEGER NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS companion_sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS companion_state (user_id TEXT NOT NULL, companion TEXT NOT NULL, payload TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1, updated_at INTEGER NOT NULL, PRIMARY KEY(user_id, companion))",
+  "CREATE TABLE IF NOT EXISTS companion_photos (user_id TEXT NOT NULL, companion TEXT NOT NULL, photo_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(user_id,companion,photo_id))"
+ ];
+ for(const sql of statements)await db.prepare(sql).run();
 }
 async function actor(db,request){
  const token=(request.headers.get("cookie")||"").match(/(?:^|;\s*)luxnox_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -104,6 +105,6 @@ export async function onRequest({request,env}){
  }catch(error){
   if(String(error.message)==="too_large")return response({error:"データが大きすぎます"},413);
   console.error("Companion account error",error);
-  return response({error:"サーバー処理に失敗しました。D1の接続を確認してください"},500);
+  return response({error:"サーバー処理に失敗しました（"+String(error?.message||"原因不明").slice(0,180)+"）"},500);
  }
 }
