@@ -73,6 +73,8 @@ export async function onRequest({request,env}){
   const me=await actor(env.DB,request);
   if(!me)return response({error:"ログインが必要です"},401);
   if(action==="logout"){
+   const companion=new URL(request.url).hostname.startsWith("nox")||new URL(request.url).pathname.startsWith("/nox/")?"nox":"lux";
+   try{await env.DB.prepare("DELETE FROM duo_presence WHERE user_id=? AND agent=?").bind(me.id,companion).run()}catch{}
    const token=(request.headers.get("cookie")||"").match(/luxnox_session=([a-f0-9]{64})/)?.[1];
    if(token)await env.DB.prepare("DELETE FROM companion_sessions WHERE token_hash=?").bind(await digest(token)).run();
    return response({ok:true},200,{"set-cookie":cookie("",0)});
