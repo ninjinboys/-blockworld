@@ -966,6 +966,10 @@ window.companionSyncBridge={
  onChange(listener){cloudStateListeners.add(listener);return()=>cloudStateListeners.delete(listener)},
  getPhoto:getPhotoData,
  putPhoto:savePhotoData,
+ refreshCloudPhotos(){
+   for(const [id,value] of photoCache)if(!value)photoCache.delete(id);
+   render();
+ },
  initial
 };
 
