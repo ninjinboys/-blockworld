@@ -97,7 +97,7 @@ async function check(){
     status("別端末の記憶を受信したよ");
    }
   }else if(account){backup(account,bridge.read());account=null;revision=0;bridge.fresh();ui()}
-  else if(localStorage.getItem(ownerKey)){const owner=localStorage.getItem(ownerKey);backup(owner,bridge.read());bridge.fresh()}
+
  }catch(e){status("Cloudflare接続待ち: "+e.message)}
  finally{checking=false}
 }
