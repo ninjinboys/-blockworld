@@ -390,7 +390,13 @@ function renderChats(){
 }
 // 旧版で割り込んだ独り言は、そのまま残すが今後は追加しない。
 let apiEnabled=false, busy=false;
-function persist(){syncChat();try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}}
+const cloudStateListeners=new Set();
+let cloudApplyingState=false;
+function persist(){
+ syncChat();
+ try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Storage unavailable',e)}
+ if(!cloudApplyingState){for(const listener of cloudStateListeners){try{listener()}catch(err){console.warn('Cloud change listener',err)}}}
+}
 function cat(id){return CATALOG.find(x=>x.id===id)||{id,questions:['「'+id+'」について、まだ知らないことは何だろう？','「'+id+'」にはどんな意外な発見があるんだろう？'],ideas:['「'+id+'」の面白さを探してみたい。','「'+id+'」について新しい疑問が浮かんだ。'],next:randomTopic()}}
 function detectTopics(text){return CATALOG.map(x=>({id:x.id, count:x.words.reduce((n,w)=>n+(text.toLowerCase().includes(w.toLowerCase())?1:0),0)})).filter(x=>x.count).sort((a,b)=>b.count-a.count).map(x=>x.id)}
 const RANDOM_TOPICS='料理,建築,鉄道,深海,昆虫,宝石,言語,哲学,スポーツ,ダンス,写真,絵画,彫刻,旅行,地理,料理道具,ファッション,園芸,農業,都市,交通,経済,心理学,医学,健康,教育,法律,政治,天文学,考古学,神話,民俗学,ロボット,恐竜,微生物,海洋,山岳,火山,地震,気象,気候,鳥,魚,犬,猫,馬,料理の歴史,発明,化学,物理学,量子力学,数学,パズル,ボードゲーム,映画,アニメ,漫画,小説,詩,演劇,デザイン,プログラミング,宇宙探査,惑星,月,星座,古代文明,未来都市,乗り物,船,航空機,自転車,自動車,伝統工芸,陶芸,書道,茶道,コーヒー,お菓子,パン,植物,花,森林,砂漠,氷河,滝,川,海,宇宙,ゲーム,歴史,生き物,音楽,自然,技術,社会,物語'.split(',');
@@ -422,6 +428,10 @@ async function savePhotoData(data,existingId){
 async function getPhotoData(id){
  if(photoCache.has(id))return photoCache.get(id);
  const db=await photoDb();const data=await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly');const req=tx.objectStore('photos').get(id);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});
+ if(!data&&window.companionCloud?.loadPhoto){
+   try{data=await window.companionCloud.loadPhoto(id);if(data)await savePhotoData(data,id)}
+   catch(error){console.warn('Cloud photo unavailable',error)}
+ }
  photoCache.set(id,data);return data;
 }
 async function erasePhotoData(id){if(!id)return;photoCache.delete(id);try{const db=await photoDb();await new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn(e)}}
@@ -761,6 +771,44 @@ if(luxBrandIcon){
 }
 render();status();
 $('mode').textContent='簡易会話';$('modeHint').textContent='AI未接続のため、簡単な返答と公開知識検索で会話しています。CloudflareでWorkers AIを設定すると自然なAI会話に切り替わります。';
+
+/* Bridge used by the optional Firebase login and device-sync module.
+   Data stays local until the owner connects a Firebase project and signs in. */
+window.companionSyncBridge={
+ appId:'lux',
+ read(){
+   syncChat();
+   return JSON.parse(JSON.stringify(state));
+ },
+ apply(next){
+   if(!next||next.version!==1||!Array.isArray(next.chats))throw Error('同期データの形式が正しくありません');
+   if(busy||photoProcessing)return false;
+   cloudApplyingState=true;
+   try{
+     state=next;ensureChats();pendingPhoto=null;renderPhotoPreview();
+     delete $('chatArea').dataset.html;$('chatArea').innerHTML='';
+     persist();render();
+   }finally{cloudApplyingState=false}
+   return true;
+ },
+ fresh(){
+   if(busy||photoProcessing)return false;
+   cloudApplyingState=true;
+   try{
+     state=initial();ensureChats();pendingPhoto=null;renderPhotoPreview();
+     photoCache.clear();
+     delete $('chatArea').dataset.html;$('chatArea').innerHTML='';
+     persist();render();
+   }finally{cloudApplyingState=false}
+   return true;
+ },
+ isBusy:()=>busy||photoProcessing,
+ onChange(listener){cloudStateListeners.add(listener);return()=>cloudStateListeners.delete(listener)},
+ getPhoto:getPhotoData,
+ putPhoto:savePhotoData,
+ initial
+};
 </script>
+<script type="module" src="./cloud-sync.js"></script>
 </body>
 </html>
