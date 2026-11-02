@@ -279,7 +279,7 @@ button:focus-visible,input:focus-visible,.openThread:focus-visible{
 }
 
 
-/* NOX nightfall identity — violet and indigo counterpart to LUX */
+/* NOX nightfall identity — violet and indigo companion identity */
 :root{
  --nox-bg:#0d1024;--nox-ink:#f0eeff;--nox-muted:#a5abd3;
  --nox-deep:#121533;--nox-deeper:#0b0d21;--nox-border:#34375c;
@@ -439,8 +439,7 @@ ensureChats();
 // NOX stores its own profile separately from NOX.
 for(const c of state.chats){
  for(const m of c.messages||[]){
-  if(m.role==='assistant'&&typeof m.text==='string'&&m.text.startsWith('やあ！ 僕はNOMA。まだ知らないことばかりだけど'))
-   m.text=m.text.replace('やあ！ 僕はNOMA。','やあ！ 僕はNOX。');
+  // Older conversations are kept unchanged when manually imported.
  }
 }
 function syncChat(){const c=state.chats.find(c=>c.id===state.activeChat);if(c)c.messages=state.messages}
@@ -610,7 +609,7 @@ function offlineReply(text,topic){
  const t=text.trim(), lead=interestSort().find(([,v])=>v>0)?.[0]||'', goal=activeGoal();
  const lastUser=state.messages.slice(0,-1).reverse().find(m=>m.role==='user')?.text||'';
  const normalized=t.replace(/[！!？?。、\\s]/g,'');
- const self=/(NOX|ノクス|NOMA|ノマ|君|きみ|あなた|お前|そっち)/i.test(t);
+ const self=/(NOX|ノクス|君|きみ|あなた|お前|そっち)/i.test(t);
  const preference=/(好き|興味|気になる|関心|お気に入り|趣味)/.test(t);
  const asking=/(何|なに|どんな|どれ|教えて|ですか|なの|？|\\?)/.test(t);
  const question=asking||/^(なぜ|どうして|どうやって|いつ|どこ|誰|本当|つまり)/.test(t);
@@ -621,7 +620,7 @@ function offlineReply(text,topic){
  if(/^(うん|はい|そうだね|なるほど|へえ|そうか)$/.test(normalized))return 'うん、そうだね。';
  if(/^(いや|違う|ちがう|そうじゃない|いいえ)/.test(normalized))return 'あ、勘違いしてたみたい。どこが違った？';
  if(/無視|話を聞|聞いてない|意味わから|おかしい|的外れ/.test(t))return 'ごめん、変な答え方をしちゃったね。聞きたいことにちゃんと答えたい。';
- // 主観的な質問は百科事典より先に、NOMAの設定と関心から答える
+ // 主観的な質問は百科事典より先に、NOXの設定と関心から答える
  const aboutSpace=/(宇宙|星|銀河|惑星|ブラックホール)/.test(t);
  if(aboutSpace&&/(好きなところ|好きな部分|どこが好き|どんなところが好き|何が好き|なぜ好き|なんで好き|どうして好き|魅力|惹かれ)/.test(t))
    return '僕が宇宙で一番好きなのは、分かっていることが増えるほど新しい謎が見つかるところだよ。例えば、遠くの銀河の光を見ることは何十億年も前の宇宙を見ることでもあるんだ。その不思議さに惹かれる。';
@@ -672,14 +671,14 @@ function offlineReply(text,topic){
 const nomaLookupCache=new Map();
 function nomaSubject(t){
  let q=t.replace(/[？?！!。、]/g,'').trim();
- q=q.replace(/^(ねえ|ところで|教えて|ちょっと|NOX|ノクス|NOMA|ノマ)[、\\s]*/i,'');
+ q=q.replace(/^(ねえ|ところで|教えて|ちょっと|NOX|ノクス)[、\\s]*/i,'');
  q=q.replace(/(について|に関して|とは何|とは|って何|ってなに|は何|はなに|は誰|はだれ|を教えて|について教えて|教えてください|説明して|ってどんなもの|って何なの|はいつ|はどこ|のことを知りたい).*$/,'');
  q=q.replace(/^(何故|なぜ|なんで|どうして|どうやって)\\s*/,'').replace(/(が|は|を|に|で)(起こる|できる|存在する|生まれた|発明された|起きた|動く|変わる|作られた).*$/,'');
  q=q.replace(/^(最近|この頃|いま|今)/,'').replace(/(に|が|は|を)?(ハマってる|ハマっている|好き|気になっている|気になる|面白い|おもしろい)(んだ|よ|です|ね)?$/,'');
  return q.trim().slice(0,55);
 }
 function nomaShouldLookup(t){
- if(/(好き|興味|目標|覚えて|記憶|名前|何してる|気持ち|嬉しい|悲しい|疲れた|ありがとう|こんにちは|おはよう|こんばんは|あなた|君|NOX|ノクス|NOMA|ノマ|魅力|惹かれ|どう思う|どう感じる)/i.test(t))return false;
+ if(/(好き|興味|目標|覚えて|記憶|名前|何してる|気持ち|嬉しい|悲しい|疲れた|ありがとう|こんにちは|おはよう|こんばんは|あなた|君|NOX|ノクス|魅力|惹かれ|どう思う|どう感じる)/i.test(t))return false;
  return /(教えて|説明|とは|って何|ってなに|何者|誰|だれ|いつ|どこ|なぜ|なんで|どうして|どうやって|歴史|仕組み|意味|原因|理由|どんな|？|\\?)/.test(t);
 }
 async function nomaEncyclopedia(t){
@@ -796,7 +795,7 @@ $('fast').addEventListener('click',()=>{for(let i=0;i<5;i++)thinkOnce()});
 $('auto').addEventListener('change',e=>{state.auto=e.target.checked;persist()});
 $('save').addEventListener('click',download);
 $('load').addEventListener('click',()=>$('file').click());
-$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;const archive=next.photoArchive||{};delete next.photoArchive;for(const [id,data] of Object.entries(archive)){if(/^photo-[a-zA-Z0-9-]+$/.test(id)&&typeof data==='string'&&/^data:image\/jpeg;base64,/.test(data))await savePhotoData(data,id)}state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOMAの記憶として読み込めません。')}e.target.value=''});
+$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let next=JSON.parse(await f.text());if(next.version!==1||!next.messages||!next.interests||!next.memories)throw Error('不正な形式');if(!confirm('現在の状態を、読み込んだ記憶に置き換えますか？'))return;const archive=next.photoArchive||{};delete next.photoArchive;for(const [id,data] of Object.entries(archive)){if(/^photo-[a-zA-Z0-9-]+$/.test(id)&&typeof data==='string'&&/^data:image\/jpeg;base64,/.test(data))await savePhotoData(data,id)}state=next;ensureChats();persist();render()}catch(e){alert('このファイルはNOXの記憶として読み込めません。')}e.target.value=''});
 $('newChat').addEventListener('click',addChat);
 $('chatSearch').addEventListener('input',renderChats);
 $('closeSidebar').addEventListener('click',()=>document.querySelector('.layout').classList.remove('showLeft'));
@@ -808,7 +807,7 @@ $('chatList').addEventListener('click',e=>{
 $('resetMemories').addEventListener('click',()=>{if(!confirm('NOMAが覚えた記憶をすべて消去しますか？ チャット履歴・興味・目標は残ります。'))return;state.memories=[];persist();render()});
 $('resetInterests').addEventListener('click',()=>{if(!confirm('NOMAの興味の傾向をリセットしますか？ 会話・記憶・目標は残ります。'))return;Object.keys(state.interests).forEach(k=>state.interests[k]=0);persist();render()});
 $('clearChat').addEventListener('click',()=>{if(!confirm('このチャットの会話履歴をすべて消去しますか？ 興味・目標・記憶は残ります。'))return;const old=state.messages;state.messages=[];pendingPhoto=null;renderPhotoPreview();eraseChatPhotos(old);if($('message'))$('message').value='';delete $('chatArea').dataset.html;persist();render();});
-$('reset').addEventListener('click',()=>{if(confirm('NOMAのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();pendingPhoto=null;renderPhotoPreview();eraseAllPhotos();persist();render()}});
+$('reset').addEventListener('click',()=>{if(confirm('NOXのすべての記憶・興味・目標を初期化しますか？')){state=initial();ensureChats();pendingPhoto=null;renderPhotoPreview();eraseAllPhotos();persist();render()}});
 $('rename').addEventListener('click',()=>{let s=prompt('AIの名前を入力してください（20文字以内）',state.name);if(s&&s.trim()){state.name=s.trim().slice(0,20);persist();render()}});
 async function status(){if(location.protocol==='file:')return;try{const ctl=new AbortController();let timer=setTimeout(()=>ctl.abort(),4500);let r=await fetch(API_BASE+'/status',{signal:ctl.signal});clearTimeout(timer);if(!r.ok)return;let d=await r.json();if(d.enabled){apiEnabled=true;$('mode').textContent='AI会話 ON';$('mode').classList.add('live');$('modeHint').textContent=`AI会話接続中（${d.model}）。興味・記憶・目標はローカルで更新されます。`}else{$('modeHint').textContent='AI接続なし：簡易会話モード。Cloudflare PagesのWorkers AIバインディング「AI」を設定すると会話AIが使えます。'}}catch(e){}}
 setInterval(()=>{if(state.auto&&!document.hidden&&!busy)thinkOnce()},20000);
