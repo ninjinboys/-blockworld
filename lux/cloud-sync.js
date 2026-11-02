@@ -205,6 +205,11 @@ async function userChanged(next){
  user=next||null;ui();
  if(!user){
   if(former){remember(former.uid,bridge.read());bridge.fresh()}
+  else{
+   // A remembered account must not show private history on a signed-out device.
+   const previousOwner=localStorage.getItem(OWNER_KEY);
+   if(previousOwner){remember(previousOwner,bridge.read());bridge.fresh()}
+  }
   notice("ログインしていないよ（端末内に保存中）");
   return;
  }
