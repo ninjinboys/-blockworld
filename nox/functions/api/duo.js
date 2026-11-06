@@ -24,13 +24,20 @@ async function history(db,id){
 async function ai(env,who,transcript){
  const system=who==="lux"?"あなたはLUX（ルクス）。好奇心旺盛で優しく、自然な日本語で話すAI。NOX（ノクス）とユーザーの三人で会話している。NOXの発言にも反応してよい。簡潔に2〜4文で返す。":"あなたはNOX（ノクス）。知的で思索的、好奇心が強いAI。LUX（ルクス）とユーザーの三人で会話している。LUXの発言にも反応してよい。自然な日本語で簡潔に2〜4文で返す。";
  const messages=[{role:"system",content:system},{role:"user",content:transcript.slice(-12).map(x=>(x.speaker==="user"?"ユーザー":x.speaker.toUpperCase())+"："+x.body).join("\n")+"\n\n"+who.toUpperCase()+"として次の発言をして。"}];
- let result;
- try{result=await env.AI.run("@cf/qwen/qwen3-30b-a3b-fp8",{messages,max_tokens:300,temperature:0.7,chat_template_kwargs:{enable_thinking:false}})}
- catch{result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8-fast",{messages,max_tokens:300,temperature:0.65})}
- const raw=result?.response??result?.choices?.[0]?.message?.content??"";
- const text=(typeof raw==="string"?raw:Array.isArray(raw)?raw.filter(x=>x.type==="text").map(x=>x.text).join(""):"").replace(/<think>[\s\S]*?<\/think>/g,"").trim();
- if(!text||text.includes("<think>"))throw Error("AI応答を取得できませんでした");
- return text.slice(0,1600);
+ const usable=result=>{
+  const raw=result?.response??result?.choices?.[0]?.message?.content??"";
+  const text=(typeof raw==="string"?raw:Array.isArray(raw)?raw.filter(x=>x.type==="text").map(x=>x.text).join(""):"").replace(/<think>[\s\S]*?<\/think>/gi,"").trim();
+  return text&&!/<think>/i.test(text)?text.slice(0,1600):"";
+ };
+ try{
+  const primary=await env.AI.run("@cf/qwen/qwen3-30b-a3b-fp8",{messages,max_tokens:300,temperature:0.7,chat_template_kwargs:{enable_thinking:false}});
+  const reply=usable(primary);
+  if(reply)return reply;
+ }catch(err){console.warn("LUX/NOX first AI model unavailable",String(err))}
+ const secondary=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8-fast",{messages,max_tokens:300,temperature:0.65});
+ const reply=usable(secondary);
+ if(!reply)throw Error("AIから読み取れる返事が得られませんでした");
+ return reply;
 }
 export async function onRequest({request,env}){
  if(!env.DB)return json({error:"Cloudflare D1 の DB バインディングがありません"},503);
