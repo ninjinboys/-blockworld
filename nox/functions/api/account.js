@@ -17,15 +17,24 @@ async function tables(db){
   "CREATE TABLE IF NOT EXISTS companion_users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS companion_sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS companion_state (user_id TEXT NOT NULL, companion TEXT NOT NULL, payload TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1, updated_at INTEGER NOT NULL, PRIMARY KEY(user_id, companion))",
-  "CREATE TABLE IF NOT EXISTS companion_photos (user_id TEXT NOT NULL, companion TEXT NOT NULL, photo_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(user_id,companion,photo_id))"
+  "CREATE TABLE IF NOT EXISTS companion_photos (user_id TEXT NOT NULL, companion TEXT NOT NULL, photo_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(user_id,companion,photo_id))",
+  "CREATE TABLE IF NOT EXISTS duo_logins (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, agent TEXT NOT NULL, expires_at INTEGER NOT NULL)"
  ];
  for(const sql of statements)await db.prepare(sql).run();
 }
+const companionOf=request=>{
+ const url=new URL(request.url);
+ return url.hostname.startsWith("nox")||url.pathname.startsWith("/nox/")?"nox":"lux";
+};
 async function actor(db,request){
  const token=(request.headers.get("cookie")||"").match(/(?:^|;\s*)luxnox_session=([a-f0-9]{64})(?:;|$)/)?.[1];
  if(!token)return null;
- const hash=await digest(token);
- return db.prepare("SELECT u.id,u.username FROM companion_sessions s JOIN companion_users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?").bind(hash,Date.now()).first();
+ const tokenHash=await digest(token);
+ const me=await db.prepare("SELECT u.id,u.username,s.expires_at FROM companion_sessions s JOIN companion_users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?").bind(tokenHash,Date.now()).first();
+ if(me){
+  await db.prepare("INSERT INTO duo_logins(token_hash,user_id,agent,expires_at) VALUES(?,?,?,?) ON CONFLICT(token_hash) DO UPDATE SET expires_at=excluded.expires_at,agent=excluded.agent").bind(tokenHash,me.id,companionOf(request),me.expires_at).run();
+ }
+ return me;
 }
 const maxBody=async req=>{
  const length=Number(req.headers.get("content-length")||0);
@@ -68,6 +77,7 @@ export async function onRequest({request,env}){
    }
    const token=random();
    await env.DB.prepare("INSERT INTO companion_sessions(token_hash,user_id,expires_at) VALUES(?,?,?)").bind(await digest(token),user.id,now+30*86400000).run();
+   await env.DB.prepare("INSERT INTO duo_logins(token_hash,user_id,agent,expires_at) VALUES(?,?,?,?)").bind(await digest(token),user.id,companionOf(request),now+30*86400000).run();
    return response({ok:true,username:user.username},200,{"set-cookie":cookie(token,30*86400)});
   }
   const me=await actor(env.DB,request);
@@ -76,7 +86,11 @@ export async function onRequest({request,env}){
    const companion=new URL(request.url).hostname.startsWith("nox")||new URL(request.url).pathname.startsWith("/nox/")?"nox":"lux";
    try{await env.DB.prepare("DELETE FROM duo_presence WHERE user_id=? AND agent=?").bind(me.id,companion).run()}catch{}
    const token=(request.headers.get("cookie")||"").match(/luxnox_session=([a-f0-9]{64})/)?.[1];
-   if(token)await env.DB.prepare("DELETE FROM companion_sessions WHERE token_hash=?").bind(await digest(token)).run();
+   if(token){
+    const tokenHash=await digest(token);
+    await env.DB.prepare("DELETE FROM duo_logins WHERE token_hash=?").bind(tokenHash).run();
+    await env.DB.prepare("DELETE FROM companion_sessions WHERE token_hash=?").bind(tokenHash).run();
+   }
    return response({ok:true},200,{"set-cookie":cookie("",0)});
   }
   if(action==="save"){
