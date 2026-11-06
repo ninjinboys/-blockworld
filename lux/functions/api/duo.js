@@ -50,7 +50,13 @@ export async function onRequest({request,env}){
   if(!paired)return json({paired:false,error:"LUXとNOXの両方で同じアカウントにログインしてね。別タブを開いたままにする必要はないよ。"},403);
   const action=String(body.action||"");
   if(action!=="say"&&action!=="step")return json({error:"未対応の操作です"},400);
-  const insert=async(speaker,message)=>env.DB.prepare("INSERT INTO duo_messages(id,user_id,speaker,body,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),user.id,speaker,message,Date.now()).run();
+  const insert=async(speaker,message)=>{
+   const latest=recent.at(-1);
+   const stamp=Math.max(Date.now(),Number(latest?.created_at||0)+1);
+   const row={speaker,body:message,created_at:stamp};
+   await env.DB.prepare("INSERT INTO duo_messages(id,user_id,speaker,body,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),user.id,speaker,message,stamp).run();
+   recent.push(row);
+  };
   const recent=await history(env.DB,user.id);
   if(action==="say"){
    const message=String(body.text||"").trim().slice(0,800);
