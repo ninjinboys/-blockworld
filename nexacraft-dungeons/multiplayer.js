@@ -81,7 +81,7 @@ function hostMessage(id,raw){
   if(!validPose(raw))return;
   if(!bridge.isPassable(raw.x,raw.z))return;
   const now=performance.now(),dt=Math.max(.05,(now-(p.lastPose||now))/1000);
-  if(p.lastPose&&Math.hypot(raw.x-p.x,raw.z-p.z)>Math.max(1.75,9*dt))return;
+  if(p.lastPose&&Math.hypot(raw.x-p.x,raw.z-p.z)>Math.max(1.75,12.5*dt))return; // Allow sprint speed (10.2) plus network jitter.
   p.x=raw.x;p.z=raw.z;p.y=Math.max(0,Math.min(5.15,Number(raw.y)||0));p.yaw=raw.yaw;p.lastPose=now;
   if(p.hp>0 && bridge.isKeyNear(p.x,p.z))bridge.collectKey();
   if(p.hp>0 && bridge.isExitNear(p.x,p.z))clearRoom();
