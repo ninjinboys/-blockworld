@@ -608,7 +608,7 @@ function matMul(a,b){let o=new Float32Array(16);for(let j=0;j<4;j++)for(let i=0;
 function perspective(fov,aspect,n,f){const t=1/Math.tan(fov/2),o=new Float32Array(16);o[0]=t/aspect;o[5]=t;o[10]=(f+n)/(n-f);o[11]=-1;o[14]=2*f*n/(n-f);return o}
 function lookAt(eye,target){let fx=target[0]-eye[0],fy=target[1]-eye[1],fz=target[2]-eye[2],fl=Math.hypot(fx,fy,fz);fx/=fl;fy/=fl;fz/=fl;let sx=-fz,sy=0,sz=fx,sl=Math.hypot(sx,sz);sx/=sl;sz/=sl;let ux=sy*fz-sz*fy,uy=sz*fx-sx*fz,uz=sx*fy-sy*fx;let o=new Float32Array(16);o[0]=sx;o[4]=sy;o[8]=sz;o[1]=ux;o[5]=uy;o[9]=uz;o[2]=-fx;o[6]=-fy;o[10]=-fz;o[12]=-(sx*eye[0]+sy*eye[1]+sz*eye[2]);o[13]=-(ux*eye[0]+uy*eye[1]+uz*eye[2]);o[14]=fx*eye[0]+fy*eye[1]+fz*eye[2];o[15]=1;return o}
 function bindBuffer(buffer){gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.vertexAttribPointer(aPosition,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(aColor,3,gl.FLOAT,false,24,12);gl.enableVertexAttribArray(aPosition);gl.enableVertexAttribArray(aColor)}
-function render(){if(!webgl){renderFallback();drawSword();drawMap();return}gl.viewport(0,0,canvas.width,canvas.height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const bob=(phase==='play'&&walkTime>0)?Math.sin(elapsed*11)*.035:0;let ey=[camera.x,cameraFloor+eyeHeight+bob,camera.z],cp=Math.cos(camera.pitch),forward=[Math.sin(camera.yaw)*cp,Math.sin(camera.pitch),-Math.cos(camera.yaw)*cp],target=[ey[0]+forward[0],ey[1]+forward[1],ey[2]+forward[2]];
+function render(){if(!webgl){renderFallback();drawSword();drawMap();return}gl.viewport(0,0,canvas.width,canvas.height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const bob=(phase==='play'&&walkTime>0)?Math.sin(elapsed*(sprinting?15:11))*(sprinting?.046:.035):0;let ey=[camera.x,cameraFloor+eyeHeight+bob,camera.z],cp=Math.cos(camera.pitch),forward=[Math.sin(camera.yaw)*cp,Math.sin(camera.pitch),-Math.cos(camera.yaw)*cp],target=[ey[0]+forward[0],ey[1]+forward[1],ey[2]+forward[2]];
  const vp=matMul(perspective(1.26,canvas.width/canvas.height,.04,190),lookAt(ey,target));gl.useProgram(prog);gl.uniformMatrix4fv(uVP,false,vp);gl.uniform3fv(uEye,ey);gl.uniform1f(uTime,elapsed);
  let lightNums=[];const arr=[];for(let i=0;i<lights.length;i+=3){const dx=lights[i]-camera.x,dz=lights[i+2]-camera.z;arr.push([dx*dx+dz*dz,lights[i],lights[i+1],lights[i+2]])}arr.sort((a,b)=>a[0]-b[0]);for(let i=0;i<7;i++){let a=arr[i];if(a)lightNums.push(a[1],a[2],a[3]);else lightNums.push(-100,-100,-100)}gl.uniform3fv(uLightPos,new Float32Array(lightNums));
  bindBuffer(staticBuffer);gl.drawArrays(gl.TRIANGLES,0,staticData.length/6);
@@ -1040,7 +1040,7 @@ window.NEXA_DUNGEON_BRIDGE={
  }
 };
 function safeLock(){try{if(!canvas.requestPointerLock)return;const request=canvas.requestPointerLock();if(request&&typeof request.catch==='function')request.catch(()=>{});}catch(e){/* Browser may deny pointer lock; touch/drag still works. */}}
-function start(){if(phase==='pause'){phase='play';document.querySelector('#menu').classList.add('hidden');if(!coarse)safeLock();return}reset();phase='play';document.querySelector('#menu').classList.add('hidden');if(coarse)document.querySelector('#touchUi').classList.add('active');else safeLock();notify('迷宮に入った。古代の鍵を探そう',2.4)}
+function start(){if(phase==='pause'){phase='play';document.querySelector('#menu').classList.add('hidden');document.activeElement?.blur?.();if(!coarse)safeLock();return}reset();phase='play';document.querySelector('#menu').classList.add('hidden');document.activeElement?.blur?.();if(coarse)document.querySelector('#touchUi').classList.add('active');else safeLock();notify('迷宮に入った。古代の鍵を探そう',2.4)}
 document.querySelector('#startBtn').addEventListener('click',start);
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||e.target instanceof HTMLButtonElement)return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();keys[e.code]=true;if((e.code==='KeyR'&&phase!=='play')||(e.code==='Enter'&&phase!=='play'))start();if(e.code==='Escape'&&phase==='play'&&document.pointerLockElement!==canvas){phase='pause';document.querySelector('#menu').classList.remove('hidden');document.querySelector('#menuText').textContent='一時停止中';document.querySelector('#startBtn').textContent='再開する'}});
 window.addEventListener('keyup',e=>keys[e.code]=false);
@@ -1109,7 +1109,7 @@ try{
   getOffhand:()=>null,
   isGuarding:()=>false,
   isVisible:()=>!!lastState&&(lastState.phase==='play'||lastState.phase==='pause'),
-  getMovement:()=>Math.min(4.4,(lastState?.walkTime||0)*4.4),
+  getMovement:()=>Math.min(7,(lastState?.walkTime||0)*4.4),
   isMining:()=>false,
   isHurt:()=>false
  });
@@ -1142,5 +1142,5 @@ try{
  fail('ページを再読み込みしてください。');
 }
 </script>
-<script type="module" src="./multiplayer.js?v=20261031-stair-floor2"></script>
+<script type="module" src="./multiplayer.js?v=20261111-sprint-stamina"></script>
 </body></html>
