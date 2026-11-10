@@ -83,6 +83,19 @@
 #hitBtn{top:auto;bottom:18px;right:12px;width:84px;height:84px}
 #touchHint{top:auto;bottom:115px;right:10px}
 #pauseBtn{top:12px;bottom:auto;right:145px}}
+/* Sprint stamina: always visible in play; no interference with sword or attack. */
+#staminaHud{position:absolute;z-index:3;bottom:113px;left:50%;transform:translateX(-50%);width:184px;max-width:42vw;padding:6px 9px 7px;background:rgba(12,21,27,.83);border:1px solid rgba(128,190,163,.56);border-radius:8px;pointer-events:none;box-shadow:0 4px 15px #0005}
+#staminaCaption{display:flex;justify-content:space-between;align-items:center;color:#ccefdc;font-size:11px;font-weight:800;margin-bottom:4px}
+#staminaTrack{height:9px;overflow:hidden;border:1px solid #5f8172;background:#203b35;border-radius:10px}
+#staminaFill{height:100%;width:100%;background:linear-gradient(90deg,#49b7a4,#a8e8ad);transition:width .08s linear,background-color .16s ease}
+#staminaHud.exhausted #staminaFill{background:#c96751}
+#staminaHud.exhausted #staminaCaption{color:#ffd0bc}
+#sprintBtn{position:absolute;right:122px;bottom:22px;width:80px;height:72px;border-radius:19px;border:2px solid #a0e5c59c;background:linear-gradient(150deg,#255949e8,#163b36e8);color:#dcffeb;font-size:15px;font-weight:900;pointer-events:auto;touch-action:none;box-shadow:0 6px 18px #0009}
+#sprintBtn.pressed{background:linear-gradient(150deg,#66b99a,#247d64);border-color:#daffe5;transform:scale(.96)}
+#sprintBtn.tired{background:#413e3cd9;border-color:#b483729e;color:#d8b7ac}
+@media(pointer:coarse){#staminaHud{bottom:103px;width:166px}#sprintBtn{right:117px;bottom:19px}}
+@media(max-height:460px){#staminaHud{bottom:67px;padding:4px 7px 5px;width:150px}#staminaCaption{font-size:10px}#staminaTrack{height:7px}#sprintBtn{right:104px;bottom:13px;width:70px;height:63px;font-size:13px}}
+@media(max-width:600px) and (min-height:461px){#sprintBtn{right:105px;bottom:18px;width:68px;height:68px;font-size:13px}#staminaHud{bottom:108px;width:152px}}
 #sword{display:none}
 #swordModelMessage{position:absolute;right:12px;bottom:23%;z-index:3;max-width:min(50vw,270px);text-align:right;font-weight:700;font-size:11px;color:#ffdcaa;text-shadow:0 2px 5px #000;pointer-events:none}
 
@@ -92,7 +105,7 @@
 <body>
 <canvas id="game"></canvas><canvas id="sword"></canvas><canvas id="exactSword" aria-label="NEXACRAFT本編の剣士の剣 3Dモデル"></canvas><div id="swordModelMessage" style="display:none"></div><div id="vignette"></div><div id="hurt"></div>
 <div id="topBar"><div><div id="brand">NEXACRAFT <small>D U N G E O N S · P R O T O T Y P E</small></div><a href="./map-exact.svg?v=compact87-20261031" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:5px 10px;margin:6px 0;border:1px solid #e0c187;border-radius:7px;color:#ffe4a7;background:#26383d;text-decoration:none;font-size:14px;font-weight:700">🗺 正確な全体地図</a><div id="stats"><span id="keyStatus">🔑 鍵を探そう</span><span id="floorStatus">1F</span><span id="count">☠ 0 / 4</span></div></div><div id="minimapShell"><canvas id="minimap" width="170" height="170"></canvas></div></div>
-<div id="healthHud" role="img" aria-label="体力 10 / 10"><div id="hearts"></div></div><div id="crosshair"></div><div id="toast"></div><div id="objective"><em>目標：</em>地下要塞に隠された古代の鍵を探せ</div>
+<div id="healthHud" role="img" aria-label="体力 10 / 10"><div id="hearts"></div></div><div id="staminaHud" role="meter" aria-label="スタミナ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="staminaCaption"><span>⚡ STAMINA</span><span id="staminaValue">100%</span></div><div id="staminaTrack"><div id="staminaFill"></div></div></div><div id="crosshair"></div><div id="toast"></div><div id="objective"><em>目標：</em>地下要塞に隠された古代の鍵を探せ</div>
 <div id="multiRoomHud" hidden></div>
 <button id="chatToggle" type="button" hidden>💬 チャット</button>
 <section id="chatPanel" aria-label="マルチプレイチャット">
@@ -102,8 +115,8 @@
 <form id="chatForm"><input id="chatInput" maxlength="160" autocomplete="off" placeholder="仲間にメッセージ" aria-label="チャットのメッセージ"><button type="submit">送信</button></form>
 <div id="multiActions"><button id="inviteLink" type="button" hidden>🔗 招待リンクをコピー</button><button id="leaveRoom" type="button" hidden>退出</button><span id="chatNotice" hidden>最大4人／ホスト退出で終了</span></div>
 </section>
-<div id="touchUi"><div id="movePad"><div id="stick"></div></div><button id="hitBtn" type="button">⚔ 攻撃</button><div id="touchHint">右側をスワイプして視点移動</div><button id="pauseBtn" type="button">Ⅱ</button></div>
-<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">石門回廊の奥に広がる、朽ちた地下要塞。<br>古代要塞の回廊を探索し、鍵で階段入口の扉を開いて歩いて2階へ登ろう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・画面右で視点・攻撃ボタン</div><details id="multiOptions">
+<div id="touchUi"><div id="movePad"><div id="stick"></div></div><button id="sprintBtn" type="button" aria-label="長押しでダッシュ" aria-pressed="false">⚡ ダッシュ</button><button id="hitBtn" type="button">⚔ 攻撃</button><div id="touchHint">右側をスワイプして視点移動</div><button id="pauseBtn" type="button">Ⅱ</button></div>
+<div id="menu"><div class="panel"><div class="eyebrow">BLOCK WORLD · FIRST PERSON DUNGEON</div><h1>NEXACRAFT<span>DUNGEONS</span></h1><p id="menuText">石門回廊の奥に広がる、朽ちた地下要塞。<br>古代要塞の回廊を探索し、鍵で階段入口の扉を開いて歩いて2階へ登ろう。</p><div class="tip" id="helpText"><strong>PC：</strong>WASD / 矢印キーで移動・Shift長押しでダッシュ（スタミナ制）・マウスで視点移動<br><strong>攻撃：</strong>左クリック / スペースキー<br><strong>スマホ：</strong>左下で移動・⚡ダッシュ長押し・画面右で視点・攻撃ボタン</div><details id="multiOptions">
 <summary>🌐 マルチプレイ（最大4人・チャット対応）</summary>
 <label>名前 <input id="multiName" maxlength="12" value="冒険者" autocomplete="nickname" aria-label="プレイヤー名"></label>
 <label>部屋コード <input id="multiCode" maxlength="6" placeholder="自動作成／入力" inputmode="text" autocapitalize="characters" aria-label="英数字6文字の部屋コード"></label>
@@ -218,8 +231,33 @@ for(let z=0;z<H;z++)for(let x=0;x<W;x++){
 const camera={x:entrance[0],z:entrance[1],yaw:Math.PI/2,pitch:0};
 let cameraFloor=0,upperReached=false; // First view points into labyrinth.
 let multiRole="solo",remotePlayers=[];let hp=100,kills=0,keyFound=false,doorOpen=0,phase='menu',entities=[],elapsed=0,lastTime=0,swing=0,swingCd=0,swingHit=false,damageFlash=0,walkTime=0,toastUntil=0,toastText='',hitShake=0;
+const WALK_SPEED=6.4,SPRINT_SPEED=10.2,STAMINA_MAX=100,STAMINA_DRAIN=27,STAMINA_RECOVER=20,STAMINA_REST_DELAY=.75,STAMINA_RESTART=22;
+let stamina=STAMINA_MAX,sprintExhausted=false,sprinting=false,lastSprintAt=-100;
+const staminaHud=document.querySelector('#staminaHud'),staminaFill=document.querySelector('#staminaFill'),staminaValue=document.querySelector('#staminaValue'),sprintBtn=document.querySelector('#sprintBtn');
+function updateStaminaHUD(){
+ const n=Math.max(0,Math.min(100,stamina));
+ staminaFill.style.width=n.toFixed(1)+'%';
+ staminaValue.textContent=Math.round(n)+'%';
+ staminaHud.setAttribute('aria-valuenow',String(Math.round(n)));
+ staminaHud.classList.toggle('exhausted',sprintExhausted);
+ sprintBtn.classList.toggle('pressed',sprinting);
+ sprintBtn.classList.toggle('tired',sprintExhausted);
+ sprintBtn.setAttribute('aria-pressed',String(!!touch.sprint));
+}
+function applyStamina(dt,wantsSprint,hasMovement){
+ sprinting=!!(wantsSprint&&hasMovement&&!sprintExhausted&&stamina>0);
+ if(sprinting){
+  stamina=Math.max(0,stamina-STAMINA_DRAIN*dt);
+  lastSprintAt=elapsed;
+  if(stamina<=0){sprintExhausted=true;sprinting=false;}
+ }else if(elapsed-lastSprintAt>=STAMINA_REST_DELAY){
+  stamina=Math.min(STAMINA_MAX,stamina+STAMINA_RECOVER*dt);
+  if(sprintExhausted&&stamina>=STAMINA_RESTART)sprintExhausted=false;
+ }
+ updateStaminaHUD();
+}
 const keys={},seen=Array.from({length:H},()=>Array(W).fill(false));
-const touch={moveX:0,moveY:0,lookId:null,lastX:0,lastY:0,moveId:null};const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
+const touch={moveX:0,moveY:0,lookId:null,lastX:0,lastY:0,moveId:null,sprint:false};const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
 const vsh=`attribute vec3 aPosition;attribute vec3 aColor;uniform mat4 uVP;varying vec3 vColor;varying vec3 vPos;void main(){vColor=aColor;vPos=aPosition;gl_Position=uVP*vec4(aPosition,1.0);}`;
 const fsh=`precision mediump float;varying vec3 vColor;varying vec3 vPos;uniform vec3 uEye;uniform vec3 uLightPos[7];uniform float uTime;void main(){float d=distance(vPos,uEye);float illumination=0.75 + 0.35/(1.0+0.014*d*d);for(int i=0;i<7;i++){float l=distance(vPos,uLightPos[i]);illumination += (1.75+0.06*sin(uTime*4.0+float(i)*7.2))/(1.0+0.32*l+0.085*l*l);}vec3 base=vColor*min(illumination,2.0);float fog=clamp((d-30.0)/70.0,0.0,0.38);vec3 fogColor=vec3(0.10,0.095,0.075);gl_FragColor=vec4(mix(base,fogColor,fog),1.0);}`;
 function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
@@ -824,7 +862,7 @@ function collectKey(){
  document.querySelector('#objective').innerHTML='<em>目標：</em>開いた扉の奥へ進み、階段を歩いて2階に登ろう！';
  notify('🔑 古代の鍵を入手！ 階段の扉が開いた！',3.5);
 }
-function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI/2;camera.pitch=0;cameraFloor=0;upperReached=false;hp=100;kills=0;keyFound=false;doorOpen=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:hash(i,71)*Math.PI*2,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0,alertTime:0,navStep:1,navGoal:'',lastKnownX:p.x,lastKnownZ:p.z}));for(const row of seen)row.fill(false);updateVisited();updateHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
+function reset(){camera.x=entrance[0];camera.z=entrance[1];camera.yaw=Math.PI/2;camera.pitch=0;cameraFloor=0;upperReached=false;stamina=STAMINA_MAX;sprintExhausted=false;sprinting=false;lastSprintAt=-100;touch.sprint=false;hp=100;kills=0;keyFound=false;doorOpen=0;elapsed=0;swing=0;swingCd=0;damageFlash=0;walkTime=0;entities=initial.map((p,i)=>({...p,hp:65,seed:i*4.7,angle:hash(i,71)*Math.PI*2,path:[],repath:0,flash:0,attackTimer:1.2,attackPose:0,speed:0,alertTime:0,navStep:1,navGoal:'',lastKnownX:p.x,lastKnownZ:p.z}));for(const row of seen)row.fill(false);updateVisited();updateHUD();updateStaminaHUD();document.querySelector('#objective').innerHTML='<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ';document.querySelector('#toast').style.opacity='0'}
 // Change orientation only after an NPC physically moves. Never billboard towards a viewer.
 function turnZombieTowardTravel(e,dx,dz,dt){
  const len=Math.hypot(dx,dz);if(len<.0001)return;
@@ -855,7 +893,21 @@ function moveZombieTowards(e,tx,tz,dt){
 }
 function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)doorOpen=Math.min(1,doorOpen+dt*1.25);
  let forward=0,strafe=0;if(keys.KeyW||keys.ArrowUp)forward++;if(keys.KeyS||keys.ArrowDown)forward--;if(keys.KeyA||keys.ArrowLeft)strafe--;if(keys.KeyD||keys.ArrowRight)strafe++;
- forward-=touch.moveY;strafe+=touch.moveX;let l=Math.hypot(forward,strafe);if(l>.02){forward/=Math.max(1,l);strafe/=Math.max(1,l);let s=keys.ShiftLeft?10.2:6.4,dx=(Math.sin(camera.yaw)*forward+Math.cos(camera.yaw)*strafe)*s*dt,dz=(-Math.cos(camera.yaw)*forward+Math.sin(camera.yaw)*strafe)*s*dt;walkEntity(camera,dx,dz,.31);walkTime=1}
+ forward-=touch.moveY;strafe+=touch.moveX;let l=Math.hypot(forward,strafe),moving=l>.02;
+ const wantsSprint=!!(keys.ShiftLeft||keys.ShiftRight||touch.sprint);
+ const canSprint=moving&&wantsSprint&&!sprintExhausted&&stamina>0;
+ let moved=false;
+ if(moving){
+  forward/=Math.max(1,l);strafe/=Math.max(1,l);
+  const speed=canSprint?SPRINT_SPEED:WALK_SPEED;
+  const dx=(Math.sin(camera.yaw)*forward+Math.cos(camera.yaw)*strafe)*speed*dt;
+  const dz=(-Math.cos(camera.yaw)*forward+Math.sin(camera.yaw)*strafe)*speed*dt;
+  const px=camera.x,pz=camera.z;
+  walkEntity(camera,dx,dz,.31);
+  moved=Math.hypot(camera.x-px,camera.z-pz)>.0001;
+  walkTime=moved?(canSprint?1.5:1):0;
+ }
+ applyStamina(dt,canSprint,moved);
  cameraFloor=playerFloorAt(camera.x,camera.z);
  if(!upperReached&&cameraFloor>=UPPER_HEIGHT-.02&&camera.z>=STAIR_END){
   upperReached=true;notify('🏰 2階に到着！ 上階の広間を探索しよう',4);
@@ -944,7 +996,7 @@ function update(dt){elapsed+=dt;walkTime=0;if(phase!=='play')return;if(keyFound)
 function resize(){let r=Math.min(window.devicePixelRatio||1,webgl?1.7:1.0);canvas.width=Math.floor(innerWidth*r);canvas.height=Math.floor(innerHeight*r);swordCanvas.width=Math.floor(innerWidth*r);swordCanvas.height=Math.floor(innerHeight*r);swordCanvas.style.width=innerWidth+'px';swordCanvas.style.height=innerHeight+'px';sc.setTransform(r,0,0,r,0,0)}
 window.addEventListener('resize',resize);resize();reset();
 function loop(ts){if(!lastTime)lastTime=ts;let dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;update(dt);render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
-window.NEXACRAFT_DUNGEON_STATE=()=>({phase,swing,walkTime,elapsed});
+window.NEXACRAFT_DUNGEON_STATE=()=>({phase,swing,walkTime,elapsed,sprinting,stamina});
 window.NEXA_DUNGEON_BRIDGE={
  getRole:()=>multiRole,setRole:r=>{multiRole=r;},
  phase:()=>phase,getHealth:()=>hp,
@@ -999,6 +1051,18 @@ window.addEventListener('mousemove',e=>{if(phase!=='play'||coarse)return;if(docu
 document.addEventListener('pointerlockchange',()=>{if(phase==='play'&&!coarse&&document.pointerLockElement!==canvas){ // Clicking the game can acquire pointer lock again; do not reset progress.
  document.querySelector('#objective').innerHTML='<em>操作：</em>画面をクリックすると視点操作を再開できます';setTimeout(()=>{if(phase==='play')document.querySelector('#objective').innerHTML=upperReached?'<em>目標：</em>2階の古代回廊を探索しよう':keyFound?'<em>目標：</em>扉の奥の階段を歩いて2階に登ろう':'<em>目標：</em>地下迷宮の奥にある古代の鍵を探せ'},2300)
  }});
+// Sprint is held, never a sticky toggle, and can be combined with the other touch controls.
+function stopTouchSprint(){touch.sprint=false;updateStaminaHUD();}
+sprintBtn.addEventListener('pointerdown',e=>{
+ if(phase!=='play')return;
+ e.preventDefault();touch.sprint=true;
+ try{sprintBtn.setPointerCapture(e.pointerId)}catch{}
+ updateStaminaHUD();
+});
+sprintBtn.addEventListener('pointerup',stopTouchSprint);
+sprintBtn.addEventListener('pointercancel',stopTouchSprint);
+sprintBtn.addEventListener('lostpointercapture',stopTouchSprint);
+window.addEventListener('blur',()=>{touch.sprint=false;keys.ShiftLeft=false;keys.ShiftRight=false;updateStaminaHUD();});
 const movePad=document.querySelector('#movePad'),stick=document.querySelector('#stick');
 function stickMove(e){const r=movePad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,limit=r.width*.33,len=Math.hypot(dx,dy),k=Math.min(1,limit/Math.max(1,len));let mx=dx*k,my=dy*k;touch.moveX=mx/limit;touch.moveY=my/limit;stick.style.transform=`translate(${mx}px,${my}px)`}
 movePad.addEventListener('pointerdown',e=>{if(phase!=='play')return;e.preventDefault();touch.moveId=e.pointerId;movePad.setPointerCapture(e.pointerId);stickMove(e)});movePad.addEventListener('pointermove',e=>{if(e.pointerId===touch.moveId)stickMove(e)});function stickEnd(e){if(e.pointerId!==touch.moveId)return;touch.moveId=null;touch.moveX=touch.moveY=0;stick.style.transform='translate(0,0)'}movePad.addEventListener('pointerup',stickEnd);movePad.addEventListener('pointercancel',stickEnd);
