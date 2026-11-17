@@ -13,9 +13,9 @@
 /* Animated broadcast: move isolated image layers, not the entire still alone */
 .scene-motion{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .scene-actor{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat;will-change:transform;image-rendering:auto}
-.scene-actor.pitcher{clip-path:polygon(4% 45%,35% 43%,39% 99%,0 100%);animation:pitchCycle 2.5s ease-in-out infinite}
-.scene-actor.batter{clip-path:polygon(62% 28%,96% 28%,96% 99%,60% 99%);animation:batReady 2.5s ease-in-out infinite}
-.scene-actor.catcher{clip-path:polygon(39% 34%,64% 34%,64% 99%,39% 99%);animation:catchCycle 2.5s ease-in-out infinite}
+.scene-actor.pitcher{clip-path:polygon(4% 45%,35% 43%,39% 99%,0 100%);animation:none}
+.scene-actor.batter{clip-path:polygon(62% 28%,96% 28%,96% 99%,60% 99%);animation:none}
+.scene-actor.catcher{clip-path:polygon(39% 34%,64% 34%,64% 99%,39% 99%);animation:none}
 .scene-motion.playing .pitcher{animation:pitchThrow .85s ease-in-out 1}
 .scene-motion.playing .batter{animation:batSwing .85s ease-in-out 1}
 .scene-motion.playing .catcher{animation:catchBall .85s ease-in-out 1}
@@ -35,6 +35,25 @@
 @keyframes ballHit{0%{left:33%;top:47%;opacity:1}40%{left:69%;top:55%;opacity:1}100%{left:94%;top:12%;opacity:0;transform:scale(.5)}}
 @keyframes ballHomer{0%{left:33%;top:47%;opacity:1}45%{left:72%;top:44%;opacity:1}100%{left:88%;top:0%;opacity:0;transform:scale(.25)}}
 @media(prefers-reduced-motion:reduce){.scene-actor{animation:none!important}.scene-motion.playing .scene-ball{animation:none}}
+
+/* Frame-based action: players remain still between plays. */
+.scene-motion.playing .pitcher{animation:pitchWindup 1.35s steps(5,end) both!important;transform-origin:24% 84%}
+.scene-motion.playing .batter{animation:batSequence 1.65s steps(5,end) both!important;transform-origin:76% 84%}
+.scene-motion.playing .catcher{animation:catchSequence 1.6s steps(4,end) both!important}
+.scene-motion.playing .scene-ball{animation:ballSequence 1.5s linear both!important}
+.scene-motion.playing.hit .scene-ball{animation:ballHitSequence 1.65s linear both!important}
+.scene-motion.playing.homer .scene-ball{animation:ballHomerSequence 1.65s linear both!important}
+.scene-event{transition:none}
+.scene-event.scene-pending{opacity:0!important}
+.scene-motion.playing .scene-impact{animation:impactFlash 1.65s steps(1,end) both}
+.scene-impact{position:absolute;left:67%;top:38%;width:8%;aspect-ratio:1;opacity:0;background:radial-gradient(circle,#fff9aa 0 15%,#ffbd43 16% 25%,transparent 26%);z-index:3}
+@keyframes pitchWindup{0%,10%{transform:translate(0,0) rotate(0)}18%{transform:translate(-2%,-3%) rotate(-9deg)}30%{transform:translate(-3%,-4%) rotate(-13deg)}42%{transform:translate(2%,-1%) rotate(5deg)}56%{transform:translate(7%,2%) rotate(11deg)}72%{transform:translate(4%,1%) rotate(6deg)}90%,100%{transform:none}}
+@keyframes batSequence{0%,35%{transform:none}43%{transform:translate(-2%,-1%) rotate(-5deg)}52%{transform:translate(-5%,0) rotate(-14deg)}61%{transform:translate(3%,0) rotate(15deg)}75%{transform:translate(3%,0) rotate(8deg)}95%,100%{transform:none}}
+@keyframes catchSequence{0%,40%{transform:none}54%{transform:translate(-1%,1%)}70%{transform:translate(-2%,2%)}90%,100%{transform:none}}
+@keyframes ballSequence{0%,38%{left:34%;top:47%;opacity:0;transform:scale(.5)}40%{opacity:1}60%{left:52%;top:61%;opacity:1;transform:scale(1.4)}65%,100%{left:53%;top:62%;opacity:0}}
+@keyframes ballHitSequence{0%,38%{left:34%;top:47%;opacity:0}40%{opacity:1}58%{left:67%;top:56%;opacity:1}75%{left:78%;top:37%;opacity:1}100%{left:95%;top:13%;opacity:0;transform:scale(.5)}}
+@keyframes ballHomerSequence{0%,38%{left:34%;top:47%;opacity:0}40%{opacity:1}58%{left:67%;top:56%;opacity:1}78%{left:81%;top:19%;opacity:1}100%{left:89%;top:-6%;opacity:0;transform:scale(.25)}}
+@keyframes impactFlash{0%,56%,67%,100%{opacity:0}59%,63%{opacity:1}}
 </style>
 </head>
 <body>
@@ -76,7 +95,7 @@ const clamp=(x,min,max)=>Math.max(min,Math.min(max,x));
 function hash(s){let n=17;for(let i=0;i<s.length;i++)n=(n*31+s.charCodeAt(i))>>>0;return n}
 function rndSeed(n){n=(n*1664525+1013904223)>>>0;return n/4294967296}
 function lineup(team){const seed=hash(team.id);let n=seed;function next(){n=(n*1664525+1013904223)>>>0;return n/4294967296}const a=Array.from({length:9},(_,i)=>({name:SURNAMES[(seed+i*7+Math.floor(next()*20))%SURNAMES.length],pos:POS[i],contact:clamp(Math.round(team.off-12+next()*22+(i<=2?4:0)),45,95),power:clamp(Math.round(team.off-14+next()*25+(i===3?8:0)),45,95),speed:clamp(Math.round(54+next()*33+(i<=2?7:0)),40,95),eye:clamp(Math.round(58+next()*29),40,95),pa:0,ab:0,h:0,hr:0,rbi:0,bb:0}));const pitchers=Array.from({length:3},(_,i)=>({name:SURNAMES[(seed+53+i*13)%SURNAMES.length],role:i?'中継ぎ':'先発',stuff:clamp(Math.round(team.pit-12+next()*24+(i===0?3:0)),45,95),control:clamp(Math.round(team.pit-14+next()*28),40,95)}));return {hitters:a,pitchers}}
-let g=null;let rosterSide='home';let lastBatch=null;
+let g=null;let rosterSide='home';let scenePlaying=false;let sceneTimer=null;let lastBatch=null;
 function init(){const home=el('home').value,away=el('away').value;if(home===away){let idx=TEAMS.findIndex(t=>t.id===away);el('away').value=TEAMS[(idx+1)%TEAMS.length].id}const teamH=TEAMS.find(t=>t.id===home),teamA=TEAMS.find(t=>t.id===el('away').value);g={homeId:teamH.id,awayId:teamA.id,roster:{home:lineup(teamH),away:lineup(teamA)},score:{home:0,away:0},runs:{home:Array(12).fill(null),away:Array(12).fill(null)},hits:{home:0,away:0},hr:{home:0,away:0},bb:{home:0,away:0},batIdx:{home:0,away:0},pitchIdx:{home:0,away:0},faced:{home:[0,0,0],away:[0,0,0]},inning:1,half:'top',outs:0,bases:[null,null,null],pa:0,logs:[],message:'プレーボール！ 先攻が攻撃します。',lastPlay:'開始',ended:false};g.runs.away[0]=0;lastBatch=null;return g}
 function addRuns(state,side,n){state.score[side]+=n;state.runs[side][state.inning-1]+=n}
 function event(state,side,title,detail,highlight=false){state.lastPlay=title;state.message=title+'　'+detail;state.logs.unshift({where:state.inning+'回'+(state.half==='top'?'表':'裏'),msg:state.message,highlight});if(state.logs.length>100)state.logs.pop()}
@@ -112,22 +131,16 @@ function paintPixelScene(){
  const runners=g.bases.map((r,i)=>r?['一塁','二塁','三塁'][i]:'').filter(Boolean).join('・')||'走者なし';
  const node=el('pixelGame');
  if(!node.dataset.ready){
-  node.innerHTML='<div class="scene-photo"></div><div class="scene-motion" id="sceneMotion"><div class="scene-actor pitcher"></div><div class="scene-actor batter"></div><div class="scene-actor catcher"></div><div class="scene-ball"></div></div><div class="scene-top"><span id="sceneInning"></span><strong id="sceneScore"></strong><span id="sceneOut"></span></div><div class="scene-event" id="sceneEvent"></div><div class="scene-bottom"><span id="sceneBases"></span><span id="sceneResult"></span></div>';
+  node.innerHTML='<div class="scene-photo"></div><div class="scene-motion" id="sceneMotion"><div class="scene-actor pitcher"></div><div class="scene-actor batter"></div><div class="scene-actor catcher"></div><div class="scene-ball"></div><div class="scene-impact"></div></div><div class="scene-top"><span id="sceneInning"></span><strong id="sceneScore"></strong><span id="sceneOut"></span></div><div class="scene-event" id="sceneEvent"></div><div class="scene-bottom"><span id="sceneBases"></span><span id="sceneResult"></span></div>';
   node.querySelector('.scene-photo').style.backgroundImage='url("'+gameSceneImage+'")';node.querySelectorAll('.scene-actor').forEach(actor=>actor.style.backgroundImage='url("'+gameSceneImage+'")');
   node.dataset.ready='1';
  }
  const motion=el('sceneMotion');
- const stamp=g.pa+'|'+g.inning+'|'+g.half+'|'+scene;
- if(motion.dataset.stamp!==stamp){
-  motion.dataset.stamp=stamp;
-  motion.className='scene-motion';
-  void motion.offsetWidth;
-  if(g.pa>0&&!g.ended)motion.className='scene-motion playing'+(homer?' homer':hit?' hit':'');
- }
- el('sceneInning').textContent=inning;
+ if(!scenePlaying)motion.className='scene-motion';
+  el('sceneInning').textContent=inning;
  el('sceneScore').textContent=away+' '+g.score.away+' - '+g.score.home+' '+home;
  el('sceneOut').textContent=g.outs+' OUT';
- el('sceneEvent').textContent=result;
+ el('sceneEvent').textContent=result;el('sceneEvent').classList.toggle('scene-pending',scenePlaying);
  el('sceneEvent').style.display=result?'block':'none';
  el('sceneBases').textContent=runners;
  el('sceneResult').textContent=scene==='開始'?'PLAY BALL!':scene;
@@ -137,12 +150,31 @@ function render(){if(!g)return;paintPixelScene();const a=teamName(g.awayId),h=te
 function escapeHtml(x){return String(x).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
 function renderLineup(){const r=g.roster[rosterSide].hitters;const hitting=g.half==='top'?'away':'home';el('homeTab').classList.toggle('active',rosterSide==='home');el('awayTab').classList.toggle('active',rosterSide==='away');el('rosterHint').textContent=teamName(g[rosterSide+'Id'])+' · ミート / パワー / 走力 （架空パラメータ）';el('lineupBody').innerHTML=r.map((p,i)=>'<tr><td class="num">'+(i+1)+'</td><td class="'+(hitting===rosterSide&&g.batIdx[rosterSide]===i&&!g.ended?'hit':'')+'">'+p.name+(p.hr?' <span style="color:var(--gold)">★</span>':'')+'</td><td>'+p.pos+'</td><td>'+p.contact+'</td><td>'+p.power+'</td><td>'+p.speed+'</td></tr>').join('')}
 function readOpts(){return {offense:el('offense').value,defense:el('defense').value}}
-function play(n){if(!g||g.ended)return;for(let i=0;i<n&&!g.ended;i++)simulatePA(g,readOpts());render()}
-function playHalf(){if(!g||g.ended)return;const inning=g.inning,half=g.half;let limit=100;while(!g.ended&&g.inning===inning&&g.half===half&&limit-->0)simulatePA(g,readOpts());render()}
-function playAll(){if(!g||g.ended)return;let limit=700;while(!g.ended&&limit-->0)simulatePA(g,readOpts());render()}
+function startPlayAnimation(){
+ scenePlaying=true;
+ const motion=el('sceneMotion');
+ motion.className='scene-motion';
+ void motion.offsetWidth;
+ const event=g.lastPlay||'';
+ const hit=/ヒット|ツーベース|三塁打|ホームラン|犠牲フライ|四球|サヨナラ/.test(event);
+ const homer=/ホームラン|サヨナラ/.test(event);
+ motion.className='scene-motion playing'+(homer?' homer':hit?' hit':'');
+ el('sceneEvent').classList.add('scene-pending');
+ el('next').disabled=true;el('half').disabled=true;el('all').disabled=true;
+ if(sceneTimer)clearTimeout(sceneTimer);
+ sceneTimer=setTimeout(()=>{
+  scenePlaying=false;motion.className='scene-motion';
+  el('sceneEvent').classList.remove('scene-pending');
+  el('next').disabled=!!g.ended;el('half').disabled=!!g.ended;el('all').disabled=!!g.ended;
+  sceneTimer=null;
+ },1700);
+}
+function play(n){if(!g||g.ended||scenePlaying)return;for(let i=0;i<n&&!g.ended;i++)simulatePA(g,readOpts());render();startPlayAnimation()}
+function playHalf(){if(!g||g.ended||scenePlaying)return;const inning=g.inning,half=g.half;let limit=100;while(!g.ended&&g.inning===inning&&g.half===half&&limit-->0)simulatePA(g,readOpts());render()}
+function playAll(){if(!g||g.ended||scenePlaying)return;let limit=700;while(!g.ended&&limit-->0)simulatePA(g,readOpts());render()}
 function batch(){const home=el('home').value,away=el('away').value;if(home===away){el('batchResult').textContent='異なる2球団を選択してください。';el('batchResult').classList.remove('hidden');return}const prev=g;let w=0,l=0,t=0,hs=0,as=0,hrs=0,walkoffs=0;const opts=readOpts();for(let i=0;i<100;i++){const sim=init();let limit=700;while(!sim.ended&&limit-->0)simulatePA(sim,opts);if(sim.score.home>sim.score.away)w++;else if(sim.score.home<sim.score.away)l++;else t++;hs+=sim.score.home;as+=sim.score.away;hrs+=sim.hr.home+sim.hr.away;if(sim.logs.some(x=>x.msg.includes('サヨナラ！')))walkoffs++}g=prev;const node=el('batchResult');node.classList.remove('hidden');node.innerHTML='<div class="resultrow"><div><span class="smallline">後攻の勝利</span><br><b style="color:var(--green)">'+w+'勝</b></div><div><span class="smallline">先攻の勝利</span><br><b>'+l+'勝</b></div><div><span class="smallline">引き分け</span><br><b>'+t+'試合</b></div><div><span class="smallline">後攻の勝率</span><br><b>'+w+'%</b></div></div><p class="smallline">平均得点　'+teamName(away)+' '+(as/100).toFixed(2)+' – '+(hs/100).toFixed(2)+' '+teamName(home)+'</p><p class="smallline">100試合合計：本塁打 '+hrs+'本 / サヨナラ '+walkoffs+'試合</p><p class="smallline">※架空データに基づくランダム検証です。実際の球団の勝率予測ではありません。</p>';render()}
 for(const [id,defaultId] of [['home','carp'],['away','tigers']]){el(id).innerHTML=TEAMS.map(t=>'<option value="'+t.id+'"'+(t.id===defaultId?' selected':'')+'>'+t.name+'</option>').join('')}
-el('newGame').addEventListener('click',()=>{init();render()});el('next').addEventListener('click',()=>play(1));el('half').addEventListener('click',playHalf);el('all').addEventListener('click',playAll);el('batch').addEventListener('click',batch);el('homeTab').addEventListener('click',()=>{rosterSide='home';renderLineup()});el('awayTab').addEventListener('click',()=>{rosterSide='away';renderLineup()});el('changePitcher').addEventListener('click',()=>{if(!g||g.ended||g.pitchIdx.home>=2)return;g.pitchIdx.home++;g.message='投手交代！ '+g.roster.home.pitchers[g.pitchIdx.home].name+' がマウンドへ。';g.logs.unshift({where:'采配',msg:g.message,highlight:true});render()});el('clearLog').addEventListener('click',()=>el('log').scrollTop=0);el('home').addEventListener('change',()=>{if(el('home').value===el('away').value){el('away').value=TEAMS.find(t=>t.id!==el('home').value).id}});el('away').addEventListener('change',()=>{if(el('home').value===el('away').value){el('home').value=TEAMS.find(t=>t.id!==el('away').value).id}});
+el('newGame').addEventListener('click',()=>{if(sceneTimer)clearTimeout(sceneTimer);scenePlaying=false;init();render()});el('next').addEventListener('click',()=>play(1));el('half').addEventListener('click',playHalf);el('all').addEventListener('click',playAll);el('batch').addEventListener('click',batch);el('homeTab').addEventListener('click',()=>{rosterSide='home';renderLineup()});el('awayTab').addEventListener('click',()=>{rosterSide='away';renderLineup()});el('changePitcher').addEventListener('click',()=>{if(!g||g.ended||g.pitchIdx.home>=2)return;g.pitchIdx.home++;g.message='投手交代！ '+g.roster.home.pitchers[g.pitchIdx.home].name+' がマウンドへ。';g.logs.unshift({where:'采配',msg:g.message,highlight:true});render()});el('clearLog').addEventListener('click',()=>el('log').scrollTop=0);el('home').addEventListener('change',()=>{if(el('home').value===el('away').value){el('away').value=TEAMS.find(t=>t.id!==el('home').value).id}});el('away').addEventListener('change',()=>{if(el('home').value===el('away').value){el('home').value=TEAMS.find(t=>t.id!==el('away').value).id}});
 init();render();
 })();
 </script>
