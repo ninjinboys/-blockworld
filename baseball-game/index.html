@@ -9,6 +9,32 @@
 @media(max-width:780px){.layout{grid-template-columns:1fr}.setup{grid-template-columns:1fr 27px 1fr}.setup button{grid-column:1/-1}.wrap{padding:17px 12px 32px}.fieldPane{padding:10px;gap:6px}.diamond{width:163px;height:163px}.grass{width:122px;height:122px}.b1{right:16%}.b3{left:16%}.hero{display:block}.hero h1{font-size:24px}.hero p{font-size:12px}.scoretable th,.scoretable td{min-width:23px}.analysisGrid{grid-template-columns:1fr 1fr}}
 .pixelStage{margin:12px 15px 0;border:3px solid #45546b;background:#070f1d;overflow:hidden;border-radius:7px}.pixelStage #pixelGame{display:block;width:100%;aspect-ratio:16/9;overflow:hidden}.pixelStage svg{display:block;width:100%;height:100%;aspect-ratio:16/9}.pixelCaption{padding:9px 12px;background:#0b1727;color:#f7e3b0;font-size:12px;font-weight:800;border-top:2px solid #364860;text-align:center}@media(max-width:780px){.pixelStage{margin:10px 10px 0}}
 .scene-photo{position:absolute;inset:0;background-size:cover;background-position:center;image-rendering:auto}.pixelStage #pixelGame{position:relative;aspect-ratio:833/545}.scene-top,.scene-bottom{position:absolute;left:1%;right:1%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#071324e8;color:#f7f5ed;font-size:clamp(9px,1.5vw,15px);padding:8px 10px;font-weight:800;border-radius:5px}.scene-top{top:1%;border-bottom:2px solid #f0bf5c}.scene-top strong{font-size:clamp(10px,1.65vw,17px);text-align:center}.scene-bottom{bottom:1%;border-top:2px solid #c8a36b}.scene-event{position:absolute;top:25%;left:50%;transform:translateX(-50%);background:#071628e8;color:#ffdf76;font-size:clamp(20px,4vw,37px);font-weight:1000;padding:9px 20px;white-space:nowrap;border-radius:8px;text-shadow:0 2px 0 #352e21}.pixelStage #pixelGame{height:auto}@media(max-width:780px){.scene-top,.scene-bottom{padding:5px 6px;font-size:10px}.scene-top strong{font-size:10px}}
+
+/* Animated broadcast: move isolated image layers, not the entire still alone */
+.scene-motion{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.scene-actor{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat;will-change:transform;image-rendering:auto}
+.scene-actor.pitcher{clip-path:polygon(4% 45%,35% 43%,39% 99%,0 100%);animation:pitchCycle 2.5s ease-in-out infinite}
+.scene-actor.batter{clip-path:polygon(62% 28%,96% 28%,96% 99%,60% 99%);animation:batReady 2.5s ease-in-out infinite}
+.scene-actor.catcher{clip-path:polygon(39% 34%,64% 34%,64% 99%,39% 99%);animation:catchCycle 2.5s ease-in-out infinite}
+.scene-motion.playing .pitcher{animation:pitchThrow .85s ease-in-out 1}
+.scene-motion.playing .batter{animation:batSwing .85s ease-in-out 1}
+.scene-motion.playing .catcher{animation:catchBall .85s ease-in-out 1}
+.scene-ball{position:absolute;width:1.7%;aspect-ratio:1;border-radius:50%;background:#fff8e7;border:2px solid #c76a62;box-shadow:0 0 9px #fff9;left:34%;top:47%;opacity:0}
+.scene-motion.playing .scene-ball{animation:ballPitch .85s ease-in 1}
+.scene-motion.playing.hit .scene-ball{animation:ballHit .85s ease-out 1}
+.scene-motion.playing.homer .scene-ball{animation:ballHomer .95s ease-out 1}
+.scene-event{z-index:4}
+.scene-top,.scene-bottom{z-index:5}
+@keyframes pitchCycle{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(0,-.5%) rotate(-1deg)}}
+@keyframes batReady{0%,100%{transform:translateY(0)}50%{transform:translateY(-.6%)}}
+@keyframes catchCycle{0%,100%{transform:translateY(0)}50%{transform:translateY(.5%)}}
+@keyframes pitchThrow{0%{transform:translate(0,0) rotate(0)}35%{transform:translate(3%,-2%) rotate(-5deg)}75%{transform:translate(7%,1%) rotate(5deg)}100%{transform:translate(0,0) rotate(0)}}
+@keyframes batSwing{0%{transform:translate(0,0) rotate(0)}45%{transform:translate(-2%,0) rotate(-7deg)}70%{transform:translate(2%,0) rotate(8deg)}100%{transform:translate(0,0) rotate(0)}}
+@keyframes catchBall{0%{transform:translateY(0)}70%{transform:translate(-1%,2%)}100%{transform:translateY(0)}}
+@keyframes ballPitch{0%{left:33%;top:47%;opacity:0;transform:scale(.5)}15%{opacity:1}85%{left:52%;top:61%;opacity:1;transform:scale(1.5)}100%{left:53%;top:62%;opacity:0}}
+@keyframes ballHit{0%{left:33%;top:47%;opacity:1}40%{left:69%;top:55%;opacity:1}100%{left:94%;top:12%;opacity:0;transform:scale(.5)}}
+@keyframes ballHomer{0%{left:33%;top:47%;opacity:1}45%{left:72%;top:44%;opacity:1}100%{left:88%;top:0%;opacity:0;transform:scale(.25)}}
+@media(prefers-reduced-motion:reduce){.scene-actor{animation:none!important}.scene-motion.playing .scene-ball{animation:none}}
 </style>
 </head>
 <body>
@@ -86,9 +112,17 @@ function paintPixelScene(){
  const runners=g.bases.map((r,i)=>r?['一塁','二塁','三塁'][i]:'').filter(Boolean).join('・')||'走者なし';
  const node=el('pixelGame');
  if(!node.dataset.ready){
-  node.innerHTML='<div class="scene-photo"></div><div class="scene-top"><span id="sceneInning"></span><strong id="sceneScore"></strong><span id="sceneOut"></span></div><div class="scene-event" id="sceneEvent"></div><div class="scene-bottom"><span id="sceneBases"></span><span id="sceneResult"></span></div>';
-  node.querySelector('.scene-photo').style.backgroundImage='url("'+gameSceneImage+'")';
+  node.innerHTML='<div class="scene-photo"></div><div class="scene-motion" id="sceneMotion"><div class="scene-actor pitcher"></div><div class="scene-actor batter"></div><div class="scene-actor catcher"></div><div class="scene-ball"></div></div><div class="scene-top"><span id="sceneInning"></span><strong id="sceneScore"></strong><span id="sceneOut"></span></div><div class="scene-event" id="sceneEvent"></div><div class="scene-bottom"><span id="sceneBases"></span><span id="sceneResult"></span></div>';
+  node.querySelector('.scene-photo').style.backgroundImage='url("'+gameSceneImage+'")';node.querySelectorAll('.scene-actor').forEach(actor=>actor.style.backgroundImage='url("'+gameSceneImage+'")');
   node.dataset.ready='1';
+ }
+ const motion=el('sceneMotion');
+ const stamp=g.pa+'|'+g.inning+'|'+g.half+'|'+scene;
+ if(motion.dataset.stamp!==stamp){
+  motion.dataset.stamp=stamp;
+  motion.className='scene-motion';
+  void motion.offsetWidth;
+  if(g.pa>0&&!g.ended)motion.className='scene-motion playing'+(homer?' homer':hit?' hit':'');
  }
  el('sceneInning').textContent=inning;
  el('sceneScore').textContent=away+' '+g.score.away+' - '+g.score.home+' '+home;
