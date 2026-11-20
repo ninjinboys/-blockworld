@@ -33,6 +33,15 @@ td,th{padding:11px 9px;border-right:1px solid #7aa9d7;border-bottom:2px solid #7
 .UR{color:#ffe28a}.SSR{color:#e2b8ff}.SR{color:#a6ddff}.R{color:#b2f1ca}
 .good{color:#b9ffbf}.bad{color:#ffc0b5}
 @media(max-width:600px){main{padding:10px 10px 35px}.hero{padding:18px}.box{padding:13px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat{padding:11px 9px}.stat b{font-size:19px}.tabs button{min-height:60px;padding:12px 14px}.box>.grid button{min-height:67px;font-size:14px!important}table{font-size:13px}td,th{padding:10px 7px}}
+
+/* All interactive buttons yellow, including navigation and disabled states */
+button,button.primary,.tabs button,.tabs button.primary,.tabs button:not(.primary),button:disabled,.tabs button:disabled{
+background:#ffd43b!important;color:#503600!important;border:3px solid #a97609!important;
+text-shadow:0 1px 0 #fff0a4!important;
+box-shadow:inset 3px 3px 0 #fff1a0,inset -3px -3px 0 #d79c12,0 5px 0 #815508,0 9px 12px #031b4166!important;
+}
+button:disabled,.tabs button:disabled{opacity:.5;cursor:not-allowed}
+button:active:not(:disabled),.tabs button:active:not(:disabled){transform:translateY(5px)!important;box-shadow:inset 3px 3px 0 #bd8611,inset -3px -3px 0 #fff1a0,0 0 0 #815508!important}
 </style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1>⚾ PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="summary"></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v0.8</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
