@@ -50,7 +50,21 @@ button:disabled{opacity:.5;filter:grayscale(.4);box-shadow:inset 2px 2px 0 #a3a8
 .tabs button.primary{background:#4e8a42;border-color:#315c30;color:#fff;box-shadow:inset 3px 3px 0 #91bd81,inset -3px -3px 0 #2d6632,0 3px 0 #244d27}
 select{min-height:49px;background:#f0f3ec;color:#1b3324;border:3px solid #6d8671;box-shadow:inset 2px 2px 0 #d0d9cc,inset -2px -2px 0 #a2b4a4;font-weight:800}
 @media(max-width:600px){.tabs button{min-height:58px}.box>.grid button{min-height:66px}button{font-size:14px}}
-</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1>⚾ PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="summary"></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v0.4</p></main><script>
+
+/* NEXACRAFT: unmistakably raised, chunky 3D pixel-style controls */
+button{appearance:none;-webkit-appearance:none;border-radius:3px!important;border:3px solid #263b2a!important;background:#5c9250!important;color:#fff!important;min-height:58px;font:900 15px/1.25 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace!important;letter-spacing:.03em;text-shadow:1px 2px 0 #244529!important;box-shadow:inset 3px 3px 0 #a9d39a,inset -4px -4px 0 #2f6536,0 6px 0 #213d28,0 8px 0 #17291b,0 11px 13px rgba(12,30,19,.27)!important;transform:translateY(0);transition:transform .09s,box-shadow .09s,filter .12s;margin-bottom:8px;cursor:pointer}
+button:hover:not(:disabled){filter:brightness(1.13)}
+button:active:not(:disabled){transform:translateY(6px)!important;box-shadow:inset 3px 3px 0 #305b34,inset -3px -3px 0 #a4c996,0 0 0 #213d28,0 2px 0 #17291b,0 3px 5px rgba(12,30,19,.18)!important}
+button.primary{background:#4c873f!important;border-color:#27492b!important;box-shadow:inset 3px 3px 0 #a3d092,inset -4px -4px 0 #285f30,0 6px 0 #1c4023,0 8px 0 #112b18,0 11px 13px rgba(12,30,19,.3)!important}
+button.primary:active:not(:disabled){box-shadow:inset 3px 3px 0 #285f30,inset -3px -3px 0 #a3d092,0 0 0 #1c4023,0 2px 0 #112b18!important}
+.tabs{gap:12px;padding:6px 3px 17px}
+.tabs button{background:#56665c!important;border-color:#303d33!important;box-shadow:inset 3px 3px 0 #8e9f92,inset -4px -4px 0 #36483b,0 6px 0 #28372c,0 8px 0 #1a261d,0 11px 13px rgba(12,30,19,.22)!important;min-height:60px}
+.tabs button.primary{background:#4c873f!important;border-color:#27492b!important}
+.tabs button:active:not(:disabled){box-shadow:inset 3px 3px 0 #36483b,inset -3px -3px 0 #8e9f92,0 0 0 #28372c,0 2px 0 #1a261d!important}
+button:disabled{background:#7d837e!important;border-color:#545a55!important;color:#d9ded9!important;opacity:.65;box-shadow:inset 3px 3px 0 #a5aaa5,inset -3px -3px 0 #555c55,0 4px 0 #454c45!important;transform:none!important}
+button:focus-visible{outline:3px solid #ffcd55;outline-offset:5px}
+@media(max-width:600px){.tabs{gap:10px;padding-bottom:18px}.tabs button{min-height:62px}.box>.grid button{min-height:70px}button{font-size:14px!important}}
+</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1>⚾ PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="summary"></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v0.5</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
 const clubs=['広島レッドスターズ','東京フェニックス','大阪タイタンズ','名古屋ブレイバーズ','横浜マリナーズ','神戸ブルズ','札幌ウルブズ','福岡ホークウィンズ','仙台イーグルズ','千葉シャークス','埼玉ライオンズ','新潟スノーズ'];
