@@ -91,7 +91,35 @@ select{background:#526653;color:#f6f5e5;border:3px solid #1a2d20;border-radius:3
 select option{background:#344a38;color:white}
 .tabs button{color:#fff!important}
 @media(max-width:600px){.box{padding:13px}.stat{padding:12px 9px}.stat b{font-size:19px}td,th{padding:10px 7px}}
-</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1>⚾ PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="summary"></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v0.6</p></main><script>
+
+/* Accurate Nexacraft menu theme: charcoal translucent panels, gray inset counters, green raised actions */
+body{background:linear-gradient(180deg,#22362e 0%,#10191a 60%,#0b1012 100%);color:#f5f5f5;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+main{max-width:1000px}
+.hero{background:rgba(18,21,24,.92);border:2px solid rgba(255,255,255,.34);border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.38);padding:24px;text-align:center}
+.hero h1{color:#fff;text-shadow:0 3px 0 #222;letter-spacing:.06em}
+.hero div:first-child,.hero .muted{color:#c9c9c9}
+.box{background:rgba(18,21,24,.91);border:2px solid rgba(255,255,255,.34);border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.3);padding:20px;margin:16px 0}
+.stat{background:#c6c6c6;color:#222;border:3px solid #555;border-radius:2px;box-shadow:inset 3px 3px 0 #eee,inset -3px -3px 0 #858585,0 4px 12px #0005;padding:14px 12px;text-shadow:none;font-weight:800}
+.stat b{color:#1d2d20;text-shadow:none;font-size:clamp(19px,3vw,25px);font-weight:900}
+h2,h3{color:#fff;text-shadow:0 2px 0 #111}
+.muted,.small{color:#c9c9c9}
+.line{border-bottom:1px solid #5c6560;color:#f4f4f4}
+.tag{background:#777;color:#fff;border:2px solid #555;border-radius:2px;box-shadow:inset 2px 2px 0 #999,inset -2px -2px 0 #505050}
+table{border:3px solid #555;background:#bcbcbc;border-collapse:separate;border-spacing:0}
+th{background:#888;color:#fff;text-shadow:0 1px 0 #333;border-bottom:3px solid #555}
+td{background:#c6c6c6;color:#222;font-weight:700}
+tr:nth-child(even) td{background:#b5b5b5}
+td,th{border-right:1px solid #777;border-bottom:2px solid #888}
+select{background:#dedede;color:#202020;border:3px solid #555;border-radius:2px;box-shadow:inset 2px 2px 0 #f5f5f5,inset -2px -2px 0 #888;text-shadow:none}
+select option{background:#dedede;color:#222}
+button,button.primary,.tabs button,.tabs button.primary{border-radius:8px!important;min-height:60px;background:#57934a!important;border:3px solid #315c30!important;color:white!important;font:900 clamp(15px,3vw,19px) ui-monospace,monospace!important;text-shadow:none!important;box-shadow:inset 3px 3px 0 #94c487,inset -3px -3px 0 #346d35,0 4px 0 rgba(0,0,0,.35)!important;margin-bottom:5px}
+button:active:not(:disabled),button.primary:active:not(:disabled),.tabs button:active:not(:disabled),.tabs button.primary:active:not(:disabled){transform:translateY(2px)!important;box-shadow:inset 3px 3px 0 #346d35,inset -3px -3px 0 #94c487!important}
+.tabs button:not(.primary){background:#777!important;border-color:#555!important;box-shadow:inset 3px 3px 0 #999,inset -3px -3px 0 #505050,0 4px 0 #222!important}
+.tabs button:not(.primary):active:not(:disabled){box-shadow:inset 3px 3px 0 #505050,inset -3px -3px 0 #999!important}
+button:disabled{background:#737373!important;border-color:#555!important;color:#ddd!important;box-shadow:inset 3px 3px 0 #929292,inset -3px -3px 0 #505050!important}
+.UR{color:#ffd06a}.SSR{color:#d5b4ff}.SR{color:#8dcfff}.R{color:#a8e8ad}
+@media(max-width:600px){.box{padding:14px}.stat{padding:11px 9px}.box>.grid button{min-height:65px;font-size:14px!important}.tabs button{min-height:58px}}
+</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1>⚾ PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="summary"></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v0.7</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
 const clubs=['広島レッドスターズ','東京フェニックス','大阪タイタンズ','名古屋ブレイバーズ','横浜マリナーズ','神戸ブルズ','札幌ウルブズ','福岡ホークウィンズ','仙台イーグルズ','千葉シャークス','埼玉ライオンズ','新潟スノーズ'];
