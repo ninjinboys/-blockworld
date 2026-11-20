@@ -1,148 +1,38 @@
 <!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ペナント・レジェンズ</title><style>
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0c1524;color:#eaf1ff;font:14px system-ui,sans-serif}main{max-width:1000px;margin:auto;padding:16px}.hero{background:linear-gradient(125deg,#123f60,#19315b 60%,#5c356e);padding:20px;border-radius:16px}h1{margin:0;font-size:25px}h2{font-size:19px;margin:0 0 12px}h3{font-size:15px;margin:12px 0}.muted{color:#aab9ce}.box{background:#1b2a40;border:1px solid #34465e;border-radius:13px;padding:15px;margin:12px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}.stat{background:#273b55;padding:10px;border-radius:10px}.stat b{display:block;font-size:19px}.tabs{display:flex;overflow:auto;gap:5px;margin:12px 0}.tabs button{white-space:nowrap}button,select{border:1px solid #536782;border-radius:8px;background:#2c4562;color:#fff;padding:9px;cursor:pointer}button.primary{background:#0d9c85;border-color:#0d9c85;color:#fff;font-weight:700}button:disabled{opacity:.35;cursor:not-allowed}.row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.line{border-bottom:1px solid #394d65;padding:9px 0}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}td,th{border-bottom:1px solid #394d65;padding:7px 5px;text-align:right}td:first-child,th:first-child{text-align:left}.tag{display:inline-block;background:#354b67;border-radius:5px;padding:2px 5px;font-size:11px}.UR{color:#ffd36c}.SSR{color:#d7a4ff}.SR{color:#7bc0ff}.R{color:#79e6b2}.good{color:#7ee4b1}.bad{color:#ff9d9d}.draw{animation:pop .5s ease}@keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}.small{font-size:12px}input{max-width:75px}select{max-width:100%}
 
-/* Readability refresh: brighter palette, generous touch targets */
-:root{color-scheme:light;--bg:#edf3fa;--card:#fff;--ink:#172b45;--muted:#526783;--border:#c9d7e6;--nav:#e2edfa;--accent:#086dba;--accent2:#087f68}
-body{background:var(--bg);color:var(--ink);font-size:16px;line-height:1.55}
-main{max-width:1100px;padding:16px 14px 40px}
-.hero{background:linear-gradient(120deg,#11477e,#086c9f 62%,#177d83);color:white;padding:24px;border-radius:18px;box-shadow:0 6px 22px #123b6724}
-.hero .muted,.hero div:first-child{color:#d4f0ff}
-h1{font-size:clamp(26px,5vw,36px);letter-spacing:.03em}
-h2{font-size:21px;color:#173b63}h3{font-size:17px;color:#25486b}
-.muted{color:var(--muted)}
-.box{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:18px;margin:14px 0;box-shadow:0 3px 12px #1e426d0d}
-.stat{background:#fff;border:1px solid var(--border);color:#38516f;padding:14px 12px;border-radius:12px;box-shadow:0 2px 8px #1e426d0d}
-.stat b{font-size:22px;color:#133f6a}
+
+/* NEXACRAFT-inspired bright blue / yellow visual theme, single authoritative override */
+:root{color-scheme:dark}
+body{background:linear-gradient(165deg,#1760b1,#093b80 58%,#061e4d);color:#f7fbff;font:16px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,sans-serif;min-height:100vh}
+main{max-width:1100px;padding:16px 14px 44px}
+.hero{background:linear-gradient(135deg,#1f78ce,#0a3d86);border:3px solid #7cb8ef;border-radius:10px;padding:24px;box-shadow:inset 3px 3px 0 #69b3ed,inset -4px -4px 0 #072d65,0 7px 0 #051d42,0 12px 22px #031b4188}
+h1{font-size:clamp(26px,5vw,36px);text-shadow:2px 3px 0 #073568}
+h2{font-size:21px;color:#fff2a1;text-shadow:1px 2px 0 #092c5b}h3{font-size:17px;color:#fff2a1}
+.muted,.small{color:#d0e7ff}.hero .muted,.hero div:first-child{color:#e2f2ff}
+.box{background:#0d468e;border:3px solid #68a6e4;border-radius:8px;padding:18px;margin:17px 0 22px;box-shadow:inset 3px 3px 0 #4389ce,inset -4px -4px 0 #082b60,0 6px 0 #05234c,0 12px 20px #03183a88}
 .grid{grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}
-button,select{min-height:48px;min-width:48px;background:#e6effa;color:#17436d;border:1.5px solid #a8c3df;border-radius:11px;padding:12px 17px;font-size:15px;font-weight:700;line-height:1.3;transition:background .15s,transform .15s;touch-action:manipulation}
-button:hover{background:#d0e5fa}button:active{transform:scale(.98)}
-button.primary{background:#087f68;border-color:#087f68;color:#fff}
-button.primary:hover{background:#066f5b}
-button:focus-visible,select:focus-visible{outline:3px solid #ffb020;outline-offset:3px}
-button:disabled{opacity:.45}
-.tabs{gap:8px;padding:3px 0 8px;scrollbar-width:thin}
-.tabs button{background:#fff;border:1px solid #a7c2dc;color:#1b4a76;min-height:54px;padding:13px 18px;flex:0 0 auto}
-.tabs button.primary{background:#0c67ac;color:white;border-color:#0c67ac}
-.line{border-color:#d8e3ee;padding:13px 0;gap:10px}
-.tag{background:#dbeafa;color:#25527d;font-weight:700}
-.UR{color:#986000}.SSR{color:#7736af}.SR{color:#075aab}.R{color:#067b5b}
-.good{color:#087350}.bad{color:#bb3434}
-th{background:#e7f0fa;color:#244d77;font-weight:800}
-td,th{border-bottom:1px solid #d9e5f1;padding:11px 9px}
-tr:nth-child(even) td{background:#f7fafe}
-table{font-size:14px}
-.small{font-size:13px}
-select{background:#f6faff;max-width:min(100%,300px)}
-@media(max-width:600px){main{padding:10px 10px 28px}.hero{padding:19px}.box{padding:14px}.stat{padding:11px}.stat b{font-size:19px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.tabs button{min-height:56px;padding:13px 16px}.box>.grid button{min-height:62px;padding:12px 9px;font-size:14px}.line.row{align-items:flex-start}.line.row select{width:100%;max-width:100%}table{font-size:13px}td,th{padding:10px 7px}}
-
-/* NEXACRAFT-inspired tactile block buttons, based on the existing site's UI */
-button,select{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans JP",monospace;border-radius:6px}
-button{position:relative;min-height:54px;padding:12px 18px;background:#717e78;color:#fff;border:3px solid #394b40;font-weight:900;letter-spacing:.015em;text-shadow:0 1px 0 #253a2b;box-shadow:inset 3px 3px 0 rgba(255,255,255,.33),inset -3px -3px 0 rgba(0,0,0,.29),0 3px 0 #2c4035;transition:filter .12s,transform .1s,box-shadow .1s}
-button:hover{background:#809389;filter:brightness(1.07)}
-button:active{transform:translateY(3px);box-shadow:inset 3px 3px 0 rgba(0,0,0,.26),inset -2px -2px 0 rgba(255,255,255,.14),0 0 0 #2c4035}
-button.primary{background:#568e45;border-color:#315c30;color:#fff;box-shadow:inset 3px 3px 0 #92bd81,inset -3px -3px 0 #346a35,0 3px 0 #234a28}
-button.primary:hover{background:#66a653}
-button.primary:active{box-shadow:inset 3px 3px 0 #346a35,inset -3px -3px 0 #92bd81}
-button:disabled{opacity:.5;filter:grayscale(.4);box-shadow:inset 2px 2px 0 #a3a8a4,inset -2px -2px 0 #485149;transform:none}
-.tabs{padding:5px 1px 12px;gap:9px}
-.tabs button{background:#5d6d63;border:3px solid #364b3d;color:#fff;min-height:58px;padding:13px 18px;box-shadow:inset 3px 3px 0 #8c9c8e,inset -3px -3px 0 #34473a,0 3px 0 #2b3b31}
-.tabs button:hover{background:#728474}
-.tabs button.primary{background:#4e8a42;border-color:#315c30;color:#fff;box-shadow:inset 3px 3px 0 #91bd81,inset -3px -3px 0 #2d6632,0 3px 0 #244d27}
-select{min-height:49px;background:#f0f3ec;color:#1b3324;border:3px solid #6d8671;box-shadow:inset 2px 2px 0 #d0d9cc,inset -2px -2px 0 #a2b4a4;font-weight:800}
-@media(max-width:600px){.tabs button{min-height:58px}.box>.grid button{min-height:66px}button{font-size:14px}}
-
-/* NEXACRAFT: unmistakably raised, chunky 3D pixel-style controls */
-button{appearance:none;-webkit-appearance:none;border-radius:3px!important;border:3px solid #263b2a!important;background:#5c9250!important;color:#fff!important;min-height:58px;font:900 15px/1.25 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace!important;letter-spacing:.03em;text-shadow:1px 2px 0 #244529!important;box-shadow:inset 3px 3px 0 #a9d39a,inset -4px -4px 0 #2f6536,0 6px 0 #213d28,0 8px 0 #17291b,0 11px 13px rgba(12,30,19,.27)!important;transform:translateY(0);transition:transform .09s,box-shadow .09s,filter .12s;margin-bottom:8px;cursor:pointer}
-button:hover:not(:disabled){filter:brightness(1.13)}
-button:active:not(:disabled){transform:translateY(6px)!important;box-shadow:inset 3px 3px 0 #305b34,inset -3px -3px 0 #a4c996,0 0 0 #213d28,0 2px 0 #17291b,0 3px 5px rgba(12,30,19,.18)!important}
-button.primary{background:#4c873f!important;border-color:#27492b!important;box-shadow:inset 3px 3px 0 #a3d092,inset -4px -4px 0 #285f30,0 6px 0 #1c4023,0 8px 0 #112b18,0 11px 13px rgba(12,30,19,.3)!important}
-button.primary:active:not(:disabled){box-shadow:inset 3px 3px 0 #285f30,inset -3px -3px 0 #a3d092,0 0 0 #1c4023,0 2px 0 #112b18!important}
-.tabs{gap:12px;padding:6px 3px 17px}
-.tabs button{background:#56665c!important;border-color:#303d33!important;box-shadow:inset 3px 3px 0 #8e9f92,inset -4px -4px 0 #36483b,0 6px 0 #28372c,0 8px 0 #1a261d,0 11px 13px rgba(12,30,19,.22)!important;min-height:60px}
-.tabs button.primary{background:#4c873f!important;border-color:#27492b!important}
-.tabs button:active:not(:disabled){box-shadow:inset 3px 3px 0 #36483b,inset -3px -3px 0 #8e9f92,0 0 0 #28372c,0 2px 0 #1a261d!important}
-button:disabled{background:#7d837e!important;border-color:#545a55!important;color:#d9ded9!important;opacity:.65;box-shadow:inset 3px 3px 0 #a5aaa5,inset -3px -3px 0 #555c55,0 4px 0 #454c45!important;transform:none!important}
-button:focus-visible{outline:3px solid #ffcd55;outline-offset:5px}
-@media(max-width:600px){.tabs{gap:10px;padding-bottom:18px}.tabs button{min-height:62px}.box>.grid button{min-height:70px}button{font-size:14px!important}}
-
-/* NEXACRAFT-style game HUD for counters, panels, data and player rows */
-:root{--game-ink:#f1f6ee;--game-muted:#c2d0c3;--game-panel:#303c34;--game-edge:#19261d;--game-face:#46564a}
-body{background:radial-gradient(ellipse at top,#243d31 0,#14241b 55%,#0c1710 100%);color:var(--game-ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans JP",monospace}
-.hero{border:4px solid #13271c;border-radius:5px;background:linear-gradient(155deg,#355b43,#193d30 70%,#142b20);box-shadow:inset 4px 4px 0 #63856b,inset -5px -5px 0 #102a1a,0 7px 0 #0c1b11,0 12px 22px #050d0877}
-.hero h1{color:#f3f9df;text-shadow:2px 3px 0 #0d2415}
-.hero .muted,.hero div:first-child{color:#cce4cc}
-.stat{background:#394a3d;border:3px solid #17291d;border-radius:4px;color:#d7e4d3;padding:14px 12px;box-shadow:inset 3px 3px 0 #718474,inset -4px -4px 0 #1e3225,0 5px 0 #101d14,0 8px 12px #06100877;margin-bottom:7px;text-shadow:1px 1px 0 #18271d}
-.stat b{color:#fff8c4;font-size:clamp(18px,2.8vw,25px);letter-spacing:.01em;text-shadow:2px 2px 0 #1c3020;overflow-wrap:anywhere}
-.box{background:#303d33;border:4px solid #15251a;border-radius:5px;padding:18px;box-shadow:inset 3px 3px 0 #607263,inset -4px -4px 0 #1c2b20,0 6px 0 #0e1b12,0 10px 18px #06100866;margin-bottom:20px}
-h2,h3{color:#f4edb6;text-shadow:2px 2px 0 #1c2a1e;letter-spacing:.02em}
-.muted{color:#c1d0bf}.small{color:#c8d4c4}
-.line{border-bottom:2px solid #526653;padding:14px 0;color:#f0f5e9}
-.line:last-child{border-bottom:0}
-.tag{background:#576c58;color:#fff5cb;border:2px solid #283e2b;border-radius:3px;box-shadow:inset 1px 1px 0 #8ca48b,inset -2px -2px 0 #314634;padding:2px 6px}
-.good{color:#b8f2a0}.bad{color:#ffb4a8}
-.UR{color:#ffe18a}.SSR{color:#d8b5ff}.SR{color:#98d8ff}.R{color:#a9edb0}
-table{border:3px solid #19291d;background:#28372c;border-collapse:separate;border-spacing:0;font-size:14px}
-th{background:#4b644d;color:#fff2b4;text-shadow:1px 1px 0 #1e3623;border-bottom:3px solid #17281b;font-weight:900}
-td{color:#e7f0df;background:#324336}
-tr:nth-child(even) td{background:#3b4d3e}
-td,th{border-right:1px solid #526451;border-bottom:2px solid #1b2d20;padding:12px 9px}
-td:last-child,th:last-child{border-right:0}
-select{background:#526653;color:#f6f5e5;border:3px solid #1a2d20;border-radius:3px;box-shadow:inset 3px 3px 0 #819884,inset -3px -3px 0 #304536;text-shadow:1px 1px 0 #24362a}
-select option{background:#344a38;color:white}
-.tabs button{color:#fff!important}
-@media(max-width:600px){.box{padding:13px}.stat{padding:12px 9px}.stat b{font-size:19px}td,th{padding:10px 7px}}
-
-/* Accurate Nexacraft menu theme: charcoal translucent panels, gray inset counters, green raised actions */
-body{background:linear-gradient(180deg,#22362e 0%,#10191a 60%,#0b1012 100%);color:#f5f5f5;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-main{max-width:1000px}
-.hero{background:rgba(18,21,24,.92);border:2px solid rgba(255,255,255,.34);border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.38);padding:24px;text-align:center}
-.hero h1{color:#fff;text-shadow:0 3px 0 #222;letter-spacing:.06em}
-.hero div:first-child,.hero .muted{color:#c9c9c9}
-.box{background:rgba(18,21,24,.91);border:2px solid rgba(255,255,255,.34);border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.3);padding:20px;margin:16px 0}
-.stat{background:#c6c6c6;color:#222;border:3px solid #555;border-radius:2px;box-shadow:inset 3px 3px 0 #eee,inset -3px -3px 0 #858585,0 4px 12px #0005;padding:14px 12px;text-shadow:none;font-weight:800}
-.stat b{color:#1d2d20;text-shadow:none;font-size:clamp(19px,3vw,25px);font-weight:900}
-h2,h3{color:#fff;text-shadow:0 2px 0 #111}
-.muted,.small{color:#c9c9c9}
-.line{border-bottom:1px solid #5c6560;color:#f4f4f4}
-.tag{background:#777;color:#fff;border:2px solid #555;border-radius:2px;box-shadow:inset 2px 2px 0 #999,inset -2px -2px 0 #505050}
-table{border:3px solid #555;background:#bcbcbc;border-collapse:separate;border-spacing:0}
-th{background:#888;color:#fff;text-shadow:0 1px 0 #333;border-bottom:3px solid #555}
-td{background:#c6c6c6;color:#222;font-weight:700}
-tr:nth-child(even) td{background:#b5b5b5}
-td,th{border-right:1px solid #777;border-bottom:2px solid #888}
-select{background:#dedede;color:#202020;border:3px solid #555;border-radius:2px;box-shadow:inset 2px 2px 0 #f5f5f5,inset -2px -2px 0 #888;text-shadow:none}
-select option{background:#dedede;color:#222}
-button,button.primary,.tabs button,.tabs button.primary{border-radius:8px!important;min-height:60px;background:#57934a!important;border:3px solid #315c30!important;color:white!important;font:900 clamp(15px,3vw,19px) ui-monospace,monospace!important;text-shadow:none!important;box-shadow:inset 3px 3px 0 #94c487,inset -3px -3px 0 #346d35,0 4px 0 rgba(0,0,0,.35)!important;margin-bottom:5px}
-button:active:not(:disabled),button.primary:active:not(:disabled),.tabs button:active:not(:disabled),.tabs button.primary:active:not(:disabled){transform:translateY(2px)!important;box-shadow:inset 3px 3px 0 #346d35,inset -3px -3px 0 #94c487!important}
-.tabs button:not(.primary){background:#777!important;border-color:#555!important;box-shadow:inset 3px 3px 0 #999,inset -3px -3px 0 #505050,0 4px 0 #222!important}
-.tabs button:not(.primary):active:not(:disabled){box-shadow:inset 3px 3px 0 #505050,inset -3px -3px 0 #999!important}
-button:disabled{background:#737373!important;border-color:#555!important;color:#ddd!important;box-shadow:inset 3px 3px 0 #929292,inset -3px -3px 0 #505050!important}
-.UR{color:#ffd06a}.SSR{color:#d5b4ff}.SR{color:#8dcfff}.R{color:#a8e8ad}
-@media(max-width:600px){.box{padding:14px}.stat{padding:11px 9px}.box>.grid button{min-height:65px;font-size:14px!important}.tabs button{min-height:58px}}
-
-/* Bright yellow action buttons + blue game interface */
-body{background:linear-gradient(180deg,#123d78 0%,#092a58 52%,#061b3d 100%);color:#f5faff}
-.hero{background:linear-gradient(145deg,rgba(19,83,155,.96),rgba(7,42,95,.96));border:2px solid #83b5e9;box-shadow:inset 2px 2px 0 #4d94d6,inset -3px -3px 0 #06264e,0 14px 35px #03152e88}
-.box{background:rgba(10,43,91,.94);border:2px solid #629ad4;box-shadow:inset 2px 2px 0 #3772b5,inset -3px -3px 0 #062550,0 12px 24px #02142e66}
-.stat{background:#b9dcff;color:#13345c;border:3px solid #326ba4;box-shadow:inset 3px 3px 0 #e6f5ff,inset -3px -3px 0 #6da4d7,0 4px 12px #031a3b88}
-.stat b{color:#08386d}
-h2,h3{color:#fff4a9;text-shadow:0 2px 0 #09244c}
-.muted,.small,.hero .muted,.hero div:first-child{color:#c6e2ff}
-.line{border-color:#4b83bd}
-.tag{background:#2765a5;border-color:#104277;color:#f1f9ff;box-shadow:inset 2px 2px 0 #5896d2,inset -2px -2px 0 #104077}
-table{border-color:#245c9a;background:#b9dcff}
-th{background:#2465a6;color:#fff;border-color:#17487f}
-td{background:#d9edff;color:#10345a}
-tr:nth-child(even) td{background:#b9dcf8}
-td,th{border-right-color:#78a8d7;border-bottom-color:#83b3e0}
-select{background:#e0f1ff;color:#123d70;border:3px solid #326da9;box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #91bce4}
-select option{background:#e0f1ff;color:#123d70}
-button,button.primary,.tabs button,.tabs button.primary{background:#ffd744!important;border:3px solid #ad790d!important;color:#493100!important;text-shadow:0 1px 0 #fff3ad!important;box-shadow:inset 3px 3px 0 #fff1a2,inset -3px -3px 0 #d99e16,0 4px 0 #82540b,0 7px 12px #03152d66!important}
-button:hover:not(:disabled){background:#ffe36b!important;filter:none}
-button:active:not(:disabled),button.primary:active:not(:disabled),.tabs button:active:not(:disabled),.tabs button.primary:active:not(:disabled){transform:translateY(4px)!important;box-shadow:inset 3px 3px 0 #c78c13,inset -3px -3px 0 #fff0a0,0 0 0 #82540b!important}
-.tabs button:not(.primary){background:#a9d2f8!important;border-color:#3d7cb8!important;color:#123e6b!important;text-shadow:none!important;box-shadow:inset 3px 3px 0 #e3f3ff,inset -3px -3px 0 #75a8d8,0 4px 0 #285784!important}
-.tabs button:not(.primary):active:not(:disabled){box-shadow:inset 3px 3px 0 #75a8d8,inset -3px -3px 0 #e3f3ff!important}
-button:disabled{background:#8eabc3!important;border-color:#57738d!important;color:#42596d!important;text-shadow:none!important;box-shadow:inset 2px 2px 0 #b7c9d9,inset -2px -2px 0 #718ca2!important}
+.stat{background:#a7d7ff;border:3px solid #2e71b3;border-radius:5px;color:#164572;padding:14px 12px;box-shadow:inset 3px 3px 0 #e4f4ff,inset -3px -3px 0 #6ca7d9,0 5px 0 #164b82,0 8px 12px #031b4177;font-weight:800}
+.stat b{display:block;font-size:clamp(19px,3vw,25px);color:#08335f;text-shadow:1px 1px 0 #eaf7ff}
+.tabs{gap:11px;padding:5px 2px 16px;scrollbar-width:thin}
+button,.tabs button,button.primary,.tabs button.primary{appearance:none;min-height:56px;min-width:48px;padding:12px 17px;background:#ffd43b!important;color:#503600!important;border:3px solid #a97609!important;border-radius:7px!important;font:900 15px/1.3 ui-monospace,monospace!important;text-shadow:0 1px 0 #fff0a4!important;box-shadow:inset 3px 3px 0 #fff1a0,inset -3px -3px 0 #d79c12,0 5px 0 #815508,0 9px 12px #031b4166!important;cursor:pointer;touch-action:manipulation;transition:transform .1s,filter .1s}
+button:hover:not(:disabled){filter:brightness(1.08)}
+button:active:not(:disabled),.tabs button:active:not(:disabled){transform:translateY(5px)!important;box-shadow:inset 3px 3px 0 #bd8611,inset -3px -3px 0 #fff1a0,0 0 0 #815508!important}
+.tabs button{white-space:nowrap;flex:0 0 auto}
+.tabs button:not(.primary){background:#a7d6ff!important;color:#133e70!important;border-color:#3678b9!important;text-shadow:none!important;box-shadow:inset 3px 3px 0 #e4f4ff,inset -3px -3px 0 #6ea8dc,0 5px 0 #24568b!important}
+button:disabled{background:#9fb1c5!important;color:#516377!important;border-color:#6c849e!important;opacity:.65;box-shadow:inset 2px 2px 0 #c7d4df,inset -2px -2px 0 #748ba4!important;transform:none!important}
+button:focus-visible,select:focus-visible{outline:3px solid #fff;outline-offset:4px}
+select{min-height:48px;max-width:100%;padding:9px 12px;background:#d6edff;color:#123e70;border:3px solid #3c7db8;border-radius:5px;box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #88b9e3;font:800 14px ui-monospace,monospace}
+.line{border-bottom:2px solid #5b9bd9;padding:13px 0}
+.tag{background:#2466ad;color:#fff2b5;border:2px solid #0d3e79;border-radius:4px;padding:3px 7px;box-shadow:inset 2px 2px 0 #4e95d6,inset -2px -2px 0 #113f78}
+table{border:3px solid #286ab0;border-collapse:separate;border-spacing:0;background:#d9edff;font-size:14px}
+th{background:#2162a8;color:white;font-weight:900}
+td{background:#d9edff;color:#10375f;font-weight:700}
+tr:nth-child(even) td{background:#b9dcfa}
+td,th{padding:11px 9px;border-right:1px solid #7aa9d7;border-bottom:2px solid #7aa9d7}
+.UR{color:#ffe28a}.SSR{color:#e2b8ff}.SR{color:#a6ddff}.R{color:#b2f1ca}
+.good{color:#b9ffbf}.bad{color:#ffc0b5}
+@media(max-width:600px){main{padding:10px 10px 35px}.hero{padding:18px}.box{padding:13px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat{padding:11px 9px}.stat b{font-size:19px}.tabs button{min-height:60px;padding:12px 14px}.box>.grid button{min-height:67px;font-size:14px!important}table{font-size:13px}td,th{padding:10px 7px}}
 </style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1>⚾ PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="summary"></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v0.8</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
