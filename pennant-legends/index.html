@@ -80,9 +80,26 @@ body{overflow-x:clip}
 .tabs{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;transform:none!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;overflow:hidden!important;overscroll-behavior:contain;touch-action:pan-y;will-change:auto;contain:layout style;backface-visibility:hidden}
 .tabs button,.tabs button:not(.primary){touch-action:manipulation}
 @supports(padding-bottom:env(safe-area-inset-bottom)){.tabs{padding-bottom:calc(8px + env(safe-area-inset-bottom))!important}}
-</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene" id="stadiumScene" aria-label="球団のホーム球場"><div class="stadium-sky"><span class="stadium-cloud cloud-a"></span><span class="stadium-cloud cloud-b"></span></div><div class="stadium-board"><span id="stadiumTeam">MY BASEBALL CLUB</span><small>HOME STADIUM</small></div><div class="stadium-stands"><span></span></div><div class="stadium-field"><div class="stadium-outfield"></div><div class="stadium-infield"><div class="stadium-mound"></div><span class="base base-a"></span><span class="base base-b"></span><span class="base base-c"></span></div><div class="stadium-home"></div></div><div class="stadium-caption"> わが球団のホームグラウンド</div></section><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.2</p></main><script>
+/* Keep the menu aligned with the actually visible Safari viewport */
+.tabs{bottom:var(--nav-bottom-offset,0px)!important}
+body{padding-bottom:calc(105px + env(safe-area-inset-bottom))!important}
+@media(max-width:600px){body{padding-bottom:calc(90px + env(safe-area-inset-bottom))!important}}
+</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene" id="stadiumScene" aria-label="球団のホーム球場"><div class="stadium-sky"><span class="stadium-cloud cloud-a"></span><span class="stadium-cloud cloud-b"></span></div><div class="stadium-board"><span id="stadiumTeam">MY BASEBALL CLUB</span><small>HOME STADIUM</small></div><div class="stadium-stands"><span></span></div><div class="stadium-field"><div class="stadium-outfield"></div><div class="stadium-infield"><div class="stadium-mound"></div><span class="base base-a"></span><span class="base base-b"></span><span class="base base-c"></span></div><div class="stadium-home"></div></div><div class="stadium-caption"> わが球団のホームグラウンド</div></section><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.3</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
+/* Compensate for iPad Safari visual viewport shifts during scroll. */
+function syncBottomNavigation(){
+ const vv=window.visualViewport;
+ const gap=vv?Math.max(0,window.innerHeight-(vv.offsetTop+vv.height)):0;
+ document.documentElement.style.setProperty('--nav-bottom-offset',(-gap)+'px');
+}
+syncBottomNavigation();
+if(window.visualViewport){
+ window.visualViewport.addEventListener('resize',syncBottomNavigation,{passive:true});
+ window.visualViewport.addEventListener('scroll',syncBottomNavigation,{passive:true});
+}
+window.addEventListener('resize',syncBottomNavigation,{passive:true});
+window.addEventListener('pageshow',syncBottomNavigation);
 let clubs=['広島レッドスターズ','東京フェニックス','大阪タイタンズ','名古屋ブレイバーズ','横浜マリナーズ','神戸ブルズ','札幌ウルブズ','福岡ホークウィンズ','仙台イーグルズ','千葉シャークス','埼玉ライオンズ','新潟スノーズ'];
 const last=['佐伯','高瀬','宮原','藤堂','三浦','黒川','北条','桐生','水野','朝倉','神谷','森下','早川','川島','立花','大城','新田','真田','小野寺','西園寺'],first=['悠真','蓮','翔太','大和','拓海','健人','颯太','陸','一輝','直樹','隼人','雄大','亮介','蒼太'];
 const pos=['捕','一','二','三','遊','左','中','右','投'],rarities=['N','R','SR','SSR','UR'],rates=[30,40,22,7,1],traits=['チャンス◎','対左◎','選球眼','広角打法','パワーヒッター','盗塁巧者','守備職人','奪三振','対ピンチ◎','球持ち◎','回復◎'],growths=['早熟','普通','晩成'];
