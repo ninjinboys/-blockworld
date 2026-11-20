@@ -64,7 +64,34 @@ button.primary:active:not(:disabled){box-shadow:inset 3px 3px 0 #285f30,inset -3
 button:disabled{background:#7d837e!important;border-color:#545a55!important;color:#d9ded9!important;opacity:.65;box-shadow:inset 3px 3px 0 #a5aaa5,inset -3px -3px 0 #555c55,0 4px 0 #454c45!important;transform:none!important}
 button:focus-visible{outline:3px solid #ffcd55;outline-offset:5px}
 @media(max-width:600px){.tabs{gap:10px;padding-bottom:18px}.tabs button{min-height:62px}.box>.grid button{min-height:70px}button{font-size:14px!important}}
-</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1>⚾ PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="summary"></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v0.5</p></main><script>
+
+/* NEXACRAFT-style game HUD for counters, panels, data and player rows */
+:root{--game-ink:#f1f6ee;--game-muted:#c2d0c3;--game-panel:#303c34;--game-edge:#19261d;--game-face:#46564a}
+body{background:radial-gradient(ellipse at top,#243d31 0,#14241b 55%,#0c1710 100%);color:var(--game-ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans JP",monospace}
+.hero{border:4px solid #13271c;border-radius:5px;background:linear-gradient(155deg,#355b43,#193d30 70%,#142b20);box-shadow:inset 4px 4px 0 #63856b,inset -5px -5px 0 #102a1a,0 7px 0 #0c1b11,0 12px 22px #050d0877}
+.hero h1{color:#f3f9df;text-shadow:2px 3px 0 #0d2415}
+.hero .muted,.hero div:first-child{color:#cce4cc}
+.stat{background:#394a3d;border:3px solid #17291d;border-radius:4px;color:#d7e4d3;padding:14px 12px;box-shadow:inset 3px 3px 0 #718474,inset -4px -4px 0 #1e3225,0 5px 0 #101d14,0 8px 12px #06100877;margin-bottom:7px;text-shadow:1px 1px 0 #18271d}
+.stat b{color:#fff8c4;font-size:clamp(18px,2.8vw,25px);letter-spacing:.01em;text-shadow:2px 2px 0 #1c3020;overflow-wrap:anywhere}
+.box{background:#303d33;border:4px solid #15251a;border-radius:5px;padding:18px;box-shadow:inset 3px 3px 0 #607263,inset -4px -4px 0 #1c2b20,0 6px 0 #0e1b12,0 10px 18px #06100866;margin-bottom:20px}
+h2,h3{color:#f4edb6;text-shadow:2px 2px 0 #1c2a1e;letter-spacing:.02em}
+.muted{color:#c1d0bf}.small{color:#c8d4c4}
+.line{border-bottom:2px solid #526653;padding:14px 0;color:#f0f5e9}
+.line:last-child{border-bottom:0}
+.tag{background:#576c58;color:#fff5cb;border:2px solid #283e2b;border-radius:3px;box-shadow:inset 1px 1px 0 #8ca48b,inset -2px -2px 0 #314634;padding:2px 6px}
+.good{color:#b8f2a0}.bad{color:#ffb4a8}
+.UR{color:#ffe18a}.SSR{color:#d8b5ff}.SR{color:#98d8ff}.R{color:#a9edb0}
+table{border:3px solid #19291d;background:#28372c;border-collapse:separate;border-spacing:0;font-size:14px}
+th{background:#4b644d;color:#fff2b4;text-shadow:1px 1px 0 #1e3623;border-bottom:3px solid #17281b;font-weight:900}
+td{color:#e7f0df;background:#324336}
+tr:nth-child(even) td{background:#3b4d3e}
+td,th{border-right:1px solid #526451;border-bottom:2px solid #1b2d20;padding:12px 9px}
+td:last-child,th:last-child{border-right:0}
+select{background:#526653;color:#f6f5e5;border:3px solid #1a2d20;border-radius:3px;box-shadow:inset 3px 3px 0 #819884,inset -3px -3px 0 #304536;text-shadow:1px 1px 0 #24362a}
+select option{background:#344a38;color:white}
+.tabs button{color:#fff!important}
+@media(max-width:600px){.box{padding:13px}.stat{padding:12px 9px}.stat b{font-size:19px}td,th{padding:10px 7px}}
+</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1>⚾ PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="summary"></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v0.6</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
 const clubs=['広島レッドスターズ','東京フェニックス','大阪タイタンズ','名古屋ブレイバーズ','横浜マリナーズ','神戸ブルズ','札幌ウルブズ','福岡ホークウィンズ','仙台イーグルズ','千葉シャークス','埼玉ライオンズ','新潟スノーズ'];
