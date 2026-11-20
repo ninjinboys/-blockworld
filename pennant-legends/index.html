@@ -81,8 +81,8 @@ function newPlayer(force=null,position=null,foreign=false){
  if(foreign){p.foreign=true;p.name=pick(['アンダーソン','ロペス','マルティネス','ウィルソン','ゴメス','ブラウン','ロドリゲス'])+' '+pick(['J.','A.','M.'])}
  return p;
 }
-function makeClub(i){let roster=[];for(let j=0;j<30;j++){let p=newPlayer(j<3?'SR':j<11?'R':'N',j<9?pos[j]:j<16?'投':null);if(p)roster.push(p)}return{roster,order:roster.filter(p=>p.pos!=='投').slice(0,8).map(p=>p.id),rotation:roster.filter(p=>p.pos==='投').slice(0,5).map(p=>p.id),bench:[],w:0,l:0,d:0,finance:15000,coach:1,history:[],awards:[],retired:[],numbers:[]}}
-function init(){s={clubs:[],year:2026,game:0,coins:3500,pity:0,daily:'',phase:'regular',logs:[],events:[],drafted:false,offseasonActions:0,champions:[],lastResult:null,teamConfigured:false,teamName:''};for(let i=0;i<clubs.length;i++)s.clubs.push(makeClub(i));save()}
+function makeClub(i){let roster=[];let club={roster,order:[],rotation:[],bench:[],w:0,l:0,d:0,finance:15000,coach:1,history:[],awards:[],retired:[],numbers:[]};s.clubs.push(club);for(let j=0;j<30;j++){let p=newPlayer(j<3?'SR':j<11?'R':'N',j<9?pos[j]:j<16?'投':null);if(p)roster.push(p)}club.order=roster.filter(p=>p.pos!=='投').slice(0,8).map(p=>p.id);club.rotation=roster.filter(p=>p.pos==='投').slice(0,5).map(p=>p.id);return club}
+function init(){s={clubs:[],year:2026,game:0,coins:3500,pity:0,daily:'',phase:'regular',logs:[],events:[],drafted:false,offseasonActions:0,champions:[],lastResult:null,teamConfigured:false,teamName:''};for(let i=0;i<clubs.length;i++)makeClub(i);save()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){notice='保存容量を確認してください'}}
 try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!s||!s.clubs||!s.clubs[0]?.roster?.[0]?.career)init();if(s.teamName)clubs[0]=s.teamName;setupMode=!s.teamConfigured;
 const me=()=>s.clubs[0],all=()=>me().roster,find=id=>all().find(p=>p.id===id),isPitch=p=>p.pos==='投',batScore=p=>p.contact*.5+p.power*.32+p.speed*.1+p.field*.08,armScore=p=>p.control*.35+p.break*.25+p.stamina*.15+(p.velocity-120)*.6;
