@@ -142,9 +142,15 @@ const CAPS={N:3999,R:4999,SR:5999,SSR:6999,UR:7999,LR:8999,MR:9999};
 const baseRating=p=>Math.min(99,Math.max(1,Math.round(p/85)));
 function capFor(p){return CAPS[p.rar]||9999}
 function convertAbilities(p){
- if(p.abilityScale===9999)return;
- for(const k of ABILITIES)p[k]=Math.min(capFor(p),Math.max(1,Math.round((p[k]||1)*85)));
- p.abilityScale=9999;
+ if(p.abilityScale!==9999){
+  for(const k of ABILITIES)p[k]=Math.min(capFor(p),Math.max(1,Math.round((p[k]||1)*85)));
+  p.abilityScale=9999;
+ }
+ // One-time SSR rebalance; preserve previous saves without reducing stats repeatedly.
+ if(p.rar==='SSR'&&!p.ssrBalance90){
+  for(const k of ABILITIES)p[k]=Math.max(1,Math.round(p[k]*0.9));
+  p.ssrBalance90=true;
+ }
 }
 function initializeTraining(){
  s.week=s.week||1;s.trainingPlans=s.trainingPlans||{};s.trainingReport=s.trainingReport||[];s.weekSchedule=s.weekSchedule||null;s.weekResults=s.weekResults||[];
