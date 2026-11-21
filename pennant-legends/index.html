@@ -204,17 +204,19 @@ function advanceWeek(){
  if(s.phase!=='regular')return;
  const games=ensureWeekSchedule();
  const results=[];
+ let latest=null;
  for(const game of games){
-  if(!game.done){
-   const before=s.game;simulateGame(game.opp);
-   if(s.game===before){render();return}
-   game.done=true;game.result={...s.lastResult,inning:s.lastResult.inning.map(x=>x.slice())};
-  }
-  results.push(WEEK_DAYS[game.day]+' '+clubs[game.opp]+' '+game.result.my+'-'+game.result.enemy+(game.selected?'【選択試合】':''));
+  if(!game.selected)continue;
+  const before=s.game;simulateGame(game.opp);
+  if(s.game===before){render();return}
+  game.done=true;game.result={...s.lastResult,inning:s.lastResult.inning.map(x=>x.slice())};
+  latest=game.result;
+  results.push(WEEK_DAYS[game.day]+' '+clubs[game.opp]+' '+game.result.my+'-'+game.result.enemy);
  }
  finishWeeklyTraining();
- s.weekResults=results;s.weekSchedule=null;s.revealedGame=s.lastResult;
- notice='第'+(s.week-1)+'週終了：'+results.join(' / ')+'。練習成果を発表しました。';
+ s.weekResults=results;s.weekSchedule=null;
+ if(latest)s.revealedGame=latest;
+ notice='第'+(s.week-1)+'週終了：'+(results.length?results.join(' / '):'試合を選択しなかったため、今週は試合なし')+'。練習成果を発表しました。';
  save();render();
 }
 const LR_LEGENDS=[["鬼塚 豪","一","破壊王",[6200,8850,2100,3800,5100,1200,4700,1000],145],["白鳥 悠真","遊","守備の芸術家",[6900,3300,7750,8800,8200,1200,6000,1100],144],["風間 隼人","中","韋駄天",[7300,3500,8750,8200,6200,1200,6900,1100],143],["九条 誠","捕","鉄壁の司令塔",[6400,4900,4300,8650,8550,1500,7200,1300],142],["不動 剛志","投","鉄腕",[1700,1800,2600,4000,6700,5200,8650,7700],160],["月城 玲央","投","魔球使い",[1700,1500,2400,4200,5600,7550,7600,8950],153],["真田 武蔵","三","勝負師",[7950,7200,5200,6500,6300,1200,6500,1100],146],["桐生 翔","二","安打製造機",[8950,4200,6500,7200,5700,1100,6100,1000],140],["鷹宮 龍之介","投","絶対守護神",[1300,1700,3000,4600,7300,7900,5700,8450],163],["氷室 蓮司","左","孤高のスラッガー",[7350,8750,3700,4900,5400,1100,6100,1100],147],["朝倉 大地","投","精密機械",[1500,1800,2400,4500,5500,8900,7800,7400],148],["神崎 琥珀","右","黄金の肩",[6850,7800,6100,7200,8950,1000,6500,1100],150]];
@@ -306,7 +308,7 @@ if(tab==='match'){
  const games=ensureWeekSchedule();
  h+='<div class="box"><h2>第'+s.week+'週｜試合日程</h2><p class="muted">今週プレイする試合を選んでください。結果は1週間進めた後にまとめて発表します。木曜日は休養日です。</p>';
  h+='<div class="grid">'+games.map(g=>'<div class="stat"><b>'+WEEK_DAYS[g.day]+'曜日</b><div>vs '+safeText(clubs[g.opp])+'</div>'+'<button class="'+(g.selected?'primary':'')+'" data-scheduled="'+g.slot+'">'+(g.selected?'選択済み ✓':'この試合を選ぶ')+'</button>'+'</div>').join('')+'</div>';
- h+='<p><button class="primary" data-action="week" '+(s.phase!=='regular'?'disabled':'')+'>1週間進める・結果発表</button></p><p class="muted small">試合結果・勝敗・練習成果は1週間進めるまで表示されません。選ばなかった試合も自動進行します。</p></div>';
+ h+='<p><button class="primary" data-action="week" '+(s.phase!=='regular'?'disabled':'')+'>1週間進める・結果発表</button></p><p class="muted small">試合結果・勝敗・練習成果は1週間進めるまで表示されません。選ばなかった試合は行われません。</p></div>';
  if(s.phase==='postseason')h+='<div class="box"><button class="primary" data-action="next">翌シーズンへ</button></div>';
  if(s.revealedGame){let r=s.revealedGame;h+='<div class="box"><h2>直近の試合 vs '+clubs[r.opp]+'</h2>'+table(['チーム',...Array.from({length:9},(_,i)=>i+1),'計'],[[clubs[0],...r.inning.map(x=>x[0]),r.my],[clubs[r.opp],...r.inning.map(x=>x[1]),r.enemy]])+'</div>'}
  h+='<div class="box"><h2>試合履歴</h2>'+s.logs.slice(0,12).map(l=>'<div class="line">第'+l.game+'戦 vs '+clubs[l.opp]+'　<b>'+l.my+' - '+l.enemy+'</b> '+(l.my>l.enemy?'勝':l.my<l.enemy?'負':'分')+'</div>').join('')+'</div>';
