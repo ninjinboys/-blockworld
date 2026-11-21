@@ -138,13 +138,18 @@ function buildCatalog(){
  return pool;
 }
 const ABILITIES=['contact','power','speed','field','arm','control','stamina','break'];
-const CAPS={N:3999,R:4999,SR:5999,SSR:6999,UR:7999,LR:8999,MR:9999};
-const baseRating=p=>Math.min(99,Math.max(1,Math.round(p/85)));
-function capFor(p){return CAPS[p.rar]||9999}
+const CAPS={N:1500,R:3000,SR:5000,SSR:6000,UR:8000,LR:9999,MR:12000};
+const baseRating=p=>Math.max(1,Math.round(p/85));
+function capFor(p){return CAPS[p.rar]||12000}
 function convertAbilities(p){
  if(p.abilityScale!==9999){
   for(const k of ABILITIES)p[k]=Math.min(capFor(p),Math.max(1,Math.round((p[k]||1)*85)));
   p.abilityScale=9999;
+ }
+ // Apply new rarity caps to existing saved players once, without touching other rarities.
+ if(!p.rarityCap2026){
+  for(const k of ABILITIES)p[k]=Math.min(capFor(p),p[k]);
+  p.rarityCap2026=true;
  }
  // One-time SSR rebalance; preserve previous saves without reducing stats repeatedly.
  if(p.rar==='SSR'&&!p.ssrBalance90){
@@ -332,7 +337,7 @@ if(tab==='match'){
 if(tab==='lineup'){let batters=all().filter(p=>!isPitch(p)),pitchers=all().filter(isPitch);h+='<div class="box row"><h2>打順・投手ローテーション</h2><button data-action="auto">戦力優先で自動編成</button></div><div class="box"><h3>打順・守備位置</h3>'+c.order.map((id,i)=>{let p=find(id);return '<div class="line row">'+(i+1)+'番 '+(p?nameCell(p):'未設定')+'<select data-order="'+i+'">'+batters.map(x=>'<option value="'+x.id+'" '+(id===x.id?'selected':'')+'>'+x.name+' / '+x.pos+'</option>').join('')+'</select></div>'}).join('')+'</div><div class="box"><h3>先発5人ローテーション</h3>'+c.rotation.map((id,i)=>'<div class="line row">第'+(i+1)+'先発 '+(find(id)?.name||'未設定')+'<select data-rotation="'+i+'">'+pitchers.map(x=>'<option value="'+x.id+'" '+(id===x.id?'selected':'')+'>'+x.name+' / 疲労'+x.fatigue+'</option>').join('')+'</select></div>').join('')+'</div>'}
 if(tab==='gacha'){h+='<div class="box"><h2>選手データベース</h2><p>登録選手：3,012人 ／ 未獲得・未所属：'+availablePlayers().length+'人</p><p class="muted small">選手は固定データから登場します。同じ選手が新しく生成されることはありません。</p></div>';h+='<div class="box"><h2> スカウトガチャ</h2><p class="muted">LR 0.2% / UR 0.8% / SSR 7% / SR 22% / R 40% / N 30%<br>10連SR以上確定・100回以内にUR確定 / 天井まであと'+(100-s.pity)+'回</p><div class="grid"><button class="primary" data-draw="1:normal">通常1回 300</button><button class="primary" data-draw="10:normal">通常10連 2700</button><button data-draw="1:limited">期間限定ピックアップ</button><button data-draw="10:pitcher">投手10連</button><button data-draw="10:fielder">野手10連</button><button data-draw="1:free" '+(s.daily===day()?'disabled':'')+'> デイリー無料1回</button></div></div>'+(drawn.length?'<div class="box draw"><h2>獲得選手</h2>'+drawn.map(p=>line(p)).join('')+'</div>':'')}
 if(tab==='players'){
- h+='<div class="box"><h2>週間育成（能力上限9,999）</h2><p>第'+s.week+'週：練習を設定し、「1週間進める」で6試合と練習結果をまとめて発表します。</p><p class="muted">調子・疲労・成長タイプで結果が変化。大アップ・特大アップ・覚醒も発生します。</p></div>';
+ h+='<div class="box"><h2>週間育成（最高能力上限12,000）</h2><p>第'+s.week+'週：練習を設定し、「1週間進める」で選択した試合と練習結果をまとめて発表します。</p><p class="muted">調子・疲労・成長タイプで結果が変化。大アップ・特大アップ・覚醒も発生します。</p></div>';
  if(s.trainingReport.length)h+='<div class="box"><h3>先週の育成結果</h3>'+s.trainingReport.map(x=>'<div class="line">'+safeText(x.name)+'：'+x.label+'　'+safeText(x.changes)+'</div>').join('')+'</div>';
  h+='<div class="box">'+all().map(p=>line(p,'<div class="training-controls"><span class="muted small">調子 '+p.condition+'/5 ・疲労 '+p.fatigue+' ・予定 '+TRAINING_NAMES[s.trainingPlans[p.id]||'rest']+'</span><div class="training-buttons">'+Object.keys(TRAINING_MENU).filter(k=>isPitch(p)?!['batting','fielding'].includes(k):!['pitching','endurance'].includes(k)).map(k=>'<button data-weektrain="'+p.id+':'+k+'" '+(s.trainingPlans[p.id]===k?'class="primary"':'')+'>'+TRAINING_NAMES[k]+'</button>').join('')+'</div></div>')).join('')+'</div>';
 }
