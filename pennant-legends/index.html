@@ -184,11 +184,15 @@ const WEEK_DAYS=['月','火','水','木','金','土','日'];
 function ensureWeekSchedule(){
  if(s.phase!=='regular')return [];
  if(s.weekSchedule&&s.weekSchedule.week===s.week)return s.weekSchedule.games;
- const games=[];const used=new Set();
- const count=Math.min(6,143-s.game);
- for(let i=0;i<count;i++){
-  let opponent=1+rand(11);if(used.has(opponent)){opponent=1+((opponent+i)%11)}used.add(opponent);
-  games.push({slot:i,day:i<3?i:i+1,opp:opponent,done:false,result:null});
+ const games=[];
+ // Each day independently offers 0–5 matches; schedules vary from week to week.
+ // The weekly selection is limited by remaining regular-season games.
+ let slot=0;
+ for(let day=0;day<7;day++){
+  const count=rand(6);
+  for(let i=0;i<count;i++){
+   games.push({slot:slot++,day,opp:1+rand(11),selected:false,done:false,result:null});
+  }
  }
  s.weekSchedule={week:s.week,games};save();return games;
 }
@@ -196,6 +200,7 @@ function playScheduled(slot){
  if(s.phase!=='regular')return;
  const game=ensureWeekSchedule().find(g=>g.slot===slot);
  if(!game)return;
+ if(!game.selected&&ensureWeekSchedule().filter(g=>g.selected).length>=143-s.game){notice='今季の残り試合数を超えて選択できません';render();return}
  game.selected=!game.selected;
  notice=WEEK_DAYS[game.day]+'曜日・'+clubs[game.opp]+'戦を'+(game.selected?'プレイ予定に登録しました':'予定から外しました')+'。試合結果は1週間後に発表します。';
  save();render();
@@ -306,8 +311,8 @@ let tabs=[['home',' ホーム'],['match',' 試合'],['lineup',' 編成'],['gacha
 if(tab==='home'){h+='<div class="box"><h2>'+safeText(clubs[0])+'</h2><p>ホーム球場へようこそ。試合は下部の「試合」メニューから進められます。</p><div class="grid"><div class="stat">チーム戦力<b>'+rosterPower(c).toFixed(1)+'</b></div><div class="stat">今季成績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">次の試合<b>'+(s.phase==='regular'?'第'+(s.game+1)+'戦':'シーズン終了')+'</b></div></div></div>'}
 if(tab==='match'){
  const games=ensureWeekSchedule();
- h+='<div class="box"><h2>第'+s.week+'週｜試合日程</h2><p class="muted">今週プレイする試合を選んでください。結果は1週間進めた後にまとめて発表します。木曜日は休養日です。</p>';
- h+='<div class="grid">'+games.map(g=>'<div class="stat"><b>'+WEEK_DAYS[g.day]+'曜日</b><div>vs '+safeText(clubs[g.opp])+'</div>'+'<button class="'+(g.selected?'primary':'')+'" data-scheduled="'+g.slot+'">'+(g.selected?'選択済み ✓':'この試合を選ぶ')+'</button>'+'</div>').join('')+'</div>';
+ h+='<div class="box"><h2>第'+s.week+'週｜試合日程</h2><p class="muted">各曜日に0〜5試合の候補が登場し、毎週変わります。好きな試合を選択してください。結果は翌週に発表されます。</p><p class="muted small">選択中 '+games.filter(g=>g.selected).length+'試合 ／ 今季残り '+Math.max(0,143-s.game)+'試合</p>';
+ h+='<div class="grid">'+WEEK_DAYS.map((day,i)=>{const daily=games.filter(g=>g.day===i);return '<div class="stat"><b>'+day+'曜日（'+daily.length+'試合）</b>'+(daily.length?daily.map(g=>'<div class="line">vs '+safeText(clubs[g.opp])+' <button class="'+(g.selected?'primary':'')+'" data-scheduled="'+g.slot+'">'+(g.selected?'選択済み ✓':'選択する')+'</button></div>').join(''):'<p class="muted small">試合なし</p>')+'</div>'}).join('')+'</div>';
  h+='<p><button class="primary" data-action="week" '+(s.phase!=='regular'?'disabled':'')+'>1週間進める・結果発表</button></p><p class="muted small">試合結果・勝敗・練習成果は1週間進めるまで表示されません。選ばなかった試合は行われません。</p></div>';
  if(s.phase==='postseason')h+='<div class="box"><button class="primary" data-action="next">翌シーズンへ</button></div>';
  if(s.revealedGame){let r=s.revealedGame;h+='<div class="box"><h2>直近の試合 vs '+clubs[r.opp]+'</h2>'+table(['チーム',...Array.from({length:9},(_,i)=>i+1),'計'],[[clubs[0],...r.inning.map(x=>x[0]),r.my],[clubs[r.opp],...r.inning.map(x=>x[1]),r.enemy]])+'</div>'}
