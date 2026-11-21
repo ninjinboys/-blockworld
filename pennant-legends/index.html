@@ -121,6 +121,20 @@ function buildCatalog(){
   let rar=extraSlots[i-1000],base={N:43,R:55,SR:67,SSR:79,UR:89}[rar],position=i%4===0?'投':pos[roll(8)],skill=()=>clamp(base+roll(25)-12);
   pool.push({id:'catalog-'+String(i+1).padStart(4,'0'),name:choose(last)+' '+choose(first),pos:position,rar,age:18+roll(16),foreign:false,growth:choose(growths),trait:choose(traits),contact:skill(),power:skill(),speed:skill(),field:skill(),arm:skill(),control:skill(),stamina:skill(),velocity:clamp(125+Math.round(base*.29)+roll(11)-5,125,165),break:skill(),condition:3,fatigue:0,level:1,exp:0,salary:Math.round(base*base/25+roll(300)),stats:{},career:{g:0,ab:0,h:0,hr:0,rbi:0,bb:0,so:0,ip:0,er:0,win:0,loss:0,sv:0,k:0}});
  }
+ // Keep the original 1,000 players unchanged. Balance the additional 2,000
+ // by exchanging five UR fielders with five SSR pitchers (30 UR total).
+ const extraURFielders=pool.filter(p=>Number(p.id.slice(8))>1000&&p.rar==='UR'&&p.pos!=='投').slice(0,5);
+ const extraSSRPitchers=pool.filter(p=>Number(p.id.slice(8))>1000&&p.rar==='SSR'&&p.pos==='投').slice(0,5);
+ if(extraURFielders.length!==5||extraSSRPitchers.length!==5)throw Error('UR pitcher balance failed');
+ for(const [players,rar,delta] of [[extraURFielders,'SSR',-10],[extraSSRPitchers,'UR',10]]){
+  for(const p of players){
+   p.rar=rar;
+   for(const key of ['contact','power','speed','field','arm','control','stamina','break'])p[key]=clamp(p[key]+delta);
+   p.velocity=clamp(p.velocity+Math.round(delta*.29),125,165);
+   p.salary=Math.max(1,p.salary+delta*65);
+  }
+ }
+
  return pool;
 }
 const PLAYER_CATALOG=buildCatalog();
