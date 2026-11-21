@@ -150,7 +150,6 @@ function initializeTraining(){
  s.week=s.week||1;s.trainingPlans=s.trainingPlans||{};s.trainingReport=s.trainingReport||[];
  for(const club of s.clubs)for(const p of [...(club.roster||[]),...(club.retired||[])])convertAbilities(p);
 }
-for(const p of PLAYER_CATALOG)convertAbilities(p);
 const TRAINING_MENU={strength:['power','arm'],batting:['contact','power'],running:['speed','stamina'],fielding:['field','arm'],pitching:['control','break'],endurance:['stamina','control'],rest:[]};
 const TRAINING_NAMES={strength:'筋力トレーニング',batting:'打撃練習',running:'走り込み',fielding:'守備練習',pitching:'投球練習',endurance:'スタミナ強化',rest:'休養'};
 function setWeeklyTraining(id,kind){
@@ -192,6 +191,7 @@ function advanceWeek(){
  save();render();
 }
 const PLAYER_CATALOG=buildCatalog();
+for(const p of PLAYER_CATALOG)convertAbilities(p);
 function usedCatalogIds(){let used=new Set();if(s?.clubs)for(const club of s.clubs){for(const p of club.roster||[])used.add(p.id);for(const p of club.retired||[])used.add(p.id)}return used}
 function availablePlayers(rarity=null,position=null){
  const used=usedCatalogIds();
