@@ -196,8 +196,6 @@ function playScheduled(slot,watch=false){
  if(s.phase!=='regular')return;
  const games=ensureWeekSchedule(),game=games.find(g=>g.slot===slot);
  if(!game||game.done)return;
- // A future game cannot be played before earlier scheduled games.
- if(games.some(g=>g.slot<slot&&!g.done)){notice='先の日程を選ぶには、前の試合を先に消化してください';render();return}
  const before=s.game;simulateGame(game.opp);
  if(s.game===before){render();return}
  game.done=true;game.result={...s.lastResult,inning:s.lastResult.inning.map(x=>x.slice())};
@@ -308,9 +306,9 @@ function render(){if(setupMode){showSetup();return}let c=me();$('stadiumTeam').t
 let tabs=[['home',' ホーム'],['match',' 試合'],['lineup',' 編成'],['gacha',' ガチャ'],['players',' 育成'],['catalog',' 名鑑'],['league',' 記録'],['office',' 運営'],['legacy',' 球団史']];$('tabs').innerHTML=tabs.map(([id,t])=>'<button '+(id===tab?'class="primary"':'')+' data-tab="'+id+'">'+menuIcon(id)+'<span class="menu-label">'+t.trim()+'</span></button>').join('');let h=notice?'<div class="box good">'+notice+'</div>':'';
 if(tab==='home'){h+='<div class="box"><h2>'+safeText(clubs[0])+'</h2><p>ホーム球場へようこそ。試合は下部の「試合」メニューから進められます。</p><div class="grid"><div class="stat">チーム戦力<b>'+rosterPower(c).toFixed(1)+'</b></div><div class="stat">今季成績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">次の試合<b>'+(s.phase==='regular'?'第'+(s.game+1)+'戦':'シーズン終了')+'</b></div></div></div>'}
 if(tab==='match'){
- const games=ensureWeekSchedule(),next=games.find(g=>!g.done);
- h+='<div class="box"><h2>第'+s.week+'週｜試合日程</h2><p class="muted">日程から試合を選択できます。先の日付は前の試合を消化すると選べます。日曜日は休養日です。</p>';
- h+='<div class="grid">'+games.map(g=>'<div class="stat"><b>'+WEEK_DAYS[g.day]+'曜日</b><div>vs '+safeText(clubs[g.opp])+'</div>'+(g.done?'<strong>'+g.result.my+'－'+g.result.enemy+'　'+(g.result.my>g.result.enemy?'勝利':g.result.my<g.result.enemy?'敗戦':'引分')+'</strong>':'<button class="'+(next===g?'primary':'')+'" data-scheduled="'+g.slot+'" '+(next!==g?'disabled':'')+'>この試合を行う</button>')+'</div>').join('')+'</div>';
+ const games=ensureWeekSchedule();
+ h+='<div class="box"><h2>第'+s.week+'週｜試合日程</h2><p class="muted">日程から好きな試合を選んでプレイできます。木曜日は休養日です。</p>';
+ h+='<div class="grid">'+games.map(g=>'<div class="stat"><b>'+WEEK_DAYS[g.day]+'曜日</b><div>vs '+safeText(clubs[g.opp])+'</div>'+(g.done?'<strong>'+g.result.my+'－'+g.result.enemy+'　'+(g.result.my>g.result.enemy?'勝利':g.result.my<g.result.enemy?'敗戦':'引分')+'</strong>':'<button class="primary" data-scheduled="'+g.slot+'">この試合を行う</button>')+'</div>').join('')+'</div>';
  h+='<p><button class="primary" data-action="week" '+(s.phase!=='regular'?'disabled':'')+'>残りの試合を消化して翌週へ</button></p><p class="muted small">翌週に練習成果を発表します。未消化試合は自動で進行します。</p></div>';
  if(s.phase==='postseason')h+='<div class="box"><button class="primary" data-action="next">翌シーズンへ</button></div>';
  if(s.lastResult){let r=s.lastResult;h+='<div class="box"><h2>直近の試合 vs '+clubs[r.opp]+'</h2>'+table(['チーム',...Array.from({length:9},(_,i)=>i+1),'計'],[[clubs[0],...r.inning.map(x=>x[0]),r.my],[clubs[r.opp],...r.inning.map(x=>x[1]),r.enemy]])+'</div>'}
