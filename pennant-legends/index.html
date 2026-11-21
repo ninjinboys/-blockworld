@@ -190,8 +190,13 @@ function ensureWeekSchedule(){
  let slot=0;
  for(let day=0;day<7;day++){
   const count=rand(6);
+  const opponents=Array.from({length:11},(_,i)=>i+1);
+  for(let i=opponents.length-1;i>0;i--){
+   const j=rand(i+1);
+   [opponents[i],opponents[j]]=[opponents[j],opponents[i]];
+  }
   for(let i=0;i<count;i++){
-   games.push({slot:slot++,day,opp:1+rand(11),selected:false,done:false,result:null});
+   games.push({slot:slot++,day,opp:opponents[i],selected:false,done:false,result:null});
   }
  }
  s.weekSchedule={week:s.week,games};save();return games;
