@@ -547,12 +547,22 @@ function addStat(p,k,n=1){batting(p)[k]+=n;p.career[k]+=n}
 function season(p){return batting(p)}
 function average(p){let x=season(p);return x.ab?(x.h/x.ab).toFixed(3):'.---'}
 function skillLabel(p){return isPitch(p)?'球速'+p.velocity+' 制球'+p.control+' 変化'+p.break+' 体力'+p.stamina:'ミート'+p.contact+' パワー'+p.power+' 走力'+p.speed+' 守備'+p.field+' 肩'+p.arm}
+// Keep the catcher gear and gray-haired portrait with suitable catalog players.
+const portraitAssignments=Array.from({length:3000},(_,i)=>(i*29)%72);
+for(let start=0;start<portraitAssignments.length;start+=72){
+ const end=Math.min(start+72,portraitAssignments.length);
+ for(const [sprite,eligible] of [[44,p=>p.pos==='捕'],[59,p=>p.age>=30]]){
+  const current=portraitAssignments.indexOf(sprite,start);
+  if(current<0||current>=end||eligible(PLAYER_CATALOG[current]))continue;
+  const replacement=PLAYER_CATALOG.findIndex((p,i)=>i>=start&&i<end&&portraitAssignments[i]!==44&&portraitAssignments[i]!==59&&eligible(p));
+  if(replacement>=0)[portraitAssignments[current],portraitAssignments[replacement]]=[portraitAssignments[replacement],sprite];
+ }
+}
 function playerPortrait(p){
  const match=/^catalog-([0-9]{4})$/.exec(p.id);
  const id=match?Number(match[1]):0;
  if(id<1||id>3000||!['N','R','SR','SSR','UR'].includes(p.rar))return '';
- // The multiplier spreads consecutive catalog entries across the two sprite sheets.
- const index=((id-1)*29)%72,x=(index%6)*48,y=Math.floor(index/6)*48;
+ const index=portraitAssignments[id-1],x=(index%6)*48,y=Math.floor(index/6)*48;
  const mirrored=Math.floor((id-1)/72)%2?' mirrored':'';
  return '<span aria-hidden="true" class="player-portrait'+mirrored+'" style="--portrait-x:'+(-x)+'px;--portrait-y:'+(-y)+'px"></span>';
 }
