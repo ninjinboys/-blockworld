@@ -141,6 +141,18 @@ html body .catalog-search-row button{box-sizing:border-box;flex:0 0 auto;min-hei
 .profile-panel .profile-actions button{flex:1;min-width:0;min-height:48px!important}
 .profile-hint{font-size:13px;color:#d1e8ff;line-height:1.6}
 #profileError{color:#ffe0ae;min-height:1.4em;overflow-wrap:anywhere}
+
+.team-rank{display:inline-block;min-width:50px;padding:3px 9px;text-align:center;background:#16477d;color:#f4faff;border:2px solid #316da6;border-radius:6px;font-weight:1000;line-height:1.3;text-shadow:none}
+.team-rank.rank-A,.team-rank.rank-B{background:#f7d36b;color:#543600;border-color:#bb8a25}
+.team-rank.rank-S,.team-rank.rank-SS{background:#9ce5ff;color:#093d70;border-color:#3689c4}
+.team-rank.rank-SSS{background:#e7b4ff;color:#5b186f;border-color:#a546c2}
+.stat .rank-rule{display:block;color:#164572;font-size:11px;margin-top:7px;font-weight:700}
+.friend-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:18px}
+.friend-fields textarea{display:block;width:100%;min-height:108px;margin:14px 0;padding:12px;resize:vertical;border:3px solid #6bafee;border-radius:8px;color:#123b70;background:#e6f3ff;font:16px/1.4 system-ui}
+.friend-versus{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;text-align:center}
+.friend-versus .stat{overflow-wrap:anywhere}
+.friend-score{font-size:clamp(20px,4vw,32px);font-weight:900;color:#fff2a1;padding:12px 0;overflow-wrap:anywhere}
+@media(max-width:600px){.friend-versus{gap:6px}.friend-versus .stat{font-size:13px}.tabs .menu-label{font-size:9px!important}.tabs .menu-icon{width:21px!important;height:21px!important}}
 </style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="profileStrip" class="profile-strip"></div><div id="profileDialog" class="profile-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle"><div id="profilePanel" class="profile-panel"></div></div><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene" id="stadiumScene" aria-label="球団のホーム球場"><div class="stadium-sky"><span class="stadium-cloud cloud-a"></span><span class="stadium-cloud cloud-b"></span></div><div class="stadium-board"><span id="stadiumTeam">MY BASEBALL CLUB</span><small>HOME STADIUM</small></div><div class="stadium-stands"><span></span></div><div class="stadium-field"><div class="stadium-outfield"></div><div class="stadium-infield"><div class="stadium-mound"></div><span class="base base-a"></span><span class="base base-b"></span><span class="base base-c"></span></div><div class="stadium-home"></div></div><div class="stadium-caption"> わが球団のホームグラウンド</div></section><div id="matchViewer" class="match-viewer" hidden><div class="match-viewer-inner"><div class="match-viewer-header"><strong>試合観戦</strong><button data-action="closeWatch">終了</button></div><div id="matchScoreboard"></div><div class="match-field"><div class="match-diamond"><span class="match-base match-base-second"></span><span class="match-base match-base-first"></span><span class="match-base match-base-third"></span><span class="match-pitcher"></span><span class="match-batter"></span></div><div class="match-field-label">LIVE MATCH VIEW</div></div><div id="matchCommentary" class="match-commentary"></div><div class="match-watch-actions"><button data-action="nextInning">次のイニング</button><button data-action="watchToEnd">試合終了まで進める</button></div></div></div><div id="skipChoice" class="skip-choice" hidden role="dialog" aria-modal="true" aria-labelledby="skipChoiceTitle"><div class="skip-choice-panel"><h2 id="skipChoiceTitle">試合をスキップしますか？</h2><p id="skipChoiceDetail">進行方法を選択してください。</p><div class="skip-choice-buttons"><button data-action="confirmSkip">スキップする</button><button data-action="confirmWatch">スキップしない</button></div><button class="skip-cancel" data-action="cancelSkip">キャンセル</button></div></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.6</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
@@ -396,6 +408,90 @@ if(!validSave(s)){activeProfile='';init()}
 if(s.teamName)clubs[0]=s.teamName;initializeTraining();setupMode=!s.teamConfigured;
 const me=()=>s.clubs[0],all=()=>me().roster,find=id=>all().find(p=>p.id===id),isPitch=p=>p.pos==='投',batScore=p=>baseRating(p.contact)*.5+baseRating(p.power)*.32+baseRating(p.speed)*.1+baseRating(p.field)*.08,armScore=p=>baseRating(p.control)*.35+baseRating(p.break)*.25+baseRating(p.stamina)*.15+(p.velocity-120)*.6;
 function rosterPower(c){let b=c.order.map(id=>c.roster.find(p=>p.id===id)).filter(Boolean),p=c.rotation.map(id=>c.roster.find(x=>x.id===id)).filter(Boolean);return (b.reduce((a,x)=>a+batScore(x),0)/Math.max(1,b.length))*.65+(p.reduce((a,x)=>a+armScore(x),0)/Math.max(1,p.length))*.35}
+
+const TEAM_RANKS=[[110,'SSS'],[95,'SS'],[80,'S'],[70,'A'],[60,'B'],[50,'C'],[40,'D'],[30,'E'],[20,'F'],[0,'G']];
+function teamRank(power){return TEAM_RANKS.find(([min])=>power>=min)?.[1]||'G'}
+function rankLabel(power){return '<span class="team-rank rank-'+teamRank(power)+'">'+teamRank(power)+'</span>'}
+let friendCode='',friendOpponent=null,friendLast=null;
+function battlePlayer(p,kind,i){
+ const rar=Object.hasOwn(CAPS,p.rar)?p.rar:null;
+ if(!rar)throw Error('選手のレアリティが不正です。');
+ const pos=String(p.pos||'');
+ if(kind==='pitch'&&pos!=='投'||kind==='bat'&& !['捕','一','二','三','遊','左','中','右','投'].includes(pos))throw Error('選手の守備位置が不正です。');
+ const out={id:kind+i,name:String(p.name||'選手').slice(0,40),pos,rar,condition:3,fatigue:0};
+ for(const k of ABILITIES){if(!Number.isFinite(p[k])||p[k]<1||p[k]>CAPS[rar])throw Error('選手能力が規定範囲外です。');out[k]=Math.round(p[k])}
+ if(!Number.isFinite(p.velocity)||p.velocity<100||p.velocity>180)throw Error('球速が規定範囲外です。');
+ out.velocity=Math.round(p.velocity);return out;
+}
+function battleSnapshot(team,club){
+ const bats=club.order.map(id=>club.roster.find(p=>p.id===id)).filter(Boolean);
+ const pitchers=club.rotation.map(id=>club.roster.find(p=>p.id===id)).filter(Boolean);
+ if(!bats.length||!pitchers.length)throw Error('打順と先発投手を設定してください。');
+ return {v:1,team:String(team).slice(0,24),bats:bats.slice(0,9).map((p,i)=>battlePlayer(p,'bat',i)),pitchers:pitchers.slice(0,5).map((p,i)=>battlePlayer(p,'pitch',i))};
+}
+function snapshotPower(t){return rosterPower({roster:[...t.bats,...t.pitchers],order:t.bats.map(p=>p.id),rotation:t.pitchers.map(p=>p.id)})}
+function encodeFriend(t){const bytes=new TextEncoder().encode(JSON.stringify(t));return 'PL1-'+btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function decodeFriend(code){
+ const raw=code.trim();if(raw.length>40000||!/^PL1-[A-Za-z0-9_-]+$/.test(raw))throw Error('正しい対戦コードを入力してください。');
+ let o;try{o=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(atob(raw.slice(4).replace(/-/g,'+').replace(/_/g,'/')),ch=>ch.charCodeAt(0))))}catch(e){throw Error('対戦コードを読み込めません。')}
+ if(o?.v!==1||typeof o.team!=='string'||!o.team.trim()||!Array.isArray(o.bats)||o.bats.length<1||o.bats.length>9||!Array.isArray(o.pitchers)||o.pitchers.length<1||o.pitchers.length>5)throw Error('球団データが不正です。');
+ return {v:1,team:o.team.trim().slice(0,24),bats:o.bats.map((p,i)=>battlePlayer(p,'bat',i)),pitchers:o.pitchers.map((p,i)=>battlePlayer(p,'pitch',i))};
+}
+function friendHalf(bats,pitch,turn){
+ let runs=0,outs=0,bases=[false,false,false],attempts=0;
+ while(outs<3&&attempts++<120){
+  const res=resolvePlate(bats[turn.i++%bats.length],pitch);
+  if(res==='OUT'||res==='SO'){outs++;continue}
+  if(res==='BB'){
+   if(bases[0]){if(bases[1]){if(bases[2])runs++;bases[2]=true}bases[1]=true}bases[0]=true;continue;
+  }
+  const n=res==='HR'?4:res==='3B'?3:res==='2B'?2:1;
+  const next=[false,false,false];
+  for(let j=2;j>=0;j--)if(bases[j]){if(j+n>=3)runs++;else next[j+n]=true}
+  if(n===4)runs++;else next[n-1]=true;
+  bases=next;
+ }
+ return runs;
+}
+function simulateFriend(a,b){
+ const pa=a.pitchers[0],pb=b.pitchers[0],ta={i:0},tb={i:0};let my=0,opp=0;const innings=[];
+ for(let i=1;i<=12;i++){
+  const x=friendHalf(a.bats,pb,ta);my+=x;
+  if(i>=9&&opp>my){innings.push([x,null]);break}
+  const y=friendHalf(b.bats,pa,tb);opp+=y;innings.push([x,y]);
+  if(i>=9&&my!==opp)break;
+ }
+ return {team:a.team,opponent:b.team,my,opp,innings,stamp:new Date().toISOString()};
+}
+function friendAction(action){
+ try{
+  if(action==='friendGenerate'){friendCode=encodeFriend(battleSnapshot(clubs[0],me()));notice='対戦コードを発行しました。';render();return}
+  if(action==='friendCopy'){
+   const input=$('friendShare');if(!input?.value)return;input.focus();input.select();
+   if(navigator.clipboard?.writeText)navigator.clipboard.writeText(input.value).then(()=>{$('friendCopyStatus').textContent='コピーしました'}).catch(()=>{$('friendCopyStatus').textContent='選択したコードを手動でコピーしてください'});
+   else $('friendCopyStatus').textContent='選択したコードを手動でコピーしてください';return;
+  }
+  if(action==='friendLoad'){friendOpponent=decodeFriend($('friendInput').value);friendLast=null;notice='相手球団を読み込みました。';render();return}
+  if(action==='friendPlay'){
+   if(!friendOpponent)throw Error('先に相手の対戦コードを読み込んでください。');
+   friendLast=simulateFriend(battleSnapshot(clubs[0],me()),friendOpponent);
+   s.friendHistory=[friendLast,...(Array.isArray(s.friendHistory)?s.friendHistory:[])].slice(0,30);
+   save();notice='フレンド対戦終了！';render();return;
+  }
+ }catch(e){const error=$('friendError');if(error)error.textContent=e.message||'処理に失敗しました。'}
+}
+function friendView(){
+ let html='<div class="box"><h2>フレンド対戦</h2><p>友達と対戦コードを交換し、登録時点の球団同士で対戦できます。相手がログインしていなくても遊べます。</p><p class="muted small">非同期・コード交換型。サーバー接続・リアルタイム通信・公式ランキングはありません。通常の成績、疲労、育成、コインには影響しません。</p><div class="friend-fields"><div><h3>自分の対戦コード</h3><button data-action="friendGenerate">最新の球団コードを発行</button><textarea id="friendShare" readonly placeholder="ここに対戦コードが表示されます">'+safeText(friendCode)+'</textarea><button data-action="friendCopy" '+(!friendCode?'disabled':'')+'>コードをコピー</button><span id="friendCopyStatus" class="small"></span></div><div><h3>友達の対戦コード</h3><textarea id="friendInput" placeholder="友達から受け取った対戦コードを貼り付け"></textarea><button data-action="friendLoad">相手球団を読み込む</button></div></div><p id="friendError" class="bad" role="status"></p></div>';
+ if(friendOpponent){
+  const op=snapshotPower(friendOpponent),own=rosterPower(me());
+  html+='<div class="box"><h2>対戦カード</h2><div class="friend-versus"><div class="stat">'+safeText(clubs[0])+'<b>'+rankLabel(own)+' '+own.toFixed(1)+'</b></div><strong>VS</strong><div class="stat">'+safeText(friendOpponent.team)+'<b>'+rankLabel(op)+' '+op.toFixed(1)+'</b></div></div><p>9回制・延長12回まで・自動試合</p><button data-action="friendPlay">対戦開始</button></div>';
+ }
+ if(friendLast){const x=friendLast;html+='<div class="box"><h2>試合結果：'+(x.my===x.opp?'引き分け':x.my>x.opp?'勝利':'敗北')+'</h2><div class="friend-score">'+safeText(x.team)+' '+x.my+' − '+x.opp+' '+safeText(x.opponent)+'</div>'+table(['球団',...x.innings.map((v,i)=>i+1),'計'],[[safeText(x.team),...x.innings.map(v=>v[0]),x.my],[safeText(x.opponent),...x.innings.map(v=>v[1]===null?'X':v[1]),x.opp]])+'</div>'}
+ const history=Array.isArray(s.friendHistory)?s.friendHistory:[];
+ html+='<div class="box"><h2>対戦履歴（端末内）</h2>'+(history.length?table(['対戦相手','スコア','結果'],history.map(x=>[safeText(x.opponent),x.my+' − '+x.opp,x.my>x.opp?'勝利':x.my<x.opp?'敗北':'引分'])):'<p class="muted">まだ対戦していません。</p>')+'</div>';
+ return html;
+}
+
 function batting(p){return p.stats[s.year]||(p.stats[s.year]={g:0,ab:0,h:0,hr:0,rbi:0,bb:0,so:0,ip:0,er:0,win:0,loss:0,sv:0,k:0})}
 function addStat(p,k,n=1){batting(p)[k]+=n;p.career[k]+=n}
 function season(p){return batting(p)}
@@ -430,7 +526,7 @@ function nextYear(){refreshMRUnlocks();retire();let c=me(),pay=all().reduce((sum
 function hof(id){let p=me().retired.find(x=>x.id===id);if(!p)return;p.hof=true;notice=p.name+'が殿堂入りしました';save();render()}
 function permanent(id){let p=me().retired.find(x=>x.id===id);if(!p)return;let num=String(1+me().numbers.length);me().numbers.push({number:num,name:p.name});notice=p.name+'の背番号'+num+'を永久欠番にしました';save();render()}
 
-function resetGame(){if(!confirm('保存データをすべて削除します。シーズン・選手・ガチャ・球団情報は元に戻せません。削除しますか？'))return;if(!confirm('最終確認：本当に全データを削除して最初から始めますか？'))return;try{localStorage.removeItem(profileSaveKey())}catch(e){alert('保存データを削除できませんでした');return}clubs[0]='広島レッドスターズ';tab='home';notice='';drawn=[];init();setupMode=true;showSetup();}
+function resetGame(){if(!confirm('保存データをすべて削除します。シーズン・選手・ガチャ・球団情報は元に戻せません。削除しますか？'))return;if(!confirm('最終確認：本当に全データを削除して最初から始めますか？'))return;try{localStorage.removeItem(profileSaveKey())}catch(e){alert('保存データを削除できませんでした');return}clubs[0]='広島レッドスターズ';tab='home';notice='';drawn=[];friendCode='';friendOpponent=null;friendLast=null;init();setupMode=true;showSetup();}
 function safeText(x){return String(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function showSetup(edit=false){
 setupMode=true;
@@ -442,6 +538,8 @@ function updateTeamPreview(){let n=$('teamNameInput'),color=$('teamColorInput');
 function finishSetup(){let name=$('teamNameInput').value.trim().slice(0,24);if(!name){$('teamNameInput').focus();return}if(clubs.slice(1).includes(name)){alert('ほかの球団と同じ名前は使えません');return}s.teamName=name;s.teamColor=$('teamColorInput').value;s.teamConfigured=true;clubs[0]=name;setupMode=false;$('setup').hidden=true;$('summary').hidden=false;$('tabs').hidden=false;$('view').hidden=false;notice='「'+name+'」のチーム設定が完了しました！';save();render()}
 function table(headers,rows){return '<div class="scroll"><table><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
 const ICON_PATHS={
+friend:'<circle cx="20" cy="16" r="8"/><circle cx="44" cy="16" r="8"/><path d="M5 44v-8c0-7 6-11 15-11s15 4 15 11v8M29 44v-8c0-7 6-11 15-11s15 4 15 11v8M12 52h40M22 46l20 12M42 46 22 58"/>',
+mr:'<path d="M8 18l12 11 12-17 12 17 12-11-7 32H15L8 18zM16 42h32"/>',
 home:'<path d="M8 29 32 10l24 19v25H8V29z"/><path d="M25 54V35h14v19M18 28h6m16 0h6"/>',
 match:'<circle cx="32" cy="32" r="21"/><path d="M17 17c12 9 20 23 30 30M47 17C35 26 28 38 17 47"/><path d="M11 32h5m32 0h5"/>',
 lineup:'<rect x="16" y="12" width="32" height="43" rx="4"/><path d="M25 12v-4h14v4M23 25h18M23 34h18M23 43h11"/><path d="m18 25 2 2 4-5"/>',
@@ -500,6 +598,7 @@ function activateProfile(id,data){
   if(id)localStorage.setItem(ACTIVE_KEY,id);else localStorage.removeItem(ACTIVE_KEY);
  }catch(e){s=old;activeProfile=oldId;clubs[0]=s.teamName||'広島レッドスターズ';throw e}
  clubs[0]=s.teamName||'広島レッドスターズ';initializeTraining();
+ friendCode='';friendOpponent=null;friendLast=null;
  setupMode=!s.teamConfigured;tab='home';notice='';drawn=[];pendingGames=0;watchQueue=[];watchActive=false;watchInning=0;
  $('matchViewer').hidden=true;$('skipChoice').hidden=true;
  $('setup').hidden=!setupMode;$('view').hidden=setupMode;$('summary').hidden=setupMode;$('tabs').hidden=setupMode;
@@ -536,14 +635,15 @@ function logoutProfile(){
  try{activateProfile('',readSave(''));notice='ゲストプレイに戻りました。';render()}catch(e){alert(e.message)}
 }
 
-function render(){renderProfileStrip();if(setupMode){showSetup();return}let c=me();$('stadiumTeam').textContent=clubs[0];$('stadiumScene').hidden=tab!=='home';$('summary').innerHTML='<div class="grid"><div class="stat">シーズン<b>'+s.year+'年</b></div><div class="stat">消化試合<b>'+s.game+'/143</b></div><div class="stat">戦績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">ガチャコイン<b>'+fmt(s.coins)+'</b></div><div class="stat">球団資金<b>'+fmt(c.finance)+'</b></div></div>';
-let tabs=[['mr',' MR獲得'],['home',' ホーム'],['match',' 試合'],['lineup',' 編成'],['gacha',' ガチャ'],['players',' 育成'],['catalog',' 名鑑'],['league',' 記録'],['office',' 運営'],['legacy',' 球団史']];$('tabs').innerHTML=tabs.map(([id,t])=>'<button '+(id===tab?'class="primary"':'')+' data-tab="'+id+'">'+menuIcon(id)+'<span class="menu-label">'+t.trim()+'</span></button>').join('');let h=notice?'<div class="box good">'+notice+'</div>':'';
+function render(){renderProfileStrip();if(setupMode){showSetup();return}let c=me();$('stadiumTeam').textContent=clubs[0];$('stadiumScene').hidden=tab!=='home';$('summary').innerHTML='<div class="grid"><div class="stat">シーズン<b>'+s.year+'年</b></div><div class="stat">消化試合<b>'+s.game+'/143</b></div><div class="stat">戦績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">ガチャコイン<b>'+fmt(s.coins)+'</b></div><div class="stat">球団資金<b>'+fmt(c.finance)+'</b></div><div class="stat">球団ランク<b>'+rankLabel(rosterPower(c))+'</b></div></div>';
+let tabs=[['mr',' MR獲得'],['home',' ホーム'],['match',' 試合'],['friend',' 対戦'],['lineup',' 編成'],['gacha',' ガチャ'],['players',' 育成'],['catalog',' 名鑑'],['league',' 記録'],['office',' 運営'],['legacy',' 球団史']];$('tabs').innerHTML=tabs.map(([id,t])=>'<button '+(id===tab?'class="primary"':'')+' data-tab="'+id+'">'+menuIcon(id)+'<span class="menu-label">'+t.trim()+'</span></button>').join('');let h=notice?'<div class="box good">'+notice+'</div>':'';
+if(tab==='friend'){h+=friendView()}
 if(tab==='mr'){
  refreshMRUnlocks();
  h+='<div class="box"><h2>MR獲得ミッション（全15人）</h2><p>MRはガチャから排出されません。条件達成で1人ずつ獲得できます。最高能力上限12,000。</p></div>';
  h+='<div class="mr-mission-grid">'+MR_LEGENDS.map(([name,pos,trait,condition,mission],i)=>{const owned=usedCatalogIds().has('catalog-'+(3013+i)),ready=!!s.mrUnlocked[i];return '<div class="stat mr-mission-card"><b class="mr-player-name">MR '+safeText(name)+'</b><p class="mr-player-trait">'+pos+'｜'+safeText(trait)+'</p><div class="mr-requirement"><strong>獲得条件</strong><div>'+safeText(condition)+'</div></div><button data-claim-mr="'+i+'" '+(!ready||owned?'disabled':'')+'>'+(owned?'獲得済み':ready?'獲得する':'未達成')+'</button></div>'}).join('')+'</div>';
 }
-if(tab==='home'){h+='<div class="box"><h2>'+safeText(clubs[0])+'</h2><p>ホーム球場へようこそ。試合は下部の「試合」メニューから進められます。</p><div class="grid"><div class="stat">チーム戦力<b>'+rosterPower(c).toFixed(1)+'</b></div><div class="stat">今季成績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">次の試合<b>'+(s.phase==='regular'?'第'+(s.game+1)+'戦':'シーズン終了')+'</b></div></div></div>'}
+if(tab==='home'){h+='<div class="box"><h2>'+safeText(clubs[0])+'</h2><p>ホーム球場へようこそ。試合は下部の「試合」メニューから進められます。</p><div class="grid"><div class="stat">チーム戦力<b>'+rosterPower(c).toFixed(1)+'</b></div><div class="stat">球団ランク<b>'+rankLabel(rosterPower(c))+'</b><span class="small rank-rule">'+TEAM_RANKS.map(([n,r])=>r+' '+n+'〜').reverse().join(' / ')+'</span></div><div class="stat">今季成績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">次の試合<b>'+(s.phase==='regular'?'第'+(s.game+1)+'戦':'シーズン終了')+'</b></div></div></div>'}
 if(tab==='match'){
  const games=ensureWeekSchedule();
  h+='<div class="box"><h2>第'+s.week+'週｜試合日程</h2><p class="muted">各曜日に0〜5試合の候補が登場し、毎週変わります。好きな試合を選択してください。結果は翌週に発表されます。</p><p class="muted small">選択中 '+games.filter(g=>g.selected).length+'試合 ／ 今季残り '+Math.max(0,143-s.game)+'試合</p>';
@@ -597,7 +697,7 @@ function advanceWatch(){
 function finishWatch(){
  watchQueue=[];watchActive=false;$('matchViewer').hidden=true;render();
 }
-document.addEventListener('click',e=>{let t=e.target.closest('button');if(!t){if(!e.target.closest('.game-choice'))closeGameChoices();return}if(t.dataset.choiceToggle!==undefined){const menu=document.getElementById(t.dataset.choiceToggle+'Choices');const wasOpen=menu&&!menu.hidden;closeGameChoices();if(menu&&!wasOpen){menu.hidden=false;t.setAttribute('aria-expanded','true');const bounds=t.getBoundingClientRect();menu.classList.toggle('drop-up',window.innerHeight-bounds.bottom<Math.min(365,window.innerHeight*.55)+100&&bounds.top>260)}return}if(t.dataset.choiceField!==undefined){const field=t.dataset.choiceField,value=t.dataset.choiceValue;closeGameChoices();useGameChoice(field,value);return}closeGameChoices();if(t.dataset.catalogPage){catalogPage+=t.dataset.catalogPage==='next'?1:-1;catalogPage=Math.max(0,catalogPage);render();return}if(t.dataset.tab){tab=t.dataset.tab;notice='';render();if(tab==='home')window.scrollTo({top:0,behavior:'smooth'});return}if(t.dataset.draw){let [n,type]=t.dataset.draw.split(':');draw(+n,type,type==='free');return}if(t.dataset.claimMr!==undefined){claimMR(Number(t.dataset.claimMr));return}if(t.dataset.scheduled!==undefined){playScheduled(Number(t.dataset.scheduled));return}if(t.dataset.train){let [id,k]=t.dataset.train.split(':');train(id,k);return}if(t.dataset.weektrain){let [id,k]=t.dataset.weektrain.split(':');setWeeklyTraining(id,k);return}if(t.dataset.hof){hof(t.dataset.hof);return}if(t.dataset.number){permanent(t.dataset.number);return}let a=t.dataset.action;if(!a)return;if(a==='profileLogin'){openProfile('login');return}if(a==='profileRegister'){openProfile('register');return}if(a==='profileClose'){closeProfile();return}if(a==='profileLogout'){logoutProfile();return}if(a==='catalogSearchApply'){catalogSearch=$('catalogSearch')?.value||'';catalogPage=0;render();return}if(a==='resetGame'){resetGame();return}if(a==='week'){advanceWeek();return}if(a==='editTeam'){showSetup(true);return}if(a==='play'||a==='play10'||a==='playall'){pendingGames=a==='play'?1:a==='play10'?10:Math.max(0,143-s.game);$('skipChoiceDetail').textContent=pendingGames+'試合を進行します。現在はどちらを選んでも結果と進行方法は同じです。';$('skipChoice').hidden=false;return}else if(a==='cancelSkip'){$('skipChoice').hidden=true;pendingGames=0;return}else if(a==='confirmSkip'||a==='confirmWatch'){$('skipChoice').hidden=true;let n=pendingGames;pendingGames=0;watchQueue=[];for(let i=0;i<n;i++){let previous=s.game;simulateGame();if(a==='confirmWatch'&&s.game>previous&&s.lastResult)watchQueue.push({...s.lastResult,inning:s.lastResult.inning.map(x=>x.slice())})}if(a==='confirmWatch'&&watchQueue.length)showWatch()}else if(a==='nextInning'){advanceWatch();return}else if(a==='watchToEnd'){if(watchActive){watchInning=9;updateWatch()}return}else if(a==='closeWatch'){finishWatch();return}else if(a==='auto')optimize();else if(a==='next')nextYear();else if(a==='coach'){if(me().finance>=3000){me().finance-=3000;me().coach++;notice='コーチLvアップ'}}else if(a==='foreign')signForeign();else if(a==='fa')fa();else if(a==='trade')trade();else if(a==='draft')draft();save();render()});
+document.addEventListener('click',e=>{let t=e.target.closest('button');if(!t){if(!e.target.closest('.game-choice'))closeGameChoices();return}if(t.dataset.choiceToggle!==undefined){const menu=document.getElementById(t.dataset.choiceToggle+'Choices');const wasOpen=menu&&!menu.hidden;closeGameChoices();if(menu&&!wasOpen){menu.hidden=false;t.setAttribute('aria-expanded','true');const bounds=t.getBoundingClientRect();menu.classList.toggle('drop-up',window.innerHeight-bounds.bottom<Math.min(365,window.innerHeight*.55)+100&&bounds.top>260)}return}if(t.dataset.choiceField!==undefined){const field=t.dataset.choiceField,value=t.dataset.choiceValue;closeGameChoices();useGameChoice(field,value);return}closeGameChoices();if(t.dataset.catalogPage){catalogPage+=t.dataset.catalogPage==='next'?1:-1;catalogPage=Math.max(0,catalogPage);render();return}if(t.dataset.tab){tab=t.dataset.tab;notice='';render();if(tab==='home')window.scrollTo({top:0,behavior:'smooth'});return}if(t.dataset.draw){let [n,type]=t.dataset.draw.split(':');draw(+n,type,type==='free');return}if(t.dataset.claimMr!==undefined){claimMR(Number(t.dataset.claimMr));return}if(t.dataset.scheduled!==undefined){playScheduled(Number(t.dataset.scheduled));return}if(t.dataset.train){let [id,k]=t.dataset.train.split(':');train(id,k);return}if(t.dataset.weektrain){let [id,k]=t.dataset.weektrain.split(':');setWeeklyTraining(id,k);return}if(t.dataset.hof){hof(t.dataset.hof);return}if(t.dataset.number){permanent(t.dataset.number);return}let a=t.dataset.action;if(!a)return;if(a.startsWith('friend')){friendAction(a);return}if(a==='profileLogin'){openProfile('login');return}if(a==='profileRegister'){openProfile('register');return}if(a==='profileClose'){closeProfile();return}if(a==='profileLogout'){logoutProfile();return}if(a==='catalogSearchApply'){catalogSearch=$('catalogSearch')?.value||'';catalogPage=0;render();return}if(a==='resetGame'){resetGame();return}if(a==='week'){advanceWeek();return}if(a==='editTeam'){showSetup(true);return}if(a==='play'||a==='play10'||a==='playall'){pendingGames=a==='play'?1:a==='play10'?10:Math.max(0,143-s.game);$('skipChoiceDetail').textContent=pendingGames+'試合を進行します。現在はどちらを選んでも結果と進行方法は同じです。';$('skipChoice').hidden=false;return}else if(a==='cancelSkip'){$('skipChoice').hidden=true;pendingGames=0;return}else if(a==='confirmSkip'||a==='confirmWatch'){$('skipChoice').hidden=true;let n=pendingGames;pendingGames=0;watchQueue=[];for(let i=0;i<n;i++){let previous=s.game;simulateGame();if(a==='confirmWatch'&&s.game>previous&&s.lastResult)watchQueue.push({...s.lastResult,inning:s.lastResult.inning.map(x=>x.slice())})}if(a==='confirmWatch'&&watchQueue.length)showWatch()}else if(a==='nextInning'){advanceWatch();return}else if(a==='watchToEnd'){if(watchActive){watchInning=9;updateWatch()}return}else if(a==='closeWatch'){finishWatch();return}else if(a==='auto')optimize();else if(a==='next')nextYear();else if(a==='coach'){if(me().finance>=3000){me().finance-=3000;me().coach++;notice='コーチLvアップ'}}else if(a==='foreign')signForeign();else if(a==='fa')fa();else if(a==='trade')trade();else if(a==='draft')draft();save();render()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeGameChoices();if(!$('skipChoice').hidden){$('skipChoice').hidden=true;pendingGames=0}}if((e.key==='ArrowDown'||e.key==='ArrowUp')&&e.target.matches('.choice-current')){e.preventDefault();const menu=document.getElementById(e.target.dataset.choiceToggle+'Choices');if(menu?.hidden)e.target.click();const options=menu?.querySelectorAll('.choice-option');if(options?.length)options[e.key==='ArrowDown'?0:options.length-1].focus()}});
 document.addEventListener('submit',e=>{if(e.target.id==='profileForm'){e.preventDefault();submitProfile();return}if(e.target.id==='teamSetupForm'){e.preventDefault();finishSetup()}});document.addEventListener('input',e=>{if(e.target.id==='teamNameInput')updateTeamPreview();if(e.target.id==='catalogSearch'){catalogSearch=e.target.value;return}});document.addEventListener('keydown',e=>{if(e.target.id==='catalogSearch'&&e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();catalogSearch=e.target.value;catalogPage=0;render()}});
 document.addEventListener('change',e=>{if(e.target.id==='trainingSort'){trainingSort=e.target.value;render();return}if(e.target.id==='teamColorInput')updateTeamPreview();if(e.target.id==='catalogSearch'){catalogSearch=e.target.value;catalogPage=0;render();return}if(e.target.id==='catalogPosition'){catalogPosition=e.target.value;catalogPage=0;render();return}if(e.target.id==='catalogRarity'){catalogRarity=e.target.value;catalogPage=0;render();return}if(e.target.dataset.order!==undefined)chooseOrder(+e.target.dataset.order,e.target.value);if(e.target.dataset.rotation!==undefined)chooseRotation(+e.target.dataset.rotation,e.target.value)});
