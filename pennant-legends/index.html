@@ -668,7 +668,7 @@ if(tab==='mr'){
  h+='<div class="box"><h2>MR獲得ミッション（全15人）</h2><p>MRはガチャから排出されません。条件達成で1人ずつ獲得できます。最高能力上限12,000。</p></div>';
  h+='<div class="mr-mission-grid">'+MR_LEGENDS.map(([name,pos,trait,condition,mission],i)=>{const owned=usedCatalogIds().has('catalog-'+(3013+i)),ready=!!s.mrUnlocked[i];return '<div class="stat mr-mission-card"><b class="mr-player-name">MR '+safeText(name)+'</b><p class="mr-player-trait">'+pos+'｜'+safeText(trait)+'</p><div class="mr-requirement"><strong>獲得条件</strong><div>'+safeText(condition)+'</div></div><button data-claim-mr="'+i+'" '+(!ready||owned?'disabled':'')+'>'+(owned?'獲得済み':ready?'獲得する':'未達成')+'</button></div>'}).join('')+'</div>';
 }
-if(tab==='home'){h+='<div class="box"><h2>'+safeText(clubs[0])+'</h2><p>ホーム球場へようこそ。試合は下部の「試合」メニューから進められます。</p><div class="grid"><div class="stat">今季成績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">次の試合<b>'+(s.phase==='regular'?'第'+(s.game+1)+'戦':'シーズン終了')+'</b></div></div></div>'}
+
 if(tab==='match'){
  const games=ensureWeekSchedule();
  h+='<div class="box"><h2>第'+s.week+'週｜試合日程</h2><p class="muted">各曜日に0〜5試合の候補が登場し、毎週変わります。好きな試合を選択してください。結果は翌週に発表されます。</p><p class="muted small">選択中 '+games.filter(g=>g.selected).length+'試合 ／ 今季残り '+Math.max(0,143-s.game)+'試合</p>';
