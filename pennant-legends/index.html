@@ -549,8 +549,20 @@ const portraitCache=new Map();
 const portraitBackgrounds={N:'#334155',R:'#244659',SR:'#373766',SSR:'#523831',UR:'#62451e'};
 const portraitColors=['#325b90','#9e363c','#326c54','#77539f','#aa572f','#267478','#505974','#9c7129'];
 const portraitSkin=[
- ['#ffe1b8','#d99866'],['#efbc93','#b97956'],['#e4a67a','#a96647'],
- ['#ca8d65','#915536'],['#ac6c49','#743c2a'],['#8e553b','#59301f']
+ ['#f5cfad','#bf896d','#ffe3c6'],['#eac19f','#ae7b61','#fbd6b5'],
+ ['#dfb18b','#a57459','#f3c5a0'],['#d2a27d','#99684f','#eab590'],
+ ['#bd8a67','#86563f','#d9a37f'],['#a77453','#754b39','#c58e6b']
+];
+// Jaw width, nose projection, cheek height, hair length and expression.
+const portraitFaces=[
+ {jaw:0,nose:0,cheek:0,hair:1,mouth:0},
+ {jaw:2,nose:1,cheek:1,hair:0,mouth:1},
+ {jaw:-1,nose:1,cheek:-1,hair:4,mouth:0},
+ {jaw:1,nose:0,cheek:0,hair:3,mouth:-1},
+ {jaw:-2,nose:2,cheek:1,hair:2,mouth:-1},
+ {jaw:3,nose:1,cheek:-1,hair:1,mouth:1},
+ {jaw:0,nose:2,cheek:1,hair:0,mouth:0},
+ {jaw:2,nose:0,cheek:-1,hair:4,mouth:0}
 ];
 function playerPortrait(p){
  if(!Object.hasOwn(portraitBackgrounds,p.rar)||!/^catalog-[0-9]{4}$/.test(p.id))return '';
@@ -559,7 +571,8 @@ function playerPortrait(p){
   // A permutation of all style combinations gives each catalog ID a distinct portrait.
   const style=(Number(p.id.slice(8))*1877)%3072;
   const cap=portraitColors[style%8],jersey=portraitColors[Math.floor(style/8)%8];
-  const features=Math.floor(style/64)%8,[skin,shadow]=portraitSkin[Math.floor(style/512)];
+  const {jaw,nose,cheek,hair,mouth}=portraitFaces[Math.floor(style/64)%8];
+  const [skin,shadow,highlight]=portraitSkin[Math.floor(style/512)];
   const canvas=document.createElement('canvas');
   canvas.width=canvas.height=48;
   const ctx=canvas.getContext('2d');
@@ -587,41 +600,53 @@ function playerPortrait(p){
 
   // The near shoulder and left ear stay in view as the face turns right.
   shape(ink,[[3,48],[5,42],[10,38],[19,35],[25,31],[30,34],[38,38],[43,42],[46,48]]);
-  shape(jersey,[[5,48],[7,43],[12,39],[21,36],[27,34],[37,39],[42,44],[44,48]]);
-  shape('#00000035',[[29,36],[38,40],[44,46],[44,48],[36,48]]);
-  shape('#ffffff26',[[8,44],[13,40],[20,38],[22,39],[15,42],[11,46]]);
+  shape(cloth,[[5,48],[7,43],[12,39],[21,36],[27,34],[37,39],[42,44],[44,48]]);
+  shape('#20395740',[[29,36],[38,40],[44,46],[44,48],[36,48]]);
+  shape(jersey,[[8,44],[13,40],[20,38],[22,39],[15,42],[11,46]]);
   shape(ink,[[19,29],[29,29],[31,36],[35,39],[27,44],[18,38]]);
   shape(shadow,[[20,29],[28,30],[30,37],[33,39],[27,42],[20,37]]);
   shape(skin,[[24,32],[29,33],[30,38],[27,39],[23,37]]);
   shape(cloth,[[17,37],[20,36],[27,42],[32,38],[35,39],[29,45],[29,48],[26,48],[26,45]]);
   shape(seam,[[26,44],[28,45],[28,48],[26,48]]);
   pixel(ink,29,46,1,1);
-  pixel(cloth,12,44,4,1);
-  pixel(seam,13,45,3,1);
+  shape(jersey,[[14,44],[18,42],[20,43],[17,44],[16,46],[14,46]]);
+  pixel(seam,17,46,3,1);
+  pixel(jersey,34,43,4,2);
+  pixel(cloth,35,43,2,1);
 
-  shape(ink,[[10,15],[17,10],[31,10],[36,15],[37,22],[41,27],[39,30],[36,30],[35,35],[31,38],[25,38],[19,34],[15,31],[11,30],[9,27]]);
-  shape(shadow,[[13,16],[18,12],[31,12],[35,16],[36,23],[39,27],[37,29],[35,29],[34,34],[30,36],[25,36],[19,32],[15,29],[12,29],[10,26],[11,23]]);
-  shape(skin,[[18,15],[31,13],[34,17],[35,23],[38,27],[35,27],[33,29],[33,34],[29,35],[23,33],[19,29],[16,23]]);
-  shape('#ffffff20',[[24,17],[31,17],[34,21],[35,24],[38,27],[35,27],[32,24],[26,25],[22,23]]);
-  pixel(skin,11,24,4,3);
+  const hairDark='#222327',hairLight='#3d3738',crease='#64423a';
+  shape(hairDark,[[9,16],[16,12],[30,11],[36,15],[36,22],[36+nose,26],[36,28],[35,32],[33,35],[30+jaw/2,37],[24-jaw/2,37],[18-jaw,33],[15,30],[11,30],[9,27]]);
+  shape(shadow,[[12,17],[19,13],[31,12],[35,16],[35,23],[35+nose,26],[35,28],[34,32],[32,35],[29+jaw/2,36],[24-jaw/2,36],[19-jaw,33],[15,29],[11,29],[10,26],[11,23]]);
+  shape(skin,[[17,16],[31,14],[34,18],[34,23],[35+nose,26],[34,27],[33,29],[33,32],[30,34],[26-jaw/2,34],[21-jaw,31],[19,27],[16,22]]);
+  shape(highlight,[[26,18],[31,17],[33,20],[33,22],[31,22],[29,21],[25,21]]);
+  shape(highlight,[[22,26+cheek],[27,25+cheek],[29,26+cheek],[26,28+cheek],[23,28+cheek]]);
+  pixel(highlight,33,24,1,2);
+  pixel(shadow,33,27,2,1);
+  pixel(crease,34,27,1,1);
+  pixel(shadow,31,28,1,2);
+
+  // Sideburns and the lit rim of the near ear.
+  shape(hairDark,[[10,17],[18,15],[20,17],[17,20],[16,24+hair],[14,25+hair],[14,22],[10,24]]);
+  shape(hairLight,[[11,19],[16,16],[18,17],[15,21],[13,22]]);
+  shape(skin,[[11,23],[13,23],[15,25],[15,28],[12,29],[10,26]]);
+  pixel(highlight,11,24,1,2);
   pixel(shadow,12,25,2,2);
-  pixel('#332e35',13,19,3,5);
-  pixel(shadow,17,27,3,2);
-  pixel(shadow,20,29,4,1);
-  const brow=features%2;
-  pixel('#442f30',21,19+brow,6,1);
-  pixel('#442f30',32,19+brow,3,1);
-  pixel(cloth,22,22,5,2);
-  pixel(ink,25,22,2,2);
-  pixel(cloth,32,22,3,2);
-  pixel(ink,34,22,1,2);
-  pixel(shadow,32,26,2,2);
-  pixel('#6a4140',34,28,3,1);
-  const chin=Math.floor(features/2);
-  if(chin===0)pixel('#633d3e',29,31,5,1);
-  if(chin===1){pixel('#633d3e',28,31,6,2);pixel(cloth,29,31,4,1)}
-  if(chin===2){pixel('#493431',28,30,6,1);pixel('#633d3e',30,32,4,1)}
-  if(chin===3){shape('#493431',[[24,32],[28,34],[34,33],[33,36],[29,37],[25,36]]);pixel('#633d3e',29,31,5,1)}
+  pixel(crease,13,26,1,1);
+
+  const eyeY=22+(mouth===-1?1:0);
+  shape(hairDark,[[21,eyeY-3],[24,eyeY-4],[28,eyeY-3],[28,eyeY-2],[24,eyeY-2]]);
+  pixel(hairDark,32,eyeY-3,3,1);
+  pixel(shadow,22,eyeY-1,6,2);
+  pixel(hairDark,23,eyeY,5,1);
+  pixel('#e2c5aa',23,eyeY+1,2,1);
+  pixel(hairDark,25,eyeY+1,2,1);
+  pixel(hairDark,32,eyeY,3,1);
+  pixel('#d5b399',32,eyeY+1,1,1);
+  pixel(hairDark,33,eyeY+1,1,1);
+  pixel(crease,29,31,4,1);
+  if(mouth===1){pixel(crease,28,30,1,1);pixel(highlight,29,32,3,1)}
+  if(mouth===-1)pixel(shadow,32,32,2,1);
+  pixel(shadow,29,33,3,1);
 
   // The crown curves around the head while the brim projects past the nose.
   shape(ink,[[8,20],[9,11],[13,6],[19,4],[29,4],[35,7],[38,13],[44,16],[46,19],[43,22],[36,21],[28,17],[21,17],[16,20]]);
