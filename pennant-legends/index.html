@@ -409,7 +409,9 @@ if(s.teamName)clubs[0]=s.teamName;initializeTraining();setupMode=!s.teamConfigur
 const me=()=>s.clubs[0],all=()=>me().roster,find=id=>all().find(p=>p.id===id),isPitch=p=>p.pos==='投',batScore=p=>baseRating(p.contact)*.5+baseRating(p.power)*.32+baseRating(p.speed)*.1+baseRating(p.field)*.08,armScore=p=>baseRating(p.control)*.35+baseRating(p.break)*.25+baseRating(p.stamina)*.15+(p.velocity-120)*.6;
 function rosterPower(c){let b=c.order.map(id=>c.roster.find(p=>p.id===id)).filter(Boolean),p=c.rotation.map(id=>c.roster.find(x=>x.id===id)).filter(Boolean);return (b.reduce((a,x)=>a+batScore(x),0)/Math.max(1,b.length))*.65+(p.reduce((a,x)=>a+armScore(x),0)/Math.max(1,p.length))*.35}
 
-const TEAM_RANKS=[[130,'S'],[110,'A'],[90,'B'],[70,'C'],[0,'D']];
+// Keep the simulation's internal power unchanged; use a wider progression scale for visible club ratings.
+function displayTeamPower(raw){return raw<=50?Math.max(0,raw):50+(raw-50)*10}
+const TEAM_RANKS=[[900,'S'],[650,'A'],[450,'B'],[250,'C'],[0,'D']];
 function teamRank(power){const shown=Math.round(power*10)/10;return TEAM_RANKS.find(([min])=>shown>=min)?.[1]||'D'}
 function rankLabel(power){return '<span class="team-rank rank-'+teamRank(power)+'">'+teamRank(power)+'</span>'}
 let friendCode='',friendOpponent=null,friendLast=null;
@@ -429,7 +431,7 @@ function battleSnapshot(team,club){
  if(!bats.length||!pitchers.length)throw Error('打順と先発投手を設定してください。');
  return {v:1,team:String(team).slice(0,24),bats:bats.slice(0,9).map((p,i)=>battlePlayer(p,'bat',i)),pitchers:pitchers.slice(0,5).map((p,i)=>battlePlayer(p,'pitch',i))};
 }
-function snapshotPower(t){return rosterPower({roster:[...t.bats,...t.pitchers],order:t.bats.map(p=>p.id),rotation:t.pitchers.map(p=>p.id)})}
+function snapshotPower(t){return displayTeamPower(rosterPower({roster:[...t.bats,...t.pitchers],order:t.bats.map(p=>p.id),rotation:t.pitchers.map(p=>p.id)}))}
 function encodeFriend(t){const bytes=new TextEncoder().encode(JSON.stringify(t));return 'PL1-'+btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function decodeFriend(code){
  const raw=code.trim();if(raw.length>40000||!/^PL1-[A-Za-z0-9_-]+$/.test(raw))throw Error('正しい対戦コードを入力してください。');
@@ -483,7 +485,7 @@ function friendAction(action){
 function friendView(){
  let html='<div class="box"><h2>フレンド対戦</h2><p>友達と対戦コードを交換し、登録時点の球団同士で対戦できます。相手がログインしていなくても遊べます。</p><p class="muted small">非同期・コード交換型。サーバー接続・リアルタイム通信・公式ランキングはありません。通常の成績、疲労、育成、コインには影響しません。</p><div class="friend-fields"><div><h3>自分の対戦コード</h3><button data-action="friendGenerate">最新の球団コードを発行</button><textarea id="friendShare" readonly placeholder="ここに対戦コードが表示されます">'+safeText(friendCode)+'</textarea><button data-action="friendCopy" '+(!friendCode?'disabled':'')+'>コードをコピー</button><span id="friendCopyStatus" class="small"></span></div><div><h3>友達の対戦コード</h3><textarea id="friendInput" placeholder="友達から受け取った対戦コードを貼り付け"></textarea><button data-action="friendLoad">相手球団を読み込む</button></div></div><p id="friendError" class="bad" role="status"></p></div>';
  if(friendOpponent){
-  const op=snapshotPower(friendOpponent),own=rosterPower(me());
+  const op=snapshotPower(friendOpponent),own=displayTeamPower(rosterPower(me()));
   html+='<div class="box"><h2>対戦カード</h2><div class="friend-versus"><div class="stat">'+safeText(clubs[0])+'<b>'+rankLabel(own)+' '+own.toFixed(1)+'</b></div><strong>VS</strong><div class="stat">'+safeText(friendOpponent.team)+'<b>'+rankLabel(op)+' '+op.toFixed(1)+'</b></div></div><p>9回制・延長12回まで・自動試合</p><button data-action="friendPlay">対戦開始</button></div>';
  }
  if(friendLast){const x=friendLast;html+='<div class="box"><h2>試合結果：'+(x.my===x.opp?'引き分け':x.my>x.opp?'勝利':'敗北')+'</h2><div class="friend-score">'+safeText(x.team)+' '+x.my+' − '+x.opp+' '+safeText(x.opponent)+'</div>'+table(['球団',...x.innings.map((v,i)=>i+1),'計'],[[safeText(x.team),...x.innings.map(v=>v[0]),x.my],[safeText(x.opponent),...x.innings.map(v=>v[1]===null?'X':v[1]),x.opp]])+'</div>'}
@@ -635,7 +637,7 @@ function logoutProfile(){
  try{activateProfile('',readSave(''));notice='ゲストプレイに戻りました。';render()}catch(e){alert(e.message)}
 }
 
-function render(){renderProfileStrip();if(setupMode){showSetup();return}let c=me();$('stadiumTeam').textContent=clubs[0];$('stadiumScene').hidden=tab!=='home';$('summary').innerHTML='<div class="grid"><div class="stat">シーズン<b>'+s.year+'年</b></div><div class="stat">消化試合<b>'+s.game+'/143</b></div><div class="stat">戦績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">ガチャコイン<b>'+fmt(s.coins)+'</b></div><div class="stat">球団資金<b>'+fmt(c.finance)+'</b></div><div class="stat">球団ランク<b>'+rankLabel(rosterPower(c))+'</b></div></div>';
+function render(){renderProfileStrip();if(setupMode){showSetup();return}let c=me();$('stadiumTeam').textContent=clubs[0];$('stadiumScene').hidden=tab!=='home';$('summary').innerHTML='<div class="grid"><div class="stat">シーズン<b>'+s.year+'年</b></div><div class="stat">消化試合<b>'+s.game+'/143</b></div><div class="stat">戦績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">ガチャコイン<b>'+fmt(s.coins)+'</b></div><div class="stat">球団資金<b>'+fmt(c.finance)+'</b></div><div class="stat">球団ランク<b>'+rankLabel(displayTeamPower(rosterPower(c)))+'</b></div></div>';
 let tabs=[['mr',' MR獲得'],['home',' ホーム'],['match',' 試合'],['friend',' 対戦'],['lineup',' 編成'],['gacha',' ガチャ'],['players',' 育成'],['catalog',' 名鑑'],['league',' 記録'],['office',' 運営'],['legacy',' 球団史']];$('tabs').innerHTML=tabs.map(([id,t])=>'<button '+(id===tab?'class="primary"':'')+' data-tab="'+id+'">'+menuIcon(id)+'<span class="menu-label">'+t.trim()+'</span></button>').join('');let h=notice?'<div class="box good">'+notice+'</div>':'';
 if(tab==='friend'){h+=friendView()}
 if(tab==='mr'){
@@ -643,7 +645,7 @@ if(tab==='mr'){
  h+='<div class="box"><h2>MR獲得ミッション（全15人）</h2><p>MRはガチャから排出されません。条件達成で1人ずつ獲得できます。最高能力上限12,000。</p></div>';
  h+='<div class="mr-mission-grid">'+MR_LEGENDS.map(([name,pos,trait,condition,mission],i)=>{const owned=usedCatalogIds().has('catalog-'+(3013+i)),ready=!!s.mrUnlocked[i];return '<div class="stat mr-mission-card"><b class="mr-player-name">MR '+safeText(name)+'</b><p class="mr-player-trait">'+pos+'｜'+safeText(trait)+'</p><div class="mr-requirement"><strong>獲得条件</strong><div>'+safeText(condition)+'</div></div><button data-claim-mr="'+i+'" '+(!ready||owned?'disabled':'')+'>'+(owned?'獲得済み':ready?'獲得する':'未達成')+'</button></div>'}).join('')+'</div>';
 }
-if(tab==='home'){h+='<div class="box"><h2>'+safeText(clubs[0])+'</h2><p>ホーム球場へようこそ。試合は下部の「試合」メニューから進められます。</p><div class="grid"><div class="stat">チーム戦力<b>'+rosterPower(c).toFixed(1)+'</b></div><div class="stat">球団ランク<b>'+rankLabel(rosterPower(c))+'</b><span class="small rank-rule">'+TEAM_RANKS.map(([n,r])=>r+' '+n+'〜').reverse().join(' / ')+'</span></div><div class="stat">今季成績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">次の試合<b>'+(s.phase==='regular'?'第'+(s.game+1)+'戦':'シーズン終了')+'</b></div></div></div>'}
+if(tab==='home'){h+='<div class="box"><h2>'+safeText(clubs[0])+'</h2><p>ホーム球場へようこそ。試合は下部の「試合」メニューから進められます。</p><div class="grid"><div class="stat">チーム戦力<b>'+displayTeamPower(rosterPower(c)).toFixed(1)+'</b></div><div class="stat">球団ランク<b>'+rankLabel(displayTeamPower(rosterPower(c)))+'</b><span class="small rank-rule">'+TEAM_RANKS.map(([n,r])=>r+' '+n+'〜').reverse().join(' / ')+'</span></div><div class="stat">今季成績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">次の試合<b>'+(s.phase==='regular'?'第'+(s.game+1)+'戦':'シーズン終了')+'</b></div></div></div>'}
 if(tab==='match'){
  const games=ensureWeekSchedule();
  h+='<div class="box"><h2>第'+s.week+'週｜試合日程</h2><p class="muted">各曜日に0〜5試合の候補が登場し、毎週変わります。好きな試合を選択してください。結果は翌週に発表されます。</p><p class="muted small">選択中 '+games.filter(g=>g.selected).length+'試合 ／ 今季残り '+Math.max(0,143-s.game)+'試合</p>';
