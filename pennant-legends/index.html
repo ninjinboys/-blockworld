@@ -167,6 +167,15 @@ body.home-screen{padding-bottom:var(--nav-height,calc(90px + env(safe-area-inset
 .home-screen main{padding-bottom:0}
 .home-screen .stadium-scene{margin-bottom:16px}
 .home-screen #gameFooter{display:none}
+.draft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:12px}
+.draft-candidate{min-width:0;margin:0}
+.draft-name{display:grid;gap:4px;margin-top:8px}
+.draft-name input{width:100%;max-width:none}
+.draft-skill{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:5px;margin:5px 0}
+.draft-skill button{min-width:0!important;padding-inline:8px!important}
+.draft-portraits{display:flex;gap:6px;flex-wrap:wrap}
+.draft-portraits button{min-width:0!important;padding:4px!important}
+.draft-portraits .player-portrait{margin:0}
 </style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div><p id="seasonCalendar" hidden></p></header><div id="profileStrip" class="profile-strip"></div><div id="profileDialog" class="profile-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle"><div id="profilePanel" class="profile-panel"></div></div><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene" id="stadiumScene" aria-label="球団のホーム球場"><div class="stadium-sky"><span class="stadium-cloud cloud-a"></span><span class="stadium-cloud cloud-b"></span></div><div class="stadium-board"><span id="stadiumTeam">MY BASEBALL CLUB</span><small>HOME STADIUM</small></div><div class="stadium-stands"><span></span></div><div class="stadium-field"><div class="stadium-outfield"></div><div class="stadium-infield"><div class="stadium-mound"></div><span class="base base-a"></span><span class="base base-b"></span><span class="base base-c"></span></div><div class="stadium-home"></div></div><div class="stadium-caption"> わが球団のホームグラウンド</div></section><div id="matchViewer" class="match-viewer" hidden><div class="match-viewer-inner"><div class="match-viewer-header"><strong>試合観戦</strong><button data-action="closeWatch">終了</button></div><div id="matchScoreboard"></div><div class="match-field"><div class="match-diamond"><span class="match-base match-base-second"></span><span class="match-base match-base-first"></span><span class="match-base match-base-third"></span><span class="match-pitcher"></span><span class="match-batter"></span></div><div class="match-field-label">LIVE MATCH VIEW</div></div><div id="matchCommentary" class="match-commentary"></div><div class="match-watch-actions"><button data-action="nextInning">次のイニング</button><button data-action="watchToEnd">試合終了まで進める</button></div></div></div><div id="skipChoice" class="skip-choice" hidden role="dialog" aria-modal="true" aria-labelledby="skipChoiceTitle"><div class="skip-choice-panel"><h2 id="skipChoiceTitle">試合をスキップしますか？</h2><p id="skipChoiceDetail">進行方法を選択してください。</p><div class="skip-choice-buttons"><button data-action="confirmSkip">スキップする</button><button data-action="confirmWatch">スキップしない</button></div><button class="skip-cancel" data-action="cancelSkip">キャンセル</button></div></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p id="gameFooter" class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.6</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
@@ -607,8 +616,9 @@ function playerPortrait(p,clubIndex){
   const index=id-3001,x=(index%4)*48,y=Math.floor(index/4)*48;
   return '<span aria-hidden="true" class="lr-portrait" style="--portrait-x:'+(-x)+'px;--portrait-y:'+(-y)+'px"></span>';
  }
- if(id<1||id>3000||!['N','R','SR','SSR','UR'].includes(p.rar))return '';
- const index=((id-1)*29)%72,x=(index%6)*48,y=Math.floor(index/6)*48;
+ const drafted=Number.isInteger(p.portrait)&&p.portrait>=0&&p.portrait<72&&p.id.startsWith('draft-');
+ if(!drafted&&(id<1||id>3000||!['N','R','SR','SSR','UR'].includes(p.rar)))return '';
+ const index=drafted?p.portrait:((id-1)*29)%72,x=(index%6)*48,y=Math.floor(index/6)*48;
  const pitcher=p.pos==='投'?' pitcher':'';
  const color=clubIndex===0?(/^#[a-f0-9]{6}$/i.test(s.teamColor)?s.teamColor:'#e94141'):cpuCapColors[clubIndex]||'#69778a';
  return '<span aria-hidden="true" class="player-portrait'+pitcher+'" style="--portrait-x:'+(-x)+'px;--portrait-y:'+(-y)+'px;--cap-color:'+color+'"></span>';
@@ -650,11 +660,161 @@ function postLeague(arr){let x=arr[1].c.w+rand(15)>arr[2].c.w+rand(15)?arr[1]:ar
 const skillNames={contact:'ミート',power:'パワー',speed:'走力',field:'守備',arm:'肩力',control:'制球',break:'変化球',stamina:'スタミナ',velocity:'球速'};
 function train(id,stat){const kind=Object.keys(TRAINING_MENU).find(k=>TRAINING_MENU[k][0]===stat)||'rest';setWeeklyTraining(id,kind)}
 function signForeign(){if(me().finance<2500)return alert('球団資金不足');me().finance-=2500;let p=newPlayer('SR',null,true);if(!p){me().finance+=2500;notice='獲得可能な選手がいません';save();render();return}me().roster.push(p);notice=p.name+'を獲得';save();render()}
-function draft(){if(s.drafted)return;let p=newPlayer('SR',null);if(!p){notice='獲得可能な選手がいません';render();return}p.age=18;me().roster.push(p);s.drafted=true;notice='ドラフト1位：'+p.name+'を獲得';save();render()}
+const DRAFT_POINTS=1500,DRAFT_STEP=100;
+const DRAFT_PITCHING_SKILLS=['control','break','stamina'];
+const DRAFT_BATTING_SKILLS=['contact','power','speed','field','arm'];
+function draftSkills(p){return isPitch(p)?DRAFT_PITCHING_SKILLS:DRAFT_BATTING_SKILLS}
+function draftRarity(p){
+ const values=draftSkills(p).map(k=>p[k]);
+ const average=values.reduce((sum,n)=>sum+n,0)/values.length;
+ const meetsMinimums=rarity=>values.every((value,i)=>value>=RARITY_ROLE_MINIMUMS[rarity][i<2?0:1]);
+ if(average>=5200&&meetsMinimums('UR'))return 'UR';
+ if(average>=3950&&meetsMinimums('SSR'))return 'SSR';
+ if(average>=2800)return 'SR';
+ return 'R';
+}
+function draftProjection(p){
+ p.rar=draftRarity(p);
+ for(const k of ABILITIES)p[k]=Math.min(capFor(p),p[k]);
+ return p;
+}
+function createDraftClass(){
+ const fieldPositions=pos.filter(position=>position!=='投');
+ const positions=['投','投'];
+ for(let i=0;i<3;i++)positions.push(fieldPositions.splice(rand(fieldPositions.length),1)[0]);
+ const surnames=last.slice();
+ const players=positions.map((position,i)=>{
+  const roll=rand(100),rar=roll<25?'R':roll<95?'SR':'SSR';
+  const templates=PLAYER_CATALOG.filter(p=>p.pos===position&&p.rar===rar);
+  const p=structuredClone(pick(templates));
+  p.name=surnames.splice(rand(surnames.length),1)[0]+' '+pick(first);
+  for(const skill of draftSkills(p))p[skill]=clamp(p[skill]+(rand(9)-4)*50,100,CAPS[rar]);
+  if(isPitch(p))p.velocity=clamp(p.velocity+rand(5)-2,125,165);
+  p.trait=pick(isPitch(p)?['奪三振','対ピンチ◎','球持ち◎','回復◎']:['チャンス◎','広角打法','パワーヒッター','盗塁巧者','守備職人']);
+  p.id='draft-'+s.year+'-'+(i+1);
+  p.draftYear=s.year;
+  p.age=18+rand(5);
+  p.portrait=rand(72);
+  p.growth=p.age<20?'晩成':p.growth;
+  return draftProjection(p);
+ });
+ return {year:s.year,players,names:players.map(p=>p.name),custom:null,points:{},portrait:null};
+}
+function openDraft(){
+ if(s.phase!=='postseason')return;
+ if(!s.drafted&&s.draftClass?.year!==s.year){
+  s.draftClass=createDraftClass();
+  save();
+ }
+ tab='draft';notice='';render();
+ window.scrollTo(0,0);
+}
+function draftPointsLeft(draft){
+ return DRAFT_POINTS-Object.values(draft.points).reduce((sum,n)=>sum+n,0);
+}
+function draftProspect(draft,index){
+ const p={...draft.players[index]};
+ p.name=draft.names[index].trim()||p.name;
+ if(index===draft.custom){
+  for(const k of draftSkills(p))p[k]+=draft.points[k]||0;
+  p.portrait=draft.portrait;
+ }
+ return draftProjection(p);
+}
+function canAddDraftPoint(draft,p,skill){
+ if(draftPointsLeft(draft)<DRAFT_STEP)return false;
+ const updated={...p,[skill]:p[skill]+DRAFT_STEP};
+ return updated[skill]<=CAPS[draftRarity(updated)];
+}
+function editDraftName(input){
+ const draft=s.draftClass,index=Number(input.dataset.draftName);
+ if(tab!=='draft'||s.drafted||draft?.year!==s.year||!draft.players[index])return;
+ // These names are also used by existing match and career views.
+ const name=input.value.replace(/[^\p{L}\p{M}\p{N} .・’'\-　]/gu,'').slice(0,24);
+ if(input.value!==name)input.value=name;
+ draft.names[index]=name;
+ save();
+}
+function draftPortraitChoices(p){
+ return Array.from({length:6},(_,i)=>(p.portrait+i*11)%72);
+}
+function updateDraft(button){
+ const draft=s.draftClass,index=Number(button.dataset.draftIndex),p=draft?.players[index];
+ if(tab!=='draft'||s.phase!=='postseason'||s.drafted||draft?.year!==s.year||!p)return;
+ const action=button.dataset.draftAction;
+ if(action==='custom'){
+  if(draft.custom===index)return;
+  if(draft.custom!==null&&draft.custom!==index&&!confirm('別の選手をカスタムすると、これまでの変更はリセットされます。切り替えますか？'))return;
+  draft.custom=index;draft.points={};draft.portrait=p.portrait;
+ }else if(action==='sign'){
+  const player=draftProspect(draft,index);
+  const history=s.draftHistory||(s.draftHistory=[]);
+  if(history.some(p=>p.draftYear===s.year)||usedCatalogIds().has(player.id))return;
+  if(!confirm(player.name+'（'+player.rar+'）を指名しますか？'))return;
+  me().roster.push(player);history.push(structuredClone(player));s.drafted=true;
+  if(!save()){
+   me().roster.pop();history.pop();s.drafted=false;render();return;
+  }
+  notice='ドラフトで '+safeText(player.name)+' を指名しました。';render();return;
+ }else{
+  if(draft.custom!==index)return;
+  if(action==='resetPoints'){
+   draft.points={};
+  }else if(action==='portrait'){
+   const portrait=Number(button.dataset.draftPortrait);
+   if(!draftPortraitChoices(p).includes(portrait))return;
+   draft.portrait=portrait;
+  }else if(action==='add'||action==='subtract'){
+   const key=button.dataset.draftSkill;
+   if(!draftSkills(p).includes(key))return;
+   const current=draft.points[key]||0;
+   if(action==='add'&&!canAddDraftPoint(draft,draftProspect(draft,index),key))return;
+   if(action==='subtract'&&current<DRAFT_STEP)return;
+   const preview=draftProspect(draft,index);
+   const adjusted={...preview,[key]:preview[key]+(action==='add'?DRAFT_STEP:-DRAFT_STEP)};
+   if(draftSkills(p).some(skill=>adjusted[skill]>CAPS[draftRarity(adjusted)])){
+    notice='レア度の上限を超える能力の割り振りを先に戻してください。';render();return;
+   }
+   draft.points[key]=current+(action==='add'?DRAFT_STEP:-DRAFT_STEP);
+  }
+ }
+ notice='';save();render();
+}
+function draftSeasonActions(){
+ return '<button data-action="draft">'+(s.drafted?'ドラフト結果':'新人ドラフトへ')+'</button> <button class="primary" data-action="next">'+(s.drafted?'翌シーズンへ':'指名せず翌シーズンへ')+'</button>';
+}
+function draftView(){
+ const heading='<h2>'+s.year+'年 新人ドラフト</h2>';
+ if(s.drafted){
+  const signed=s.draftHistory?.find(p=>p.draftYear===s.year);
+  return '<div class="box">'+heading+(signed?'<h3>指名選手</h3>'+line(signed):'<p>今年度は指名済みです。</p>')+
+   '<button class="primary" data-action="next">翌シーズンへ</button></div>';
+ }
+ const draft=s.draftClass;
+ if(!draft||draft.year!==s.year)return '';
+ const remaining=draftPointsLeft(draft);
+ return '<div class="box">'+heading+'<p>候補5人に名前を付けられます。1人だけ能力と見た目をカスタムでき、指名できるのは1人です。</p>'+
+  '<div class="draft-grid">'+draft.players.map((p,i)=>{
+   const prospect=draftProspect(draft,i),editing=draft.custom===i;
+   const action=(name,label,extra='')=>'<button type="button" data-draft-action="'+name+'" data-draft-index="'+i+'" '+extra+'>'+label+'</button>';
+   const editor=editing?'<p><strong>残り '+fmt(remaining)+' / '+fmt(DRAFT_POINTS)+' ポイント</strong></p>'+
+    draftSkills(p).map(k=>'<div class="draft-skill"><span>'+skillNames[k]+' '+fmt(p[k])+' → <strong>'+fmt(prospect[k])+'</strong></span>'+
+     action('subtract','−100','data-draft-skill="'+k+'" aria-label="'+skillNames[k]+'を100戻す" '+((draft.points[k]||0)<DRAFT_STEP?'disabled':''))+
+     action('add','＋100','data-draft-skill="'+k+'" aria-label="'+skillNames[k]+'に100振る" '+(!canAddDraftPoint(draft,prospect,k)?'disabled':''))+'</div>').join('')+
+    action('resetPoints','振り分けをリセット',remaining===DRAFT_POINTS?'disabled':'')+
+    '<p>見た目（ポイント消費なし）</p><div class="draft-portraits">'+draftPortraitChoices(p).map((portrait,j)=>
+     action('portrait',playerPortrait({...prospect,portrait},0),'data-draft-portrait="'+portrait+'" aria-label="見た目 '+(j+1)+'" aria-pressed="'+(portrait===draft.portrait)+'"'+(portrait===draft.portrait?' class="primary"':''))).join('')+'</div>':
+     action('custom',draft.custom===null?'この選手をカスタム':'カスタム枠をこの選手に変更');
+   return '<section class="box draft-candidate" data-draft-candidate="'+i+'"><div class="row"><h3>候補 '+(i+1)+'</h3><strong>予想レア度 <b class="'+prospect.rar+'">'+prospect.rar+'</b></strong></div>'+
+    '<div class="row">'+playerPortrait(prospect,0)+'<span>'+p.pos+'・'+p.age+'歳・'+p.growth+'型</span></div>'+
+    '<label class="draft-name">選手名<input data-draft-name="'+i+'" maxlength="24" value="'+safeText(draft.names[i])+'" autocomplete="off"></label>'+
+    '<p>'+skillLabel(prospect)+'</p>'+editor+'<p>'+action('sign','この選手を指名','class="primary"')+'</p></section>';
+  }).join('')+'</div><button data-action="next">指名せず翌シーズンへ</button></div>';
+}
 function trade(){let pool=all().filter(p=>!['UR','LR','MR'].includes(p.rar));if(!pool.length)return;let out=pool.sort((a,b)=>batScore(a)-batScore(b))[0],incoming=newPlayer('SR');if(!incoming){notice='獲得可能な選手がいません';render();return}me().roster=all().filter(p=>p.id!==out.id);me().roster.push(incoming);me().order=me().order.map(id=>id===out.id?incoming.id:id);me().rotation=me().rotation.map(id=>id===out.id?incoming.id:id);notice=out.name+'を放出し、'+incoming.name+'を獲得';save();render()}
 function fa(){if(me().finance<4500)return alert('球団資金不足');me().finance-=4500;let p=newPlayer('SSR');if(!p){me().finance+=4500;notice='獲得可能な選手がいません';save();render();return}p.age=28+rand(6);me().roster.push(p);notice='FAで'+p.name+'を獲得';save();render()}
 function retire(){let candidates=all().filter(p=>p.age>=35).sort((a,b)=>b.career.h+a.career.hr*2-(a.career.h+b.career.hr*2));for(let p of candidates){if(rand(100)<(p.age-33)*10){me().retired.push({...p});me().roster=all().filter(x=>x.id!==p.id);me().order=me().order.filter(id=>id!==p.id);me().rotation=me().rotation.filter(id=>id!==p.id)}}}
-function nextYear(){refreshMRUnlocks();retire();let c=me(),pay=all().reduce((sum,p)=>sum+p.salary,0);c.finance=Math.max(1000,c.finance+10000-Math.round(pay*.3));s.year++;s.game=0;s.week=1;s.trainingPlans={};s.trainingReport=[];s.weekResults=[];s.weekSchedule=null;s.revealedGame=null;s.phase='regular';s.drafted=false;s.logs=[];s.lastResult=null;s.clubs.forEach(cl=>{cl.w=0;cl.l=0;cl.d=0;cl.roster.forEach(p=>{p.age++;let growth=p.growth==='早熟'?(p.age<25?2:-2):p.growth==='晩成'?(p.age<31?2:-2):(p.age<29?1:-1);for(let k of ['contact','power','speed','field','arm','control','stamina','break'])p[k]=Math.max(1,Math.min(capFor(p),p[k]+(growth+rand(3)-1)*35));p.fatigue=0;p.condition=3})});s.clubs.slice(1).forEach(optimizeCPU);optimize();notice='新シーズン '+s.year+'年が始まりました';save();render()}
+function nextYear(){refreshMRUnlocks();retire();let c=me(),pay=all().reduce((sum,p)=>sum+p.salary,0);c.finance=Math.max(1000,c.finance+10000-Math.round(pay*.3));s.year++;s.game=0;s.week=1;s.trainingPlans={};s.trainingReport=[];s.weekResults=[];s.weekSchedule=null;s.revealedGame=null;s.phase='regular';s.drafted=false;delete s.draftClass;if(tab==='draft')tab='match';s.logs=[];s.lastResult=null;s.clubs.forEach(cl=>{cl.w=0;cl.l=0;cl.d=0;cl.roster.forEach(p=>{if(p.draftYear===s.year-1)return;p.age++;let growth=p.growth==='早熟'?(p.age<25?2:-2):p.growth==='晩成'?(p.age<31?2:-2):(p.age<29?1:-1);for(let k of ['contact','power','speed','field','arm','control','stamina','break'])p[k]=Math.max(1,Math.min(capFor(p),p[k]+(growth+rand(3)-1)*35));p.fatigue=0;p.condition=3})});s.clubs.slice(1).forEach(optimizeCPU);optimize();notice='新シーズン '+s.year+'年が始まりました';save();render()}
 function hof(id){let p=me().retired.find(x=>x.id===id);if(!p)return;p.hof=true;notice=p.name+'が殿堂入りしました';save();render()}
 function permanent(id){let p=me().retired.find(x=>x.id===id);if(!p)return;let num=String(1+me().numbers.length);me().numbers.push({number:num,name:p.name});notice=p.name+'の背番号'+num+'を永久欠番にしました';save();render()}
 
@@ -782,7 +942,7 @@ function catalogRoleTable(players,assigned,role){
  const skills=pitcher?['球速','制球','変化','スタミナ']:['ミート','パワー','走力','守備','肩'];
  const headers=['ID','選手名','守備位置','レア','年齢',...skills,'所属',...(showMission?['獲得条件']:[])];
  const rows=pagePlayers.map(p=>{
-  const id=p.id.slice(8),club=assigned.get(p.id);
+  const id=p.id.startsWith('catalog-')?p.id.slice(8):p.id,club=assigned.get(p.id);
   const name='<span class="catalog-player-name">'+playerPortrait(p,club?.index)+safeText(p.name)+'</span>';
   const values=pitcher?[p.velocity,p.control,p.break,p.stamina]:[p.contact,p.power,p.speed,p.field,p.arm];
   const mission=p.rar==='MR'?safeText(MR_LEGENDS[Number(id)-3013]?.[3]||''):'—';
@@ -802,6 +962,7 @@ function render(){
  let c=me();$('stadiumTeam').textContent=clubs[0];$('stadiumScene').hidden=tab!=='home';$('summary').hidden=!(tab==='home'||tab==='match');$('summary').innerHTML='<div class="grid"><div class="stat">シーズン<b>'+s.year+'年</b></div><div class="stat">消化試合<b>'+s.game+'/143</b></div><div class="stat">戦績<b>'+c.w+'勝 '+c.l+'敗 '+c.d+'分</b></div><div class="stat">ガチャコイン<b>'+fmt(s.coins)+'</b></div><div class="stat">球団資金<b>'+fmt(c.finance)+'</b></div><div class="stat">球団ランク<b>'+rankLabel(displayTeamPower(rosterPower(c)))+'</b></div></div>';
 let tabs=[['home',' ホーム'],['match',' 試合'],['friend',' 対戦'],['lineup',' 編成'],['gacha',' ガチャ'],['players',' 育成'],['catalog',' 名鑑'],['league',' 記録'],['office',' 運営'],['legacy',' 球団史'],['mr',' MR獲得']];$('tabs').innerHTML=tabs.map(([id,t])=>'<button '+(id===tab?'class="primary"':'')+' data-tab="'+id+'">'+menuIcon(id)+'<span class="menu-label">'+t.trim()+'</span></button>').join('');if(tab==='home')syncBottomNavigation();let h=notice?'<div class="box good">'+notice+'</div>':'';
 if(tab==='friend'){h+=friendView()}
+if(tab==='draft'){h+=draftView()}
 if(tab==='mr'){
  refreshMRUnlocks();
  h+='<div class="box"><h2>MR獲得ミッション（全15人）</h2><p>MRはガチャから排出されません。条件達成で1人ずつ獲得できます。最高能力上限12,000。</p></div>';
@@ -813,7 +974,7 @@ if(tab==='match'){
  h+='<div class="box"><h2>'+seasonWeekLabel(s.year,s.week)+'｜試合日程</h2><p class="muted">各曜日に0〜5試合の候補が登場し、毎週変わります。好きな試合を選択してください。結果は翌週に発表されます。</p><p class="muted small">選択中 '+games.filter(g=>g.selected).length+'試合 ／ 今季残り '+Math.max(0,143-s.game)+'試合</p>';
  h+='<div class="week-days-scroll"><div class="week-days-row">'+WEEK_DAYS.map((day,i)=>{const daily=games.filter(g=>g.day===i);return '<div class="stat"><b>'+day+'曜日（'+daily.length+'試合）</b>'+(daily.length?daily.map(g=>'<div class="line">vs '+safeText(clubs[g.opp])+' <button class="'+(g.selected?'primary':'')+'" data-scheduled="'+g.slot+'">'+(g.selected?'選択済み ✓':'選択する')+'</button></div>').join(''):'<p class="muted small">試合なし</p>')+'</div>'}).join('')+'</div></div>';
  h+='<p><button class="primary" data-action="week" '+(s.phase!=='regular'?'disabled':'')+'>1週間進める・結果発表</button></p><p class="muted small">試合結果・勝敗・練習成果は1週間進めるまで表示されません。選ばなかった試合は行われません。</p></div>';
- if(s.phase==='postseason')h+='<div class="box"><button class="primary" data-action="next">翌シーズンへ</button></div>';
+ if(s.phase==='postseason')h+='<div class="box">'+draftSeasonActions()+'</div>';
  if(s.revealedGame){let r=s.revealedGame;h+='<div class="box"><h2>直近の試合 vs '+clubs[r.opp]+'</h2>'+table(['チーム',...Array.from({length:9},(_,i)=>i+1),'計'],[[clubs[0],...r.inning.map(x=>x[0]),r.my],[clubs[r.opp],...r.inning.map(x=>x[1]),r.enemy]])+'</div>'}
  h+='<div class="box"><h2>試合履歴</h2>'+s.logs.slice(0,12).map(l=>'<div class="line">第'+l.game+'戦 vs '+clubs[l.opp]+'　<b>'+l.my+' - '+l.enemy+'</b> '+(l.my>l.enemy?'勝':l.my<l.enemy?'負':'分')+'</div>').join('')+'</div>';
 }
@@ -829,15 +990,16 @@ if(tab==='players'){
 if(tab==='catalog'){
 const assigned=new Map();s.clubs.forEach((club,i)=>{(club.roster||[]).forEach(p=>assigned.set(p.id,{name:clubs[i],index:i}));(club.retired||[]).forEach(p=>assigned.set(p.id,{name:'引退',index:i}))});
 const normalizedSearch=catalogSearch.replace(/[\s　]/g,'').toLowerCase();
-const filtered=PLAYER_CATALOG.filter(p=>(!normalizedSearch||p.name.replace(/[\s　]/g,'').toLowerCase().includes(normalizedSearch))&&(catalogRarity==='all'||p.rar===catalogRarity));
-h+='<div class="box"><h2> 選手名鑑（全3,027人）</h2><p class="muted">登録済みの固定選手データ。育成後の能力ではなく、初期能力を表示します。</p><div class="catalog-filters"><div class="catalog-search-group"><label for="catalogSearch" class="choice-caption">名前検索</label><div class="catalog-search-row"><input id="catalogSearch" type="search" placeholder="例：田中" value="'+safeText(catalogSearch)+'" autocomplete="off" enterkeyhint="search"><button type="button" data-action="catalogSearchApply">検索する</button></div></div>'+gameChoice('catalogPosition','ポジション',[['all','全選手'],['pitcher','投手'],['fielder','打者']],catalogPosition)+gameChoice('catalogRarity','レアリティ',[['all','すべて'],['N','N'],['R','R'],['SR','SR'],['SSR','SSR'],['UR','UR'],['LR','LR'],['MR','MR']],catalogRarity)+'</div>';
+const catalogPlayers=[...PLAYER_CATALOG,...(s.draftHistory||[])];
+const filtered=catalogPlayers.filter(p=>(!normalizedSearch||p.name.replace(/[\s　]/g,'').toLowerCase().includes(normalizedSearch))&&(catalogRarity==='all'||p.rar===catalogRarity));
+h+='<div class="box"><h2> 選手名鑑（全'+fmt(catalogPlayers.length)+'人）</h2><p class="muted">登録済みの固定選手データ。育成後の能力ではなく、初期能力を表示します。</p><div class="catalog-filters"><div class="catalog-search-group"><label for="catalogSearch" class="choice-caption">名前検索</label><div class="catalog-search-row"><input id="catalogSearch" type="search" placeholder="例：田中" value="'+safeText(catalogSearch)+'" autocomplete="off" enterkeyhint="search"><button type="button" data-action="catalogSearchApply">検索する</button></div></div>'+gameChoice('catalogPosition','ポジション',[['all','全選手'],['pitcher','投手'],['fielder','打者']],catalogPosition)+gameChoice('catalogRarity','レアリティ',[['all','すべて'],['N','N'],['R','R'],['SR','SR'],['SSR','SSR'],['UR','UR'],['LR','LR'],['MR','MR']],catalogRarity)+'</div>';
 if(catalogPosition!=='fielder')h+=catalogRoleTable(filtered.filter(isPitch),assigned,'pitcher');
 if(catalogPosition!=='pitcher')h+=catalogRoleTable(filtered.filter(p=>!isPitch(p)||isTwoWay(p)),assigned,'fielder');
 h+='</div>';
 
 }
 if(tab==='league'){const power=displayTeamPower(rosterPower(c));h+='<div class="box"><h2>球団戦力・ランク</h2><div class="grid"><div class="stat">チーム戦力<b>'+power.toFixed(1)+'</b></div><div class="stat">現在の球団ランク<b>'+rankLabel(power)+'</b></div></div><h3>ランク基準</h3>'+table(['ランク','必要チーム戦力'],TEAM_RANKS.map(([n,r])=>[r,n===0?'250未満':fmt(n)+'以上']))+'</div>';let standingsTable=(a,b)=>table(['順位','球団','チーム戦力','ランク','勝','敗','分','勝率'],standings(a,b).map((x,i)=>{const power=displayTeamPower(rosterPower(x.c));return [i+1,safeText(x.name),power.toFixed(1),teamRank(power),x.c.w,x.c.l,x.c.d,x.pct.toFixed(3)]}));let hitters=all().filter(p=>season(p).ab>0).sort((a,b)=>season(b).h-season(a).h);h+='<div class="box"><h2>リーグA</h2>'+standingsTable(0,6)+'</div><div class="box"><h2>リーグB</h2>'+standingsTable(6,12)+'</div><div class="box"><h2>年度別打撃成績</h2>'+table(['選手','試合','打率','本塁打','打点','通算安打'],hitters.map(p=>[p.name,season(p).g,average(p),season(p).hr,season(p).rbi,p.career.h]))+'</div><div class="box"><h2>投手成績</h2>'+table(['投手','投球回','防御率','勝','敗','奪三振'],all().filter(isPitch).map(p=>{let x=season(p);return[p.name,x.ip,x.ip?(x.er*9/x.ip).toFixed(2):'-.--',x.win,x.loss,x.k]}))+'</div>'}
-if(tab==='office'){h+='<div class="box"><h2>マイチーム</h2><p>球団名：<b>'+safeText(clubs[0])+'</b></p><button data-action="editTeam">チーム名・カラー変更</button></div><div class="box"><h2>データ管理</h2><div class="account-management"><h3>アカウント</h3>'+(activeProfile?'<p>ログイン中：<strong>'+safeText(activeProfile)+'</strong></p><button type="button" data-action="profileLogout">ログアウト</button>':'<p>ゲストプレイ</p><div class="row"><button type="button" data-action="profileLogin">ログイン</button><button type="button" data-action="profileRegister">新規登録</button></div>')+'<p class="muted small">アカウントはこの端末内に保存されます。</p></div><h3>保存データの削除</h3><p class="muted">現在の球団データを削除して、チーム作成からやり直します。削除したデータは復元できません。</p><button data-action="resetGame"> 全データを削除</button></div>';h+='<div class="box"><h2>球団運営</h2><p>球団資金：'+fmt(c.finance)+' / コーチLv：'+c.coach+'</p><div class="grid"><button data-action="coach">コーチ強化 3000</button><button data-action="foreign">外国人選手 2500</button><button data-action="fa">FA補強 4500</button><button data-action="trade">トレード</button><button data-action="draft" '+(s.drafted?'disabled':'')+'>新人ドラフト（年1回）</button></div><p class="muted small">ドラフトは年1回、FA・外国人は球団資金を消費。トレードは自動交渉の簡易版です。</p></div><div class="box"><h2>二軍・控え選手</h2>'+all().filter(p=>!c.order.includes(p.id)&&!c.rotation.includes(p.id)).map(p=>line(p)).join('')+'</div><div class="box"><h2>選手年俸</h2>'+table(['選手','年俸'],all().slice().sort((a,b)=>b.salary-a.salary).map(p=>[p.name,fmt(p.salary)]))+'</div>'}
+if(tab==='office'){h+='<div class="box"><h2>マイチーム</h2><p>球団名：<b>'+safeText(clubs[0])+'</b></p><button data-action="editTeam">チーム名・カラー変更</button></div><div class="box"><h2>データ管理</h2><div class="account-management"><h3>アカウント</h3>'+(activeProfile?'<p>ログイン中：<strong>'+safeText(activeProfile)+'</strong></p><button type="button" data-action="profileLogout">ログアウト</button>':'<p>ゲストプレイ</p><div class="row"><button type="button" data-action="profileLogin">ログイン</button><button type="button" data-action="profileRegister">新規登録</button></div>')+'<p class="muted small">アカウントはこの端末内に保存されます。</p></div><h3>保存データの削除</h3><p class="muted">現在の球団データを削除して、チーム作成からやり直します。削除したデータは復元できません。</p><button data-action="resetGame"> 全データを削除</button></div>';h+='<div class="box"><h2>球団運営</h2><p>球団資金：'+fmt(c.finance)+' / コーチLv：'+c.coach+'</p><div class="grid"><button data-action="coach">コーチ強化 3000</button><button data-action="foreign">外国人選手 2500</button><button data-action="fa">FA補強 4500</button><button data-action="trade">トレード</button><button data-action="draft" '+(s.phase==='postseason'?'':'disabled')+'>新人ドラフト（シーズン終了後）</button></div><p class="muted small">ドラフトは年1回、FA・外国人は球団資金を消費。トレードは自動交渉の簡易版です。</p></div><div class="box"><h2>二軍・控え選手</h2>'+all().filter(p=>!c.order.includes(p.id)&&!c.rotation.includes(p.id)).map(p=>line(p)).join('')+'</div><div class="box"><h2>選手年俸</h2>'+table(['選手','年俸'],all().slice().sort((a,b)=>b.salary-a.salary).map(p=>[p.name,fmt(p.salary)]))+'</div>'}
 if(tab==='legacy'){h+='<div class="box"><h2>年度表彰（自球団）</h2>'+(s.awards||[]).map(x=>'<div class="line">'+x.year+'年 最多安打：'+x.hit+' / 本塁打王：'+x.hr+'</div>').join('')+'</div>';h+='<div class="box"><h2> 歴代日本一・CS</h2>'+s.champions.map(x=>'<div class="line">'+x.year+'年 CS勝者：'+clubs[x.a]+' / '+clubs[x.b]+'　日本一：<b>'+clubs[x.winner]+'</b></div>').join('')+'</div><div class="box"><h2>球団の歴史</h2>'+table(['年','勝','敗','順位','日本一'],c.history.map(x=>[x.year,x.w,x.l,x.rank,x.champion?'':'—']))+'</div><div class="box"><h2>引退・殿堂入り・永久欠番</h2>'+c.retired.map(p=>line(p,'<div><button data-hof="'+p.id+'" '+(p.hof?'disabled':'')+'>殿堂入り</button><button data-number="'+p.id+'">永久欠番</button></div>')).join('')+'<p class="muted">永久欠番：'+(c.numbers.map(x=>x.number+' '+x.name).join('、')||'なし')+'</p></div><div class="box"><h2>選手イベント</h2>'+s.events.slice(0,20).map(x=>'<div class="line">'+x+'</div>').join('')+'</div>'}
 $('view').innerHTML=h}
 function showWatch(){
@@ -862,9 +1024,9 @@ function advanceWatch(){
 function finishWatch(){
  watchQueue=[];watchActive=false;$('matchViewer').hidden=true;render();
 }
-document.addEventListener('click',e=>{let t=e.target.closest('button');if(!t){if(!e.target.closest('.game-choice'))closeGameChoices();return}if(t.dataset.choiceToggle!==undefined){const menu=document.getElementById(t.dataset.choiceToggle+'Choices');const wasOpen=menu&&!menu.hidden;closeGameChoices();if(menu&&!wasOpen){menu.hidden=false;t.setAttribute('aria-expanded','true');const bounds=t.getBoundingClientRect();menu.classList.toggle('drop-up',window.innerHeight-bounds.bottom<Math.min(365,window.innerHeight*.55)+100&&bounds.top>260)}return}if(t.dataset.choiceField!==undefined){const field=t.dataset.choiceField,value=t.dataset.choiceValue;closeGameChoices();useGameChoice(field,value);return}closeGameChoices();if(t.dataset.catalogPage){const role=t.dataset.catalogRole;if(Object.hasOwn(catalogPages,role)){catalogPages[role]=Math.max(0,catalogPages[role]+(t.dataset.catalogPage==='next'?1:-1));render()}return}if(t.dataset.tab){tab=t.dataset.tab;notice='';render();if(tab==='home')window.scrollTo({top:0,behavior:'smooth'});return}if(t.dataset.draw){let [n,type]=t.dataset.draw.split(':');draw(+n,type,type==='free');return}if(t.dataset.claimMr!==undefined){claimMR(Number(t.dataset.claimMr));return}if(t.dataset.scheduled!==undefined){playScheduled(Number(t.dataset.scheduled));return}if(t.dataset.train){let [id,k]=t.dataset.train.split(':');train(id,k);return}if(t.dataset.weektrain){let [id,k]=t.dataset.weektrain.split(':');setWeeklyTraining(id,k);return}if(t.dataset.hof){hof(t.dataset.hof);return}if(t.dataset.number){permanent(t.dataset.number);return}let a=t.dataset.action;if(!a)return;if(a.startsWith('friend')){friendAction(a);return}if(a==='profileLogin'){openProfile('login');return}if(a==='profileRegister'){openProfile('register');return}if(a==='profileClose'){closeProfile();return}if(a==='profileLogout'){logoutProfile();return}if(a==='catalogSearchApply'){catalogSearch=$('catalogSearch')?.value||'';resetCatalogPages();render();return}if(a==='resetGame'){resetGame();return}if(a==='week'){advanceWeek();return}if(a==='editTeam'){showSetup(true);return}if(a==='play'||a==='play10'||a==='playall'){pendingGames=a==='play'?1:a==='play10'?10:Math.max(0,143-s.game);$('skipChoiceDetail').textContent=pendingGames+'試合を進行します。現在はどちらを選んでも結果と進行方法は同じです。';$('skipChoice').hidden=false;return}else if(a==='cancelSkip'){$('skipChoice').hidden=true;pendingGames=0;return}else if(a==='confirmSkip'||a==='confirmWatch'){$('skipChoice').hidden=true;let n=pendingGames;pendingGames=0;watchQueue=[];for(let i=0;i<n;i++){let previous=s.game;simulateGame();if(a==='confirmWatch'&&s.game>previous&&s.lastResult)watchQueue.push({...s.lastResult,inning:s.lastResult.inning.map(x=>x.slice())})}if(a==='confirmWatch'&&watchQueue.length)showWatch()}else if(a==='nextInning'){advanceWatch();return}else if(a==='watchToEnd'){if(watchActive){watchInning=9;updateWatch()}return}else if(a==='closeWatch'){finishWatch();return}else if(a==='auto')optimize();else if(a==='next')nextYear();else if(a==='coach'){if(me().finance>=3000){me().finance-=3000;me().coach++;notice='コーチLvアップ'}}else if(a==='foreign')signForeign();else if(a==='fa')fa();else if(a==='trade')trade();else if(a==='draft')draft();save();render()});
+document.addEventListener('click',e=>{let t=e.target.closest('button');if(!t){if(!e.target.closest('.game-choice'))closeGameChoices();return}if(t.dataset.choiceToggle!==undefined){const menu=document.getElementById(t.dataset.choiceToggle+'Choices');const wasOpen=menu&&!menu.hidden;closeGameChoices();if(menu&&!wasOpen){menu.hidden=false;t.setAttribute('aria-expanded','true');const bounds=t.getBoundingClientRect();menu.classList.toggle('drop-up',window.innerHeight-bounds.bottom<Math.min(365,window.innerHeight*.55)+100&&bounds.top>260)}return}if(t.dataset.choiceField!==undefined){const field=t.dataset.choiceField,value=t.dataset.choiceValue;closeGameChoices();useGameChoice(field,value);return}closeGameChoices();if(t.dataset.catalogPage){const role=t.dataset.catalogRole;if(Object.hasOwn(catalogPages,role)){catalogPages[role]=Math.max(0,catalogPages[role]+(t.dataset.catalogPage==='next'?1:-1));render()}return}if(t.dataset.tab){tab=t.dataset.tab;notice='';render();if(tab==='home')window.scrollTo({top:0,behavior:'smooth'});return}if(t.dataset.draftAction){updateDraft(t);return}if(t.dataset.draw){let [n,type]=t.dataset.draw.split(':');draw(+n,type,type==='free');return}if(t.dataset.claimMr!==undefined){claimMR(Number(t.dataset.claimMr));return}if(t.dataset.scheduled!==undefined){playScheduled(Number(t.dataset.scheduled));return}if(t.dataset.train){let [id,k]=t.dataset.train.split(':');train(id,k);return}if(t.dataset.weektrain){let [id,k]=t.dataset.weektrain.split(':');setWeeklyTraining(id,k);return}if(t.dataset.hof){hof(t.dataset.hof);return}if(t.dataset.number){permanent(t.dataset.number);return}let a=t.dataset.action;if(!a)return;if(a.startsWith('friend')){friendAction(a);return}if(a==='profileLogin'){openProfile('login');return}if(a==='profileRegister'){openProfile('register');return}if(a==='profileClose'){closeProfile();return}if(a==='profileLogout'){logoutProfile();return}if(a==='catalogSearchApply'){catalogSearch=$('catalogSearch')?.value||'';resetCatalogPages();render();return}if(a==='draft'){openDraft();return}if(a==='resetGame'){resetGame();return}if(a==='week'){advanceWeek();return}if(a==='editTeam'){showSetup(true);return}if(a==='play'||a==='play10'||a==='playall'){pendingGames=a==='play'?1:a==='play10'?10:Math.max(0,143-s.game);$('skipChoiceDetail').textContent=pendingGames+'試合を進行します。現在はどちらを選んでも結果と進行方法は同じです。';$('skipChoice').hidden=false;return}else if(a==='cancelSkip'){$('skipChoice').hidden=true;pendingGames=0;return}else if(a==='confirmSkip'||a==='confirmWatch'){$('skipChoice').hidden=true;let n=pendingGames;pendingGames=0;watchQueue=[];for(let i=0;i<n;i++){let previous=s.game;simulateGame();if(a==='confirmWatch'&&s.game>previous&&s.lastResult)watchQueue.push({...s.lastResult,inning:s.lastResult.inning.map(x=>x.slice())})}if(a==='confirmWatch'&&watchQueue.length)showWatch()}else if(a==='nextInning'){advanceWatch();return}else if(a==='watchToEnd'){if(watchActive){watchInning=9;updateWatch()}return}else if(a==='closeWatch'){finishWatch();return}else if(a==='auto')optimize();else if(a==='next')nextYear();else if(a==='coach'){if(me().finance>=3000){me().finance-=3000;me().coach++;notice='コーチLvアップ'}}else if(a==='foreign')signForeign();else if(a==='fa')fa();else if(a==='trade')trade();save();render()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeGameChoices();if(!$('skipChoice').hidden){$('skipChoice').hidden=true;pendingGames=0}}if((e.key==='ArrowDown'||e.key==='ArrowUp')&&e.target.matches('.choice-current')){e.preventDefault();const menu=document.getElementById(e.target.dataset.choiceToggle+'Choices');if(menu?.hidden)e.target.click();const options=menu?.querySelectorAll('.choice-option');if(options?.length)options[e.key==='ArrowDown'?0:options.length-1].focus()}});
-document.addEventListener('submit',e=>{if(e.target.id==='profileForm'){e.preventDefault();submitProfile();return}if(e.target.id==='teamSetupForm'){e.preventDefault();finishSetup()}});document.addEventListener('input',e=>{if(e.target.id==='friendInput'){e.target.value=e.target.value.replace(/[^0-9]/g,'').slice(0,6);return}if(e.target.id==='teamNameInput')updateTeamPreview();if(e.target.id==='catalogSearch'){catalogSearch=e.target.value;resetCatalogPages();return}});document.addEventListener('keydown',e=>{if(e.target.id==='catalogSearch'&&e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();catalogSearch=e.target.value;resetCatalogPages();render()}});
+document.addEventListener('submit',e=>{if(e.target.id==='profileForm'){e.preventDefault();submitProfile();return}if(e.target.id==='teamSetupForm'){e.preventDefault();finishSetup()}});document.addEventListener('input',e=>{if(e.target.id==='friendInput'){e.target.value=e.target.value.replace(/[^0-9]/g,'').slice(0,6);return}if(e.target.dataset.draftName!==undefined){editDraftName(e.target);return}if(e.target.id==='teamNameInput')updateTeamPreview();if(e.target.id==='catalogSearch'){catalogSearch=e.target.value;resetCatalogPages();return}});document.addEventListener('keydown',e=>{if(e.target.id==='catalogSearch'&&e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();catalogSearch=e.target.value;resetCatalogPages();render()}});
 document.addEventListener('change',e=>{if(e.target.id==='trainingSort'){trainingSort=e.target.value;render();return}if(e.target.id==='teamColorInput')updateTeamPreview();if(e.target.id==='catalogPosition'){catalogPosition=e.target.value;resetCatalogPages();render();return}if(e.target.id==='catalogRarity'){catalogRarity=e.target.value;resetCatalogPages();render();return}if(e.target.dataset.order!==undefined)chooseOrder(+e.target.dataset.order,e.target.value);if(e.target.dataset.rotation!==undefined)chooseRotation(+e.target.dataset.rotation,e.target.value)});
 render();
 })();
