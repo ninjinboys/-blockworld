@@ -397,7 +397,28 @@ function newPlayer(force=null,position=null,foreign=false){
  return p;
 }
 function makeClub(i){let roster=[];let club={roster,order:[],rotation:[],bench:[],w:0,l:0,d:0,finance:15000,coach:1,history:[],awards:[],retired:[],numbers:[]};s.clubs.push(club);for(let j=0;j<30;j++){let p=newPlayer(j<3?'SR':j<11?'R':'N',j<9?pos[j]:j<16?'投':null);if(p)roster.push(p)}club.order=roster.filter(p=>p.pos!=='投').slice(0,8).map(p=>p.id);club.rotation=roster.filter(p=>p.pos==='投').slice(0,5).map(p=>p.id);return club}
-function init(){s={clubs:[],year:2026,game:0,coins:3500,pity:0,daily:'',phase:'regular',logs:[],events:[],drafted:false,offseasonActions:0,champions:[],lastResult:null,teamConfigured:false,teamName:''};for(let i=0;i<clubs.length;i++)makeClub(i);save()}
+function cpuLineupScore(p){return p.pos==='投'?baseRating(p.control)*.35+baseRating(p.break)*.25+baseRating(p.stamina)*.15+(p.velocity-120)*.6:baseRating(p.contact)*.5+baseRating(p.power)*.32+baseRating(p.speed)*.1+baseRating(p.field)*.08}
+function optimizeCPU(club){
+ club.order=club.roster.filter(p=>p.pos!=='投').sort((a,b)=>cpuLineupScore(b)-cpuLineupScore(a)).slice(0,8).map(p=>p.id);
+ club.rotation=club.roster.filter(p=>p.pos==='投').sort((a,b)=>cpuLineupScore(b)-cpuLineupScore(a)).slice(0,5).map(p=>p.id);
+}
+function balanceCPUClubs(){
+ if(s.cpuBalanceV2)return false;
+ // Fixed club tiers, with genuine catalog players; no hidden score bonuses.
+ const tiers=[0,2,2,1,1,0,1,2,0,1,0,1];
+ for(let i=1;i<s.clubs.length;i++){
+  const cl=s.clubs[i],tier=tiers[i]||0;
+  const recruits=tier===2?[[8,'SSR',5],[5,'SR',3]]:tier===1?[[5,'SSR',3],[7,'SR',4]]:[[2,'SSR',1],[8,'SR',5]];
+  for(const [count,rar,batCount] of recruits)for(let j=0;j<count;j++){
+   const p=newPlayer(rar,j<batCount?'野手':'投');
+   if(p&&p.rar===rar){convertAbilities(p);cl.roster.push(p)}
+  }
+  optimizeCPU(cl);
+ }
+ s.cpuBalanceV2=true;
+ return true;
+}
+function init(){s={clubs:[],year:2026,game:0,coins:3500,pity:0,daily:'',phase:'regular',logs:[],events:[],drafted:false,offseasonActions:0,champions:[],lastResult:null,teamConfigured:false,teamName:''};for(let i=0;i<clubs.length;i++)makeClub(i);balanceCPUClubs();save()}
 function save(){try{localStorage.setItem(profileSaveKey(),JSON.stringify(s));return true}catch(e){notice='保存容量を確認してください';return false}}
 try{
  const id=localStorage.getItem(ACTIVE_KEY)||'';
@@ -405,12 +426,12 @@ try{
  if(!s)s=readSave('');
 }catch(e){notice='保存データの読み込みに失敗しました。'}
 if(!validSave(s)){activeProfile='';init()}
-if(s.teamName)clubs[0]=s.teamName;initializeTraining();setupMode=!s.teamConfigured;
+if(s.teamName)clubs[0]=s.teamName;initializeTraining();if(balanceCPUClubs())save();setupMode=!s.teamConfigured;
 const me=()=>s.clubs[0],all=()=>me().roster,find=id=>all().find(p=>p.id===id),isPitch=p=>p.pos==='投',batScore=p=>baseRating(p.contact)*.5+baseRating(p.power)*.32+baseRating(p.speed)*.1+baseRating(p.field)*.08,armScore=p=>baseRating(p.control)*.35+baseRating(p.break)*.25+baseRating(p.stamina)*.15+(p.velocity-120)*.6;
 function rosterPower(c){let b=c.order.map(id=>c.roster.find(p=>p.id===id)).filter(Boolean),p=c.rotation.map(id=>c.roster.find(x=>x.id===id)).filter(Boolean);return (b.reduce((a,x)=>a+batScore(x),0)/Math.max(1,b.length))*.65+(p.reduce((a,x)=>a+armScore(x),0)/Math.max(1,p.length))*.35}
 
-// Keep the simulation's internal power unchanged; use a wider progression scale for visible club ratings.
-function displayTeamPower(raw){return raw<=50?Math.max(0,raw):50+(raw-50)*10}
+// A single proportional scale for every club, including CPU opponents.
+function displayTeamPower(raw){return Math.max(0,raw)*7}
 const TEAM_RANKS=[[900,'S'],[650,'A'],[450,'B'],[250,'C'],[0,'D']];
 function teamRank(power){const shown=Math.round(power*10)/10;return TEAM_RANKS.find(([min])=>shown>=min)?.[1]||'D'}
 function rankLabel(power){return '<span class="team-rank rank-'+teamRank(power)+'">'+teamRank(power)+'</span>'}
@@ -546,7 +567,7 @@ function draft(){if(s.drafted)return;let p=newPlayer('SR',null);if(!p){notice='�
 function trade(){let pool=all().filter(p=>!['UR','LR','MR'].includes(p.rar));if(!pool.length)return;let out=pool.sort((a,b)=>batScore(a)-batScore(b))[0],incoming=newPlayer('SR');if(!incoming){notice='獲得可能な選手がいません';render();return}me().roster=all().filter(p=>p.id!==out.id);me().roster.push(incoming);me().order=me().order.map(id=>id===out.id?incoming.id:id);me().rotation=me().rotation.map(id=>id===out.id?incoming.id:id);notice=out.name+'を放出し、'+incoming.name+'を獲得';save();render()}
 function fa(){if(me().finance<4500)return alert('球団資金不足');me().finance-=4500;let p=newPlayer('SSR');if(!p){me().finance+=4500;notice='獲得可能な選手がいません';save();render();return}p.age=28+rand(6);me().roster.push(p);notice='FAで'+p.name+'を獲得';save();render()}
 function retire(){let candidates=all().filter(p=>p.age>=35).sort((a,b)=>b.career.h+a.career.hr*2-(a.career.h+b.career.hr*2));for(let p of candidates){if(rand(100)<(p.age-33)*10){me().retired.push({...p});me().roster=all().filter(x=>x.id!==p.id);me().order=me().order.filter(id=>id!==p.id);me().rotation=me().rotation.filter(id=>id!==p.id)}}}
-function nextYear(){refreshMRUnlocks();retire();let c=me(),pay=all().reduce((sum,p)=>sum+p.salary,0);c.finance=Math.max(1000,c.finance+10000-Math.round(pay*.3));s.year++;s.game=0;s.week=1;s.trainingPlans={};s.trainingReport=[];s.weekResults=[];s.weekSchedule=null;s.revealedGame=null;s.phase='regular';s.drafted=false;s.logs=[];s.lastResult=null;s.clubs.forEach(cl=>{cl.w=0;cl.l=0;cl.d=0;cl.roster.forEach(p=>{p.age++;let growth=p.growth==='早熟'?(p.age<25?2:-2):p.growth==='晩成'?(p.age<31?2:-2):(p.age<29?1:-1);for(let k of ['contact','power','speed','field','arm','control','stamina','break'])p[k]=Math.max(1,Math.min(capFor(p),p[k]+(growth+rand(3)-1)*35));p.fatigue=0;p.condition=3})});optimize();notice='新シーズン '+s.year+'年が始まりました';save();render()}
+function nextYear(){refreshMRUnlocks();retire();let c=me(),pay=all().reduce((sum,p)=>sum+p.salary,0);c.finance=Math.max(1000,c.finance+10000-Math.round(pay*.3));s.year++;s.game=0;s.week=1;s.trainingPlans={};s.trainingReport=[];s.weekResults=[];s.weekSchedule=null;s.revealedGame=null;s.phase='regular';s.drafted=false;s.logs=[];s.lastResult=null;s.clubs.forEach(cl=>{cl.w=0;cl.l=0;cl.d=0;cl.roster.forEach(p=>{p.age++;let growth=p.growth==='早熟'?(p.age<25?2:-2):p.growth==='晩成'?(p.age<31?2:-2):(p.age<29?1:-1);for(let k of ['contact','power','speed','field','arm','control','stamina','break'])p[k]=Math.max(1,Math.min(capFor(p),p[k]+(growth+rand(3)-1)*35));p.fatigue=0;p.condition=3})});s.clubs.slice(1).forEach(optimizeCPU);optimize();notice='新シーズン '+s.year+'年が始まりました';save();render()}
 function hof(id){let p=me().retired.find(x=>x.id===id);if(!p)return;p.hof=true;notice=p.name+'が殿堂入りしました';save();render()}
 function permanent(id){let p=me().retired.find(x=>x.id===id);if(!p)return;let num=String(1+me().numbers.length);me().numbers.push({number:num,name:p.name});notice=p.name+'の背番号'+num+'を永久欠番にしました';save();render()}
 
@@ -622,7 +643,7 @@ function activateProfile(id,data){
   else{s=null;activeProfile=id;clubs[0]='広島レッドスターズ';init();if(!localStorage.getItem(profileSaveKey(id)))throw Error('新しい球団を保存できません。')}
   if(id)localStorage.setItem(ACTIVE_KEY,id);else localStorage.removeItem(ACTIVE_KEY);
  }catch(e){s=old;activeProfile=oldId;clubs[0]=s.teamName||'広島レッドスターズ';throw e}
- clubs[0]=s.teamName||'広島レッドスターズ';initializeTraining();
+ clubs[0]=s.teamName||'広島レッドスターズ';initializeTraining();if(balanceCPUClubs())save();
  friendCode='';friendExpiry=0;friendOpponent=null;friendLast=null;
  setupMode=!s.teamConfigured;tab='home';notice='';drawn=[];pendingGames=0;watchQueue=[];watchActive=false;watchInning=0;
  $('matchViewer').hidden=true;$('skipChoice').hidden=true;
