@@ -409,8 +409,8 @@ if(s.teamName)clubs[0]=s.teamName;initializeTraining();setupMode=!s.teamConfigur
 const me=()=>s.clubs[0],all=()=>me().roster,find=id=>all().find(p=>p.id===id),isPitch=p=>p.pos==='投',batScore=p=>baseRating(p.contact)*.5+baseRating(p.power)*.32+baseRating(p.speed)*.1+baseRating(p.field)*.08,armScore=p=>baseRating(p.control)*.35+baseRating(p.break)*.25+baseRating(p.stamina)*.15+(p.velocity-120)*.6;
 function rosterPower(c){let b=c.order.map(id=>c.roster.find(p=>p.id===id)).filter(Boolean),p=c.rotation.map(id=>c.roster.find(x=>x.id===id)).filter(Boolean);return (b.reduce((a,x)=>a+batScore(x),0)/Math.max(1,b.length))*.65+(p.reduce((a,x)=>a+armScore(x),0)/Math.max(1,p.length))*.35}
 
-const TEAM_RANKS=[[135,'SSS'],[125,'SS'],[115,'S'],[105,'A'],[95,'B'],[85,'C'],[75,'D'],[65,'E'],[55,'F'],[0,'G']];
-function teamRank(power){const shown=Math.round(power*10)/10;return TEAM_RANKS.find(([min])=>shown>=min)?.[1]||'G'}
+const TEAM_RANKS=[[130,'S'],[110,'A'],[90,'B'],[70,'C'],[0,'D']];
+function teamRank(power){const shown=Math.round(power*10)/10;return TEAM_RANKS.find(([min])=>shown>=min)?.[1]||'D'}
 function rankLabel(power){return '<span class="team-rank rank-'+teamRank(power)+'">'+teamRank(power)+'</span>'}
 let friendCode='',friendOpponent=null,friendLast=null;
 function battlePlayer(p,kind,i){
