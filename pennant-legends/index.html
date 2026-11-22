@@ -573,7 +573,12 @@ function batting(p){return p.stats[s.year]||(p.stats[s.year]={g:0,ab:0,h:0,hr:0,
 function addStat(p,k,n=1){batting(p)[k]+=n;p.career[k]+=n}
 function season(p){return batting(p)}
 function average(p){let x=season(p);return x.ab?(x.h/x.ab).toFixed(3):'.---'}
-function skillLabel(p){return isPitch(p)?'球速'+p.velocity+' 制球'+p.control+' 変化'+p.break+' 体力'+p.stamina:'ミート'+p.contact+' パワー'+p.power+' 走力'+p.speed+' 守備'+p.field+' 肩'+p.arm}
+function isTwoWay(p){return p.rar==='MR'&&p.trait?.includes('二刀流')}
+function skillLabel(p){
+ const batting='ミート'+p.contact+' パワー'+p.power+' 走力'+p.speed+' 守備'+p.field+' 肩'+p.arm;
+ const pitching='球速'+p.velocity+' 制球'+p.control+' 変化'+p.break+' 体力'+p.stamina;
+ return isTwoWay(p)?batting+' / '+pitching:isPitch(p)?pitching:batting;
+}
 // CPU club colors follow the fixed club order. Club zero uses the current save's color.
 const cpuCapColors=['','#ae354c','#d89c32','#327a67','#3878b8','#954542','#526da0','#bd8b39','#a14271','#467c84','#4a629d','#b46b34'];
 function playerPortrait(p,clubIndex){
@@ -777,8 +782,18 @@ if(tab==='catalog'){
 const assigned=new Map();s.clubs.forEach((club,i)=>{(club.roster||[]).forEach(p=>assigned.set(p.id,{name:clubs[i],index:i}));(club.retired||[]).forEach(p=>assigned.set(p.id,{name:'引退',index:i}))});
 const normalizedSearch=catalogSearch.replace(/[\s　]/g,'').toLowerCase();const filtered=PLAYER_CATALOG.filter(p=>(!normalizedSearch||p.name.replace(/[\s　]/g,'').toLowerCase().includes(normalizedSearch))&&(catalogPosition==='all'||(catalogPosition==='pitcher'?p.pos==='投':p.pos!=='投'))&&(catalogRarity==='all'||p.rar===catalogRarity));
 const pageSize=50,pages=Math.max(1,Math.ceil(filtered.length/pageSize));catalogPage=Math.min(catalogPage,pages-1);
+const pagePlayers=filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize);
+const showMission=pagePlayers.some(p=>p.rar==='MR');
+const rows=pagePlayers.map(p=>{
+ const pitcher=isPitch(p),twoWay=isTwoWay(p),club=assigned.get(p.id);
+ const batting=(!pitcher||twoWay)?[p.contact,p.power,p.speed,p.field,p.arm]:Array(5).fill('—');
+ const pitching=(pitcher||twoWay)?[p.velocity,p.control,p.break,p.stamina]:Array(4).fill('—');
+ const id=p.id.slice(8),name='<span class="catalog-player-name">'+playerPortrait(p,club?.index)+safeText(p.name)+'</span>';
+ const mission=p.rar==='MR'?safeText(MR_LEGENDS[Number(id)-3013]?.[3]||''):'—';
+ return [id,name,twoWay?p.pos+'（二刀流）':p.pos,p.rar,p.age,...batting,...pitching,safeText(club?.name||'未所属'),...(showMission?[mission]:[])];
+});
 h+='<div class="box"><h2> 選手名鑑（全3,027人）</h2><p class="muted">登録済みの固定選手データ。育成後の能力ではなく、初期能力を表示します。</p><div class="catalog-filters"><div class="catalog-search-group"><label for="catalogSearch" class="choice-caption">名前検索</label><div class="catalog-search-row"><input id="catalogSearch" type="search" placeholder="例：田中" value="'+safeText(catalogSearch)+'" autocomplete="off" enterkeyhint="search"><button type="button" data-action="catalogSearchApply">検索する</button></div></div>'+gameChoice('catalogPosition','ポジション',[['all','全選手'],['pitcher','投手'],['fielder','野手']],catalogPosition)+gameChoice('catalogRarity','レアリティ',[['all','すべて'],['N','N'],['R','R'],['SR','SR'],['SSR','SSR'],['UR','UR'],['LR','LR'],['MR','MR']],catalogRarity)+'</div><p>'+filtered.length+'人中 '+(filtered.length?catalogPage*pageSize+1:0)+'〜'+Math.min(filtered.length,(catalogPage+1)*pageSize)+'人を表示（'+(catalogPage+1)+' / '+pages+'ページ）</p>'+
-table(['ID','選手名','守備','レア','年齢','ミート','パワー','走力','守備','肩','球速','制球','変化','スタミナ','所属',...(filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).some(p=>p.rar==='MR')?['獲得条件']:[])],filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).map(p=>[p.id.replace('catalog-',''),'<span class="catalog-player-name">'+playerPortrait(p,assigned.get(p.id)?.index)+safeText(p.name)+'</span>',p.pos,p.rar,p.age,p.contact,p.power,p.speed,p.field,p.arm,p.velocity,p.control,p.break,p.stamina,safeText(assigned.get(p.id)?.name||'未所属'),...(filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).some(q=>q.rar==='MR')?[p.rar==='MR'?safeText(MR_LEGENDS[Number(p.id.replace('catalog-',''))-3013]?.[3]||''):'—']:[])]))+
+table(['ID','選手名','守備','レア','年齢','ミート','パワー','走力','守備','肩','球速','制球','変化','スタミナ','所属',...(showMission?['獲得条件']:[])],rows)+
 '<div class="catalog-pages"><button data-catalog-page="prev" '+(catalogPage===0?'disabled':'')+'>前の50人</button><button data-catalog-page="next" '+(catalogPage===pages-1?'disabled':'')+'>次の50人</button></div></div>';
 
 }
