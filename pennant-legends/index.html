@@ -153,7 +153,10 @@ html body .catalog-search-row button{box-sizing:border-box;flex:0 0 auto;min-hei
 .friend-versus .stat{overflow-wrap:anywhere}
 .friend-score{font-size:clamp(20px,4vw,32px);font-weight:900;color:#fff2a1;padding:12px 0;overflow-wrap:anywhere}
 @media(max-width:600px){.friend-versus{gap:6px}.friend-versus .stat{font-size:13px}.tabs .menu-label{font-size:9px!important}.tabs .menu-icon{width:21px!important;height:21px!important}}
-.friend-fields input.friend-six-code{display:block;width:min(100%,270px);max-width:none;height:66px;margin:14px 0;padding:9px 12px;border:3px solid #6bafee;border-radius:8px;background:#e6f3ff;color:#123b70;text-align:center;font:900 28px/1.3 ui-monospace,monospace;letter-spacing:.20em;box-shadow:inset 0 2px 4px #123b7030,0 4px 0 #053b7b}.friend-six-code::placeholder{color:#7492af}.friend-legacy{margin-top:20px}.friend-legacy summary{cursor:pointer;color:#d1e8ff;font-size:14px}.friend-legacy textarea{display:block;width:100%;min-height:85px;margin:12px 0;padding:9px;background:#e6f3ff;color:#123b70;border:2px solid #6bafee;border-radius:6px;font-size:16px}.profile-strip[hidden]{display:none!important}.account-management{padding-bottom:16px;border-bottom:2px solid #5b9bd9;margin-bottom:17px}</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="profileStrip" class="profile-strip"></div><div id="profileDialog" class="profile-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle"><div id="profilePanel" class="profile-panel"></div></div><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene" id="stadiumScene" aria-label="球団のホーム球場"><div class="stadium-sky"><span class="stadium-cloud cloud-a"></span><span class="stadium-cloud cloud-b"></span></div><div class="stadium-board"><span id="stadiumTeam">MY BASEBALL CLUB</span><small>HOME STADIUM</small></div><div class="stadium-stands"><span></span></div><div class="stadium-field"><div class="stadium-outfield"></div><div class="stadium-infield"><div class="stadium-mound"></div><span class="base base-a"></span><span class="base base-b"></span><span class="base base-c"></span></div><div class="stadium-home"></div></div><div class="stadium-caption"> わが球団のホームグラウンド</div></section><div id="matchViewer" class="match-viewer" hidden><div class="match-viewer-inner"><div class="match-viewer-header"><strong>試合観戦</strong><button data-action="closeWatch">終了</button></div><div id="matchScoreboard"></div><div class="match-field"><div class="match-diamond"><span class="match-base match-base-second"></span><span class="match-base match-base-first"></span><span class="match-base match-base-third"></span><span class="match-pitcher"></span><span class="match-batter"></span></div><div class="match-field-label">LIVE MATCH VIEW</div></div><div id="matchCommentary" class="match-commentary"></div><div class="match-watch-actions"><button data-action="nextInning">次のイニング</button><button data-action="watchToEnd">試合終了まで進める</button></div></div></div><div id="skipChoice" class="skip-choice" hidden role="dialog" aria-modal="true" aria-labelledby="skipChoiceTitle"><div class="skip-choice-panel"><h2 id="skipChoiceTitle">試合をスキップしますか？</h2><p id="skipChoiceDetail">進行方法を選択してください。</p><div class="skip-choice-buttons"><button data-action="confirmSkip">スキップする</button><button data-action="confirmWatch">スキップしない</button></div><button class="skip-cancel" data-action="cancelSkip">キャンセル</button></div></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.6</p></main><script>
+.friend-fields input.friend-six-code{display:block;width:min(100%,270px);max-width:none;height:66px;margin:14px 0;padding:9px 12px;border:3px solid #6bafee;border-radius:8px;background:#e6f3ff;color:#123b70;text-align:center;font:900 28px/1.3 ui-monospace,monospace;letter-spacing:.20em;box-shadow:inset 0 2px 4px #123b7030,0 4px 0 #053b7b}.friend-six-code::placeholder{color:#7492af}.friend-legacy{margin-top:20px}.friend-legacy summary{cursor:pointer;color:#d1e8ff;font-size:14px}.friend-legacy textarea{display:block;width:100%;min-height:85px;margin:12px 0;padding:9px;background:#e6f3ff;color:#123b70;border:2px solid #6bafee;border-radius:6px;font-size:16px}.profile-strip[hidden]{display:none!important}.account-management{padding-bottom:16px;border-bottom:2px solid #5b9bd9;margin-bottom:17px}
+.player-portrait{width:48px;height:48px;vertical-align:middle;margin-inline-end:6px;image-rendering:pixelated;border-radius:4px}
+.catalog-player-name{white-space:nowrap}
+</style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div></header><div id="profileStrip" class="profile-strip"></div><div id="profileDialog" class="profile-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle"><div id="profilePanel" class="profile-panel"></div></div><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene" id="stadiumScene" aria-label="球団のホーム球場"><div class="stadium-sky"><span class="stadium-cloud cloud-a"></span><span class="stadium-cloud cloud-b"></span></div><div class="stadium-board"><span id="stadiumTeam">MY BASEBALL CLUB</span><small>HOME STADIUM</small></div><div class="stadium-stands"><span></span></div><div class="stadium-field"><div class="stadium-outfield"></div><div class="stadium-infield"><div class="stadium-mound"></div><span class="base base-a"></span><span class="base base-b"></span><span class="base base-c"></span></div><div class="stadium-home"></div></div><div class="stadium-caption"> わが球団のホームグラウンド</div></section><div id="matchViewer" class="match-viewer" hidden><div class="match-viewer-inner"><div class="match-viewer-header"><strong>試合観戦</strong><button data-action="closeWatch">終了</button></div><div id="matchScoreboard"></div><div class="match-field"><div class="match-diamond"><span class="match-base match-base-second"></span><span class="match-base match-base-first"></span><span class="match-base match-base-third"></span><span class="match-pitcher"></span><span class="match-batter"></span></div><div class="match-field-label">LIVE MATCH VIEW</div></div><div id="matchCommentary" class="match-commentary"></div><div class="match-watch-actions"><button data-action="nextInning">次のイニング</button><button data-action="watchToEnd">試合終了まで進める</button></div></div></div><div id="skipChoice" class="skip-choice" hidden role="dialog" aria-modal="true" aria-labelledby="skipChoiceTitle"><div class="skip-choice-panel"><h2 id="skipChoiceTitle">試合をスキップしますか？</h2><p id="skipChoiceDetail">進行方法を選択してください。</p><div class="skip-choice-buttons"><button data-action="confirmSkip">スキップする</button><button data-action="confirmWatch">スキップしない</button></div><button class="skip-cancel" data-action="cancelSkip">キャンセル</button></div></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.6</p></main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)],rand=n=>Math.floor(Math.random()*n),clamp=(n,a=1,b=99)=>Math.max(a,Math.min(b,n)),fmt=n=>Number(n).toLocaleString('ja-JP');
 /* Compensate for iPad Safari visual viewport shifts during scroll. */
@@ -542,7 +545,62 @@ function addStat(p,k,n=1){batting(p)[k]+=n;p.career[k]+=n}
 function season(p){return batting(p)}
 function average(p){let x=season(p);return x.ab?(x.h/x.ab).toFixed(3):'.---'}
 function skillLabel(p){return isPitch(p)?'球速'+p.velocity+' 制球'+p.control+' 変化'+p.break+' 体力'+p.stamina:'ミート'+p.contact+' パワー'+p.power+' 走力'+p.speed+' 守備'+p.field+' 肩'+p.arm}
-function nameCell(p){return '<b class="'+p.rar+'">'+p.rar+'</b> '+p.name+' <span class="tag">'+p.pos+'</span>'}
+const portraitCache=new Map();
+const portraitBackgrounds={N:'#334155',R:'#244659',SR:'#373766',SSR:'#523831',UR:'#62451e'};
+const portraitColors=['#325b90','#9e363c','#326c54','#77539f','#aa572f','#267478','#505974','#9c7129'];
+const portraitSkin=[
+ ['#ffe1b8','#d99866'],['#efbc93','#b97956'],['#e4a67a','#a96647'],
+ ['#ca8d65','#915536'],['#ac6c49','#743c2a'],['#8e553b','#59301f']
+];
+function playerPortrait(p){
+ if(!Object.hasOwn(portraitBackgrounds,p.rar)||!/^catalog-[0-9]{4}$/.test(p.id))return '';
+ let image=portraitCache.get(p.id);
+ if(!image){
+  // A permutation of all style combinations gives each catalog ID a distinct portrait.
+  const style=(Number(p.id.slice(8))*1877)%3072;
+  const cap=portraitColors[style%8],jersey=portraitColors[Math.floor(style/8)%8];
+  const features=Math.floor(style/64)%8,[skin,shadow]=portraitSkin[Math.floor(style/512)];
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=24;
+  const ctx=canvas.getContext('2d');
+  const pixel=(color,x,y,w,h)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
+  const ink='#18202c';
+  pixel(portraitBackgrounds[p.rar],0,0,24,24);
+  pixel(ink,3,21,18,3);
+  pixel(ink,6,19,12,3);
+  pixel(jersey,4,22,16,2);
+  pixel(jersey,7,20,10,4);
+  pixel('#e3eaf1',7,21,2,3);
+  pixel('#e3eaf1',15,21,2,3);
+  pixel(shadow,10,17,4,4);
+  pixel(ink,5,7,14,9);
+  pixel(ink,7,15,10,4);
+  pixel(shadow,6,12,12,3);
+  pixel(shadow,8,9,8,9);
+  pixel(skin,8,10,8,6);
+  pixel(skin,9,16,6,1);
+  const spread=features%2;
+  pixel(ink,9-spread,12,1,2);
+  pixel(ink,14+spread,12,1,2);
+  pixel(shadow,12,14,1,1);
+  const chin=Math.floor(features/2);
+  if(chin===0)pixel('#643e38',11,16,2,1);
+  if(chin===1)pixel('#fff2dc',10,16,4,1);
+  if(chin===2)pixel('#493431',10,15,4,1);
+  if(chin===3)pixel('#493431',9,16,6,2);
+  pixel(ink,7,4,10,2);
+  pixel(ink,5,6,14,4);
+  pixel(cap,8,4,8,2);
+  pixel(cap,6,6,12,3);
+  pixel('#e3eaf1',11,6,2,2);
+  pixel(ink,5,9,15,1);
+  pixel(cap,12,9,7,1);
+  image=canvas.toDataURL();
+  portraitCache.set(p.id,image);
+ }
+ return '<img class="player-portrait" src="'+image+'" width="48" height="48" alt="">';
+}
+function nameCell(p){return playerPortrait(p)+'<b class="'+p.rar+'">'+p.rar+'</b> '+p.name+' <span class="tag">'+p.pos+'</span>'}
 function line(p,extra=''){return '<div class="line row"><div>'+nameCell(p)+' <span class="muted small">'+p.age+'歳 '+p.growth+'型</span><div class="muted small">'+skillLabel(p)+' / '+p.trait+' / 調子'+p.condition+' 疲労'+p.fatigue+'</div></div>'+extra+'</div>'}
 function day(){return new Date().toISOString().slice(0,10)}
 function draw(n,type='normal',free=false){let cost=free?0:n===10?2700:300;if(!free&&s.coins<cost){notice='コインが足りません';render();return}if(free&&s.daily===day()){notice='本日の無料ガチャは使用済みです';render();return}if(free)s.daily=day();s.coins-=cost;drawn=[];for(let i=0;i<n;i++){let forced=null;if(type==='limited'&&rand(100)<10)forced='SSR';if(s.pity>=99)forced='UR';if(n===10&&i===9&&!drawn.some(p=>['SR','SSR','UR','LR'].includes(p.rar)))forced='SR';let position=type==='pitcher'?'投':type==='fielder'?'野手':null,p=newPlayer(forced,position);if(!p)break;drawn.push(p);me().roster.push(p);s.pity=['UR','LR'].includes(p.rar)?0:s.pity+1}if(!drawn.length){s.coins+=cost;if(free)s.daily='';notice='選手データベースに獲得可能な選手がいません'}else{if(drawn.length<n)s.coins+=Math.round(cost*(n-drawn.length)/n);notice=drawn.length+'人獲得！'+(drawn.length<n?'（残りの選手が不足）':'')}save();render()}
@@ -729,7 +787,7 @@ const assigned=new Map();s.clubs.forEach((club,i)=>{(club.roster||[]).forEach(p=
 const normalizedSearch=catalogSearch.replace(/[\s　]/g,'').toLowerCase();const filtered=PLAYER_CATALOG.filter(p=>(!normalizedSearch||p.name.replace(/[\s　]/g,'').toLowerCase().includes(normalizedSearch))&&(catalogPosition==='all'||(catalogPosition==='pitcher'?p.pos==='投':p.pos!=='投'))&&(catalogRarity==='all'||p.rar===catalogRarity));
 const pageSize=50,pages=Math.max(1,Math.ceil(filtered.length/pageSize));catalogPage=Math.min(catalogPage,pages-1);
 h+='<div class="box"><h2> 選手名鑑（全3,027人）</h2><p class="muted">登録済みの固定選手データ。育成後の能力ではなく、初期能力を表示します。</p><div class="catalog-filters"><div class="catalog-search-group"><label for="catalogSearch" class="choice-caption">名前検索</label><div class="catalog-search-row"><input id="catalogSearch" type="search" placeholder="例：田中" value="'+safeText(catalogSearch)+'" autocomplete="off" enterkeyhint="search"><button type="button" data-action="catalogSearchApply">検索する</button></div></div>'+gameChoice('catalogPosition','ポジション',[['all','全選手'],['pitcher','投手'],['fielder','野手']],catalogPosition)+gameChoice('catalogRarity','レアリティ',[['all','すべて'],['N','N'],['R','R'],['SR','SR'],['SSR','SSR'],['UR','UR'],['LR','LR'],['MR','MR']],catalogRarity)+'</div><p>'+filtered.length+'人中 '+(filtered.length?catalogPage*pageSize+1:0)+'〜'+Math.min(filtered.length,(catalogPage+1)*pageSize)+'人を表示（'+(catalogPage+1)+' / '+pages+'ページ）</p>'+
-table(['ID','選手名','守備','レア','年齢','ミート','パワー','走力','守備','肩','球速','制球','変化','スタミナ','所属',...(filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).some(p=>p.rar==='MR')?['獲得条件']:[])],filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).map(p=>[p.id.replace('catalog-',''),safeText(p.name),p.pos,p.rar,p.age,p.contact,p.power,p.speed,p.field,p.arm,p.velocity,p.control,p.break,p.stamina,safeText(assigned.get(p.id)||'未所属'),...(filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).some(q=>q.rar==='MR')?[p.rar==='MR'?safeText(MR_LEGENDS[Number(p.id.replace('catalog-',''))-3013]?.[3]||''):'—']:[])]))+
+table(['ID','選手名','守備','レア','年齢','ミート','パワー','走力','守備','肩','球速','制球','変化','スタミナ','所属',...(filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).some(p=>p.rar==='MR')?['獲得条件']:[])],filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).map(p=>[p.id.replace('catalog-',''),'<span class="catalog-player-name">'+playerPortrait(p)+safeText(p.name)+'</span>',p.pos,p.rar,p.age,p.contact,p.power,p.speed,p.field,p.arm,p.velocity,p.control,p.break,p.stamina,safeText(assigned.get(p.id)||'未所属'),...(filtered.slice(catalogPage*pageSize,(catalogPage+1)*pageSize).some(q=>q.rar==='MR')?[p.rar==='MR'?safeText(MR_LEGENDS[Number(p.id.replace('catalog-',''))-3013]?.[3]||''):'—']:[])]))+
 '<div class="catalog-pages"><button data-catalog-page="prev" '+(catalogPage===0?'disabled':'')+'>前の50人</button><button data-catalog-page="next" '+(catalogPage===pages-1?'disabled':'')+'>次の50人</button></div></div>';
 
 }
