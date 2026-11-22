@@ -272,8 +272,30 @@ const LR_LEGENDS=[["鬼塚 豪","一","破壊王",[6200,8850,2100,3800,5100,1200
 function buildLegendPlayers(){return LR_LEGENDS.map(([name,pos,trait,values,velocity],i)=>{const [contact,power,speed,field,arm,control,stamina,breakValue]=values;return {id:'catalog-'+String(3001+i),name,pos,rar:'LR',age:22+i%9,foreign:false,growth:i%3===0?'晩成':'普通',trait,contact,power,speed,field,arm,control,stamina,velocity,break:breakValue,abilityScale:9999,condition:3,fatigue:0,level:1,exp:0,salary:1800+i*90,stats:{},career:{g:0,ab:0,h:0,hr:0,rbi:0,bb:0,so:0,ip:0,er:0,win:0,loss:0,sv:0,k:0}}})}
 const MR_LEGENDS=[["神代 蒼真","投","完全なるエース","同じ投手が1シーズンで20勝以上・防御率2.00未満・90投球回以上","ace",[2200,1800,2800,6200,8500,11500,11200,11000],165],["天城 蓮","中","野球の天才","同じ選手が1シーズンで打率.350以上・40本塁打以上・30盗塁以上・200打数以上","triple",[11900,11700,11600,9400,8700,2000,9000,1700],152],["黒羽 零","投","二刀流の怪物","球団が日本一を通算3回以上達成し、通算500勝以上","dynasty",[10700,10800,9800,9000,11000,11200,11000,11100],162],["帝堂 龍牙","投","剛速球の支配者","同じ投手が1シーズンで300奪三振以上","strikeout",[1400,1600,2600,5500,10500,9100,10600,11800],168],["雪村 静流","投","氷の制球術","同じ投手が1シーズンで防御率1.00未満・90投球回以上","era",[1400,1500,2500,5900,7900,12000,10900,11300],155],["皇 凌駕","投","絶対王者","同じ投手が1シーズンで50セーブ以上","saves",[1400,1500,2400,5800,10500,11000,8800,11300],166],["夜神 刹那","投","無失点の影","同じ投手が1シーズンで50登板以上・防御率0.50未満・45投球回以上","relief",[1400,1500,2600,7000,8900,11700,9000,11000],158],["獅堂 大和","捕","伝説の司令塔","同じシーズンに日本一を達成し、チーム防御率2.00未満・90投球回以上","catcher",[9000,8800,6300,11900,11500,2000,10200,1800],151],["龍崎 豪炎","一","本塁打王","同じ選手が1シーズンで60本塁打以上","homers",[8500,12000,4300,6000,7800,1500,9500,1300],150],["一ノ瀬 颯","二","究極の安打製造機","同じ選手が1シーズンで220安打以上","hits",[12000,7100,9900,10000,7800,1500,9300,1200],145],["霧島 迅","遊","神速の守備職人","同じ選手が1シーズンで80盗塁以上","steals80",[10100,6900,12000,11800,10800,1400,10400,1400],149],["鳳城 蓮司","三","勝負強い強打者","同じ選手が1シーズンで150打点以上","rbi",[10800,11300,6500,9300,9200,1400,9700,1300],151],["天羽 翔","中","究極の俊足","同じ選手が1シーズンで100盗塁以上","steals100",[10500,6100,12000,10800,8500,1300,11200,1200],148],["轟 雷斗","右","超長距離砲","同じ選手が1シーズンで70本塁打以上","homers70",[8700,12000,4200,7100,9500,1300,10100,1200],155],["神楽 朔夜","投","万能の二刀流","同じ選手が1シーズンで10勝以上・30本塁打以上","twoWay",[11200,11400,9900,9600,10000,11000,10600,11000],160]];
 function buildMRPlayers(){return MR_LEGENDS.map(([name,pos,trait,condition,mission,values,velocity],i)=>{const [contact,power,speed,field,arm,control,stamina,breakValue]=values;return {id:'catalog-'+String(3013+i),name,pos,rar:'MR',age:22+i%8,foreign:false,growth:'晩成',trait,contact,power,speed,field,arm,control,stamina,velocity,break:breakValue,abilityScale:9999,condition:3,fatigue:0,level:1,exp:0,salary:3200+i*120,stats:{},career:{g:0,ab:0,h:0,hr:0,rbi:0,bb:0,so:0,ip:0,er:0,win:0,loss:0,sv:0,k:0}}})}
+// Scale each original seeded skill relative to its own rarity cap instead of
+// clipping the old 1–99 scores multiplied by 85. This preserves player identities,
+// different skill profiles, and room for growth. Existing trained saves stay intact.
+function setCatalogInitialAbilities(p){
+ if(p.rar==='LR'||p.rar==='MR'||p.abilityScale===9999)return;
+ const cap=capFor(p),base={N:43,R:55,SR:67,SSR:79,UR:89}[p.rar];
+ const id=Number(p.id.slice(8))||1;
+ let seed=(Math.imul(id,2654435761)^0x51a0beef)>>>0;
+ const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+ const overall=.58+random()*.25;
+ const boosts={捕:'field',一:'power',二:'contact',三:'arm',遊:'field',左:'power',中:'speed',右:'arm',投:'control'};
+ const traitBoost={'チャンス◎':'contact','対左◎':'contact','広角打法':'contact','パワーヒッター':'power','盗塁巧者':'speed','守備職人':'field','奪三振':'break','対ピンチ◎':'control','球持ち◎':'break','回復◎':'stamina'}[p.trait];
+ for(const k of ABILITIES){
+  let ratio=overall+(Number(p[k])-base)*.012+(random()-.5)*.05;
+  if(k===boosts[p.pos])ratio+=.07;
+  if(k===traitBoost)ratio+=.065;
+  if(p.pos==='投'&&['contact','power','speed'].includes(k))ratio-=.22;
+  if(p.pos!=='投'&&['control','break'].includes(k))ratio-=.26;
+  p[k]=Math.round(cap*clamp(ratio,.12,.96));
+ }
+ p.abilityScale=9999;p.rarityCap2026=true;
+}
 const PLAYER_CATALOG=[...buildCatalog(),...buildLegendPlayers(),...buildMRPlayers()];
-for(const p of PLAYER_CATALOG)convertAbilities(p);
+for(const p of PLAYER_CATALOG){setCatalogInitialAbilities(p);convertAbilities(p);}
 function mrProgress(mission){
  const roster=all(),stats=roster.map(p=>({p,x:season(p)}));
  const any=fn=>stats.some(({p,x})=>fn(p,x));
