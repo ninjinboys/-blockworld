@@ -561,40 +561,80 @@ function playerPortrait(p){
   const cap=portraitColors[style%8],jersey=portraitColors[Math.floor(style/8)%8];
   const features=Math.floor(style/64)%8,[skin,shadow]=portraitSkin[Math.floor(style/512)];
   const canvas=document.createElement('canvas');
-  canvas.width=canvas.height=24;
+  canvas.width=canvas.height=48;
   const ctx=canvas.getContext('2d');
   const pixel=(color,x,y,w,h)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
-  const ink='#18202c';
-  pixel(portraitBackgrounds[p.rar],0,0,24,24);
-  pixel(ink,3,21,18,3);
-  pixel(ink,6,19,12,3);
-  pixel(jersey,4,22,16,2);
-  pixel(jersey,7,20,10,4);
-  pixel('#e3eaf1',7,21,2,3);
-  pixel('#e3eaf1',15,21,2,3);
-  pixel(shadow,10,17,4,4);
-  pixel(ink,5,7,14,9);
-  pixel(ink,7,15,10,4);
-  pixel(shadow,6,12,12,3);
-  pixel(shadow,8,9,8,9);
-  pixel(skin,8,10,8,6);
-  pixel(skin,9,16,6,1);
-  const spread=features%2;
-  pixel(ink,9-spread,12,1,2);
-  pixel(ink,14+spread,12,1,2);
-  pixel(shadow,12,14,1,1);
+  // Rasterize angled edges in whole pixels to keep the portrait crisp.
+  const shape=(color,points)=>{
+   const rows=points.map(([,y])=>y);
+   for(let y=Math.min(...rows);y<Math.max(...rows);y++){
+    const edges=[];
+    for(let i=0;i<points.length;i++){
+     const [x1,y1]=points[i],[x2,y2]=points[(i+1)%points.length],mid=y+.5;
+     if(mid>=Math.min(y1,y2)&&mid<Math.max(y1,y2))edges.push(x1+(mid-y1)*(x2-x1)/(y2-y1));
+    }
+    edges.sort((a,b)=>a-b);
+    for(let i=0;i<edges.length;i+=2){
+     const left=Math.round(edges[i]),right=Math.round(edges[i+1]);
+     pixel(color,left,y,right-left,1);
+    }
+   }
+  };
+  const ink='#121b29',cloth='#eef0df',seam='#a9bdc6';
+  pixel(portraitBackgrounds[p.rar],0,0,48,48);
+  pixel('#ffffff14',2,2,44,1);
+  pixel('#00000024',0,42,48,6);
+
+  // The near shoulder and left ear stay in view as the face turns right.
+  shape(ink,[[3,48],[5,42],[10,38],[19,35],[25,31],[30,34],[38,38],[43,42],[46,48]]);
+  shape(jersey,[[5,48],[7,43],[12,39],[21,36],[27,34],[37,39],[42,44],[44,48]]);
+  shape('#00000035',[[29,36],[38,40],[44,46],[44,48],[36,48]]);
+  shape('#ffffff26',[[8,44],[13,40],[20,38],[22,39],[15,42],[11,46]]);
+  shape(ink,[[19,29],[29,29],[31,36],[35,39],[27,44],[18,38]]);
+  shape(shadow,[[20,29],[28,30],[30,37],[33,39],[27,42],[20,37]]);
+  shape(skin,[[24,32],[29,33],[30,38],[27,39],[23,37]]);
+  shape(cloth,[[17,37],[20,36],[27,42],[32,38],[35,39],[29,45],[29,48],[26,48],[26,45]]);
+  shape(seam,[[26,44],[28,45],[28,48],[26,48]]);
+  pixel(ink,29,46,1,1);
+  pixel(cloth,12,44,4,1);
+  pixel(seam,13,45,3,1);
+
+  shape(ink,[[10,15],[17,10],[31,10],[36,15],[37,22],[41,27],[39,30],[36,30],[35,35],[31,38],[25,38],[19,34],[15,31],[11,30],[9,27]]);
+  shape(shadow,[[13,16],[18,12],[31,12],[35,16],[36,23],[39,27],[37,29],[35,29],[34,34],[30,36],[25,36],[19,32],[15,29],[12,29],[10,26],[11,23]]);
+  shape(skin,[[18,15],[31,13],[34,17],[35,23],[38,27],[35,27],[33,29],[33,34],[29,35],[23,33],[19,29],[16,23]]);
+  shape('#ffffff20',[[24,17],[31,17],[34,21],[35,24],[38,27],[35,27],[32,24],[26,25],[22,23]]);
+  pixel(skin,11,24,4,3);
+  pixel(shadow,12,25,2,2);
+  pixel('#332e35',13,19,3,5);
+  pixel(shadow,17,27,3,2);
+  pixel(shadow,20,29,4,1);
+  const brow=features%2;
+  pixel('#442f30',21,19+brow,6,1);
+  pixel('#442f30',32,19+brow,3,1);
+  pixel(cloth,22,22,5,2);
+  pixel(ink,25,22,2,2);
+  pixel(cloth,32,22,3,2);
+  pixel(ink,34,22,1,2);
+  pixel(shadow,32,26,2,2);
+  pixel('#6a4140',34,28,3,1);
   const chin=Math.floor(features/2);
-  if(chin===0)pixel('#643e38',11,16,2,1);
-  if(chin===1)pixel('#fff2dc',10,16,4,1);
-  if(chin===2)pixel('#493431',10,15,4,1);
-  if(chin===3)pixel('#493431',9,16,6,2);
-  pixel(ink,7,4,10,2);
-  pixel(ink,5,6,14,4);
-  pixel(cap,8,4,8,2);
-  pixel(cap,6,6,12,3);
-  pixel('#e3eaf1',11,6,2,2);
-  pixel(ink,5,9,15,1);
-  pixel(cap,12,9,7,1);
+  if(chin===0)pixel('#633d3e',29,31,5,1);
+  if(chin===1){pixel('#633d3e',28,31,6,2);pixel(cloth,29,31,4,1)}
+  if(chin===2){pixel('#493431',28,30,6,1);pixel('#633d3e',30,32,4,1)}
+  if(chin===3){shape('#493431',[[24,32],[28,34],[34,33],[33,36],[29,37],[25,36]]);pixel('#633d3e',29,31,5,1)}
+
+  // The crown curves around the head while the brim projects past the nose.
+  shape(ink,[[8,20],[9,11],[13,6],[19,4],[29,4],[35,7],[38,13],[44,16],[46,19],[43,22],[36,21],[28,17],[21,17],[16,20]]);
+  shape(cap,[[10,18],[11,12],[15,7],[20,5],[29,5],[34,8],[36,13],[28,14],[19,16],[15,19]]);
+  shape('#00000032',[[10,16],[12,12],[17,9],[20,8],[18,12],[16,17],[12,18]]);
+  shape('#ffffff36',[[17,8],[21,6],[29,6],[33,8],[27,7],[21,8]]);
+  shape('#ffffff24',[[21,9],[26,7],[31,8],[29,9],[25,9],[22,12],[20,13]]);
+  pixel(cloth,28,9,3,1);
+  pixel(cloth,28,10,1,3);
+  pixel(seam,29,11,2,1);
+  shape(cap,[[26,15],[34,13],[38,14],[43,17],[44,19],[41,20],[34,18]]);
+  shape('#ffffff36',[[32,15],[36,14],[40,16],[43,18],[41,18],[37,16]]);
+  pixel('#00000042',38,19,5,1);
   image=canvas.toDataURL();
   portraitCache.set(p.id,image);
  }
