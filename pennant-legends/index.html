@@ -184,7 +184,8 @@ body.home-screen{min-height:var(--home-viewport-height,100dvh);padding-bottom:va
 .venue-facility[data-facility="center"]{width:calc(var(--ground-size)*1.19)}
 .venue-facility::before{content:"";position:absolute;inset:auto 6% 0;height:16%;background:#75674988;clip-path:polygon(5% 54%,17% 4%,91% 0,100% 64%,92% 100%,0 94%)}
 .venue-facility[data-facility="lights"]::before{left:32%;right:26%;height:9%}
-.venue-facility::after{content:"";position:absolute;inset:0;background:url(assets/facilities.webp?v=grounds) var(--facility-x) var(--facility-y)/300% 200% no-repeat;image-rendering:pixelated}
+.venue-facility::after{content:"";position:absolute;inset:0;background:url(assets/facilities.webp?v=ballpark) var(--facility-x) var(--facility-y)/300% 800% no-repeat;image-rendering:pixelated}
+.venue-facility[data-venue-slot="stands-right"]::after{transform:scaleX(-1)}
 .venue-preview{max-width:700px;margin:0 auto 16px}
 .venue-preview .venue-map{border:3px solid #dfb55d;border-radius:8px;margin-bottom:8px}
 .facility-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px}
@@ -686,9 +687,10 @@ function venueArt(preview=''){
  const stadium='--stadium-x:'+((level%2)*100)+'%;--stadium-y:'+(Math.floor(level/2)*100)+'%;--wide-stadium-y:'+(level*100/3)+'%';
  const item=(key,slot)=>{
   const {name,art}=FACILITIES[key];
+  const column=art%3,row=level*2+Math.floor(art/3);
   const [x,y,size]=FACILITY_GROUND[slot],[wideX,wideY,wideSize]=PANORAMA_GROUND[slot];
   const placement='--ground-x:'+x+'%;--ground-y:'+y+'%;--ground-size:'+size+'%;--wide-ground-x:'+wideX+'%;--wide-ground-y:'+wideY+'%;--wide-ground-size:'+wideSize+'%';
-  return '<span class="venue-facility" data-facility="'+key+'" data-venue-slot="'+slot+'" role="img" aria-label="'+name+'" style="--facility-x:'+(art%3*50)+'%;--facility-y:'+(Math.floor(art/3)*100)+'%;'+placement+'"></span>';
+  return '<span class="venue-facility" data-facility="'+key+'" data-venue-slot="'+slot+'" role="img" aria-label="'+name+'" style="--facility-x:'+(column*50)+'%;--facility-y:'+(row*100/7)+'%;'+placement+'"></span>';
  };
  return '<div class="venue-map" data-venue-level="'+level+'"><div class="venue-layout"><div class="venue-ballpark" role="img" aria-label="'+CLUB_LEVELS[level].name+'の球場" style="'+stadium+'"></div>'+
   (owned.shed?item('shed','shed'):'')+(owned.cage?item('cage','cage'):'')+
