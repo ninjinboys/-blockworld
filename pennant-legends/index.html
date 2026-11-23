@@ -177,10 +177,8 @@ body.home-screen{min-height:var(--home-viewport-height,100dvh);padding-bottom:va
 .match-advance-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .venue-scene{height:auto;min-height:0;background:#153c43}
 .venue-heading{display:flex;justify-content:space-between;align-items:center;gap:6px 14px;flex-wrap:wrap;padding:9px 12px;background:#11334e;color:#fff6bd}
-.venue-map{position:relative;aspect-ratio:1.36;background:repeating-linear-gradient(0deg,#337342 0 6px,#347745 6px 12px);overflow:hidden;isolation:isolate}
-.venue-map::before,.venue-map::after{content:"";position:absolute;top:7%;bottom:5%;width:5%;background:repeating-linear-gradient(0deg,#b7a476 0 9px,#ad966c 9px 10px);box-shadow:0 0 0 3px #285937}
-.venue-map::before{left:5%}.venue-map::after{right:5%}
-.venue-ballpark{position:absolute;inset:0 12%;z-index:1;background:url(assets/ballparks.webp?v=grounds) var(--stadium-x) var(--stadium-y)/200% 200% no-repeat;image-rendering:pixelated;box-shadow:0 0 0 2px #264730}
+.venue-map{position:relative;aspect-ratio:1.36;background:#337342;overflow:hidden;isolation:isolate}
+.venue-ballpark{position:absolute;inset:0;z-index:1;background:url(assets/ballparks.webp?v=inside) var(--stadium-x) var(--stadium-y)/200% 200% no-repeat;image-rendering:pixelated}
 .venue-layout{position:absolute;inset:0}
 .venue-facility{position:absolute;z-index:2;left:var(--ground-x);top:var(--ground-y);width:var(--ground-size);aspect-ratio:5/4;transform:translate(-50%,-100%);pointer-events:none}
 .venue-facility::before{content:"";position:absolute;inset:auto 6% 0;height:16%;background:#75674988;clip-path:polygon(5% 54%,17% 4%,91% 0,100% 64%,92% 100%,0 94%)}
@@ -223,8 +221,7 @@ body.home-screen{min-height:var(--home-viewport-height,100dvh);padding-bottom:va
  .home-screen .venue-art-frame{display:flex;aspect-ratio:3}
  .venue-art-frame .venue-map{width:100%;height:100%}
  .venue-map{aspect-ratio:4;container-type:size}
- .venue-map::before,.venue-map::after{content:none}
- .venue-ballpark{inset:0;background-image:url(assets/ballparks-wide.webp?v=grounds);background-position:center var(--wide-stadium-y);background-size:100% 400%;box-shadow:none}
+ .venue-ballpark{background-image:url(assets/ballparks-wide.webp?v=inside);background-position:center var(--wide-stadium-y);background-size:100% 400%}
  .venue-facility{left:var(--wide-ground-x);top:var(--wide-ground-y);width:min(var(--wide-ground-size),30cqh)}
 }
 </style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div><p id="seasonCalendar" hidden></p></header><div id="profileStrip" class="profile-strip"></div><div id="profileDialog" class="profile-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle"><div id="profilePanel" class="profile-panel"></div></div><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene venue-scene" id="stadiumScene" aria-label="球団のホーム球場"></section><div id="matchViewer" class="match-viewer" hidden><div class="match-viewer-inner"><div class="match-viewer-header"><strong>試合観戦</strong><button data-action="closeWatch">終了</button></div><div id="matchScoreboard"></div><div class="match-field"><div class="match-diamond"><span class="match-base match-base-second"></span><span class="match-base match-base-first"></span><span class="match-base match-base-third"></span><span class="match-pitcher"></span><span class="match-batter"></span></div><div class="match-field-label">LIVE MATCH VIEW</div></div><div id="matchCommentary" class="match-commentary"></div><div class="match-watch-actions"><button data-action="nextInning">次のイニング</button><button data-action="watchToEnd">試合終了まで進める</button></div></div></div><div id="skipChoice" class="skip-choice" hidden role="dialog" aria-modal="true" aria-labelledby="skipChoiceTitle"><div class="skip-choice-panel"><h2 id="skipChoiceTitle">試合をスキップしますか？</h2><p id="skipChoiceDetail">進行方法を選択してください。</p><div class="skip-choice-buttons"><button data-action="confirmSkip">スキップする</button><button data-action="confirmWatch">スキップしない</button></div><button class="skip-cancel" data-action="cancelSkip">キャンセル</button></div></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p id="gameFooter" class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.6</p></main><script>
@@ -576,10 +573,10 @@ const STADIUM_SEATS=[2000,5000,10000,22000];
 const STAND_COSTS=[100000,160000,260000];
 const FACILITIES={
  shed:{name:'用具小屋',price:25000,art:0,location:'一塁側ベンチの裏'},
- cage:{name:'打撃ケージ',price:45000,art:1,location:'左翼フェンスの外'},
- indoor:{name:'屋内練習場',price:80000,art:2,location:'右翼フェンスの外'},
- stands:{name:'増設スタンド',art:4,location:'一塁・三塁側の客席の外'},
- lights:{name:'照明塔',price:120000,art:5,location:'外野の左右'},
+ cage:{name:'打撃ケージ',price:45000,art:1,location:'球場内の三塁側練習区画'},
+ indoor:{name:'屋内練習場',price:80000,art:2,location:'球場内の一塁側練習区画'},
+ stands:{name:'増設スタンド',art:4,location:'一塁・三塁側の既存客席に接続'},
+ lights:{name:'照明塔',price:120000,art:5,location:'球場内の外野両側'},
  center:{name:'トレーニングセンター',price:180000,art:3,location:'右翼側の屋内練習場を建て替え'}
 };
 let facilityPreview='';
@@ -667,17 +664,17 @@ function buyFacility(key){
  notice=FACILITIES[key].name+'を球場に設置しました。';
  render();
 }
-// Each anchor is the ground contact point and sprite width, in artwork percentages.
+// Anchors mark the ground contact point and sprite width within the ballpark art.
 const FACILITY_GROUND={
- shed:[93,96,14],cage:[8,52,13],training:[92,53,16],
- 'stands-left':[9,78,14],'stands-right':[91,78,14],
- 'lamp-left':[7.5,29,12],'lamp-right':[92.5,29,12]
+ shed:[69,82,11],cage:[10,61,12],training:[90,61,13],
+ 'stands-left':[15,77,12.5],'stands-right':[85,77,12.5],
+ 'lamp-left':[10,43,10],'lamp-right':[90,43,10]
 };
-// The panoramic art leaves the same facility grounds open at every league level.
+// The panoramic art has wider concourses along the first- and third-base sides.
 const PANORAMA_GROUND={
- shed:[96.2,97,7.2],cage:[10,67,11],training:[90,68,12.5],
- 'stands-left':[13.5,95,10],'stands-right':[86,96,9],
- 'lamp-left':[12.5,37,8.5],'lamp-right':[87.5,37,8.5]
+ shed:[92,89,7.2],cage:[8,65,9],training:[90,63,11],
+ 'stands-left':[18,88,9.5],'stands-right':[82,88,9.5],
+ 'lamp-left':[10,39,8],'lamp-right':[90,39,8]
 };
 function venueArt(preview=''){
  const g=s.clubGrowth,owned={...g.owned},stands=g.stands+(preview==='stands'?1:0);
