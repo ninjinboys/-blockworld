@@ -177,19 +177,10 @@ body.home-screen{min-height:var(--home-viewport-height,100dvh);padding-bottom:va
 .match-advance-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .venue-scene{height:auto;min-height:0;background:#153c43}
 .venue-heading{display:flex;justify-content:space-between;align-items:center;gap:6px 14px;flex-wrap:wrap;padding:9px 12px;background:#11334e;color:#fff6bd}
-.venue-map{position:relative;aspect-ratio:1.36;background:#337342;overflow:hidden;isolation:isolate}
-.venue-ballpark{position:absolute;inset:0;z-index:1;background:url(assets/ballparks.webp?v=inside) var(--stadium-x) var(--stadium-y)/200% 200% no-repeat;image-rendering:pixelated}
+.venue-map{position:relative;aspect-ratio:3;background:#337342;overflow:hidden;isolation:isolate}
 .venue-layout{position:absolute;inset:0}
-.venue-access{position:absolute;z-index:2;inset:0;pointer-events:none;filter:drop-shadow(0 1px 0 #5a564c88)}
-.venue-access::before,.venue-access::after{content:"";position:absolute;background:repeating-linear-gradient(0deg,#665c491a 0 1px,transparent 1px 5px),var(--paving,#c5c9c6)}
-.venue-access::before{inset:0;clip-path:var(--access-path,inset(100%))}
-.venue-access::after{left:var(--ground-x);top:var(--ground-y);width:var(--ground-size);height:3%;transform:translate(-50%,-45%);clip-path:polygon(6% 0,94% 0,100% 100%,0 100%)}
-.venue-access[data-side="third"]{--paving:#e4c69c}
-.venue-facility{position:absolute;z-index:3;left:var(--ground-x);top:var(--ground-y);width:var(--ground-size);height:calc(var(--ground-size)*.8);transform:translate(-50%,-100%);pointer-events:none}
-.venue-facility::before{content:"";position:absolute;inset:auto 6% 0;height:16%;background:#75674988;clip-path:polygon(5% 54%,17% 4%,91% 0,100% 64%,92% 100%,0 94%)}
-.venue-facility[data-facility="lights"]::before{left:32%;right:26%;height:9%}
-.venue-facility::after{content:"";position:absolute;inset:0;background:url(assets/facilities.webp?v=ballpark) var(--facility-x) var(--facility-y)/300% 800% no-repeat;image-rendering:pixelated}
-.venue-facility[data-venue-slot="stands-right"]::after{transform:scaleX(-1)}
+.venue-layer{position:absolute;inset:0;background:var(--venue-art) 0 var(--layer-y,0%)/100% 500% no-repeat;pointer-events:none}
+.venue-layer[data-venue-slot]{clip-path:var(--plot)}
 .venue-preview{max-width:700px;margin:0 auto 16px}
 .venue-preview .venue-map{border:3px solid #dfb55d;border-radius:8px;margin-bottom:8px}
 .facility-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px}
@@ -207,8 +198,8 @@ body.home-screen{min-height:var(--home-viewport-height,100dvh);padding-bottom:va
 @media(min-width:740px){.home-screen #summary .grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
 .home-screen .venue-scene{display:flex;flex:0 1 auto;flex-direction:column;min-height:0;margin:9px 0 10px}
 .home-screen .venue-heading{padding:4px 8px;font-size:clamp(11px,2.8vmin,14px);line-height:1.3;gap:3px 12px}
-.venue-art-frame{display:grid;place-items:center;aspect-ratio:1.36;flex:1 1 auto;min-height:0;container-type:size}
-.venue-art-frame .venue-map{width:min(100%,136cqh)}
+.venue-art-frame{display:grid;place-items:center;aspect-ratio:3;flex:1 1 auto;min-height:0;container-type:size}
+.venue-art-frame .venue-map{width:min(100%,300cqh)}
 .home-screen #view .box.good{margin:4px 0 6px;padding:5px 8px;font-size:12px}
 @media(min-width:700px) and (max-height:620px){
  .home-screen main{display:grid;grid-template-columns:minmax(180px,27%) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px 10px;padding:8px 14px 10px}
@@ -224,13 +215,9 @@ body.home-screen{min-height:var(--home-viewport-height,100dvh);padding-bottom:va
 }
 @media(min-width:700px) and (orientation:landscape){
  .home-screen .venue-scene{align-self:stretch;max-height:100%}
- .home-screen .venue-art-frame{display:flex;aspect-ratio:3}
+ .home-screen .venue-art-frame{display:flex}
  .venue-art-frame .venue-map{width:100%;height:100%}
- .venue-map{aspect-ratio:4}
- .venue-ballpark{background-image:url(assets/ballparks-wide.webp?v=inside);background-position:center var(--wide-stadium-y);background-size:100% 400%}
- .venue-access::before{clip-path:var(--wide-access-path,inset(100%))}
- .venue-access::after{left:var(--wide-ground-x);top:var(--wide-ground-y);width:var(--wide-ground-size);height:5%}
- .venue-facility{left:var(--wide-ground-x);top:var(--wide-ground-y);width:var(--wide-ground-size);height:calc(var(--wide-ground-size)*3.2)}
+ .venue-layer{image-rendering:pixelated}
 }
 </style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div><p id="seasonCalendar" hidden></p></header><div id="profileStrip" class="profile-strip"></div><div id="profileDialog" class="profile-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle"><div id="profilePanel" class="profile-panel"></div></div><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene venue-scene" id="stadiumScene" aria-label="球団のホーム球場"></section><div id="matchViewer" class="match-viewer" hidden><div class="match-viewer-inner"><div class="match-viewer-header"><strong>試合観戦</strong><button data-action="closeWatch">終了</button></div><div id="matchScoreboard"></div><div class="match-field"><div class="match-diamond"><span class="match-base match-base-second"></span><span class="match-base match-base-first"></span><span class="match-base match-base-third"></span><span class="match-pitcher"></span><span class="match-batter"></span></div><div class="match-field-label">LIVE MATCH VIEW</div></div><div id="matchCommentary" class="match-commentary"></div><div class="match-watch-actions"><button data-action="nextInning">次のイニング</button><button data-action="watchToEnd">試合終了まで進める</button></div></div></div><div id="skipChoice" class="skip-choice" hidden role="dialog" aria-modal="true" aria-labelledby="skipChoiceTitle"><div class="skip-choice-panel"><h2 id="skipChoiceTitle">試合をスキップしますか？</h2><p id="skipChoiceDetail">進行方法を選択してください。</p><div class="skip-choice-buttons"><button data-action="confirmSkip">スキップする</button><button data-action="confirmWatch">スキップしない</button></div><button class="skip-cancel" data-action="cancelSkip">キャンセル</button></div></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p id="gameFooter" class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.6</p></main><script>
 (()=>{'use strict';
@@ -580,12 +567,12 @@ const CLUB_LEVELS=[
 const STADIUM_SEATS=[2000,5000,10000,22000];
 const STAND_COSTS=[100000,160000,260000];
 const FACILITIES={
- shed:{name:'用具小屋',price:25000,art:0,location:'一塁側の球場内通路'},
- cage:{name:'打撃ケージ',price:45000,art:1,location:'球場内の三塁側練習区画'},
- indoor:{name:'屋内練習場',price:80000,art:2,location:'球場内の一塁側練習区画'},
- stands:{name:'増設スタンド',art:4,location:'一塁・三塁側の既存客席に接続'},
- lights:{name:'照明塔',price:120000,art:5,location:'球場内の外野両側'},
- center:{name:'トレーニングセンター',price:180000,art:3,location:'一塁側の屋内練習場を建て替え'}
+ shed:{name:'用具小屋',price:25000,location:'一塁側の用具区画'},
+ cage:{name:'打撃ケージ',price:45000,location:'球場内の三塁側練習区画'},
+ indoor:{name:'屋内練習場',price:80000,location:'球場内の一塁側練習区画'},
+ stands:{name:'増設スタンド',location:'一塁・三塁側の増設区画'},
+ lights:{name:'照明塔',price:120000,location:'球場内の外野両側'},
+ center:{name:'トレーニングセンター',price:180000,location:'一塁側の屋内練習場を建て替え'}
 };
 let facilityPreview='';
 function newClubGrowth(){
@@ -672,73 +659,29 @@ function buyFacility(key){
  notice=FACILITIES[key].name+'を球場に設置しました。';
  render();
 }
-// Widths are percentages of the square and panoramic artwork, respectively.
-const FACILITY_WIDTHS={
- shed:[6.7,4.5],cage:[8,6.5],training:[8.4,6.8],
- 'stands-left':[8.5,6.5],'stands-right':[8.5,6.5],
- 'lamp-left':[7.5,6.2],'lamp-right':[7.5,6.2]
-};
-// Each stadium drawing has its own ground contact points, from local to pro.
-const FACILITY_GROUND=[
- {shed:[76,77.5],cage:[8.8,66],training:[91,66],
-  'stands-left':[14,69],'stands-right':[86,69],'lamp-left':[30,33],'lamp-right':[70,33]},
- {shed:[77,78.5],cage:[7.6,58],training:[92,58],
-  'stands-left':[14,70],'stands-right':[86,70],'lamp-left':[26,33],'lamp-right':[74,33]},
- {shed:[75,80],cage:[7.7,59.5],training:[92,61],
-  'stands-left':[13.5,72.5],'stands-right':[86.5,72.5],'lamp-left':[8.7,46],'lamp-right':[91.3,46]},
- {shed:[77,81.5],cage:[7.4,61.5],training:[92.2,63],
-  'stands-left':[11.8,74.5],'stands-right':[88.2,74.5],'lamp-left':[7.8,49],'lamp-right':[92.2,49]}
+// Each artwork has empty ground, matching facilities, and earlier stand expansions.
+const VENUE_PLOTS=[
+ {"cage":[2.7,35.6,17.7,66.8],"training":[81.8,36.5,98.0,64.3],"shed":[88.0,64.3,97.6,83.1],"stands-left":[10.2,65.2,23.5,84.7],"stands-right":[75.8,64.5,88.0,84.7],"lamp-left":[28.75,9.062,31.042,32.812],"lamp-right":[68.854,9.062,71.146,32.812]},
+ {"cage":[3.0,36.5,17.4,68.6],"training":[82.0,36.7,97.0,64.2],"shed":[86.3,64.2,95.4,84.1],"stands-left":[12.6,68.1,25.6,86.7],"stands-right":[74.3,67.5,85.7,86.7],"lamp-left":[27.812,9.688,30.417,34.375],"lamp-right":[69.479,9.688,72.083,34.375]},
+ {"cage":[3.0,37.1,17.4,66.0],"training":[82.5,37.5,97.2,62.6],"shed":[86.3,62.6,95.6,84.4],"stands-left":[13.3,67.0,29.9,86.2],"stands-right":[70.0,66.0,86.3,86.2],"lamp-left":[30.312,9.688,33.125,35.312],"lamp-right":[66.771,9.688,69.583,35.312]},
+ {"cage":[2.6,37.2,15.2,66.5],"training":[83.7,37.7,98.0,61.8],"shed":[86.1,61.8,97.1,83.7],"stands-left":[12.8,65.0,25.8,86.0],"stands-right":[74.6,64.2,86.1,85.3],"lamp-left":[10.729,11.562,15.729,41.25],"lamp-right":[84.271,11.562,89.271,41.25]}
 ];
-const PANORAMA_GROUND=[
- {shed:[86.8,86],cage:[12.6,65],training:[87.5,64],
-  'stands-left':[15,81],'stands-right':[85,81],'lamp-left':[26,30],'lamp-right':[74,30]},
- {shed:[90.7,84],cage:[12.9,56],training:[87.4,56],
-  'stands-left':[14.8,82.4],'stands-right':[85.2,82.4],'lamp-left':[25,29],'lamp-right':[75,29]},
- {shed:[89.9,83.5],cage:[13,57],training:[87.7,57],
-  'stands-left':[15.8,82.6],'stands-right':[84.2,82.6],'lamp-left':[24,29],'lamp-right':[76,29]},
- {shed:[90,85],cage:[10.8,58],training:[89,59],
-  'stands-left':[15.5,83.4],'stands-right':[84.5,83.4],'lamp-left':[11.5,36],'lamp-right':[88.5,36]}
-];
-// The access paths join each new doorway to a landing on the existing concourse.
-const FACILITY_ACCESS=[
- {third:[16.3,72.4],first:[84.1,72.4],wideThird:[19.8,81.6],wideFirst:[80.2,81.6]},
- {third:[17.3,71.6],first:[82.7,72.2],wideThird:[18.6,84],wideFirst:[81.4,84]},
- {third:[16.4,70.7],first:[83.6,71.2],wideThird:[20,83.5],wideFirst:[80,83.5]},
- {third:[14.7,74.4],first:[85.3,74.4],wideThird:[18.5,84],wideFirst:[81.5,84]}
-];
-function venueAccessPolygon([x,y],[exitX,exitY],aspect,width){
- const dx=(exitX-x)*aspect,dy=exitY-y,distance=Math.hypot(dx,dy);
- const offsetX=-dy*width/(2*aspect*distance),offsetY=dx*width/(2*distance);
- return 'polygon('+[[x-offsetX,y-offsetY],[x+offsetX,y+offsetY],
-  [exitX+offsetX,exitY+offsetY],[exitX-offsetX,exitY-offsetY]]
-  .map(([px,py])=>px.toFixed(2)+'% '+py.toFixed(2)+'%').join(',')+')';
-}
 function venueArt(preview=''){
  const g=s.clubGrowth,owned={...g.owned},stands=g.stands+(preview==='stands'?1:0);
  if(preview&&preview!=='stands')owned[preview]=true;
- const level=Math.max(g.level,Math.min(stands,3));
- const stadium='--stadium-x:'+((level%2)*100)+'%;--stadium-y:'+(Math.floor(level/2)*100)+'%;--wide-stadium-y:'+(level*100/3)+'%';
- const item=(key,slot)=>{
-  const {name,art}=FACILITIES[key];
-  const column=art%3,row=level*2+Math.floor(art/3);
-  const [x,y]=FACILITY_GROUND[level][slot],[wideX,wideY]=PANORAMA_GROUND[level][slot];
-  const [size,wideSize]=FACILITY_WIDTHS[slot];
-  const scale=key==='center'?1.25:1;
-  const placement='--ground-x:'+x+'%;--ground-y:'+y+'%;--ground-size:'+(size*scale)+'%;--wide-ground-x:'+wideX+'%;--wide-ground-y:'+wideY+'%;--wide-ground-size:'+(wideSize*scale)+'%;';
-  let access='';
-  if(slot==='cage'||slot==='training'||slot==='shed'){
-   const {third,first,wideThird,wideFirst}=FACILITY_ACCESS[level],isThird=slot==='cage';
-   const path=venueAccessPolygon([x,y-.8],isThird?third:first,1,2.55);
-   const widePath=venueAccessPolygon([wideX,wideY-1.6],isThird?wideThird:wideFirst,4,5.2);
-   access='<span class="venue-access" aria-hidden="true" data-for="'+slot+'" data-side="'+(isThird?'third':'first')+'" style="'+placement+'--access-path:'+path+';--wide-access-path:'+widePath+'"></span>';
-  }
-  return access+'<span class="venue-facility" data-facility="'+key+'" data-venue-slot="'+slot+'" role="img" aria-label="'+name+'" style="--facility-x:'+(column*50)+'%;--facility-y:'+(row*100/7)+'%;'+placement+'"></span>';
+ const level=Math.max(g.level,Math.min(stands,3)),plots=VENUE_PLOTS[level];
+ const standsLayer=stands<level?stands+2:1;
+ const training=preview==='indoor'?'indoor':owned.center?'center':owned.indoor?'indoor':'';
+ const item=(key,slot,row=1)=>{
+  const [x1,y1,x2,y2]=plots[slot];
+  const inset=[y1,100-x2,100-y2,x1].map(value=>value+'%').join(' ');
+  return '<span class="venue-layer" data-facility="'+key+'" data-venue-slot="'+slot+'" role="img" aria-label="'+FACILITIES[key].name+'" style="--plot:inset('+inset+');--layer-y:'+(25*row)+'%"></span>';
  };
- return '<div class="venue-map" data-venue-level="'+level+'"><div class="venue-layout"><div class="venue-ballpark" role="img" aria-label="'+CLUB_LEVELS[level].name+'の球場" style="'+stadium+'"></div>'+
+ return '<div class="venue-map" data-venue-level="'+level+'" style="--venue-art:url(assets/venue-'+level+'.webp?v=modular)"><div class="venue-layout"><div class="venue-layer" role="img" aria-label="'+CLUB_LEVELS[level].name+'の球場"></div>'+
   (owned.shed?item('shed','shed'):'')+(owned.cage?item('cage','cage'):'')+
-  (owned.center?item('center','training'):owned.indoor?item('indoor','training'):'')+
-  (stands?item('stands','stands-left')+item('stands','stands-right'):'')+
-  (owned.lights?item('lights','lamp-left')+item('lights','lamp-right'):'')+'</div></div>';
+  (training?item(training,'training',training==='center'?2:1):'')+
+  (stands?item('stands','stands-left',standsLayer)+item('stands','stands-right',standsLayer):'')+
+  (owned.lights?item('lights','lamp-left',2)+item('lights','lamp-right',2):'')+'</div></div>';
 }
 function clubPromotionView(){
  const level=s.clubGrowth.level;
