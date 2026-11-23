@@ -181,6 +181,7 @@ body.home-screen{min-height:var(--home-viewport-height,100dvh);padding-bottom:va
 .venue-ballpark{position:absolute;inset:0;z-index:1;background:url(assets/ballparks.webp?v=inside) var(--stadium-x) var(--stadium-y)/200% 200% no-repeat;image-rendering:pixelated}
 .venue-layout{position:absolute;inset:0}
 .venue-facility{position:absolute;z-index:2;left:var(--ground-x);top:var(--ground-y);width:var(--ground-size);aspect-ratio:5/4;transform:translate(-50%,-100%);pointer-events:none}
+.venue-facility[data-facility="center"]{width:calc(var(--ground-size)*1.19)}
 .venue-facility::before{content:"";position:absolute;inset:auto 6% 0;height:16%;background:#75674988;clip-path:polygon(5% 54%,17% 4%,91% 0,100% 64%,92% 100%,0 94%)}
 .venue-facility[data-facility="lights"]::before{left:32%;right:26%;height:9%}
 .venue-facility::after{content:"";position:absolute;inset:0;background:url(assets/facilities.webp?v=grounds) var(--facility-x) var(--facility-y)/300% 200% no-repeat;image-rendering:pixelated}
@@ -222,7 +223,9 @@ body.home-screen{min-height:var(--home-viewport-height,100dvh);padding-bottom:va
  .venue-art-frame .venue-map{width:100%;height:100%}
  .venue-map{aspect-ratio:4;container-type:size}
  .venue-ballpark{background-image:url(assets/ballparks-wide.webp?v=inside);background-position:center var(--wide-stadium-y);background-size:100% 400%}
- .venue-facility{left:var(--wide-ground-x);top:var(--wide-ground-y);width:min(var(--wide-ground-size),30cqh)}
+ .venue-facility{left:var(--wide-ground-x);top:var(--wide-ground-y);width:min(var(--wide-ground-size),var(--wide-size-limit,30cqh))}
+ .venue-facility[data-facility="cage"],.venue-facility[data-facility="indoor"]{--wide-size-limit:36cqh}
+ .venue-facility[data-facility="center"]{width:min(calc(var(--wide-ground-size)*1.27),44cqh)}
 }
 </style><main><header class="hero"><div class="muted">BASEBALL MANAGEMENT SIMULATOR</div><h1> PENNANT LEGENDS</h1><div>架空12球団・選手育成・長期球団経営</div><p id="seasonCalendar" hidden></p></header><div id="profileStrip" class="profile-strip"></div><div id="profileDialog" class="profile-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle"><div id="profilePanel" class="profile-panel"></div></div><div id="setup" hidden></div><div id="summary"></div><section class="stadium-scene venue-scene" id="stadiumScene" aria-label="球団のホーム球場"></section><div id="matchViewer" class="match-viewer" hidden><div class="match-viewer-inner"><div class="match-viewer-header"><strong>試合観戦</strong><button data-action="closeWatch">終了</button></div><div id="matchScoreboard"></div><div class="match-field"><div class="match-diamond"><span class="match-base match-base-second"></span><span class="match-base match-base-first"></span><span class="match-base match-base-third"></span><span class="match-pitcher"></span><span class="match-batter"></span></div><div class="match-field-label">LIVE MATCH VIEW</div></div><div id="matchCommentary" class="match-commentary"></div><div class="match-watch-actions"><button data-action="nextInning">次のイニング</button><button data-action="watchToEnd">試合終了まで進める</button></div></div></div><div id="skipChoice" class="skip-choice" hidden role="dialog" aria-modal="true" aria-labelledby="skipChoiceTitle"><div class="skip-choice-panel"><h2 id="skipChoiceTitle">試合をスキップしますか？</h2><p id="skipChoiceDetail">進行方法を選択してください。</p><div class="skip-choice-buttons"><button data-action="confirmSkip">スキップする</button><button data-action="confirmWatch">スキップしない</button></div><button class="skip-cancel" data-action="cancelSkip">キャンセル</button></div></div><nav class="tabs" id="tabs"></nav><section id="view"></section><p id="gameFooter" class="muted small">ブラウザ内に自動保存・無料プレイ・架空選手のみ / v2.6</p></main><script>
 (()=>{'use strict';
@@ -572,12 +575,12 @@ const CLUB_LEVELS=[
 const STADIUM_SEATS=[2000,5000,10000,22000];
 const STAND_COSTS=[100000,160000,260000];
 const FACILITIES={
- shed:{name:'用具小屋',price:25000,art:0,location:'一塁側ベンチの裏'},
+ shed:{name:'用具小屋',price:25000,art:0,location:'一塁側ベンチ脇の通路'},
  cage:{name:'打撃ケージ',price:45000,art:1,location:'球場内の三塁側練習区画'},
  indoor:{name:'屋内練習場',price:80000,art:2,location:'球場内の一塁側練習区画'},
  stands:{name:'増設スタンド',art:4,location:'一塁・三塁側の既存客席に接続'},
  lights:{name:'照明塔',price:120000,art:5,location:'球場内の外野両側'},
- center:{name:'トレーニングセンター',price:180000,art:3,location:'右翼側の屋内練習場を建て替え'}
+ center:{name:'トレーニングセンター',price:180000,art:3,location:'一塁側の屋内練習場を建て替え'}
 };
 let facilityPreview='';
 function newClubGrowth(){
@@ -666,15 +669,15 @@ function buyFacility(key){
 }
 // Anchors mark the ground contact point and sprite width within the ballpark art.
 const FACILITY_GROUND={
- shed:[69,82,11],cage:[10,61,12],training:[90,61,13],
- 'stands-left':[15,77,12.5],'stands-right':[85,77,12.5],
- 'lamp-left':[10,43,10],'lamp-right':[90,43,10]
+ shed:[68,81,10.5],cage:[10,65,12],training:[90.5,65,12],
+ 'stands-left':[18.5,79,12],'stands-right':[81.5,79,12],
+ 'lamp-left':[9,43,10],'lamp-right':[91,43,10]
 };
 // The panoramic art has wider concourses along the first- and third-base sides.
 const PANORAMA_GROUND={
- shed:[92,89,7.2],cage:[8,65,9],training:[90,63,11],
- 'stands-left':[18,88,9.5],'stands-right':[82,88,9.5],
- 'lamp-left':[10,39,8],'lamp-right':[90,39,8]
+ shed:[76,92,7.4],cage:[13,62,11],training:[87,62,11],
+ 'stands-left':[18,88,9.5],'stands-right':[84.5,88,9],
+ 'lamp-left':[13,30,8],'lamp-right':[87,30,8]
 };
 function venueArt(preview=''){
  const g=s.clubGrowth,owned={...g.owned},stands=g.stands+(preview==='stands'?1:0);
