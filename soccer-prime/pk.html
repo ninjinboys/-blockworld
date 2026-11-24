@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a100f">
+  <meta name="description" content="コースとタイミングを読んで、PK戦を制そう。サッカーのブラウザゲーム。">
+  <title>SOCCER PRIME — PKシュートアウト</title>
+  <link rel="icon" href="./assets/ball.webp">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./club.css">
+  <script defer src="./game.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="wordmark" aria-label="Soccer Prime"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>SOCCER<span class="wordmark-accent"> PRIME</span></span></div>
+      <div class="header-actions">
+        <a class="small-button game-link" href="./">クラブ運営</a>
+        <button id="sound" class="small-button" type="button" aria-pressed="false" aria-label="効果音をオンにする"><span class="speaker" aria-hidden="true"></span><span id="sound-label">効果音 OFF</span></button>
+        <button id="help" class="small-button" type="button"><span class="help-icon" aria-hidden="true">?</span> 遊び方</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="match-header" aria-label="ゲームモード">
+      <div class="match-title"><span class="match-label">PENALTY SHOOTOUT</span><h1>PKシュートアウト</h1></div>
+      <div class="mode-switch" role="group" aria-label="ゲームモード">
+        <button type="button" data-mode="match" aria-pressed="true">対戦</button>
+        <button type="button" data-mode="practice" aria-pressed="false">練習</button>
+      </div>
+    </section>
+
+    <section class="scoreboard" aria-label="スコア">
+      <div id="match-score" class="match-score">
+        <div class="team team-home">
+          <span class="crest crest-home" aria-hidden="true"><i></i><i></i><i></i></span>
+          <div><span class="team-label">HOME</span><strong>あなた</strong></div>
+        </div>
+        <div class="score" aria-label="スコア"><strong id="home-score">0</strong><span>–</span><strong id="away-score">0</strong></div>
+        <div class="team team-away">
+          <span class="crest crest-away" aria-hidden="true"><i></i><i></i><i></i></span>
+          <div><span class="team-label">AWAY</span><strong>CPU</strong></div>
+        </div>
+      </div>
+      <div id="match-rounds" class="score-details">
+        <div class="score-details-heading"><span>キック結果</span><strong id="round-label">第1ラウンド</strong></div>
+        <div class="kick-row"><span>あなた</span><div id="home-kicks" class="kick-dots"></div></div>
+        <div class="kick-row"><span>CPU</span><div id="away-kicks" class="kick-dots"></div></div>
+      </div>
+      <div id="practice-score" class="practice-score" hidden>
+        <div><span>成功</span><strong id="practice-goals">0</strong></div>
+        <div><span>試行</span><strong id="practice-attempts">0</strong></div>
+        <div><span>連続成功の最高記録</span><strong id="practice-best">0</strong></div>
+      </div>
+    </section>
+
+    <div class="game-grid">
+      <section class="arena" id="arena" aria-label="PKフィールド" data-side="home" data-phase="ready">
+        <div class="scene" aria-hidden="true">
+          <img class="stadium" src="./assets/stadium.webp" alt="" draggable="false">
+          <div class="scene-shade"></div>
+          <div class="keeper-pin" id="keeper"><div class="keeper-sprite"></div></div>
+          <div class="ball-pin" id="ball"><div class="ball-sprite"></div></div>
+        </div>
+        <div class="arena-top">
+          <span class="arena-tag"><span class="status-light" aria-hidden="true"></span><span id="arena-tag">あなたのシュート</span></span>
+          <span class="arena-counter" id="kick-counter">01 <small>/ 05</small></span>
+        </div>
+        <div class="target-layer" role="group" aria-label="コース">
+          <button type="button" class="target target-left" data-lane="0" aria-label="左のコース" aria-pressed="false" tabindex="-1"><span>1</span></button>
+          <button type="button" class="target target-center" data-lane="1" aria-label="中央のコース" aria-pressed="true" tabindex="-1"><span>2</span></button>
+          <button type="button" class="target target-right" data-lane="2" aria-label="右のコース" aria-pressed="false" tabindex="-1"><span>3</span></button>
+        </div>
+        <div id="result-overlay" class="result-overlay" hidden>
+          <span id="result-main"></span>
+          <span id="result-sub"></span>
+        </div>
+        <button type="button" id="reset" class="reset-button" aria-label="最初からやり直す" title="最初からやり直す"><span aria-hidden="true">↻</span></button>
+      </section>
+
+      <section class="controls" aria-label="プレー操作">
+        <div class="control-intro">
+          <span class="phase-label" id="phase-label">ATTACK</span>
+          <h2 id="turn-title">シュートを決めろ</h2>
+          <p id="turn-copy">コースを選び、ゲージが緑のゾーンに入ったら蹴ろう。</p>
+        </div>
+        <div class="course-controls">
+          <span class="control-heading" id="course-label">シュートコース</span>
+          <div class="course-buttons" role="group" aria-labelledby="course-label">
+            <button type="button" data-lane="0" aria-pressed="false"><span class="course-icon" aria-hidden="true"></span>左</button>
+            <button type="button" data-lane="1" aria-pressed="true"><span class="course-icon" aria-hidden="true"></span>中央</button>
+            <button type="button" data-lane="2" aria-pressed="false"><span class="course-icon" aria-hidden="true"></span>右</button>
+          </div>
+        </div>
+        <div class="timing-controls">
+          <div class="meter-label"><span class="control-heading">タイミング</span><span id="meter-caption">緑で止める</span></div>
+          <div class="meter" aria-hidden="true">
+            <div class="meter-track"><div class="hit-zone"></div><div class="perfect-zone"></div></div>
+            <div class="meter-marker" id="marker"></div>
+          </div>
+        </div>
+        <button type="button" class="action" id="action"><span id="action-label">シュート</span><kbd id="action-key">Space</kbd></button>
+      </section>
+    </div>
+
+    <div class="control-footer" aria-label="キーボード操作">
+      <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>コース選択</span></div>
+      <div><kbd>Space</kbd><span>シュート・セーブ</span></div>
+    </div>
+    <div id="announcement" class="visually-hidden" role="status" aria-live="polite"></div>
+  </main>
+
+  <dialog id="help-dialog">
+    <div class="dialog-heading"><h2>遊び方</h2><button id="dismiss-help" class="small-button close-button" type="button" aria-label="閉じる">×</button></div>
+    <ol class="rules">
+      <li><strong>シュート</strong><p>左・中央・右からコースを選び、マーカーが緑のゾーンに来たら「シュート」。中央に近いほど強いキックになります。</p></li>
+      <li><strong>セーブ</strong><p>ゴールに点滅する相手の狙いを読み、同じコースを選びます。マーカーが緑のゾーンに来たら「セーブ」。</p></li>
+      <li><strong>勝敗</strong><p>交互に5本ずつ蹴り、ゴール数で勝負。同点なら両チームが1本ずつ蹴るサドンデスです。練習ではシュートを何度でも試せます。</p></li>
+    </ol>
+    <button id="continue-button" class="action" type="button">プレーに戻る</button>
+  </dialog>
+</body>
+</html>

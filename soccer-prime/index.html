@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a100f">
+  <meta name="description" content="地域クラブを率いて、選手育成と補強でサッカーの頂点を目指すクラブ経営ゲーム。">
+  <title>SOCCER PRIME — サッカークラブ経営</title>
+  <link rel="icon" href="./assets/ball.webp">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./club.css">
+  <script defer src="./club-sim.js"></script>
+  <script defer src="./club.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="wordmark" aria-label="Soccer Prime"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>SOCCER<span class="wordmark-accent"> PRIME</span></span></div>
+      <div class="header-actions"><a class="small-button game-link" href="./pk.html">PK戦で遊ぶ</a></div>
+    </div>
+  </header>
+  <main class="shell club-shell">
+    <section class="club-hero" aria-labelledby="club-name">
+      <div class="club-intro">
+        <span id="season-division" class="match-label"></span>
+        <div class="club-title"><span class="crest crest-home" aria-hidden="true"><i></i><i></i><i></i></span><h1 id="club-name"></h1></div>
+        <p>地域クラブから、プレミアリーグの頂点へ。</p>
+        <button class="small-button" id="edit-name" type="button">クラブ名を変更</button>
+      </div>
+      <dl class="club-stats">
+        <div><dt>順位</dt><dd id="club-position"></dd></div>
+        <div><dt>勝点</dt><dd id="club-points"></dd></div>
+        <div><dt>クラブ資金</dt><dd id="club-money"></dd></div>
+      </dl>
+    </section>
+    <div class="club-tabs" role="group" aria-label="クラブ運営メニュー">
+      <button type="button" data-view="matchday" aria-pressed="true">試合日程</button>
+      <button type="button" data-view="squad" aria-pressed="false">編成・練習</button>
+      <button type="button" data-view="market" aria-pressed="false">選手補強</button>
+      <button type="button" data-view="standings" aria-pressed="false">順位表</button>
+    </div>
+    <div class="club-layout">
+      <section class="club-panel" id="club-view" aria-labelledby="view-title"></section>
+      <aside class="club-sidebar">
+        <section class="club-panel" id="last-result" aria-labelledby="result-title"></section>
+        <section class="club-panel finance-panel" id="finance" aria-labelledby="finance-title"></section>
+      </aside>
+    </div>
+    <div id="club-notice" class="club-notice" role="status" hidden></div>
+  </main>
+  <dialog id="name-dialog" aria-labelledby="rename-title">
+    <form id="name-form">
+      <div class="dialog-heading"><h2 id="rename-title">クラブ名を変更</h2><button type="button" class="small-button close-button" id="close-name" aria-label="閉じる">×</button></div>
+      <label class="name-input">クラブ名<input id="name-input" maxlength="24" required></label>
+      <button class="action" type="submit">保存する</button>
+    </form>
+  </dialog>
+</body>
+</html>
