@@ -442,6 +442,13 @@ const ClubSim = (() => {
     return venue;
   }
 
+  function venuePlans(state) {
+    return [
+      ...(facilityPrice(state, "stands") ? ["stands"] : []),
+      ...Object.keys(facilities).filter(key => !state.venue.facilities[key])
+    ];
+  }
+
   function buyFacility(state, key) {
     const price = facilityPrice(state, key);
     if (!price || state.balance < price || facilityStatus(state, key)) return false;
@@ -589,7 +596,7 @@ const ClubSim = (() => {
     roles, divisions, clubLevels, tactics, formations, stats, drills, rarities, capacities, facilities, colors, lastNames, firstNames, limit,
     clamp, roll, pick, ability, attributes, normalizePlayer, emptyStats, newClub, hydrate, validState, yearLabel, weekDate,
     matchForClub, friendlyOptions, lineup, lineupSlots, setStarter, effective, teamPower, rank, standings, finishRound, setTraining,
-    seasonDivision, seasonOver, seasonResult, nextSeason, sign, facilityStatus, facilityPrice, venueWithUpgrade, buyFacility, promotionConditions, promoteClub,
+    seasonDivision, seasonOver, seasonResult, nextSeason, sign, facilityStatus, facilityPrice, venueWithUpgrade, venuePlans, buyFacility, promotionConditions, promoteClub,
     addLedger, promotePlayer, sendToReserve, openDraft, signYouth, goalCount
   };
 })();

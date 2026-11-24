@@ -14,7 +14,7 @@ const ClubViews = (() => {
   const sign = value => value > 0 ? "+" + n(value) : n(value);
   const choice = (text, value = "—") => `<div class="summary-cell"><span>${h(text)}</span><strong>${value}</strong></div>`;
   const button = (label, action, value = "", detail = {}) =>
-    `<button type="button" class="prime-button${detail.primary ? " primary" : ""}" data-${action}="${h(value)}"${disable(detail.disabled)}>${h(label)}</button>`;
+    `<button type="button" class="prime-button${detail.primary ? " primary" : ""}" data-${action}="${h(value)}"${detail.pressed === undefined ? "" : ` aria-pressed="${detail.pressed}"`}${disable(detail.disabled)}>${h(label)}</button>`;
   const table = (headers, rows, empty = "データはまだありません。") => rows.length
     ? `<div class="table-scroll"><table class="prime-table"><thead><tr>${headers.map(label => `<th scope="col">${h(label)}</th>`).join("")}</tr></thead>
       <tbody>${rows.map(row => `<tr${row.mine ? ' class="mine"' : ""}>${(row.cells || row).map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`
@@ -36,19 +36,19 @@ const ClubViews = (() => {
     return `<span class="player-name">${portrait(p)}${showRarity ? rarity(p.rar) : ""}<strong>${h(p.name)}</strong></span>`;
   }
 
-  function venueArt(s, preview = "") {
-    const { stands, facilities } = S.venueWithUpgrade(s.venue, preview);
-    const prop = (key, position = "") =>
-      `<img class="venue-prop prop-${key} ${position}" src="./assets/venue-${key}.webp" alt="">`;
+  function venueArt(s, plans = []) {
+    const { stands, facilities } = plans.reduce(S.venueWithUpgrade, s.venue);
+    const tile = key => `<img class="venue-facility tile-${key}" src="./assets/venue-built-plots.webp" alt="">`;
+    const lamp = side => `<img class="venue-lamp lamp-${side}" src="./assets/venue-lamp.webp" alt="">`;
     const installed = Object.keys(S.facilities).filter(key => facilities[key]).map(key => S.facilities[key].name);
     const label = `ホームスタジアム · ${n(S.capacities[stands])}席${installed.length ? " ／ " + installed.join("、") : ""}`;
     return `<div class="venue-map" role="img" aria-label="${h(label)}" data-stand-level="${stands}">
       <img class="venue-landscape" src="./assets/venue-0.webp" width="1200" height="400" alt="">
       ${stands ? `<img class="venue-stand stand-${stands}" src="./assets/venue-stand-${stands}.webp" alt="">` : ""}
-      ${facilities.pitch ? prop("pitch") : ""}
-      ${facilities.gym ? prop("gym") : ""}
-      ${facilities.academy ? prop("academy") : ""}
-      ${facilities.lights ? prop("lights", "prop-left") + prop("lights", "prop-right") : ""}
+      ${facilities.pitch ? tile("pitch") : ""}
+      ${facilities.gym ? tile("gym") : ""}
+      ${facilities.academy ? tile("academy") : ""}
+      ${facilities.lights ? lamp("left") + lamp("right") : ""}
     </div>`;
   }
 
@@ -296,20 +296,27 @@ const ClubViews = (() => {
 
   function facilities(s, ui) {
     const all = { stands: { name: "スタンド拡張", detail: "ホームスタジアムの収容人数を増やす。" }, ...S.facilities };
-    const preview = Object.hasOwn(all, ui.facilityPreview) ? ui.facilityPreview : "";
+    const available = S.venuePlans(s);
+    const plans = (ui.facilityPreviews || []).filter(key => available.includes(key));
+    const viewing = plans.length > 0;
+    const heading = plans.length > 1 ? "設備・スタンドの組み合わせ" : viewing ? all[plans[0]].name + "の配置プレビュー" : "現在のスタジアム";
     return `<section class="prime-box"><h2>ホームスタジアム・練習施設</h2>
       <div class="small-summary">${choice("収容", n(cap(s)) + "人")}${choice("ホーム満員", s.venue.soldOuts + "回")}${choice("通算入場収入", cash(s.venue.gate))}</div>
       <div class="venue-preview" id="facility-preview">
-        <h3>${preview ? h(all[preview].name) + "の配置プレビュー" : "現在のスタジアム"}</h3>
-        ${preview === "stands" ? `<p class="muted">収容 ${n(cap(s))}席 → ${n(S.capacities[S.venueWithUpgrade(s.venue, "stands").stands])}席</p>` : ""}
-        ${venueArt(s, preview)}
-        ${preview ? button("現在のスタジアムに戻す", "preview") : ""}
+        <h3>${h(heading)}</h3>
+        ${plans.length > 1 ? `<p class="muted">${plans.map(key => h(all[key].name)).join(" ／ ")}</p>` : ""}
+        ${plans.includes("stands") ? `<p class="muted">収容 ${n(cap(s))}席 → ${n(S.capacities[S.venueWithUpgrade(s.venue, "stands").stands])}席</p>` : ""}
+        ${venueArt(s, plans)}
+        <div class="button-row">
+          ${available.length > 1 ? button("まとめて見る", "preview", "all", { disabled: plans.length === available.length }) : ""}
+          ${viewing ? button("現在のスタジアムに戻す", "preview") : ""}
+        </div>
       </div>
       <div class="facility-grid">${Object.entries(all).map(([key, item]) => {
         const price = S.facilityPrice(s, key);
         const status = S.facilityStatus(s, key);
         return `<article class="facility-card"><h3>${h(item.name)}</h3><p class="muted">${h(item.detail)}${key === "stands" && !status ? ` 次は${n(S.capacities[s.venue.stands + 1])}席。` : ""}</p>
-          <div class="button-row">${button("配置を見る", "preview", key, { disabled: key === "stands" && !price })}
+          <div class="button-row">${available.includes(key) ? button(plans.includes(key) ? "表示を外す" : "配置を見る", "preview", key, { pressed: plans.includes(key) }) : ""}
           ${button(status || `建設 · ${cash(price)}`, "facility", key, { primary: true, disabled: !!status || s.balance < price })}</div></article>`;
       }).join("")}</div>
     </section>`;

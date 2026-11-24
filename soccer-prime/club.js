@@ -27,7 +27,7 @@ let accountMode = "login";
 let accountBusy = false;
 
 function defaultUI() {
-  return { drawn: [], batch: null, battle: null, trainingSort: "strength", catalogRole: "all", catalogRarity: "all", catalogSearch: "", catalogPage: 0, profileName: "", facilityPreview: "" };
+  return { drawn: [], batch: null, battle: null, trainingSort: "strength", catalogRole: "all", catalogRarity: "all", catalogSearch: "", catalogPage: 0, profileName: "", facilityPreviews: [] };
 }
 
 function notice(message) {
@@ -279,14 +279,20 @@ function activate(button) {
     ui.drawn = result;
     return update(`${result.length}人の選手を獲得しました。`);
   }
-  if (data.preview !== undefined && (data.preview === "" || data.preview === "stands" || Object.hasOwn(S.facilities, data.preview))) {
-    ui.facilityPreview = data.preview;
+  if (data.preview !== undefined) {
+    const available = S.venuePlans(state);
+    if (data.preview === "") ui.facilityPreviews = [];
+    else if (data.preview === "all") ui.facilityPreviews = available;
+    else if (available.includes(data.preview)) {
+      const selected = ui.facilityPreviews.includes(data.preview);
+      ui.facilityPreviews = selected ? ui.facilityPreviews.filter(key => key !== data.preview) : [...ui.facilityPreviews, data.preview];
+    } else return;
     render();
     get("facility-preview")?.scrollIntoView({ block: "nearest" });
     return;
   }
   if (data.facility && S.buyFacility(state, data.facility)) {
-    ui.facilityPreview = "";
+    ui.facilityPreviews = ui.facilityPreviews.filter(key => key !== data.facility);
     return update("スタジアム・練習施設を更新しました。");
   }
   if (data.activate && S.promotePlayer(state, Number(data.activate))) return update("トップチームに登録しました。");
