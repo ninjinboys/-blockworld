@@ -436,12 +436,17 @@ const ClubSim = (() => {
     return key === "stands" ? standsCosts[state.venue.stands] : facilities[key]?.cost;
   }
 
+  function venueWithUpgrade(venue, key) {
+    if (key === "stands") return { ...venue, stands: Math.min(venue.stands + 1, capacities.length - 1) };
+    if (Object.hasOwn(facilities, key)) return { ...venue, facilities: { ...venue.facilities, [key]: true } };
+    return venue;
+  }
+
   function buyFacility(state, key) {
     const price = facilityPrice(state, key);
     if (!price || state.balance < price || facilityStatus(state, key)) return false;
     state.balance -= price;
-    if (key === "stands") state.venue.stands++;
-    else state.venue.facilities[key] = true;
+    state.venue = venueWithUpgrade(state.venue, key);
     addLedger(state, key === "stands" ? "スタンド拡張" : facilities[key].name, -price);
     return true;
   }
@@ -584,7 +589,7 @@ const ClubSim = (() => {
     roles, divisions, clubLevels, tactics, formations, stats, drills, rarities, capacities, facilities, colors, lastNames, firstNames, limit,
     clamp, roll, pick, ability, attributes, normalizePlayer, emptyStats, newClub, hydrate, validState, yearLabel, weekDate,
     matchForClub, friendlyOptions, lineup, lineupSlots, setStarter, effective, teamPower, rank, standings, finishRound, setTraining,
-    seasonDivision, seasonOver, seasonResult, nextSeason, sign, facilityStatus, facilityPrice, buyFacility, promotionConditions, promoteClub,
+    seasonDivision, seasonOver, seasonResult, nextSeason, sign, facilityStatus, facilityPrice, venueWithUpgrade, buyFacility, promotionConditions, promoteClub,
     addLedger, promotePlayer, sendToReserve, openDraft, signYouth, goalCount
   };
 })();

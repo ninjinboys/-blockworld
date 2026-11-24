@@ -37,19 +37,18 @@ const ClubViews = (() => {
   }
 
   function venueArt(s, preview = "") {
-    const venue = s.venue;
-    const stands = Math.min(S.capacities.length - 1, venue.stands + Number(preview === "stands"));
-    const tier = Math.max(stands, 3 - s.division);
-    const facilities = { ...venue.facilities };
-    if (Object.hasOwn(S.facilities, preview)) facilities[preview] = true;
+    const { stands, facilities } = S.venueWithUpgrade(s.venue, preview);
     const prop = (key, position = "") =>
-      `<img class="venue-prop prop-${key} ${position}" src="./assets/venue-${key}.webp" loading="lazy" alt="${h(S.facilities[key].name)}">`;
-    return `<div class="venue-map" data-tier="${tier}">
-      <img class="venue-landscape" src="./assets/venue-${tier}.webp" width="1200" height="400" alt="${h(S.clubLevels[3 - tier])}のサッカースタジアム">
+      `<img class="venue-prop prop-${key} ${position}" src="./assets/venue-${key}.webp" alt="">`;
+    const installed = Object.keys(S.facilities).filter(key => facilities[key]).map(key => S.facilities[key].name);
+    const label = `ホームスタジアム · ${n(S.capacities[stands])}席${installed.length ? " ／ " + installed.join("、") : ""}`;
+    return `<div class="venue-map" role="img" aria-label="${h(label)}" data-stand-level="${stands}">
+      <img class="venue-landscape" src="./assets/venue-0.webp" width="1200" height="400" alt="">
+      ${stands ? `<img class="venue-stand stand-${stands}" src="./assets/venue-stand-${stands}.webp" alt="">` : ""}
       ${facilities.pitch ? prop("pitch") : ""}
-      ${facilities.lights ? prop("lights", "prop-left") + prop("lights", "prop-right") : ""}
       ${facilities.gym ? prop("gym") : ""}
       ${facilities.academy ? prop("academy") : ""}
+      ${facilities.lights ? prop("lights", "prop-left") + prop("lights", "prop-right") : ""}
     </div>`;
   }
 
@@ -302,6 +301,7 @@ const ClubViews = (() => {
       <div class="small-summary">${choice("収容", n(cap(s)) + "人")}${choice("ホーム満員", s.venue.soldOuts + "回")}${choice("通算入場収入", cash(s.venue.gate))}</div>
       <div class="venue-preview" id="facility-preview">
         <h3>${preview ? h(all[preview].name) + "の配置プレビュー" : "現在のスタジアム"}</h3>
+        ${preview === "stands" ? `<p class="muted">収容 ${n(cap(s))}席 → ${n(S.capacities[S.venueWithUpgrade(s.venue, "stands").stands])}席</p>` : ""}
         ${venueArt(s, preview)}
         ${preview ? button("現在のスタジアムに戻す", "preview") : ""}
       </div>

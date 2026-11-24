@@ -222,16 +222,18 @@ body.prime-career {
 .venue-art-frame { display: grid; place-items: center; background: #0a3061; }
 .venue-map { position: relative; width: 100%; aspect-ratio: 3; overflow: hidden; background: #70b2e0; }
 .venue-landscape { display: block; width: 100%; height: auto; }
-.venue-prop { position: absolute; display: block; height: auto; filter: drop-shadow(0 1px 2px #75552160); }
-.prop-pitch { width: 14%; left: 2.1%; top: 53%; }
-.prop-gym { width: 13%; right: 2.6%; top: 48%; }
-.prop-academy { width: 12%; right: 2.5%; top: 65%; }
-.prop-lights { width: 3.4%; height: 26%; object-fit: contain; top: 19%; }
-.prop-lights.prop-left { left: 18%; }
-.prop-lights.prop-right { right: 18%; }
-.venue-map[data-tier="2"] :is(.prop-pitch,.prop-gym), .venue-map[data-tier="3"] :is(.prop-pitch,.prop-gym) { width: 10%; top: 56%; }
-.venue-map[data-tier="2"] .prop-academy, .venue-map[data-tier="3"] .prop-academy { width: 10%; top: 70%; }
-.venue-map[data-tier="2"] .prop-lights, .venue-map[data-tier="3"] .prop-lights { top: 20%; }
+.venue-stand, .venue-prop { position: absolute; display: block; }
+/* All grandstands sit behind the same pitch. The side plots belong to the facilities. */
+.venue-stand { left: 22%; bottom: 61%; width: 56%; }
+.stand-1 { left: 22.4167%; width: 55.1667%; mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent); }
+.stand-3 { height: 39%; }
+.venue-prop { object-fit: contain; object-position: center bottom; filter: drop-shadow(0 1px 2px #75552160); }
+.prop-pitch { left: 4%; bottom: 22%; width: 12%; height: 23%; }
+.prop-gym { right: 5.9%; bottom: 41%; width: 10.2%; height: 18%; }
+.prop-academy { right: 2.3%; bottom: 21%; width: 13.8%; height: 18%; }
+.prop-lights { bottom: 48%; width: 3%; height: 33%; }
+.prop-lights.prop-left { left: 17.8%; }
+.prop-lights.prop-right { right: 17.8%; }
 .venue-preview { margin: 10px auto 15px; max-width: 880px; scroll-margin-bottom: var(--nav-height); }
 .venue-preview .venue-map { margin: 7px 0 10px; border: 3px solid #dfb55d; border-radius: 6px; }
 .club-crest {
