@@ -874,6 +874,7 @@ function prepareSeasonLeague(){
  s.seasonLeague=level;
  if(level===3||s.clubs.some(club=>club.league===level))return;
  const used=usedCatalogIds();
+ for(const id of s.gachaCandidates||[])used.add(id);
  for(const [team,name] of REGIONAL_CLUBS[level].entries()){
   const club=createClub(15000);
   Object.assign(club,{name,league:level});
@@ -892,22 +893,23 @@ function prepareSeasonLeague(){
   optimizeCPU(club);
  }
 }
+function scheduleForCurrentLeague(schedule){
+ if(!schedule)return schedule;
+ const opponents=seasonOpponents(),slotsByDay=new Map();
+ const games=schedule.games.map(game=>{
+  const offset=slotsByDay.get(game.day)||0;
+  slotsByDay.set(game.day,offset+1);
+  return {...game,opp:opponents[(game.day+offset)%opponents.length]};
+ });
+ return {...schedule,games};
+}
 function initializeSeasonLeague(){
  if(s.seasonLeague!==undefined)return false;
  if(s.game>0||s.phase==='postseason'){
   s.seasonLeague=null;
  }else{
   prepareSeasonLeague();
-  if(s.seasonLeague!==3&&s.weekSchedule){
-   const opponents=seasonOpponents();
-   // Keep booked dates and selections while replacing opponents in an unplayed season.
-   const slotsByDay=new Map();
-   for(const game of s.weekSchedule.games){
-    const offset=slotsByDay.get(game.day)||0;
-    game.opp=opponents[(game.day+offset)%opponents.length];
-    slotsByDay.set(game.day,offset+1);
-   }
-  }
+  if(s.seasonLeague!==3)s.weekSchedule=scheduleForCurrentLeague(s.weekSchedule);
  }
  return true;
 }
@@ -958,23 +960,53 @@ function recordClubGame(opp,my,enemy,youngHighlight){
  return {home:true,attendance,gate};
 }
 function promotionConditions(){
- const g=s.clubGrowth,history=s.clubs[0].history||[];
- const latest=history.find(record=>record.year===s.year&&(record.clubLevel??g.level)===g.level);
- const prior=history.find(record=>record.year===s.year-1&&record.clubLevel===g.level);
- if(g.level===0)return [[g.soldOuts>=3,'ホーム満員 '+Math.min(3,g.soldOuts)+' / 3回'],[clubTrainingLevel()>=2,'練習場 Lv.2（現在 Lv.'+clubTrainingLevel()+'）']];
- if(g.level===1)return [[g.stands>=1,'球場を5,000席に拡張'],[latest?.rank<=3,'リーグ上位半分（6球団中3位以内）']];
- if(g.level===2)return [[g.stands>=2,'球場を10,000席に拡張'],[latest?.rank===1||(latest?.rank<=3&&prior?.rank<=3),'リーグ優勝、または同じリーグで2年連続3位以内']];
+ const g=s.clubGrowth,history=me().history||[];
+ const year=s.phase==='postseason'?s.year:s.year-1;
+ const recordForYear=target=>history.find(record=>record.year===target&&
+  (record.clubLevel??s.champions?.find(title=>title.year===target)?.clubLevel)===g.level);
+ const latest=recordForYear(year),prior=recordForYear(year-1),training=clubTrainingLevel();
+ const trainingCondition=target=>[training>=target,'練習場 Lv.'+target+'（現在 Lv.'+training+'）'];
+ const fanCondition=target=>[g.fans>=target,'ファン '+fmt(g.fans)+' / '+fmt(target)+'人'];
+ const result=latest?'（'+year+'年 '+latest.rank+'位）':'（'+year+'年の対象成績なし）';
+ if(g.level===0)return [
+  [latest?.rank<=2,'このリーグで2位以内'+result],
+  [g.soldOuts>=15,'ホーム満員 '+fmt(g.soldOuts)+' / 15回'],
+  trainingCondition(3)
+ ];
+ if(g.level===1)return [
+  [latest?.rank===1,'このリーグで優勝'+result],
+  [g.stands>=1,'球場を5,000席に拡張'],
+  trainingCondition(4),fanCondition(5000)
+ ];
+ if(g.level===2)return [
+  [latest?.rank===1&&prior?.rank<=2,'このリーグで優勝し、その前年も2位以内'+result],
+  [g.stands>=2,'球場を10,000席に拡張'],
+  trainingCondition(5),fanCondition(12000)
+ ];
  return [];
 }
-function canPromoteClub(){
- return s.phase==='postseason'&&s.clubGrowth.level<3&&s.clubGrowth.promotedYear!==s.year&&promotionConditions().every(([met])=>met);
+function canPromoteClub(conditions=promotionConditions()){
+ return s.phase==='regular'&&s.game===0&&s.clubGrowth.level<3&&s.clubGrowth.promotedYear!==s.year&&conditions.every(([met])=>met);
 }
 function promoteClub(){
- if(!canPromoteClub())return;
- const g=s.clubGrowth,previous=g.promotedYear;
+ if(tab!=='office'||!canPromoteClub())return;
+ const g=s.clubGrowth,previousYear=g.promotedYear;
+ const oldLeague=s.seasonLeague,oldSchedule=s.weekSchedule,oldClubs=s.clubs;
  g.level++;g.promotedYear=s.year;
- if(!save()){g.level--;g.promotedYear=previous;render();return}
- notice=CLUB_LEVELS[g.level].name+'へ昇格しました。翌シーズンからこのリーグで戦います。';
+ s.clubs=oldClubs.slice();
+ prepareSeasonLeague();
+ for(const index of seasonOpponents()){
+  const opponent={...s.clubs[index],w:0,l:0,d:0};
+  optimizeCPU(opponent);
+  s.clubs[index]=opponent;
+ }
+ s.weekSchedule=scheduleForCurrentLeague(oldSchedule);
+ if(!save()){
+  g.level--;g.promotedYear=previousYear;
+  s.seasonLeague=oldLeague;s.weekSchedule=oldSchedule;s.clubs=oldClubs;
+  render();return;
+ }
+ notice=CLUB_LEVELS[g.level].name+'へ昇格しました。今シーズンは'+CLUB_LEVELS[g.level].league+'で戦います。';
  render();
 }
 function facilityCost(key){
@@ -1033,8 +1065,10 @@ function venueArt(preview=''){
 function clubPromotionView(){
  const level=s.clubGrowth.level;
  if(level===3)return '<p>プロペナントに参戦中です。</p>';
- return '<h3>'+CLUB_LEVELS[level+1].name+'への昇格条件</h3><ul>'+promotionConditions().map(([met,label])=>'<li>'+(met?'達成 ✓　':'未達成　')+label+'</li>').join('')+'</ul>'+
-  '<button data-action="promoteClub" '+(canPromoteClub()?'':'disabled')+'>シーズン終了後に昇格</button>';
+ const conditions=promotionConditions();
+ return '<h3>'+CLUB_LEVELS[level+1].name+'への昇格条件</h3><p class="muted">条件を満たしたら、翌シーズンの初戦前にこの画面で昇格できます。</p>'+
+  '<ul>'+conditions.map(([met,label])=>'<li>'+(met?'達成 ✓　':'未達成　')+label+'</li>').join('')+'</ul>'+
+  '<button data-action="promoteClub" '+(canPromoteClub(conditions)?'':'disabled')+'>球団を昇格させる</button>';
 }
 function clubFacilitiesView(){
  const g=s.clubGrowth,capacity=STADIUM_SEATS[g.stands];
@@ -1802,7 +1836,7 @@ if(tab==='match'){
   '<button data-action="month" '+disabled+'>1ヶ月進める</button><button data-action="seasonEnd" '+disabled+'>シーズン終了まで進める</button></div>'+
   '<p class="muted small">1週間進めると選択した試合を行います。1ヶ月・シーズン終了までは、空いている日にもおまかせで試合を組み、結果をまとめて表示します。</p></div>';
  h+=autoAdvanceResults();
- if(s.phase==='postseason')h+='<div class="box">'+draftSeasonActions()+clubPromotionView()+'</div>';
+ if(s.phase==='postseason')h+='<div class="box">'+draftSeasonActions()+'</div>';
  if(s.revealedGame){let r=s.revealedGame;h+='<div class="box"><h2>直近の試合 vs '+safeText(clubName(r.opp))+'</h2>'+(r.home?'<p>ホーム観客 '+fmt(r.attendance)+'人 ／ 興行収入 '+fmt(r.gate)+'</p>':'')+table(['チーム',...Array.from({length:r.inning.length},(_,i)=>i+1),'計'],[[clubs[0],...r.inning.map(x=>x[0]),r.my],[safeText(clubName(r.opp)),...r.inning.map(x=>x[1]),r.enemy]])+'</div>'}
  h+='<div class="box"><h2>試合履歴</h2>'+s.logs.slice(0,12).map(l=>'<div class="line">第'+l.game+'戦 vs '+safeText(clubName(l.opp))+'　<b>'+l.my+' - '+l.enemy+'</b> '+(l.my>l.enemy?'勝':l.my<l.enemy?'負':'分')+'</div>').join('')+'</div>';
 }
