@@ -299,7 +299,7 @@ let tab='home',notice='',drawn=[],pendingGames=0,watchQueue=[],watchInning=0,wat
 const catalogPages={pitcher:0,fielder:0};
 function resetCatalogPages(){catalogPages.pitcher=catalogPages.fielder=0}
 const PROFILE_KEY=KEY+'-profiles',ACTIVE_KEY=KEY+'-active-profile';
-const CLOUD_SESSION_KEY=KEY+'-cloud-session';
+const CLOUD_SESSION_KEY=KEY+'-cloud-session',CLOUD_TAB_KEY=KEY+'-cloud-tab';
 const CLOUD_ENDPOINT='https://nexacraft.pages.dev/api/baseball-prime-save';
 let cloud=null,cloudTimer=null,cloudWrite=null,cloudLoading=false;
 let activeProfile='',profileMode='login',profileBusy=false,profileReturnFocus=null;
@@ -308,23 +308,59 @@ function profileSaveKey(id=activeProfile){return id?KEY+'-profile-'+id:KEY}
 function validSave(x){return !!(x&&Array.isArray(x.clubs)&&x.clubs[0]?.roster?.[0]?.career)}
 function readSave(id){const raw=localStorage.getItem(profileSaveKey(id));if(raw===null)return null;const x=JSON.parse(raw);if(!validSave(x))throw Error('保存データを読み込めません。上書きはしません。');return x}
 
+const randomHex=n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>b.toString(16).padStart(2,'0')).join('');
 const cloudKey=username=>KEY+':cloud:'+username;
 const cloudPendingKey=(username,slot)=>cloudKey(username)+':pending:'+slot;
 const cloudRecord=key=>JSON.parse(localStorage.getItem(key)||'null');
+function readCloudSession(storage){
+ try{
+  const saved=JSON.parse(storage.getItem(CLOUD_SESSION_KEY)||'null');
+  return saved&&/^[a-z0-9_-]{3,24}$/.test(saved.username)&&/^[a-f0-9]{64}$/.test(saved.token)?saved:null;
+ }catch{return null}
+}
+function rememberCloudSession({username,token,slot}){
+ sessionStorage.setItem(CLOUD_TAB_KEY,slot);
+ localStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify({username,token}));
+ sessionStorage.removeItem(CLOUD_SESSION_KEY);
+}
 function recoverCloudSession(){
  try{
-  const session=JSON.parse(sessionStorage.getItem(CLOUD_SESSION_KEY)||'null');
-  if(!session||!/^[a-z0-9_-]{3,24}$/.test(session.username)||!/^[a-f0-9]{64}$/.test(session.token)||!/^[a-f0-9]{16}$/.test(session.slot))return null;
-  const pending=cloudRecord(cloudPendingKey(session.username,session.slot));
-  const record=pending||cloudRecord(cloudKey(session.username));
+  const remembered=readCloudSession(localStorage);
+  const previous=readCloudSession(sessionStorage);
+  const session=remembered||previous;
+  if(!session)return null;
+  // Keep a separate pending save for each tab and retain the old slot on upgrade.
+  const tabSlot=session.token===previous?.token?previous.slot:sessionStorage.getItem(CLOUD_TAB_KEY);
+  const knownSlot=/^[a-f0-9]{16}$/.test(tabSlot);
+  const slot=knownSlot?tabSlot:randomHex(8);
+  const pending=cloudRecord(cloudPendingKey(session.username,slot));
+  const cached=cloudRecord(cloudKey(session.username));
+  const copy=!knownSlot?pendingCloudSave(session.username,JSON.stringify(cached?.state)):null;
+  const record=pending||copy?.record||cached;
   if(!validSave(record?.state))return null;
   const adoptedKey=pending?.adoptedKey;
   const adoptedRaw=typeof adoptedKey==='string'&&adoptedKey.startsWith(cloudKey(session.username)+':pending:')?localStorage.getItem(adoptedKey):null;
-  const adopted=adoptedRaw!==null&&JSON.parse(adoptedRaw)?.updatedAt===pending.adoptedAt?{key:adoptedKey,raw:adoptedRaw}:null;
-  cloud={...session,revision:record.revision,dirty:!!pending,blocked:!!pending?.blocked,adopted,
-   status:pending?.blocked?'別の端末で更新されています。端末側の進行は保存しました。':'クラウドを確認しています…'};
+  const adopted=adoptedRaw!==null&&JSON.parse(adoptedRaw)?.updatedAt===pending.adoptedAt?{key:adoptedKey,raw:adoptedRaw}:copy;
+  const blocked=!!record.blocked||!!copy&&record.revision!==cached?.revision;
+  cloud={username:session.username,token:session.token,slot,revision:record.revision,dirty:!!(pending||copy),blocked,adopted,
+   status:blocked?'別の端末で更新されています。端末側の進行は保存しました。':'クラウドを確認しています…'};
+  try{
+   if(copy)storeCloudState(record.state);
+   rememberCloudSession(cloud);
+  }catch{}
   return record.state;
  }catch{return null}
+}
+function forgetCloudSession(session){
+ if(readCloudSession(localStorage)?.token===session.token)localStorage.removeItem(CLOUD_SESSION_KEY);
+}
+function expireCloudSession(session){
+ if(cloud!==session)return;
+ session.expired=true;
+ try{forgetCloudSession(session)}catch{}
+ cloudStatus('ログインし直すと保存を再開できます。');
+ if(!$('titleScreen').hidden)render();
+ else if(setupMode)renderProfileStrip();
 }
 function storeCloudState(state=s){
  const key=cloud.dirty?cloudPendingKey(cloud.username,cloud.slot):cloudKey(cloud.username);
@@ -349,11 +385,11 @@ function cloudStatus(message){
 }
 function scheduleCloudSave(){
  clearTimeout(cloudTimer);
- if(cloud?.dirty&&!cloud.blocked)cloudTimer=setTimeout(syncCloud,650);
+ if(cloud?.dirty&&!cloud.blocked&&!cloud.expired)cloudTimer=setTimeout(syncCloud,650);
 }
 async function syncCloud(){
  if(cloudWrite)return cloudWrite;
- if(!cloud?.dirty||cloud.blocked||cloudLoading||!s.teamConfigured)return false;
+ if(!cloud?.dirty||cloud.blocked||cloud.expired||cloudLoading||!s.teamConfigured)return false;
  const session=cloud,currentState=JSON.stringify(s),revision=cloud.revision;
  cloudStatus('クラウドに保存中…');
  cloudWrite=(async()=>{
@@ -378,7 +414,8 @@ async function syncCloud(){
    if(cloud!==session)return false;
    session.blocked=error.status===409;
    if(session.blocked){try{storeCloudState()}catch{}}
-   cloudStatus(error.status===409?'別の端末で更新されています。端末側の進行は保存しました。':error.status===401?'ログインし直すと端末側の進行を同期できます。':'端末に保存しました。クラウドには未同期です。');
+   if(error.status===401)expireCloudSession(session);
+   else cloudStatus(session.blocked?'別の端末で更新されています。端末側の進行は保存しました。':'端末に保存しました。クラウドには未同期です。');
    return false;
   }
  })().finally(()=>{cloudWrite=null});
@@ -410,15 +447,15 @@ function activateCloud(session){
  }
  const destination=copy?.record.state||session.state;
  const oldState=s,oldProfile=activeProfile,oldCloud=cloud;
- const oldSession=sessionStorage.getItem(CLOUD_SESSION_KEY);
+ const oldSlot=sessionStorage.getItem(CLOUD_TAB_KEY);
  cloud=next;activeProfile='';
  try{
-  sessionStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify({username:next.username,token:next.token,slot:next.slot}));
   if(destination)s=destination;
   else init();
   storeCloudState();
+  rememberCloudSession(next);
  }catch(error){
-  try{if(oldSession)sessionStorage.setItem(CLOUD_SESSION_KEY,oldSession);else sessionStorage.removeItem(CLOUD_SESSION_KEY)}catch{}
+  try{if(oldSlot)sessionStorage.setItem(CLOUD_TAB_KEY,oldSlot);else sessionStorage.removeItem(CLOUD_TAB_KEY)}catch{}
   cloud=oldCloud;s=oldState;activeProfile=oldProfile;
   throw error;
  }
@@ -450,7 +487,7 @@ async function loadCloudVersion(){
 async function checkCloudSession(){
  if(!cloud)return;
  const session=cloud;
- if(session.dirty){scheduleCloudSave();return}
+ if(session.dirty&&!session.blocked){scheduleCloudSave();return}
  try{
   const remote=await cloudRequest('load',{},session);
   if(cloud!==session||session.dirty)return;
@@ -458,7 +495,11 @@ async function checkCloudSession(){
    session.revision=remote.revision;s=remote.state;storeCloudState();finishProfileSwitch();render();
   }
   cloudStatus(remote.state?'クラウド保存済み':'球団を作成するとクラウド保存が始まります。');
- }catch(error){cloudStatus(error.status===401?'ログインし直すと保存を再開できます。':'クラウドに接続できません。端末に保存を続けます。')}
+ }catch(error){
+  if(cloud!==session)return;
+  if(error.status===401)expireCloudSession(session);
+  else cloudStatus('クラウドに接続できません。端末に保存を続けます。');
+ }
 }
 async function logoutCloud(){
  if(!cloud||profileBusy)return;
@@ -469,7 +510,9 @@ async function logoutCloud(){
  try{
   const local=readSave('');
   localStorage.removeItem(ACTIVE_KEY);
+  forgetCloudSession(session);
   sessionStorage.removeItem(CLOUD_SESSION_KEY);
+  sessionStorage.removeItem(CLOUD_TAB_KEY);
   cloud=null;activeProfile='';
   if(local)s=local;else init();
   finishProfileSwitch();notice=session.dirty?'同期前の進行を端末に保存しました。':'ログアウトしました。';
@@ -1044,7 +1087,7 @@ function save(){
   if(cloud){
    cloud.dirty=!!s.teamConfigured;
    storeCloudState();
-   if(cloud.dirty&&!cloud.blocked)cloudStatus('端末に保存しました。クラウド同期を待っています。');
+   if(cloud.dirty&&!cloud.blocked&&!cloud.expired)cloudStatus('端末に保存しました。クラウド同期を待っています。');
    scheduleCloudSave();
   }else localStorage.setItem(profileSaveKey(),JSON.stringify(s));
   return true;
@@ -1479,8 +1522,11 @@ function useGameChoice(field,value){
 
 function renderProfileStrip(){
  const strip=$('profileStrip');
- strip.hidden=!setupMode||!!activeProfile||!!cloud;
- strip.innerHTML=strip.hidden?'':'<div><strong>ゲストプレイ</strong></div><div class="row"><button type="button" data-action="profileLogin">ログイン</button><button type="button" data-action="profileRegister">新規登録</button></div>';
+ strip.hidden=!setupMode||!!(cloud&&!cloud.expired);
+ const username=cloud?.username||activeProfile;
+ strip.innerHTML=strip.hidden?'':username?
+  '<div><strong>'+safeText(username)+'</strong></div><div class="row"><button type="button" data-action="profileLogin">再ログイン</button><button type="button" data-action="profileLogout">ログアウト</button></div>':
+  '<div><strong>ゲストプレイ</strong></div><div class="row"><button type="button" data-action="profileLogin">ログイン</button><button type="button" data-action="profileRegister">新規登録</button></div>';
 }
 function setProfileDialog(open){
  const dialog=$('profileDialog');
@@ -1499,7 +1545,6 @@ function openProfile(mode){
  $('profileID').focus();
 }
 function closeProfile(){if(!profileBusy)setProfileDialog(false)}
-const randomHex=n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>b.toString(16).padStart(2,'0')).join('');
 async function profileHash(password,salt){
  const encoder=new TextEncoder(),key=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits']);
  const bytes=await crypto.subtle.deriveBits({name:'PBKDF2',salt:encoder.encode(salt),iterations:210000,hash:'SHA-256'},key,256);
@@ -1637,8 +1682,9 @@ function render(){
   $('titleStart').textContent=s.teamConfigured?'つづきから':'はじめる';
   $('titleSave').hidden=!s.teamConfigured;
   $('titleSave').textContent=s.teamConfigured?clubs[0]+' ／ '+s.year+'年':'';
-  $('titleProfile').hidden=!!cloud;
-  $('titleRegister').hidden=!!cloud;
+  const signedIn=!!(activeProfile||(cloud&&!cloud.expired));
+  $('titleProfile').hidden=signedIn;
+  $('titleRegister').hidden=signedIn;
   $('titleTransfer').hidden=location.origin!=='https://baseball-prime.pages.dev'||!!activeProfile||!!cloud||s.teamConfigured;
   return;
  }
