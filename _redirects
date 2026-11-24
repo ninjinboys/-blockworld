@@ -1,0 +1,4 @@
+/pennant-legends /baseball-prime/ 301
+/pennant-legends/ /baseball-prime/ 301
+/pennant-legends/index.html /baseball-prime/ 301
+/pennant-legends/assets/* /baseball-prime/assets/:splat 301
