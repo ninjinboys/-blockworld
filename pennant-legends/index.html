@@ -286,7 +286,9 @@ window.addEventListener('resize',syncBottomNavigation,{passive:true});
 window.addEventListener('pageshow',syncBottomNavigation);
 let clubs=['広島レッドスターズ','東京フェニックス','大阪タイタンズ','名古屋ブレイバーズ','横浜マリナーズ','神戸ブルズ','札幌ウルブズ','福岡ホークウィンズ','仙台イーグルズ','千葉シャークス','埼玉ライオンズ','新潟スノーズ'];
 const last=['佐伯','高瀬','宮原','藤堂','三浦','黒川','北条','桐生','水野','朝倉','神谷','森下','早川','川島','立花','大城','新田','真田','小野寺','西園寺'],first=['悠真','蓮','翔太','大和','拓海','健人','颯太','陸','一輝','直樹','隼人','雄大','亮介','蒼太'];
-const pos=['捕','一','二','三','遊','左','中','右','投'],rarities=['N','R','SR','SSR','UR','LR'],rates=[30,40,22,7,0.8,0.2],traits=['チャンス◎','対左◎','選球眼','広角打法','パワーヒッター','盗塁巧者','守備職人','奪三振','対ピンチ◎','球持ち◎','回復◎'],growths=['早熟','普通','晩成'];
+const pos=['捕','一','二','三','遊','左','中','右','投'],traits=['チャンス◎','対左◎','選球眼','広角打法','パワーヒッター','盗塁巧者','守備職人','奪三振','対ピンチ◎','球持ち◎','回復◎'],growths=['早熟','普通','晩成'];
+// Each ticket represents 0.01 percentage points.
+const GACHA_RATES=[['N',3089],['R',4000],['SR',2200],['SSR',700],['UR',10],['LR',1]];
 let tab='home',notice='',drawn=[],pendingGames=0,watchQueue=[],watchInning=0,watchActive=false,s,setupMode=false,catalogPosition='all',catalogRarity='all',catalogSearch='',trainingSort='strength';const KEY='pennant-legends-v2';
 const catalogPages={pitcher:0,fielder:0};
 function resetCatalogPages(){catalogPages.pitcher=catalogPages.fielder=0}
@@ -593,11 +595,22 @@ function availablePlayers(rarity=null,position=null){
  if(!pool.length&&rarity&&!['LR','MR'].includes(rarity))pool=PLAYER_CATALOG.filter(p=>p.rar!=='MR'&&!used.has(p.id)&&(!position||(position==='野手'?p.pos!=='投':p.pos===position)));
  return pool;
 }
+function rollGachaRarity(){
+ let ticket=rand(10000);
+ for(const [rarity,weight] of GACHA_RATES){
+  if(ticket<weight)return rarity;
+  ticket-=weight;
+ }
+}
 function newPlayer(force=null,position=null,foreign=false){
- let pool=availablePlayers(force,position);
- if(!pool.length)return null;
  if(force==='MR')return null;
- if(!force){let n=Math.random()*100,rar='LR';for(let i=0;i<rates.length;i++){n-=rates[i];if(n<0){rar=rarities[i];break}}let matching=pool.filter(p=>p.rar===rar);if(matching.length)pool=matching}
+ let pool=availablePlayers(force,position);
+ if(!force&&pool.length){
+  const rarity=rollGachaRarity(),matching=pool.filter(p=>p.rar===rarity);
+  // Empty rarity pools must not raise the normal UR or LR chances.
+  pool=matching.length?matching:pool.filter(p=>p.rar!=='UR'&&p.rar!=='LR');
+ }
+ if(!pool.length)return null;
  let p=structuredClone(pick(pool));
  if(foreign){p.foreign=true;p.name=pick(['アンダーソン','ロペス','マルティネス','ウィルソン','ゴメス','ブラウン','ロドリゲス'])+' '+pick(['J.','A.','M.'])}
  return p;
@@ -1411,7 +1424,7 @@ if(tab==='match'){
  h+='<div class="box"><h2>試合履歴</h2>'+s.logs.slice(0,12).map(l=>'<div class="line">第'+l.game+'戦 vs '+safeText(clubName(l.opp))+'　<b>'+l.my+' - '+l.enemy+'</b> '+(l.my>l.enemy?'勝':l.my<l.enemy?'負':'分')+'</div>').join('')+'</div>';
 }
 if(tab==='lineup'){let batters=all().filter(p=>!isPitch(p)),pitchers=all().filter(isPitch);h+='<div class="box row"><h2>打順・投手ローテーション</h2><button data-action="auto">戦力優先で自動編成</button></div><div class="box"><h3>打順・守備位置</h3>'+c.order.map((id,i)=>{let p=find(id);return '<div class="line row">'+(i+1)+'番 '+(p?nameCell(p):'未設定')+'<select data-order="'+i+'">'+batters.map(x=>'<option value="'+x.id+'" '+(id===x.id?'selected':'')+'>'+x.name+' / '+x.pos+'</option>').join('')+'</select></div>'}).join('')+'</div><div class="box"><h3>先発5人ローテーション</h3>'+c.rotation.map((id,i)=>'<div class="line row">第'+(i+1)+'先発 '+(find(id)?.name||'未設定')+'<select data-rotation="'+i+'">'+pitchers.map(x=>'<option value="'+x.id+'" '+(id===x.id?'selected':'')+'>'+x.name+' / 疲労'+x.fatigue+'</option>').join('')+'</select></div>').join('')+'</div>'}
-if(tab==='gacha'){h+='<div class="box"><h2>選手データベース</h2><p>登録選手：3,012人 ／ 未獲得・未所属：'+availablePlayers().length+'人</p><p class="muted small">選手は固定データから登場します。同じ選手が新しく生成されることはありません。</p></div>';h+='<div class="box"><h2> スカウトガチャ</h2><p class="muted">LR 0.2% / UR 0.8% / SSR 7% / SR 22% / R 40% / N 30%<br>10連SR以上確定・100回以内にUR確定 / 天井まであと'+(100-s.pity)+'回</p><div class="grid"><button class="primary" data-draw="1:normal">通常1回 300</button><button class="primary" data-draw="10:normal">通常10連 2700</button><button data-draw="1:limited">期間限定ピックアップ</button><button data-draw="10:pitcher">投手10連</button><button data-draw="10:fielder">野手10連</button><button data-draw="1:free" '+(s.daily===day()?'disabled':'')+'> デイリー無料1回</button></div></div>'+(drawn.length?'<div class="box draw"><h2>獲得選手</h2>'+drawn.map(p=>line(p)).join('')+'</div>':'')}
+if(tab==='gacha'){h+='<div class="box"><h2>選手データベース</h2><p>登録選手：3,012人 ／ 未獲得・未所属：'+availablePlayers().length+'人</p><p class="muted small">選手は固定データから登場します。同じ選手が新しく生成されることはありません。</p></div>';h+='<div class="box"><h2> スカウトガチャ</h2><p class="muted">通常排出率（確定枠を除く） '+GACHA_RATES.map(([rarity,weight])=>rarity+' '+(weight/100)+'%').reverse().join(' / ')+'<br>10連SR以上確定・100回以内にUR確定 / 天井まであと'+(100-s.pity)+'回</p><div class="grid"><button class="primary" data-draw="1:normal">通常1回 300</button><button class="primary" data-draw="10:normal">通常10連 2700</button><button data-draw="1:limited">期間限定ピックアップ</button><button data-draw="10:pitcher">投手10連</button><button data-draw="10:fielder">野手10連</button><button data-draw="1:free" '+(s.daily===day()?'disabled':'')+'> デイリー無料1回</button></div></div>'+(drawn.length?'<div class="box draw"><h2>獲得選手</h2>'+drawn.map(p=>line(p)).join('')+'</div>':'')}
 if(tab==='players'){
  h+='<div class="box"><h2>週間育成（最高能力上限12,000）</h2><p>'+seasonWeekLabel(s.year,s.week)+'：練習を設定し、「1週間進める」で選択した試合と練習結果をまとめて発表します。</p><p class="muted">調子・疲労・成長タイプで結果が変化。大アップ・特大アップ・覚醒も発生します。</p></div>';
  if(s.trainingReport.length)h+='<div class="box"><h3>先週の育成結果</h3>'+s.trainingReport.map(x=>'<div class="line">'+safeText(x.name)+'：'+x.label+'　'+safeText(x.changes)+'</div>').join('')+'</div>';
