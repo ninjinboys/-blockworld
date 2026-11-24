@@ -3,40 +3,50 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#081321">
+  <meta name="theme-color" content="#0a397b">
   <meta name="description" content="地域クラブからプロへ。選手の補強・週間育成・スタジアム経営ができるサッカーシミュレーション。">
   <title>SOCCER PRIME — サッカークラブ経営</title>
   <link rel="icon" href="./assets/ball.webp">
-  <link rel="preload" as="image" href="./assets/stadium.webp">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./club.css">
+  <link rel="stylesheet" href="./club.css?v=pixel-art">
   <script defer src="./club-sim.js"></script>
   <script defer src="./club-scout.js"></script>
   <script defer src="./club-profile.js"></script>
-  <script defer src="./club-views.js"></script>
-  <script defer src="./club.js"></script>
+  <script defer src="./club-views.js?v=pixel-art"></script>
+  <script defer src="./club.js?v=pixel-art"></script>
 </head>
 <body class="prime-career">
   <main id="title-screen" class="prime-title" aria-labelledby="title-name">
-    <div class="title-brand">
-      <h1 id="title-name"><span>SOCCER</span> PRIME</h1>
-      <p>サッカークラブ経営シミュレーション</p>
-    </div>
+    <picture class="title-art" aria-hidden="true">
+      <source media="(orientation: portrait)" srcset="./assets/title-portrait.webp">
+      <img src="./assets/title-wide.webp" alt="" fetchpriority="high">
+    </picture>
+    <header class="title-brand">
+      <h1 id="title-name">SOCCER <span>PRIME</span></h1>
+      <p>地域クラブを、プロクラブへ。</p>
+    </header>
     <div class="title-actions">
       <p id="title-save" hidden></p>
       <button type="button" class="prime-button primary" id="title-start">はじめる</button>
-      <button type="button" class="prime-button quiet" data-profile="login">アカウントでログイン</button>
+      <div class="title-account">
+        <button type="button" class="prime-button quiet" data-profile="login">ログイン</button>
+        <button type="button" class="prime-button quiet" data-profile="register">新規登録</button>
+      </div>
     </div>
   </main>
 
   <main id="game-screen" class="prime-shell" hidden>
     <header class="prime-header">
       <div class="prime-header-title">
+        <p class="prime-type">SOCCER MANAGEMENT SIMULATOR</p>
         <button class="prime-logo" type="button" id="return-title" title="タイトルに戻る">SOCCER <span>PRIME</span></button>
-        <p id="season-calendar"></p>
+        <p class="prime-description">地域クラブからプロへ・選手育成・クラブ経営</p>
       </div>
-      <span id="profile-strip"></span>
+      <p id="season-calendar"></p>
     </header>
+    <div class="prime-profile">
+      <span id="profile-strip"></span>
+    </div>
     <div id="overview" class="prime-summary" aria-label="クラブ概要"></div>
 
     <nav id="club-tabs" class="prime-tabs" aria-label="クラブメニュー"></nav>

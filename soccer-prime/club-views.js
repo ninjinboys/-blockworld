@@ -23,6 +23,36 @@ const ClubViews = (() => {
   const level = s => S.divisions[S.seasonDivision(s)];
   const cap = s => S.capacities[s.venue.stands];
 
+  function portrait(p) {
+    if (!p) return "";
+    const identity = Number(p.catalog || p.id);
+    const index = Number.isSafeInteger(identity) ? Math.abs(identity * 11) % 24 : 0;
+    const x = index % 6 * 20;
+    const y = Math.floor(index / 6) * (100 / 3);
+    return `<span class="player-portrait rarity-${h(p.rar)}" aria-hidden="true" style="--face-x:${x}%;--face-y:${y}%"></span>`;
+  }
+
+  function playerName(p, showRarity = true) {
+    return `<span class="player-name">${portrait(p)}${showRarity ? rarity(p.rar) : ""}<strong>${h(p.name)}</strong></span>`;
+  }
+
+  function venueArt(s, preview = "") {
+    const venue = s.venue;
+    const stands = Math.min(S.capacities.length - 1, venue.stands + Number(preview === "stands"));
+    const tier = Math.max(stands, 3 - s.division);
+    const facilities = { ...venue.facilities };
+    if (Object.hasOwn(S.facilities, preview)) facilities[preview] = true;
+    const prop = (key, position = "") =>
+      `<img class="venue-prop prop-${key} ${position}" src="./assets/venue-${key}.webp" loading="lazy" alt="${h(S.facilities[key].name)}">`;
+    return `<div class="venue-map" data-tier="${tier}">
+      <img class="venue-landscape" src="./assets/venue-${tier}.webp" width="1200" height="400" alt="${h(S.clubLevels[3 - tier])}のサッカースタジアム">
+      ${facilities.pitch ? prop("pitch") : ""}
+      ${facilities.lights ? prop("lights", "prop-left") + prop("lights", "prop-right") : ""}
+      ${facilities.gym ? prop("gym") : ""}
+      ${facilities.academy ? prop("academy") : ""}
+    </div>`;
+  }
+
   function weekLabel(s) {
     const date = S.weekDate(s);
     if (S.seasonOver(s)) return `${S.yearLabel(s)}年 · シーズンオフ`;
@@ -76,13 +106,12 @@ const ClubViews = (() => {
 
   function home(s) {
     const next = S.matchForClub(s);
-    const last = s.results.at(-1);
+    const last = s.results.findLast(match => match.home === 0 && match.attendance);
     return `<section class="prime-stadium" aria-label="ホームスタジアム">
-      <div class="stadium-copy"><span class="eyebrow">${h(level(s))}</span>
-        <div class="club-name"><span class="club-crest" aria-hidden="true"></span><h1>${h(s.name)}</h1></div>
-        <p class="stadium-title">ホームスタジアム</p>
-        <ul class="venue-facts"><li>収容 <strong>${n(cap(s))}人</strong></li><li>ファン <strong>${n(s.venue.fans)}人</strong></li>
-          ${last?.attendance ? `<li>前節の観客 <strong>${n(last.attendance)}人</strong></li>` : ""}</ul>
+      <div class="venue-heading"><strong>${h(s.name)}</strong><span>${h(S.clubLevels[s.division])} ・ ${n(cap(s))}席</span></div>
+      <div class="venue-art-frame">${venueArt(s)}</div>
+      <div class="venue-heading"><span>ファン ${n(s.venue.fans)}人</span>
+        ${last ? `<span>直近ホーム ${n(last.attendance)}人 ／ 入場収入 ${cash(last.gate)}</span>` : ""}
       </div>
     </section>
     <div class="prime-columns">
@@ -159,21 +188,21 @@ const ClubViews = (() => {
       <div class="form-pair">${select("formation", "フォーメーション", S.formations)}${select("tactic", "戦術", S.tactics)}</div>
       <p class="muted">${h(tactic.note)}</p>
       <div class="lineup-pitch" aria-label="先発の配置">${[...S.roles].reverse().map(role => `<div class="lineup-row">
-        ${starters.filter(slot => slot.role === role).map(slot => `<div class="pitch-player"><b>${h(slot.player?.name.split(" ")[0] || role)}</b><small>${role}</small></div>`).join("")}
+        ${starters.filter(slot => slot.role === role).map(slot => `<div class="pitch-player">${portrait(slot.player)}<b>${h(slot.player?.name.split(" ")[0] || role)}</b><small>${role}</small></div>`).join("")}
       </div>`).join("")}</div>
       ${table(["枠", "先発選手", "能力", "疲労"], starters.map(slot => [
         h(slot.slot),
-        `<select data-slot="${slot.slot}" aria-label="${slot.slot}の選手">${s.squad.filter(p => p.role === slot.role).map(p => opt(p.id, `${p.name} · ${p.rar}`, p.id === slot.player?.id)).join("")}</select>`,
+        `<span class="player-name">${portrait(slot.player)}<select data-slot="${slot.slot}" aria-label="${slot.slot}の選手">${s.squad.filter(p => p.role === slot.role).map(p => opt(p.id, `${p.name} · ${p.rar}`, p.id === slot.player?.id)).join("")}</select></span>`,
         slot.player?.skill ?? "—", slot.player?.fatigue ?? "—"
       ]))}
     </section>
     <section class="prime-box"><h2>控え・契約選手</h2>${table(["位置", "選手", "能力", "登録"], bench.map(p => [
-      p.role, rarity(p.rar) + " " + h(p.name), p.skill,
+      p.role, playerName(p), p.skill,
       button("控え登録へ", "reserve", p.id, { disabled: s.squad.filter(x => x.role === p.role).length <= Math.max(...Object.values(S.formations).map(f => f[p.role])) })
     ]), "控え選手はいません。")}</section>
     <section class="prime-box"><h2>リザーブ</h2><p class="muted">ガチャ・ミッションで獲得した選手を登録できます。トップチームは最大${S.limit}人です。</p>
       ${table(["位置", "選手", "能力", "登録"], s.reserve.map(p => [
-        p.role, rarity(p.rar) + " " + h(p.name), p.skill, button("トップに登録", "activate", p.id, { disabled: s.squad.length >= S.limit })
+        p.role, playerName(p), p.skill, button("トップに登録", "activate", p.id, { disabled: s.squad.length >= S.limit })
       ]), "リザーブに選手はいません。")}
     </section>`;
   }
@@ -195,7 +224,7 @@ const ClubViews = (() => {
       </div>
     </section>
     ${ui.drawn.length ? `<section class="prime-box"><h2>獲得選手</h2><div class="scout-grid">
-      ${ui.drawn.map(p => `<article class="scout-card rarity-${h(p.rar)}"><span class="scout-crest" aria-hidden="true"></span>
+      ${ui.drawn.map(p => `<article class="scout-card rarity-${h(p.rar)}">${portrait(p)}
         <div>${rarity(p.rar)} <strong>${h(p.name)}</strong><p class="muted">${p.role} · ${p.age}歳 · 能力 ${p.skill}</p></div></article>`).join("")}
       </div>${button("獲得選手を編成する", "tab", "lineup")}</section>` : ""}`;
   }
@@ -212,7 +241,7 @@ const ClubViews = (() => {
     </section>
     ${s.trainingReport.length ? `<section class="prime-box"><h2>先週の育成結果</h2><ul class="event-list">${s.trainingReport.map(item => `<li>${h(item)}</li>`).join("")}</ul></section>` : ""}
     <section class="prime-box">${sorted.map(p => `<article class="player-training">
-      <div class="section-heading"><h3>${rarity(p.rar)} ${h(p.name)} <small>${p.role}</small></h3><b>能力 ${p.skill}</b></div>
+      <div class="section-heading"><h3>${playerName(p)} <small>${p.role}</small></h3><b>能力 ${p.skill}</b></div>
       <p class="muted">${p.age}歳 · ${h(p.growth)}型 · 調子 ${p.condition}/5 · 疲労 ${p.fatigue} · 成長上限 ${p.potential}</p>
       <div class="ability-row">${Object.entries(S.stats).map(([key, label]) => `<span>${label} <b>${p.abilities[key]}</b></span>`).join("")}</div>
       <label class="form-field compact-field">今週の育成<select data-train="${p.id}" aria-label="${h(p.name)}の練習"${disable(closed)}>
@@ -233,7 +262,7 @@ const ClubViews = (() => {
     const pages = Math.max(1, Math.ceil(matches.length / pageSize));
     const page = Math.min(ui.catalogPage, pages - 1);
     const rows = matches.slice(page * pageSize, (page + 1) * pageSize).map(p => [
-      rarity(p.rar), h(p.name), h(p.role), p.skill, p.potential, h(p.growth),
+      rarity(p.rar), playerName(p, false), h(p.role), p.skill, p.potential, h(p.growth),
       p.youth || owned.has(p.catalog) ? "獲得済み" : "未獲得"
     ]);
     return `<section class="prime-box"><h2>選手名鑑</h2>
@@ -263,18 +292,25 @@ const ClubViews = (() => {
         ({ mine: x.id === 0, cells: [index + 1, h(team(s, x.id)), x.played, x.won, x.drawn, x.lost, x.gf, x.ga, sign(x.gf - x.ga), x.points] })))}</section>
       <section class="prime-box"><h2>${S.yearLabel(s)}年 選手成績</h2>
       ${table(["位置", "選手", "出場", "得点", "アシスト", "無失点", "通算得点"], playerRows.map(p =>
-        [p.role, h(p.name), p.stats.games, p.stats.goals, p.stats.assists, p.stats.cleanSheets, p.career.goals]))}</section>`;
+        [p.role, playerName(p), p.stats.games, p.stats.goals, p.stats.assists, p.stats.cleanSheets, p.career.goals]))}</section>`;
   }
 
-  function facilities(s) {
+  function facilities(s, ui) {
     const all = { stands: { name: "スタンド拡張", detail: "ホームスタジアムの収容人数を増やす。" }, ...S.facilities };
+    const preview = Object.hasOwn(all, ui.facilityPreview) ? ui.facilityPreview : "";
     return `<section class="prime-box"><h2>ホームスタジアム・練習施設</h2>
       <div class="small-summary">${choice("収容", n(cap(s)) + "人")}${choice("ホーム満員", s.venue.soldOuts + "回")}${choice("通算入場収入", cash(s.venue.gate))}</div>
+      <div class="venue-preview" id="facility-preview">
+        <h3>${preview ? h(all[preview].name) + "の配置プレビュー" : "現在のスタジアム"}</h3>
+        ${venueArt(s, preview)}
+        ${preview ? button("現在のスタジアムに戻す", "preview") : ""}
+      </div>
       <div class="facility-grid">${Object.entries(all).map(([key, item]) => {
         const price = S.facilityPrice(s, key);
         const status = S.facilityStatus(s, key);
         return `<article class="facility-card"><h3>${h(item.name)}</h3><p class="muted">${h(item.detail)}${key === "stands" && !status ? ` 次は${n(S.capacities[s.venue.stands + 1])}席。` : ""}</p>
-          ${button(status || `建設 · ${cash(price)}`, "facility", key, { disabled: !!status || s.balance < price })}</article>`;
+          <div class="button-row">${button("配置を見る", "preview", key, { disabled: key === "stands" && !price })}
+          ${button(status || `建設 · ${cash(price)}`, "facility", key, { primary: true, disabled: !!status || s.balance < price })}</div></article>`;
       }).join("")}</div>
     </section>`;
   }
@@ -283,7 +319,7 @@ const ClubViews = (() => {
     const last = s.results.at(-1);
     const wages = s.squad.reduce((sum, p) => sum + p.wage, 0);
     const coachPrice = s.coach * 1200;
-    return `${facilities(s)}${promotion(s)}
+    return `${facilities(s, ui)}${promotion(s)}
       <section class="prime-box"><h2>クラブ経営</h2>
         <div class="small-summary">${choice("クラブ資金", cash(s.balance))}${choice("選手の合計週給", cash(wages))}
           ${choice("前節の収支", last ? sign(last.revenue - last.wages) + "万円" : "—")}</div>
@@ -296,7 +332,7 @@ const ClubViews = (() => {
         </div>
       </section>
       <section class="prime-box"><h2>移籍候補</h2>${table(["選手", "位置", "能力", "獲得費", "移籍"], s.market.map(p => [
-        rarity(p.rar) + " " + h(p.name), p.role, p.skill, cash(p.cost), button("獲得", "sign", p.id, { disabled: s.balance < p.cost })
+        playerName(p), p.role, p.skill, cash(p.cost), button("獲得", "sign", p.id, { disabled: s.balance < p.cost })
       ]), "今週の候補は全員獲得済みです。")}</section>
       <section class="prime-box"><h2>マイクラブ・セーブ管理</h2><p>クラブ名　<strong>${h(s.name)}</strong></p>
         <p class="muted">${ui.profileName ? `${h(ui.profileName)} のセーブに保存中` : "ゲストセーブに保存中"}</p>
@@ -314,7 +350,7 @@ const ClubViews = (() => {
         year.won === undefined ? "—" : `${year.won}勝 ${year.lost}敗 ${year.drawn}分`, h(year.winner || "—"), h(year.topScorer || "—")
       ]))}</section>
       <section class="prime-box"><h2>引退・殿堂入り・永久欠番</h2>${table(["選手", "引退年", "通算出場", "得点", "記念"], retired.map(p => [
-        rarity(p.rar) + " " + h(p.name), 2025 + p.retiredYear, p.career.games, p.career.goals,
+        playerName(p), 2025 + p.retiredYear, p.career.games, p.career.goals,
         `<div class="button-row">${button(p.hall ? "殿堂入り済" : "殿堂入り", "honor", p.id + ":hall", { disabled: !!p.hall })}${button(p.numberRetired ? "永久欠番済" : "永久欠番", "honor", p.id + ":numberRetired", { disabled: !!p.numberRetired })}</div>`
       ]), "引退した選手はいません。")}${retired.some(p => p.numberRetired) ? `<p>永久欠番　${retired.filter(p => p.numberRetired).map(p => `#${p.number} ${h(p.name)}`).join("、")}</p>` : ""}</section>`;
   }
@@ -324,8 +360,8 @@ const ClubViews = (() => {
       <div class="mission-grid">${A.missions.map((mission, index) => {
         const [current, goal] = mission.progress(s);
         const owned = s.missions.includes(index);
-        return `<article class="mission-card"><h3>${rarity("MR")} ${h(mission.player.name)} <small>${mission.player.role}</small></h3>
-          <p>${h(mission.label)}</p><progress value="${Math.max(0, Math.min(current, goal))}" max="${goal}"></progress><p class="muted">${Math.min(current, goal)} / ${goal}</p>
+        return `<article class="mission-card"><h3>${playerName(mission.player)} <small>${mission.player.role}</small></h3>
+          <div class="mission-condition"><b>獲得条件</b><p>${h(mission.label)}</p><progress value="${Math.max(0, Math.min(current, goal))}" max="${goal}" aria-label="${h(mission.label)}の進捗"></progress><p>${Math.min(current, goal)} / ${goal}</p></div>
           ${button(owned ? "獲得済み" : current >= goal ? "獲得する" : "未達成", "claim", index, { primary: !owned && current >= goal, disabled: owned || current < goal })}</article>`;
       }).join("")}</div></section>`;
   }
@@ -338,7 +374,7 @@ const ClubViews = (() => {
       ${camp.signed ? '<p class="highlight-text">今季のユース選手は指名済みです。</p>' : `<form id="draft-form">
         <fieldset class="draft-grid"><legend>候補選手</legend>${camp.candidates.map((p, i) => `<label class="draft-card">
           <input name="prospect" type="radio" value="${p.id}" ${i === 0 ? "checked" : ""}>
-          <strong>${h(p.name)} · ${p.role}</strong><span class="muted">${p.age}歳　能力 ${p.skill}　上限 ${p.potential}</span>
+          <strong>${playerName(p)} · ${p.role}</strong><span class="muted">${p.age}歳　能力 ${p.skill}　上限 ${p.potential}</span>
         </label>`).join("")}</fieldset>
         <div class="form-pair"><label class="form-field">選手名（任意）<input name="name" maxlength="24"></label>
           <label class="form-field">重点育成<select name="stat">${Object.entries(S.stats).map(([key, value]) => opt(key, value, false)).join("")}</select></label></div>

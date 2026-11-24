@@ -5,10 +5,10 @@ const A = ClubScout;
 const P = ClubProfile;
 const V = ClubViews;
 const tabList = [
-  ["home", "ホーム", "⌂"], ["match", "試合", "⚽"], ["friend", "対戦", "⇄"],
-  ["lineup", "編成", "▤"], ["gacha", "ガチャ", "✦"], ["training", "育成", "◆"],
-  ["catalog", "名鑑", "▣"], ["records", "記録", "▥"], ["office", "運営", "⚑"],
-  ["history", "クラブ史", "◷"], ["missions", "MR獲得", "♛"]
+  ["home", "ホーム"], ["match", "試合"], ["friend", "対戦"],
+  ["lineup", "編成"], ["gacha", "ガチャ"], ["training", "育成"],
+  ["catalog", "名鑑"], ["records", "記録"], ["office", "運営"],
+  ["history", "クラブ史"], ["missions", "MR獲得"]
 ];
 const get = id => document.getElementById(id);
 const listen = (id, event, handler) => get(id).addEventListener(event, handler);
@@ -27,7 +27,7 @@ let accountMode = "login";
 let accountBusy = false;
 
 function defaultUI() {
-  return { drawn: [], batch: null, battle: null, trainingSort: "strength", catalogRole: "all", catalogRarity: "all", catalogSearch: "", catalogPage: 0, profileName: "" };
+  return { drawn: [], batch: null, battle: null, trainingSort: "strength", catalogRole: "all", catalogRarity: "all", catalogSearch: "", catalogPage: 0, profileName: "", facilityPreview: "" };
 }
 
 function notice(message) {
@@ -46,8 +46,8 @@ function persist(message) {
 }
 
 function renderTabs() {
-  get("club-tabs").innerHTML = tabList.map(([id, label, icon]) =>
-    `<button type="button" data-tab="${id}" aria-current="${id === activeTab ? "page" : "false"}"><span aria-hidden="true">${icon}</span>${label}</button>`).join("");
+  get("club-tabs").innerHTML = tabList.map(([id, label], index) =>
+    `<button type="button" data-tab="${id}" aria-current="${id === activeTab ? "page" : "false"}"><span class="tab-icon" aria-hidden="true" style="--icon-x:${index * 10}%"></span><span class="tab-label">${label}</span></button>`).join("");
   get("club-tabs").querySelector('[aria-current="page"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
 }
 
@@ -279,7 +279,16 @@ function activate(button) {
     ui.drawn = result;
     return update(`${result.length}人の選手を獲得しました。`);
   }
-  if (data.facility && S.buyFacility(state, data.facility)) return update("スタジアム・練習施設を更新しました。");
+  if (data.preview !== undefined && (data.preview === "" || data.preview === "stands" || Object.hasOwn(S.facilities, data.preview))) {
+    ui.facilityPreview = data.preview;
+    render();
+    get("facility-preview")?.scrollIntoView({ block: "nearest" });
+    return;
+  }
+  if (data.facility && S.buyFacility(state, data.facility)) {
+    ui.facilityPreview = "";
+    return update("スタジアム・練習施設を更新しました。");
+  }
   if (data.activate && S.promotePlayer(state, Number(data.activate))) return update("トップチームに登録しました。");
   if (data.reserve && S.sendToReserve(state, Number(data.reserve))) return update("リザーブに移しました。");
   if (data.sign && S.sign(state, Number(data.sign))) return update("移籍候補の選手を獲得しました。");
