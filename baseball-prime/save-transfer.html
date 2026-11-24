@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>セーブデータの引き継ぎ | BASEBALL PRIME</title>
+  <style>
+    :root{color-scheme:dark}
+    body{margin:0;background:#081426;color:#fff6e1;font:16px/1.65 system-ui,sans-serif}
+    main{max-width:34rem;margin:12vh auto 0;padding:1.5rem}
+    h1{margin:0 0 .75rem;font-size:1.6rem}
+    button,a{display:inline-block;font:700 1rem system-ui,sans-serif}
+    button{border:2px solid #d89544;border-radius:4px;background:#ffd16e;color:#342002;padding:.85rem 1.1rem;cursor:pointer}
+    button:disabled{opacity:.55;cursor:default}
+    a{color:#ffd16e}
+    [hidden]{display:none!important}
+  </style>
+</head>
+<body><main>
+  <h1>セーブデータの引き継ぎ</h1>
+  <p id="description"></p>
+  <p id="status" role="status"></p>
+  <button id="transfer" type="button" hidden></button>
+  <p><a id="game" hidden>ゲームを開く</a></p>
+</main>
+<script>
+(() => {
+  const OLD = 'https://nexacraft.pages.dev';
+  const NEW = 'https://baseball-prime.pages.dev';
+  const KEY = 'pennant-legends-v2';
+  const TRANSFER = 'baseball-prime-save';
+  const description = document.getElementById('description');
+  const status = document.getElementById('status');
+  const button = document.getElementById('transfer');
+  const game = document.getElementById('game');
+  function read(raw) {
+    if (raw === null) return null;
+    const data = JSON.parse(raw);
+    const club = data?.clubs?.[0];
+    if (!Array.isArray(data?.clubs) || !club?.roster?.[0]?.career ||
+        !Number.isInteger(data.game) || !Number.isInteger(data.year)) {
+      throw Error('セーブデータを読み込めません。');
+    }
+    return data;
+  }
+  const canReceive = () => {
+    if (localStorage.getItem(KEY + '-active-profile')) return false;
+    const current = read(localStorage.getItem(KEY));
+    return !current || (!current.teamConfigured && current.game === 0);
+  };
+  if (location.origin === NEW) {
+    description.textContent = '今まで遊んでいたブラウザで、旧URLにある球団を読み込みます。';
+    game.href = '/';
+    game.hidden = false;
+    let source, nonce;
+    window.addEventListener('message', event => {
+      const data = event.data;
+      if (!source || event.origin !== OLD || event.source !== source ||
+          data?.protocol !== TRANSFER || data.nonce !== nonce) return;
+      if (data.type !== 'send') return;
+      try {
+        if (!canReceive()) throw Error('このURLには保存済みの球団があります。');
+        if (typeof data.raw !== 'string' || !read(data.raw)?.teamConfigured) throw Error('引き継げる球団がありません。');
+        localStorage.setItem(KEY, data.raw);
+        source.postMessage({protocol:TRANSFER,type:'complete',nonce}, OLD);
+        status.textContent = '球団を引き継ぎました。「ゲームを開く」から再開できます。';
+        button.hidden = true;
+        source = null;
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    });
+    try {
+      if (!canReceive()) {
+        status.textContent = 'このURLには保存済みの球団があります。';
+        return;
+      }
+    } catch (error) {
+      status.textContent = error.message;
+      return;
+    }
+    button.hidden = false;
+    button.textContent = '旧URLを開く';
+    button.onclick = () => {
+      nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), value => value.toString(16).padStart(2,'0')).join('');
+      source = window.open(OLD + '/baseball-prime/save-transfer.html#' + nonce, '_blank');
+      status.textContent = source ? '旧URLで、移す球団を確認してください。' : '旧URLのタブを開けませんでした。ポップアップを許可して再試行してください。';
+    };
+    return;
+  }
+  const nonce = location.hash.slice(1);
+  if (location.origin !== OLD || !/^[a-f0-9]{32}$/.test(nonce) || !window.opener) {
+    status.textContent = '新しいURLのタイトル画面から引き継ぎを始めてください。';
+    return;
+  }
+  description.textContent = 'このブラウザで現在プレイ中の球団を、新URLのゲストセーブとしてコピーします。';
+  try {
+    const profile = localStorage.getItem(KEY + '-active-profile');
+    const raw = localStorage.getItem(profile ? KEY + '-profile-' + profile : KEY);
+    const data = read(raw);
+    if (!data?.teamConfigured) throw Error('引き継げる球団が見つかりません。旧URLで対象の球団を開いてから再試行してください。');
+    status.textContent = data.teamName + ' ／ ' + data.year + '年';
+    button.textContent = 'この球団を新URLへ引き継ぐ';
+    button.hidden = false;
+    button.onclick = () => {
+      window.opener.postMessage({protocol:TRANSFER,type:'send',nonce,raw}, NEW);
+      status.textContent = '新URLで引き継ぎ結果を確認してください。';
+    };
+    window.addEventListener('message', event => {
+      const data = event.data;
+      if (event.origin !== NEW || event.source !== window.opener ||
+          data?.protocol !== TRANSFER || data.type !== 'complete' || data.nonce !== nonce) return;
+      button.hidden = true;
+      status.textContent = '引き継ぎが完了しました。新URLのタブに戻ってください。';
+    });
+  } catch (error) {
+    status.textContent = error.message;
+  }
+})();
+</script>
+</body></html>
