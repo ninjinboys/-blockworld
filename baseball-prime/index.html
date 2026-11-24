@@ -1325,7 +1325,7 @@ function playerPortrait(p,clubIndex){
  const color=clubIndex===0?(/^#[a-f0-9]{6}$/i.test(s.teamColor)?s.teamColor:'#e94141'):cpuCapColors[1+(clubIndex-1)%(cpuCapColors.length-1)]||'#69778a';
  return '<span aria-hidden="true" class="player-portrait'+pitcher+'" style="--portrait-x:'+(-x)+'px;--portrait-y:'+(-y)+'px;--cap-color:'+color+'"></span>';
 }
-function nameCell(p,clubIndex=0){return playerPortrait(p,clubIndex)+'<b class="'+p.rar+'">'+p.rar+'</b> '+p.name+' <span class="tag">'+p.pos+'</span>'}
+function nameCell(p,clubIndex=0){return playerPortrait(p,clubIndex)+'<b class="'+p.rar+'">'+p.rar+'</b> '+safeText(p.name)+' <span class="tag">'+p.pos+'</span>'}
 function line(p,extra='',clubIndex=0){return '<div class="line row"><div>'+nameCell(p,clubIndex)+' <span class="muted small">'+p.age+'歳 '+p.growth+'型</span><div class="muted small">'+skillLabel(p)+' / '+p.trait+' / 調子'+p.condition+' 疲労'+p.fatigue+'</div></div>'+extra+'</div>'}
 function day(){return new Date().toISOString().slice(0,10)}
 function draw(n,type='normal',free=false){
@@ -1884,8 +1884,8 @@ if(tab==='lineup'){
   return '<div class="line row">'+label+' '+(p?nameCell(p):'未設定')+gameChoice('order-'+i,label+'の打者',batters,id)+'</div>';
  }).join('')+'</div>';
  h+='<div class="box"><h3>先発5人ローテーション</h3>'+c.rotation.map((id,i)=>{
-  const label='第'+(i+1)+'先発';
-  return '<div class="line row">'+label+' '+safeText(find(id)?.name||'未設定')+gameChoice('rotation-'+i,label+'の投手',pitchers,id)+'</div>';
+  const p=find(id),label='第'+(i+1)+'先発';
+  return '<div class="line row">'+label+' '+(p?nameCell(p):'未設定')+gameChoice('rotation-'+i,label+'の投手',pitchers,id)+'</div>';
  }).join('')+'</div>';
 }
 if(tab==='gacha'){
