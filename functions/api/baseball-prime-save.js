@@ -73,8 +73,8 @@ async function authenticate(db, request, body, respond) {
   const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
   const password = body.password;
   if (!usernamePattern.test(username) || forbidden.has(username) ||
-      typeof password !== 'string' || password.length < 10 || password.length > 128) {
-    return respond({error: 'ユーザーIDは半角3〜24文字、パスワードは10〜128文字で入力してください。'}, 400);
+      typeof password !== 'string' || password.length < 8 || password.length > 128) {
+    return respond({error: 'ユーザーIDは半角3〜24文字、パスワードは8〜128文字で入力してください。'}, 400);
   }
   await tables(db);
   const now = Date.now(), window = Math.floor(now / 600_000);
@@ -132,10 +132,10 @@ export async function onRequest({request, env}) {
     const body = await readRequest(request);
     if (body?.action === 'register' || body?.action === 'login') return await authenticate(db, request, body, respond);
     const token = request.headers.get('Authorization')?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
-    if (!token) return respond({error: 'クラウドアカウントにログインしてください。'}, 401);
+    if (!token) return respond({error: 'アカウントにログインしてください。'}, 401);
     const hash = await digest(token);
     const session = await db.prepare('SELECT username FROM prime_sessions WHERE token_hash=? AND expires_at>?').bind(hash, Date.now()).first();
-    if (!session) return respond({error: 'クラウドアカウントにログインし直してください。'}, 401);
+    if (!session) return respond({error: 'アカウントにログインし直してください。'}, 401);
     const {username} = session;
     if (body?.action === 'load') return respond(await snapshot(db, username));
     if (body?.action === 'logout') {
