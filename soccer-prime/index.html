@@ -2,58 +2,91 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0a100f">
-  <meta name="description" content="地域クラブを率いて、選手育成と補強でサッカーの頂点を目指すクラブ経営ゲーム。">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#081321">
+  <meta name="description" content="地域クラブからプロへ。選手の補強・週間育成・スタジアム経営ができるサッカーシミュレーション。">
   <title>SOCCER PRIME — サッカークラブ経営</title>
   <link rel="icon" href="./assets/ball.webp">
+  <link rel="preload" as="image" href="./assets/stadium.webp">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./club.css">
   <script defer src="./club-sim.js"></script>
+  <script defer src="./club-scout.js"></script>
+  <script defer src="./club-profile.js"></script>
+  <script defer src="./club-views.js"></script>
   <script defer src="./club.js"></script>
 </head>
-<body>
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="wordmark" aria-label="Soccer Prime"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>SOCCER<span class="wordmark-accent"> PRIME</span></span></div>
-      <div class="header-actions"><a class="small-button game-link" href="./pk.html">PK戦で遊ぶ</a></div>
+<body class="prime-career">
+  <main id="title-screen" class="prime-title" aria-labelledby="title-name">
+    <div class="title-brand">
+      <h1 id="title-name"><span>SOCCER</span> PRIME</h1>
+      <p>サッカークラブ経営シミュレーション</p>
     </div>
-  </header>
-  <main class="shell club-shell">
-    <section class="club-hero" aria-labelledby="club-name">
-      <div class="club-intro">
-        <span id="season-division" class="match-label"></span>
-        <div class="club-title"><span class="crest crest-home" aria-hidden="true"><i></i><i></i><i></i></span><h1 id="club-name"></h1></div>
-        <p>地域クラブから、プレミアリーグの頂点へ。</p>
-        <button class="small-button" id="edit-name" type="button">クラブ名を変更</button>
-      </div>
-      <dl class="club-stats">
-        <div><dt>順位</dt><dd id="club-position"></dd></div>
-        <div><dt>勝点</dt><dd id="club-points"></dd></div>
-        <div><dt>クラブ資金</dt><dd id="club-money"></dd></div>
-      </dl>
-    </section>
-    <div class="club-tabs" role="group" aria-label="クラブ運営メニュー">
-      <button type="button" data-view="matchday" aria-pressed="true">試合日程</button>
-      <button type="button" data-view="squad" aria-pressed="false">編成・練習</button>
-      <button type="button" data-view="market" aria-pressed="false">選手補強</button>
-      <button type="button" data-view="standings" aria-pressed="false">順位表</button>
+    <div class="title-actions">
+      <p id="title-save" hidden></p>
+      <button type="button" class="prime-button primary" id="title-start">はじめる</button>
+      <button type="button" class="prime-button quiet" data-profile="login">アカウントでログイン</button>
     </div>
-    <div class="club-layout">
-      <section class="club-panel" id="club-view" aria-labelledby="view-title"></section>
-      <aside class="club-sidebar">
-        <section class="club-panel" id="last-result" aria-labelledby="result-title"></section>
-        <section class="club-panel finance-panel" id="finance" aria-labelledby="finance-title"></section>
-      </aside>
-    </div>
-    <div id="club-notice" class="club-notice" role="status" hidden></div>
   </main>
-  <dialog id="name-dialog" aria-labelledby="rename-title">
-    <form id="name-form">
-      <div class="dialog-heading"><h2 id="rename-title">クラブ名を変更</h2><button type="button" class="small-button close-button" id="close-name" aria-label="閉じる">×</button></div>
-      <label class="name-input">クラブ名<input id="name-input" maxlength="24" required></label>
-      <button class="action" type="submit">保存する</button>
+
+  <main id="game-screen" class="prime-shell" hidden>
+    <header class="prime-header">
+      <div class="prime-header-title">
+        <button class="prime-logo" type="button" id="return-title" title="タイトルに戻る">SOCCER <span>PRIME</span></button>
+        <p id="season-calendar"></p>
+      </div>
+      <span id="profile-strip"></span>
+    </header>
+    <div id="overview" class="prime-summary" aria-label="クラブ概要"></div>
+
+    <nav id="club-tabs" class="prime-tabs" aria-label="クラブメニュー"></nav>
+    <div id="club-view" class="prime-view"></div>
+  </main>
+  <p id="club-notice" class="club-notice" role="status" hidden></p>
+
+  <dialog id="setup-dialog" aria-labelledby="setup-title">
+    <form id="setup-form">
+      <div class="dialog-heading"><h2 id="setup-title">自分のクラブを作ろう</h2><button id="close-setup" class="prime-button quiet close-button" type="button" aria-label="閉じる">×</button></div>
+      <p class="muted" id="setup-description">クラブ名とチームカラーを決めて、地域大会から始めます。</p>
+      <div class="setup-preview"><span id="setup-crest" class="club-crest" aria-hidden="true"></span><strong id="setup-preview">クラブ名を入力</strong></div>
+      <label class="form-field">クラブ名<input name="clubName" id="club-name-input" maxlength="24" placeholder="例：広島リバーFC" required></label>
+      <label class="form-field">チームカラー<select name="clubColor" id="club-color"></select></label>
+      <button type="submit" class="prime-button primary wide" id="setup-save">このクラブでゲーム開始</button>
     </form>
+  </dialog>
+
+  <dialog id="profile-dialog" aria-labelledby="profile-title">
+    <form id="profile-form">
+      <div class="dialog-heading"><h2 id="profile-title">アカウントでログイン</h2><button id="close-profile" class="prime-button quiet close-button" type="button" aria-label="閉じる">×</button></div>
+      <div class="button-row profile-tabs" aria-label="アカウントの操作">
+        <button class="prime-button" type="button" data-profile="login">ログイン</button>
+        <button class="prime-button" type="button" data-profile="register">新規登録</button>
+      </div>
+      <p class="muted">アカウントとセーブはこのブラウザに保存されます。</p>
+      <label class="form-field">名前<input id="profile-name" autocomplete="username" maxlength="20" required></label>
+      <label class="form-field">パスワード<input id="profile-password" type="password" autocomplete="current-password" minlength="6" maxlength="64" required></label>
+      <label class="check-field" id="use-guest"><input id="use-guest-check" type="checkbox" checked> ゲストのセーブを引き継ぐ</label>
+      <p id="profile-error" class="error-text" role="alert"></p>
+      <button type="submit" class="prime-button primary wide" id="profile-submit">ログイン</button>
+    </form>
+  </dialog>
+
+  <dialog id="match-choice" aria-labelledby="match-choice-title">
+    <div class="dialog-heading"><h2 id="match-choice-title">試合を観戦しますか？</h2><button id="close-choice" class="prime-button quiet close-button" type="button" aria-label="閉じる">×</button></div>
+    <p class="muted" id="match-choice-copy"></p>
+    <div class="button-row choice-buttons">
+      <button type="button" class="prime-button primary" id="choose-watch">観戦する</button>
+      <button type="button" class="prime-button" id="choose-skip">結果だけ見る</button>
+    </div>
+  </dialog>
+
+  <dialog id="match-viewer" class="match-viewer" aria-labelledby="watch-title">
+    <div class="dialog-heading"><h2 id="watch-title">試合観戦</h2><button id="close-watch" class="prime-button quiet close-button" type="button" aria-label="閉じる">×</button></div>
+    <div id="watch-body"></div>
+    <div class="button-row watch-controls">
+      <button id="watch-next" class="prime-button primary" type="button">前半を進める</button>
+      <button id="watch-finish" class="prime-button" type="button">試合終了まで進める</button>
+    </div>
   </dialog>
 </body>
 </html>

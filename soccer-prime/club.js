@@ -1,220 +1,422 @@
 "use strict";
 
-const saveKey = "soccer-prime.club.v1";
-const row = (id) => document.getElementById(id);
-const listen = (id, event, handler) => row(id).addEventListener(event, handler);
-const panel = row("club-view");
-const nameDialog = row("name-dialog");
-const yen = new Intl.NumberFormat("ja-JP");
-const money = (value) => `${yen.format(value)} 万円`;
-const escapeHtml = (value) => String(value).replace(/[&<>"']/g, char =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
-const disabled = (condition) => condition ? " disabled" : "";
-let state = loadClub();
-let activeView = "matchday";
+const S = ClubSim;
+const A = ClubScout;
+const P = ClubProfile;
+const V = ClubViews;
+const tabList = [
+  ["home", "ホーム", "⌂"], ["match", "試合", "⚽"], ["friend", "対戦", "⇄"],
+  ["lineup", "編成", "▤"], ["gacha", "ガチャ", "✦"], ["training", "育成", "◆"],
+  ["catalog", "名鑑", "▣"], ["records", "記録", "▥"], ["office", "運営", "⚑"],
+  ["history", "クラブ史", "◷"], ["missions", "MR獲得", "♛"]
+];
+const get = id => document.getElementById(id);
+const listen = (id, event, handler) => get(id).addEventListener(event, handler);
+const setupDialog = get("setup-dialog");
+const profileDialog = get("profile-dialog");
+const matchChoice = get("match-choice");
+const viewer = get("match-viewer");
+const content = get("club-view");
+let profile = P.current();
+let state = P.read(profile);
+let activeTab = "home";
+let ui = defaultUI();
 let noticeTimer;
-let canSave = true;
+let watch = null;
+let accountMode = "login";
+let accountBusy = false;
 
-function loadClub() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(saveKey));
-    if (saved?.version === 1 && Array.isArray(saved.squad) && Array.isArray(saved.fixtures)) return saved;
-  } catch {
-    // The default club is playable even without local storage.
-  }
-  return ClubSim.newClub();
+function defaultUI() {
+  return { drawn: [], batch: null, battle: null, trainingSort: "strength", catalogRole: "all", catalogRarity: "all", catalogSearch: "", catalogPage: 0, profileName: "" };
 }
 
-function saveClub() {
-  try {
-    localStorage.setItem(saveKey, JSON.stringify(state));
-  } catch {
-    canSave = false;
-  }
-}
-
-function announce(message) {
-  const el = row("club-notice");
+function notice(message) {
+  const node = get("club-notice");
   clearTimeout(noticeTimer);
-  el.textContent = message + (canSave ? "" : " このブラウザでは進行を保存できません。");
-  el.hidden = false;
-  noticeTimer = setTimeout(() => { el.hidden = true; }, 4300);
+  node.textContent = message;
+  node.hidden = false;
+  noticeTimer = setTimeout(() => { node.hidden = true; }, 4100);
 }
 
-function options(choices, current, label) {
-  return Object.entries(choices).map(([key, item]) =>
-    `<option value="${key}" ${key === current ? "selected" : ""}>${label(item, key)}</option>`).join("");
+function persist(message) {
+  const saved = P.write(profile, state);
+  if (!saved) notice("ブラウザに保存できませんでした。この画面では続けて遊べます。");
+  else if (message) notice(message);
+  return saved;
 }
 
-function matchday() {
-  const result = ClubSim.seasonResult(state);
-  if (result) {
-    const outcome = result.promotion ? "昇格決定" : result.relegation ? "降格" : result.place === 1 ? "リーグ優勝" : "シーズン終了";
-    return `<h2 id="view-title">シーズン結果</h2>
-      <div class="season-result"><strong>${outcome}・${result.place}位</strong><p>賞金 ${money(result.prize)}</p></div>
-      <button type="button" class="action" data-play>次のシーズンへ</button>`;
-  }
-  const match = ClubSim.matchForClub(state);
-  const lastRound = state.fixtures.length;
-  const upcoming = state.fixtures.slice(state.round + 1, state.round + 4).map((_, index) => {
-    const day = state.round + index + 1;
-    const fixture = ClubSim.matchForClub(state, day);
-    return `<li><span><small>第${day + 1}節</small>　${escapeHtml(fixture.opponent.name)}</span><small>${fixture.home ? "ホーム" : "アウェー"}</small></li>`;
-  }).join("");
-  return `<h2 id="view-title">次の試合</h2>
-    <div class="next-fixture">
-      <div><small>第${state.round + 1}節 / 全${lastRound}節</small><strong>${escapeHtml(match.opponent.name)}</strong></div>
-      <span class="venue-label">${match.home ? "HOME" : "AWAY"}</span>
-    </div>
-    <div class="prep-controls">
-      <label>フォーメーション<select data-setting="formation">${options(ClubSim.formations, state.formation, (_, key) => key)}</select></label>
-      <label>戦術<select data-setting="tactic">${options(ClubSim.tactics, state.tactic, item => item.name)}</select></label>
-    </div>
-    <p class="panel-hint">${ClubSim.tactics[state.tactic].note} 相手の戦術は${ClubSim.tactics[match.opponent.tactic].name}。</p>
-    <button type="button" class="action" data-play>試合を進める</button>
-    ${upcoming ? `<ul class="fixture-list" aria-label="今後の日程">${upcoming}</ul>` : ""}`;
-}
-
-function squad() {
-  const starters = new Set(ClubSim.lineup(state).map(player => player.id));
-  const closed = state.round >= state.fixtures.length;
-  const blocked = state.trained || closed;
-  const free = state.balance >= 70;
-  return `<h2 id="view-title">編成・練習</h2>
-    <p class="panel-hint">${closed ? "シーズン終了" : state.trained ? "今節の練習は完了しました。" : "各節で1回練習できます。先発は能力と疲労から決まります。"}</p>
-    <div class="training-actions">
-      <button class="small-button" type="button" data-train="attack"${disabled(blocked || !free)}>攻撃練習 · 70万円</button>
-      <button class="small-button" type="button" data-train="defense"${disabled(blocked || !free)}>守備練習 · 70万円</button>
-      <button class="small-button" type="button" data-train="recovery"${disabled(blocked)}>疲労回復</button>
-    </div>
-    <div class="club-table-wrap"><table class="club-table">
-      <thead><tr><th scope="col">位置</th><th scope="col" class="text-left">選手</th><th scope="col">年齢</th><th scope="col">能力</th><th scope="col">疲労</th><th scope="col">起用</th></tr></thead>
-      <tbody>${state.squad.map(player => `<tr><td>${player.role}</td><td class="text-left">${escapeHtml(player.name)}</td><td>${player.age}</td><td>${player.skill}</td><td>${player.fatigue}</td><td class="${starters.has(player.id) ? "starter" : ""}">${starters.has(player.id) ? "先発" : "控え"}</td></tr>`).join("")}</tbody>
-    </table></div>`;
-}
-
-function market() {
-  const closed = state.round >= state.fixtures.length;
-  const full = state.squad.length >= 24;
-  const shortage = state.market.length === 0;
-  const message = closed ? "次のシーズンから選手を獲得できます。" : full ? "選手登録数が上限の24人に達しました。" :
-    "補強候補は3節ごとに入れ替わります。獲得費はクラブ資金から支払います。";
-  return `<h2 id="view-title">選手補強</h2>
-    <p class="panel-hint">${message}</p>
-    ${shortage ? '<p class="empty">今の候補選手は全員獲得済みです。</p>' : `
-    <div class="market-grid">${state.market.map(player => `<article class="market-player">
-      <strong>${escapeHtml(player.name)}</strong><span>${player.role} · ${player.age}歳</span>
-      <span>能力 ${player.skill} ／ 成長上限 ${player.potential}</span><span>週給 ${money(player.wage)}</span>
-      <button class="small-button sign-button" type="button" data-sign="${player.id}" aria-label="${escapeHtml(player.name)}を${money(player.cost)}で獲得"${disabled(closed || full || state.balance < player.cost)}>獲得 · ${money(player.cost)}</button>
-    </article>`).join("")}</div>`}`;
-}
-
-function standings() {
-  const promotion = state.division > 0 ? "上位2クラブが昇格。" : "1位のクラブが優勝。";
-  const relegation = state.division < ClubSim.divisions.length - 1 ? " 下位2クラブが降格。" : "";
-  return `<h2 id="view-title">リーグ順位表</h2>
-    <p class="panel-hint">${promotion}${relegation} 同勝点の場合は得失点差、総得点の順。</p>
-    <div class="club-table-wrap"><table class="club-table">
-      <thead><tr><th scope="col">順位</th><th scope="col" class="text-left">クラブ</th><th scope="col">試</th><th scope="col">勝</th><th scope="col">分</th><th scope="col">負</th><th scope="col">差</th><th scope="col">点</th></tr></thead>
-      <tbody>${ClubSim.standings(state).map((stats, index) => `<tr class="${stats.id === 0 ? "own-row" : ""}">
-        <td>${index + 1}</td><td class="text-left">${escapeHtml(state.teams[stats.id].name)}</td><td>${stats.played}</td>
-        <td>${stats.won}</td><td>${stats.drawn}</td><td>${stats.lost}</td><td>${stats.gf - stats.ga}</td><td>${stats.points}</td>
-      </tr>`).join("")}</tbody>
-    </table></div>
-    ${state.honors.length ? `<ul class="fixture-list" aria-label="過去シーズン">${state.honors.slice(-3).reverse().map(season =>
-      `<li><span>${season.year}年目 · ${ClubSim.divisions[season.division]}</span><strong>${season.place}位${season.promotion ? " · 昇格" : season.relegation ? " · 降格" : ""}</strong></li>`).join("")}</ul>` : ""}`;
-}
-
-function renderSidebar() {
-  const last = state.results.at(-1);
-  const teamName = (id) => escapeHtml(state.teams[id].name);
-  const net = last ? last.revenue - last.wages : 0;
-  row("last-result").innerHTML = `<h2 id="result-title">${last ? `第${state.round}節の結果` : "試合結果"}</h2>
-    ${last ? `<div class="result-score"><span class="${last.home === 0 ? "club-result" : ""}">${teamName(last.home)}</span><strong>${last.goals.join(" – ")}</strong><span class="${last.away === 0 ? "club-result" : ""}">${teamName(last.away)}</span></div>
-    ${last.events.length ? `<ul class="goal-events" aria-label="得点経過">${last.events.map(event => `<li><strong>${event.minute}分</strong><span>${teamName(event.team)} ゴール</span></li>`).join("")}</ul>` : '<p class="empty">両チーム無得点で終了。</p>'}` : '<p class="empty">試合を進めると、スコアと得点経過が表示されます。</p>'}`;
-  row("finance").innerHTML = `<h2 id="finance-title">クラブ会計</h2>
-    <dl class="finances">
-      <div><dt>選手の合計週給</dt><dd>${money(state.squad.reduce((sum, player) => sum + player.wage, 0))}</dd></div>
-      <div><dt>前節の試合収入</dt><dd>${last ? money(last.revenue) : "—"}</dd></div>
-      <div><dt>前節の収支</dt><dd class="${net < 0 ? "negative" : "positive"}">${last ? money(net) : "—"}</dd></div>
-    </dl>`;
+function renderTabs() {
+  get("club-tabs").innerHTML = tabList.map(([id, label, icon]) =>
+    `<button type="button" data-tab="${id}" aria-current="${id === activeTab ? "page" : "false"}"><span aria-hidden="true">${icon}</span>${label}</button>`).join("");
+  get("club-tabs").querySelector('[aria-current="page"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
 }
 
 function render() {
-  row("season-division").textContent = `${state.year}年目 · ${ClubSim.divisions[state.division]}`;
-  row("club-name").textContent = state.name;
-  row("club-position").textContent = state.round ? `${ClubSim.standings(state).findIndex(stats => stats.id === 0) + 1} 位` : "—";
-  row("club-points").textContent = `${state.table[0].points} 点`;
-  row("club-money").textContent = money(state.balance);
-  const views = { matchday, squad, market, standings };
-  panel.innerHTML = views[activeView]();
-  renderSidebar();
-}
-
-for (const button of document.querySelectorAll("[data-view]")) {
-  button.addEventListener("click", () => {
-    activeView = button.dataset.view;
-    for (const tab of document.querySelectorAll("[data-view]")) {
-      tab.setAttribute("aria-pressed", String(tab === button));
-    }
-    render();
-  });
-}
-
-panel.addEventListener("change", event => {
-  const setting = event.target.dataset.setting;
-  const choices = { formation: ClubSim.formations, tactic: ClubSim.tactics };
-  if (!Object.hasOwn(choices, setting) || !Object.hasOwn(choices[setting], event.target.value)) return;
-  state[setting] = event.target.value;
-  saveClub();
-  render();
-  panel.querySelector(`[data-setting="${setting}"]`)?.focus();
-});
-
-panel.addEventListener("click", event => {
-  const button = event.target.closest("button");
-  if (!button) return;
-  let message;
-  if (button.hasAttribute("data-play")) {
-    const season = ClubSim.seasonResult(state);
-    if (season) {
-      ClubSim.nextSeason(state);
-      message = `${state.year}年目のシーズンを開始しました。`;
-    } else if (ClubSim.finishRound(state)) {
-      const match = state.results.at(-1);
-      message = `第${state.round}節 ${state.teams[match.home].name} ${match.goals.join(" – ")} ${state.teams[match.away].name}`;
-    }
-  } else if (button.dataset.train && ClubSim.train(state, button.dataset.train)) {
-    message = button.dataset.train === "recovery" ? "選手の疲労を回復しました。" : "練習で対象ポジションの選手を強化しました。";
-  } else if (button.dataset.sign) {
-    const candidate = state.market.find(player => player.id === Number(button.dataset.sign));
-    if (candidate && ClubSim.sign(state, candidate.id)) message = `${candidate.name}を獲得しました。`;
+  ui.profileName = P.accounts().find(account => account.id === profile)?.name || "";
+  get("title-start").textContent = state.configured ? "つづきから" : "はじめる";
+  get("title-save").hidden = !state.configured;
+  get("title-save").textContent = `${state.name} ／ ${S.yearLabel(state)}年`;
+  document.body.style.setProperty("--team-color", state.color);
+  if (get("game-screen").hidden) return;
+  get("season-calendar").textContent = V.weekLabel(state);
+  get("overview").innerHTML = V.overview(state);
+  get("overview").hidden = !["home", "match"].includes(activeTab);
+  get("profile-strip").textContent = ui.profileName ? `${ui.profileName} でプレイ中` : "ゲストプレイ";
+  content.innerHTML = V[activeTab](state, ui);
+  for (const button of get("club-tabs").querySelectorAll("button")) {
+    button.setAttribute("aria-current", button.dataset.tab === activeTab ? "page" : "false");
   }
-  if (!message) return;
-  saveClub();
+}
+
+function selectTab(tab) {
+  if (!Object.hasOwn(V, tab) || ![...tabList.map(([id]) => id), "draft"].includes(tab)) return;
+  activeTab = tab;
   render();
-  if (button.hasAttribute("data-play")) panel.querySelector("[data-play]")?.focus();
-  announce(message);
+  window.scrollTo({ top: 0, behavior: "instant" });
+  get("club-tabs").querySelector('[aria-current="page"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+}
+
+function showTitle() {
+  get("game-screen").hidden = true;
+  get("title-screen").hidden = false;
+  document.body.classList.add("on-title");
+  render();
+  get("title-start").focus({ preventScroll: true });
+}
+
+function enterGame() {
+  get("title-screen").hidden = true;
+  get("game-screen").hidden = false;
+  document.body.classList.remove("on-title");
+  selectTab("home");
+}
+
+function reflectSetup() {
+  get("setup-preview").textContent = get("club-name-input").value.trim() || "クラブ名を入力";
+  get("setup-crest").style.setProperty("--team-color", get("club-color").value);
+}
+
+function setup() {
+  get("setup-title").textContent = state.configured ? "クラブ情報を変更" : "自分のクラブを作ろう";
+  get("setup-description").hidden = state.configured;
+  get("setup-save").textContent = state.configured ? "変更を保存" : "このクラブでゲーム開始";
+  get("club-name-input").value = state.name;
+  get("club-color").innerHTML = Object.entries(S.colors).map(([color, label]) =>
+    `<option value="${color}"${color === state.color ? " selected" : ""}>${label}</option>`).join("");
+  reflectSetup();
+  setupDialog.showModal();
+}
+
+function profileForm(mode) {
+  if (accountBusy) return;
+  accountMode = mode === "register" ? "register" : "login";
+  const register = accountMode === "register";
+  get("profile-title").textContent = register ? "アカウントを作成" : "アカウントでログイン";
+  get("profile-submit").textContent = register ? "新規登録" : "ログイン";
+  get("profile-password").autocomplete = register ? "new-password" : "current-password";
+  get("profile-password").value = "";
+  get("profile-error").textContent = "";
+  get("use-guest").hidden = !register || !!profile || !state.configured;
+  for (const button of profileDialog.querySelectorAll("[data-profile]")) {
+    button.classList.toggle("primary", button.dataset.profile === accountMode);
+  }
+  if (!profileDialog.open) profileDialog.showModal();
+  get("profile-name").focus();
+}
+
+function onProfile(id) {
+  profile = id;
+  state = P.read(id);
+  ui = defaultUI();
+  activeTab = "home";
+  showTitle();
+  if (state.configured) enterGame();
+}
+
+function showChoice() {
+  const next = S.matchForClub(state);
+  if (!next || matchChoice.open) return;
+  get("match-choice-copy").textContent = `第${state.round + 1}節　vs ${next.opponent.name}${state.friendlies.length ? ` ／ 練習試合 ${state.friendlies.length}試合` : ""}`;
+  matchChoice.showModal();
+}
+
+function week(shouldWatch) {
+  if (!matchChoice.open) return;
+  matchChoice.close();
+  if (!S.finishRound(state)) return;
+  ui.batch = null;
+  persist(shouldWatch ? "" : "試合と育成の結果を更新しました。");
+  selectTab("match");
+  if (shouldWatch) openWatch(state.results.at(-1));
+}
+
+function runBatch(mode) {
+  if (S.seasonOver(state)) return;
+  const before = { ...state.table[0] };
+  const start = state.round;
+  const rounds = mode === "month" ? 4 : state.fixtures.length - state.round;
+  for (let round = 0; round < rounds && !S.seasonOver(state); round++) S.finishRound(state);
+  const after = state.table[0];
+  ui.batch = {
+    label: mode === "month" ? "1ヶ月" : "シーズン終了まで",
+    played: state.round - start, won: after.won - before.won, lost: after.lost - before.lost, drawn: after.drawn - before.drawn
+  };
+  persist(`${ui.batch.played}試合分の結果を更新しました。`);
+  selectTab("match");
+}
+
+function openWatch(match, friend = false) {
+  if (!match) return;
+  const names = friend ? [match.home.name, match.away.name] : [state.teams[match.home].name, state.teams[match.away].name];
+  const teamIds = friend ? [0, 1] : [match.home, match.away];
+  watch = { match, names, teamIds, minute: 0 };
+  drawWatch();
+  viewer.showModal();
+}
+
+function drawWatch() {
+  const { names, teamIds, match, minute } = watch;
+  const goals = match.events.filter(event => event.minute <= minute);
+  const score = teamIds.map(id => goals.filter(event => event.team === id).length);
+  const newest = goals.at(-1);
+  const side = newest ? teamIds.indexOf(newest.team) : -1;
+  const status = minute === 90 ? "試合終了" : minute === 45 ? "ハーフタイム" : "キックオフ";
+  const notes = goals.length ? goals.map(event => `<li><strong>${event.minute}′</strong><span>${V.h(event.name || names[teamIds.indexOf(event.team)])} ゴール</span></li>`)
+    : [`<li><span>${minute ? "得点はありません。" : "キックオフ。前半を進めてください。"}</span></li>`];
+  get("watch-body").innerHTML = `<div class="watch-state"><strong>${status}</strong><span>${minute}′ / 90′</span></div>
+    <div class="result-board"><span>${V.h(names[0])}</span><strong>${score.join(" – ")}</strong><span>${V.h(names[1])}</span></div>
+    <div class="watch-pitch" data-goal-side="${side}" aria-hidden="true"><span class="penalty-area left"></span><span class="penalty-area right"></span><span class="watch-ball"></span></div>
+    <ul class="watch-events" aria-label="得点経過">${notes.join("")}</ul>`;
+  get("watch-next").textContent = minute === 0 ? "前半を進める" : minute === 45 ? "後半を進める" : "閉じる";
+  get("watch-finish").hidden = minute === 90;
+}
+
+function update(message, focusSelector) {
+  persist(message);
+  render();
+  if (focusSelector) content.querySelector(focusSelector)?.focus({ preventScroll: true });
+}
+
+const actions = {
+  week: showChoice,
+  month: () => runBatch("month"),
+  endSeason: () => runBatch("endSeason"),
+  replay: () => openWatch(state.results.at(-1)),
+  battleReplay: () => openWatch(ui.battle, true),
+  autoLineup() {
+    state.selection = {};
+    update("戦力と疲労に合わせて自動編成しました。", '[data-action="autoLineup"]');
+  },
+  autoTraining() {
+    const options = { GK: "keeping", DF: "defending", MF: "passing", FW: "shooting" };
+    if (S.seasonOver(state)) return;
+    for (const player of state.squad) S.setTraining(state, player.id, player.fatigue > 34 ? "rest" : options[player.role]);
+    update("ポジションと疲労に合わせて練習を設定しました。", '[data-action="autoTraining"]');
+  },
+  restAll() {
+    if (S.seasonOver(state)) return;
+    for (const player of state.squad) S.setTraining(state, player.id, "rest");
+    update("全員を休養に設定しました。", '[data-action="restAll"]');
+  },
+  promoteClub() {
+    if (!S.promoteClub(state)) return;
+    update(`${S.clubLevels[state.division]}へ昇格しました。`);
+  },
+  nextSeason() {
+    if (!S.nextSeason(state)) return;
+    ui.batch = null;
+    persist(`${S.yearLabel(state)}年のシーズンを開始しました。`);
+    selectTab("home");
+  },
+  draft() {
+    if (!S.openDraft(state)) return;
+    persist();
+    selectTab("draft");
+  },
+  coach() {
+    const cost = state.coach * 1200;
+    if (state.coach >= 5 || state.balance < cost) return;
+    state.balance -= cost;
+    state.coach++;
+    S.addLedger(state, "監督強化", -cost);
+    update(`監督がLv.${state.coach}になりました。`);
+  },
+  editClub: setup,
+  logout() {
+    if (!P.setCurrent("")) return notice("セーブの切り替えに失敗しました。");
+    onProfile("");
+    notice("ゲストセーブに切り替えました。");
+  },
+  async copyTeam() {
+    const field = get("your-team-code");
+    try {
+      await navigator.clipboard.writeText(field.value);
+      notice("チームコードをコピーしました。");
+    } catch {
+      field.focus();
+      field.select();
+      notice("選択したチームコードをコピーできます。");
+    }
+  }
+};
+
+function activate(button) {
+  const data = button.dataset;
+  if (data.tab) return selectTab(data.tab);
+  if (data.profile) return profileForm(data.profile);
+  if (data.action && Object.hasOwn(actions, data.action)) return actions[data.action]();
+  if (data.friendly) {
+    const id = Number(data.friendly);
+    if (!S.friendlyOptions(state).some(({ opponent }) => opponent.id === id)) return;
+    const selected = state.friendlies.includes(id);
+    state.friendlies = selected ? state.friendlies.filter(other => other !== id) : [...state.friendlies, id];
+    return update(selected ? "練習試合の選択を解除しました。" : "今週の練習試合に追加しました。", `[data-friendly="${id}"]`);
+  }
+  if (data.draw) {
+    const [count, kind] = data.draw.split(":");
+    const result = A.draw(state, Number(count), kind);
+    if (!result) return notice("条件に合う選手またはコインが足りません。");
+    ui.drawn = result;
+    return update(`${result.length}人の選手を獲得しました。`);
+  }
+  if (data.facility && S.buyFacility(state, data.facility)) return update("スタジアム・練習施設を更新しました。");
+  if (data.activate && S.promotePlayer(state, Number(data.activate))) return update("トップチームに登録しました。");
+  if (data.reserve && S.sendToReserve(state, Number(data.reserve))) return update("リザーブに移しました。");
+  if (data.sign && S.sign(state, Number(data.sign))) return update("移籍候補の選手を獲得しました。");
+  if (data.offer) {
+    const player = A.offer(state, data.offer);
+    return player ? update(`${player.name}を獲得しました。`) : notice("現在は条件に合う選手がいません。");
+  }
+  if (data.claim) {
+    const player = A.claim(state, Number(data.claim));
+    if (player) update(`MR ${player.name}を獲得しました。`);
+    return;
+  }
+  if (data.page !== undefined) {
+    ui.catalogPage = Math.max(0, Number(data.page) || 0);
+    render();
+    return;
+  }
+  if (data.honor) {
+    const [id, key] = data.honor.split(":");
+    const player = state.retired.find(item => item.id === Number(id));
+    if (player && ["hall", "numberRetired"].includes(key)) {
+      player[key] = true;
+      update(key === "hall" ? "殿堂入りに登録しました。" : "永久欠番に登録しました。");
+    }
+  }
+}
+
+document.addEventListener("click", event => {
+  const button = event.target.closest("button");
+  if (button && !button.disabled) activate(button);
 });
 
-listen("edit-name", "click", () => {
-  row("name-input").value = state.name;
-  nameDialog.showModal();
-  row("name-input").select();
+content.addEventListener("change", event => {
+  const input = event.target;
+  if (input.tagName !== "SELECT") return;
+  const data = input.dataset;
+  const settings = { formation: S.formations, tactic: S.tactics };
+  if (Object.hasOwn(settings, data.setting) && Object.hasOwn(settings[data.setting], input.value)) {
+    state[data.setting] = input.value;
+    update("", `[data-setting="${data.setting}"]`);
+  } else if (data.slot && S.setStarter(state, data.slot, Number(input.value))) {
+    update("", `[data-slot="${data.slot}"]`);
+  } else if (data.train && S.setTraining(state, Number(data.train), input.value)) {
+    persist();
+  } else if (["catalogRole", "catalogRarity", "trainingSort"].includes(data.ui)) {
+    ui[data.ui] = input.value;
+    ui.catalogPage = 0;
+    render();
+    content.querySelector(`[data-ui="${data.ui}"]`)?.focus({ preventScroll: true });
+  }
 });
-listen("close-name", "click", () => nameDialog.close());
-listen("name-form", "submit", event => {
+
+content.addEventListener("submit", event => {
+  const form = event.target;
+  const fields = new FormData(form);
   event.preventDefault();
-  const input = row("name-input");
-  const value = input.value.trim();
-  if (!value) return input.focus();
-  state.name = value.slice(0, 24);
-  state.teams[0].name = state.name;
-  saveClub();
-  render();
-  nameDialog.close();
-  announce("クラブ名を変更しました。");
+  if (form.id === "catalog-form") {
+    ui.catalogSearch = String(fields.get("search")).trim();
+    ui.catalogPage = 0;
+    render();
+  } else if (form.id === "draft-form" && S.signYouth(state, Number(fields.get("prospect")), String(fields.get("name")), String(fields.get("stat")))) {
+    update("ユース選手を指名しました。");
+  } else if (form.id === "battle-form") {
+    const away = A.parseCode(String(fields.get("code")).trim());
+    if (!away) return notice("有効なSOCCER PRIMEのチームコードを入力してください。");
+    ui.battle = A.friendlyBattle(state, away);
+    render();
+    openWatch(ui.battle, true);
+  }
 });
 
-saveClub();
-render();
+listen("title-start", "click", () => state.configured ? enterGame() : setup());
+listen("return-title", "click", showTitle);
+listen("close-setup", "click", () => setupDialog.close());
+listen("club-name-input", "input", reflectSetup);
+listen("club-color", "change", reflectSetup);
+listen("setup-form", "submit", event => {
+  event.preventDefault();
+  const field = get("club-name-input");
+  const name = field.value.trim().slice(0, 24);
+  if (!name || state.teams.slice(1).some(team => team.name === name)) {
+    field.setCustomValidity(name ? "対戦相手とは異なるクラブ名を入力してください。" : "クラブ名を入力してください。");
+    field.reportValidity();
+    return;
+  }
+  const created = !state.configured;
+  state.configured = true;
+  state.name = name;
+  state.teams[0].name = name;
+  state.color = get("club-color").value;
+  setupDialog.close();
+  persist(created ? "地域大会からクラブ運営を始めます。" : "クラブ情報を変更しました。");
+  if (created) enterGame();
+  else render();
+});
+listen("club-name-input", "input", () => get("club-name-input").setCustomValidity(""));
+
+listen("close-profile", "click", () => { if (!accountBusy) profileDialog.close(); });
+listen("profile-dialog", "cancel", event => { if (accountBusy) event.preventDefault(); });
+listen("profile-form", "submit", async event => {
+  event.preventDefault();
+  if (accountBusy) return;
+  accountBusy = true;
+  get("profile-submit").disabled = true;
+  const name = get("profile-name").value.trim();
+  const password = get("profile-password").value;
+  const useGuest = !profile && state.configured && get("use-guest-check").checked;
+  try {
+    const id = accountMode === "register" ? await P.register(name, password, useGuest ? state : null) : await P.login(name, password);
+    profileDialog.close();
+    onProfile(id);
+    notice(`${name} でログインしました。`);
+  } catch (error) {
+    get("profile-error").textContent = error.message || "アカウントを読み込めませんでした。";
+  } finally {
+    get("profile-password").value = "";
+    get("profile-submit").disabled = false;
+    accountBusy = false;
+  }
+});
+
+listen("close-choice", "click", () => matchChoice.close());
+listen("choose-watch", "click", () => week(true));
+listen("choose-skip", "click", () => week(false));
+listen("close-watch", "click", () => viewer.close());
+listen("watch-next", "click", () => {
+  if (watch.minute === 90) viewer.close();
+  else {
+    watch.minute += 45;
+    drawWatch();
+  }
+});
+listen("watch-finish", "click", () => {
+  watch.minute = 90;
+  drawWatch();
+  get("watch-next").focus();
+});
+
+renderTabs();
+showTitle();
